@@ -1,0 +1,90 @@
+---
+import LevelCard from './LevelCard.astro';
+import MigrationPath from './MigrationPath.astro';
+---
+
+<section class="py-20 px-4 bg-white dark:bg-luq-neutral-950">
+  <div class="container mx-auto max-w-7xl">
+    <h2 class="text-3xl md:text-4xl font-bold mb-3 text-center text-luq-neutral-900 dark:text-luq-neutral-100">
+      Progressive Abstraction Architecture
+    </h2>
+    <p class="text-center text-luq-neutral-600 dark:text-luq-neutral-400 mb-12 max-w-2xl mx-auto">
+      A gradual evolution path from TypeScript-first validation to universal code generation
+    </p>
+    
+    <MigrationPath />
+    
+    <!-- 3 Level Cards -->
+    <div class="grid lg:grid-cols-3 gap-6 mb-16">
+      <!-- Level 1 -->
+      <LevelCard
+        level={1}
+        status="AVAILABLE NOW"
+        statusColor="text-green-600 dark:text-green-400"
+        title="Luq Validator"
+        description="Type-first validation that works with your existing TypeScript types"
+        codeExample={[
+          "Builder()",
+          "&nbsp;&nbsp;.for&lt;User&gt;()",
+          "&nbsp;&nbsp;.v('email', b =&gt; b.string.email())",
+          "&nbsp;&nbsp;.build()"
+        ]}
+        features={[
+          "Use existing TypeScript types",
+          "Tree-shakeable plugin architecture", 
+          "Cross-field validation support",
+          "JSON Schema Draft-07 compliance",
+          "Production-ready validation"
+        ]}
+      />
+      
+      <!-- Level 2 -->
+      <LevelCard
+        level={2}
+        status="Q1-Q3 2026"
+        statusColor="text-blue-600 dark:text-blue-400"
+        title=".luq Format & Platform"
+        description="TypeScript-like DSL (NOT TypeScript) for universal model & API definition"
+        codeExample={[
+          "// .luq is TypeScript-like, NOT TypeScript",
+          "<span class='text-luq-purple-600 dark:text-luq-purple-400'>@endpoint('/api/orders')</span>",
+          "interface Order {",
+          "&nbsp;&nbsp;<span class='text-luq-purple-600 dark:text-luq-purple-400'>@required @min(0)</span>",
+          "&nbsp;&nbsp;total: number",
+          "}"
+        ]}
+        features={[
+          ".luq DSL specification (TypeScript-like)",
+          "Custom VSCode extension (new language)",
+          "Independent LSP implementation",
+          "Standard adapters (DB, cache)",
+          "Java code generation",
+          "API client SDK generation"
+        ]}
+        note="Independent language with its own compiler and toolchain."
+      />
+      
+      <!-- Level 3 -->
+      <LevelCard
+        level={3}
+        status="VISION (2027+)"
+        statusColor="text-purple-600 dark:text-purple-400"
+        title="Complete Platform"
+        description="Single source of truth for API, models, validation, and business logic"
+        codeExample={[
+          "<span class='text-luq-purple-600 dark:text-luq-purple-400'>@microservice('order-service')</span>",
+          "<span class='text-luq-purple-600 dark:text-luq-purple-400'>@database('postgresql')</span>",
+          "<span class='text-luq-purple-600 dark:text-luq-purple-400'>@cache('redis')</span>",
+          "adapter infra { /* Complete stack */ }"
+        ]}
+        features={[
+          "Full stack generation",
+          "Python, Go, Swift, Kotlin",
+          "Microservices orchestration",
+          "Infrastructure as code"
+        ]}
+        note="Complete platform with infrastructure generation."
+      />
+    </div>
+  </div>
+</section>

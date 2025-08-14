@@ -1,0 +1,83 @@
+---
+export interface Props {
+  code: string;
+  language?: string;
+  class?: string;
+  showCopy?: boolean;
+  showWindowControls?: boolean;
+  fileName?: string;
+  id?: string;
+}
+
+const { 
+  code, 
+  language = 'typescript', 
+  class: className = '',
+  showCopy = true,
+  showWindowControls = false,
+  fileName = '',
+  id = ''
+} = Astro.props;
+---
+
+<div class={`relative ${className}`}>
+  {showWindowControls ? (
+    <div class="bg-[#1E1E1E] rounded-xl shadow-inner overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-[#2D2D30]">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+          <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+        </div>
+        {fileName && (
+          <span class="text-xs text-[#858585] font-mono">{fileName}</span>
+        )}
+        <div class="w-16">
+          {showCopy && (
+            <button class="copy-button text-xs bg-transparent hover:bg-[#2D2D30] text-[#858585] hover:text-[#D4D4D4] px-2 py-1 rounded transition-colors">
+              Copy
+            </button>
+          )}
+        </div>
+      </div>
+      <pre id={id} class="luq-code border-0 rounded-none m-0 p-6 text-sm overflow-x-auto min-h-[200px] max-h-[700px] overflow-y-auto"><code class={`language-${language}`}>{code}</code></pre>
+    </div>
+  ) : (
+    <>
+      {showCopy && (
+        <div class="absolute top-3 right-3 z-10">
+          <button class="copy-button text-xs bg-luq-neutral-700 hover:bg-luq-neutral-600 text-luq-neutral-300 px-2 py-1 rounded border border-luq-neutral-600 transition-colors">
+            Copy
+          </button>
+        </div>
+      )}
+      <pre id={id} class="luq-code p-4 overflow-x-auto"><code class={`language-${language}`}>{code}</code></pre>
+    </>
+  )}
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const copyButtons = document.querySelectorAll('.copy-button');
+    
+    copyButtons.forEach(button => {
+      button.addEventListener('click', async function(this: HTMLButtonElement) {
+        const codeBlock = this.closest('div')?.querySelector('code');
+        if (!codeBlock) return;
+        const code = codeBlock.textContent || '';
+        
+        try {
+          await navigator.clipboard.writeText(code);
+          const originalText = this.textContent || 'Copy';
+          this.textContent = 'Copied!';
+          
+          setTimeout(() => {
+            this.textContent = originalText;
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy code: ', err);
+        }
+      });
+    });
+  });
+</script>

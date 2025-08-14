@@ -1,0 +1,758 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import OnThisPage from '../../components/OnThisPage.astro';
+
+const pluginImportExample = `// ❌ This will cause TypeScript errors
+const validator = Builder()
+  .for<User>()
+  .v('email', b => b.string.required().email()) // Error: 'email' method not available
+  .build();
+
+// ✅ Import and use the plugin first
+import { stringEmailPlugin } from '@maroonedog/luq/plugin';
+
+const validator = Builder()
+  .use(stringEmailPlugin) // Add plugin before using
+  .for<User>()
+  .v('email', b => b.string.required().email()) // Now works
+  .build();`;
+
+const importBestPracticesExample = `// ✅ Good - specific imports
+import { requiredPlugin } from '@maroonedog/luq/plugin';
+import { stringMinPlugin } from '@maroonedog/luq/plugin';
+
+// ❌ Avoid - importing everything
+import * as plugins from 'luq/plugins';`;
+
+const fieldNotFoundExample = `// ❌ Wrong - trying to validate non-existent field
+type User = {
+  profile: {
+    name: string;
+  };
+};
+
+const validator = Builder()
+  .for<User>()
+  .v('name', b => b.string.required()) // Error: 'name' doesn't exist on User
+  .build();
+
+// ✅ Correct - use dot notation for nested fields
+const validator = Builder()
+  .for<User>()
+  .v('profile.name', b => b.string.required()) // Correct path
+  .build();`;
+
+const typeInferenceExample = `// ❌ Problem - TypeScript can't infer the type
+const validator = Builder()
+  .use(requiredPlugin)
+  // Missing .for<Type>() specification
+  .v('email', b => b.string.required()) // Type error
+  .build();
+
+// ✅ Solution - Always specify the type
+const validator = Builder()
+  .use(requiredPlugin)
+  .for<User>() // Specify type here
+  .v('email', b => b.string.required()) // Now TypeScript knows the structure
+  .build();`;
+
+const arrayValidationExample = `// ❌ Common mistake - trying to validate array items with index notation
+type UserList = {
+  users: Array<{
+    name: string;
+    email: string;
+  }>;
+  tags: string[];  // Primitive array
+  scores: number[]; // Another primitive array
+};
+
+const wrongValidator = Builder()
+  .use(arrayMinLengthPlugin)
+  .use(requiredPlugin)
+  .for<UserList>()
+  .v('users[0].name', b => b.string.required()) // Wrong! Specific index doesn't work
+  .v('tags[0]', b => b.string.required())       // Wrong! Can't validate specific index
+  .build();
+
+// ✅ Correct - Luq uses [*] notation to validate ALL items in an array
+const validator = Builder()
+  .use(arrayMinLengthPlugin)
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .use(numberMinPlugin)
+  .use(numberMaxPlugin)
+  .for<UserList>()
+  // Array of objects - validate the array and its object properties
+  .v('users', b => b.array.required().minLength(1))     // Validate array itself
+  .v('users[*].name', b => b.string.required().min(2))  // Validates name of ALL users
+  .v('users[*].email', b => b.string.required().email()) // Validates email of ALL users
+  
+  // Primitive array (string[]) - validate array and its elements
+  .v('tags', b => b.array.required().minLength(1).maxLength(10)) // Array validation
+  .v('tags[*]', b => b.string.required().min(2).max(20))         // Each string element
+  
+  // Primitive array (number[]) - validate array and its elements  
+  .v('scores', b => b.array.required())               // Array validation
+  .v('scores[*]', b => b.number.required().min(0).max(100)) // Each number element
+  .build();
+
+// The [*] notation works for both object arrays and primitive arrays
+// For primitive arrays: use 'fieldName[*]' to validate each element`;
+
+const nestedArrayExample = `// Complex case: Array of arrays
+type Matrix = {
+  name: string;
+  data: number[][];
+  metadata: {
+    rows: number;
+    cols: number;
+  };
+};
+
+// ❌ Wrong approach - specific index notation doesn't work
+const badValidator = Builder()
+  .for<Matrix>()
+  .v('data[0][0]', b => b.number.required()) // Wrong! Specific indices don't work
+  .build();
+
+// ✅ Correct approach - Luq's [*] notation for nested arrays
+const matrixValidator = Builder()
+  .use(requiredPlugin)
+  .use(arrayMinLengthPlugin)
+  .use(numberMinPlugin)
+  .for<Matrix>()
+  .v('name', b => b.string.required())
+  .v('data', b => b.array.required().minLength(1)) // Validate outer array
+  .v('data[*]', b => b.array.required()) // Each item must be an array
+  .v('data[*][*]', b => b.number.required().min(0)) // Each number in nested arrays
+  .v('metadata.rows', b => b.number.required().min(1))
+  .v('metadata.cols', b => b.number.required().min(1))
+  .build();
+
+// The [*] notation can be chained for nested arrays: data[*][*]
+// This validates ALL elements at each level of nesting`;
+
+const primitiveArrayExample = `// Validating primitive arrays (string[], number[], boolean[], etc.)
+type AppData = {
+  keywords: string[];
+  ratings: number[];
+  categories: string[];
+  flags: boolean[];
+};
+
+// ✅ Correct pattern for primitive arrays
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(arrayMinLengthPlugin)
+  .use(arrayMaxLengthPlugin)
+  .use(arrayUniquePlugin)
+  .use(stringMinPlugin)
+  .use(stringMaxPlugin)
+  .use(stringPatternPlugin)
+  .use(numberMinPlugin)
+  .use(numberMaxPlugin)
+  .use(booleanTruthyPlugin)
+  .for<AppData>()
+  
+  // String array - validate both array and each string element
+  .v('keywords', b => b.array.required().minLength(1).maxLength(10).unique()) // Array properties
+  .v('keywords[*]', b => b.string.required().min(3).max(30).pattern(/^[a-z]+$/)) // Each string
+  
+  // Number array - validate both array and each number element
+  .v('ratings', b => b.array.required().minLength(1))    // Array properties
+  .v('ratings[*]', b => b.number.required().min(1).max(5)) // Each number must be 1-5
+  
+  // Another string array with different rules
+  .v('categories', b => b.array.required().unique())      // No duplicates
+  .v('categories[*]', b => b.string.required().min(2))    // Each category name
+  
+  // Boolean array
+  .v('flags', b => b.array.required())                    // Array validation
+  .v('flags[*]', b => b.boolean.required().truthy())      // Each flag must be true
+  .build();
+
+// Example usage:
+const result = validator.validate({
+  keywords: ['react', 'typescript', 'nodejs'],  // ✅ Valid
+  ratings: [5, 4, 3, 5, 4],                     // ✅ Valid
+  categories: ['frontend', 'backend'],          // ✅ Valid
+  flags: [true, true, false]                    // ❌ Invalid - one is false
+});`;
+
+const arrayOfObjectsExample = `// Most common case: Array of objects with nested structures
+type Order = {
+  orderId: string;
+  items: Array<{
+    productId: string;
+    name: string;
+    quantity: number;
+    price: number;
+    attributes: {
+      color?: string;
+      size?: string;
+    };
+  }>;
+  customer: {
+    name: string;
+    addresses: Array<{
+      type: 'billing' | 'shipping';
+      street: string;
+      city: string;
+    }>;
+  };
+};
+
+// ✅ Luq's elegant approach - use [*] notation for array items, dot notation for nested objects
+const orderValidator = Builder()
+  .use(requiredPlugin)
+  .use(arrayMinLengthPlugin)
+  .use(stringMinPlugin)
+  .use(numberMinPlugin)
+  .use(stringPatternPlugin)
+  .use(optionalPlugin)
+  .use(oneOfPlugin)
+  .for<Order>()
+  // Validate root fields
+  .v('orderId', b => b.string.required().pattern(/^ORD-\d{6}$/))
+  
+  // Validate array and its items
+  .v('items', b => b.array.required().minLength(1))
+  .v('items[*].productId', b => b.string.required().pattern(/^PROD-\d{4}$/))
+  .v('items[*].name', b => b.string.required().min(1))
+  .v('items[*].quantity', b => b.number.required().min(1))
+  .v('items[*].price', b => b.number.required().min(0))
+  
+  // Validate nested objects within array items
+  .v('items[*].attributes.color', b => 
+    b.string.optional().oneOf(['blue', 'red', 'green', 'black', 'white']))
+  .v('items[*].attributes.size', b => 
+    b.string.optional().oneOf(['S', 'M', 'L', 'XL']))
+  
+  // Validate nested object
+  .v('customer.name', b => b.string.required().min(2))
+  
+  // Validate nested array within object
+  .v('customer.addresses', b => b.array.required().minLength(1))
+  .v('customer.addresses[*].type', b => b.string.required().oneOf(['billing', 'shipping']))
+  .v('customer.addresses[*].street', b => b.string.required().min(5))
+  .v('customer.addresses[*].city', b => b.string.required().min(2))
+  .build();
+
+// Everything in ONE validator using [*] notation for arrays and dot notation for objects
+// No need to split validators or iterate manually!`;
+
+const performanceDebuggingExample = `// Debug slow validation
+const start = performance.now();
+const result = validator.validate(largeData);
+const end = performance.now();
+
+console.log(\`Validation took \${end - start} milliseconds\`);
+
+// Check for heavy transformations
+const validator = Builder()
+  .for<Data>()
+  .v('content', b => 
+    b.string
+      .required()
+      .transform(content => {
+        console.time('transform'); // Debug transform time
+        const result = heavyProcessing(content);
+        console.timeEnd('transform');
+        return result;
+      })
+  )
+  .build();`;
+
+const memoryLeakExample = `// ❌ Memory leak - creating validators repeatedly
+function validateData(data: User) {
+  const validator = Builder() // New validator every call!
+    .use(requiredPlugin)
+    .for<User>()
+    .v('email', b => b.string.required().email())
+    .build();
+    
+  return validator.validate(data);
+}
+
+// ✅ Fix - Create validator once
+const USER_VALIDATOR = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v('email', b => b.string.required().email())
+  .build();
+
+function validateData(data: User) {
+  return USER_VALIDATOR.validate(data); // Reuse validator
+}`;
+
+const errorMessageCustomizationExample = `// Default error messages might not be user-friendly
+const result = validator.validate({ email: 'invalid-email' });
+// Error: "stringEmail validation failed"
+
+// ✅ Customize error messages for better UX
+const validator = Builder()
+  .use(stringEmailPlugin)
+  .for<User>()
+  .v('email', b => 
+    b.string
+      .required({ message: 'Email is required' })
+      .email({ message: 'Please enter a valid email address' })
+  )
+  .build();`;
+
+const asyncValidationExample = `// Luq's async validation pattern - separate async layer approach
+import { createAsyncContext, addAsyncSupport } from '@maroonedog/luq/async.experimental';
+
+// Define async context type
+interface ValidationContext {
+  emailExists: boolean;
+  domainValid: boolean;
+  quotaAvailable: { canCreate: boolean; limit: number };
+}
+
+// ✅ Correct pattern - Luq's async layer separation
+// Step 1: Create normal synchronous validator
+const syncValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .use(fromContextPlugin) // Plugin that can access async context
+  .for<User>()
+  .v('email', b => b.string.required().email())
+  .build();
+
+// Step 2: Add async support to the validator
+const validator = addAsyncSupport(syncValidator);
+
+// Step 3: Create and resolve async context BEFORE validation
+const asyncContext = await createAsyncContext<ValidationContext>()
+  .set('emailExists', checkEmailExists(data.email))        // Parallel
+  .set('domainValid', validateDomain(data.email))          // Parallel
+  .set('quotaAvailable', checkUserQuota(data.userId))      // Parallel
+  .build(); // All async operations run in parallel
+
+// Step 4: Validate with pre-resolved async context
+const result = await validator
+  .withAsyncContext<ValidationContext>(asyncContext)
+  .validate(data);
+
+// The async data is available in plugins via getAsyncContext
+const emailExistsPlugin = {
+  name: 'emailExists',
+  validate: (value: string, context: any) => {
+    // Get pre-resolved async data (no await needed here!)
+    const asyncData = getAsyncContext<ValidationContext>(context);
+    
+    if (asyncData?.emailExists) {
+      return { valid: false, message: 'Email already exists' };
+    }
+    
+    return { valid: true };
+  }
+};
+
+// Key benefits:
+// 1. All async operations run in parallel (not sequential)
+// 2. Async is resolved ONCE before validation
+// 3. Validation itself remains synchronous and fast
+// 4. Full type safety with TypeScript generics`;
+---
+
+<BaseLayout title="Troubleshooting - Luq Documentation">
+  <Header />
+  
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/troubleshooting" />
+    
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Troubleshooting</h1>
+        
+        <div class="prose prose-lg dark:prose-invert max-w-none">
+          <p class="lead">
+            Common issues and solutions when working with Luq. Find quick fixes for the most frequent problems.
+          </p>
+          
+          <h2 id="typescript-errors">TypeScript Errors</h2>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6" open>
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Plugin methods not available / TypeScript compilation errors</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Symptom:</strong> TypeScript complains that validation methods like <code>.email()</code> or <code>.min()</code> don't exist.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Cause:</strong> The plugin providing the method hasn't been imported and registered with <code>.use()</code>.
+              </p>
+              
+              <p class="text-sm font-semibold">Solution:</p>
+              <CodeBlock code={pluginImportExample} language="typescript" showCopy={true} />
+            </div>
+          </details>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Field not found / Path errors</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Symptom:</strong> TypeScript errors about fields not existing on your type.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Cause:</strong> Incorrect field paths or forgetting to use dot notation for nested properties.
+              </p>
+              
+              <p class="text-sm font-semibold">Solution:</p>
+              <CodeBlock code={fieldNotFoundExample} language="typescript" showCopy={true} />
+            </div>
+          </details>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Type inference issues</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Symptom:</strong> TypeScript can't determine field types or shows generic errors.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Cause:</strong> Missing <code>.for&lt;YourType&gt;()</code> call in the builder chain.
+              </p>
+              
+              <p class="text-sm font-semibold">Solution:</p>
+              <CodeBlock code={typeInferenceExample} language="typescript" showCopy={true} />
+            </div>
+          </details>
+          
+          <h2 id="array-validation-issues">Array Validation Issues</h2>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6" open>
+            <summary class="cursor-pointer font-semibold text-lg mb-4">How to validate arrays and array items</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Key concept:</strong> Luq uses <code>[*]</code> notation to validate array items. When you write <code>items[*].name</code>, it automatically validates the <code>name</code> field of ALL items in the array.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Common mistake:</strong> Trying to use specific index notation like <code>items[0].name</code> or trying to split into multiple validators - neither approach is correct in Luq.
+              </p>
+              
+              <p class="text-sm font-semibold">The correct Luq pattern - everything in ONE validator:</p>
+              <CodeBlock code={arrayValidationExample} language="typescript" showCopy={true} />
+            </div>
+          </details>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Primitive arrays (string[], number[], boolean[])</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Common need:</strong> Validating arrays of primitive types like tags, scores, IDs, flags, etc.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Key pattern:</strong> Use <code>fieldName[*]</code> to validate each primitive element in the array. Validate both the array itself (length, uniqueness) AND each element (min/max, pattern, etc.).
+              </p>
+              
+              <CodeBlock code={primitiveArrayExample} language="typescript" showCopy={true} />
+              
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-4 mt-4">
+                <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Remember:</p>
+                <ul class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                  <li>• <code>.v('tags', ...)</code> validates the array itself (length, uniqueness)</li>
+                  <li>• <code>.v('tags[*]', ...)</code> validates EACH element in the array</li>
+                  <li>• Both validations work together in ONE validator</li>
+                </ul>
+              </div>
+            </div>
+          </details>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Complex nested structures (arrays and objects)</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Real-world scenario:</strong> Validating complex data with arrays of objects, nested objects, and arrays within objects.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Luq's powerful pattern:</strong> Combine <code>[*]</code> notation for arrays with dot notation for objects. Everything stays in ONE validator!
+              </p>
+              
+              <CodeBlock code={arrayOfObjectsExample} language="typescript" showCopy={true} />
+            </div>
+          </details>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Nested arrays (Array of arrays)</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Multi-dimensional arrays:</strong> Validating matrices, 2D/3D arrays, or other nested array structures.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Luq's solution:</strong> Chain <code>[*]</code> notation for each level of nesting. <code>data[*][*]</code> validates all elements in a 2D array.
+              </p>
+              
+              <CodeBlock code={nestedArrayExample} language="typescript" showCopy={true} />
+              
+              <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-4 mt-4">
+                <p class="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">Luq Array Validation Patterns:</p>
+                <ul class="text-xs text-amber-800 dark:text-amber-200 space-y-1">
+                  <li>• <code>tags[*]</code> - Validates each string in a string[] array</li>
+                  <li>• <code>scores[*]</code> - Validates each number in a number[] array</li>
+                  <li>• <code>items[*].name</code> - Validates the name field of ALL items in an object array</li>
+                  <li>• <code>items[*].subitems[*].value</code> - Nested arrays within objects</li>
+                  <li>• <code>matrix[*][*]</code> - 2D arrays (matrix)</li>
+                  <li>• <code>cube[*][*][*]</code> - 3D arrays</li>
+                  <li>• <code>items[*].tags[*]</code> - Primitive array within object array</li>
+                  <li>• <code>items[*].address.city</code> - Combine [*] with dot notation for nested objects</li>
+                  <li>• Everything in ONE validator - no splitting or manual iteration!</li>
+                </ul>
+              </div>
+            </div>
+          </details>
+          
+          <h2 id="bundle-size-issues">Bundle Size Issues</h2>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Bundle size larger than expected</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Symptom:</strong> Your bundle includes more Luq code than you expected.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Causes:</strong> Importing from barrel exports or using wildcard imports.
+              </p>
+              
+              <p class="text-sm font-semibold">Solution:</p>
+              <CodeBlock code={importBestPracticesExample} language="typescript" showCopy={true} />
+              
+              <div class="bg-luq-teal-50 dark:bg-luq-teal-900/20 border border-luq-teal-200 dark:border-luq-teal-800 rounded p-4 mt-4">
+                <p class="text-sm font-semibold text-luq-teal-900 dark:text-luq-teal-100 mb-2">Bundle Analysis Tips:</p>
+                <ul class="text-xs text-luq-teal-800 dark:text-luq-teal-200 space-y-1">
+                  <li>• Use <code>webpack-bundle-analyzer</code> to visualize what's included</li>
+                  <li>• Check your bundler's tree-shaking configuration</li>
+                  <li>• Ensure you're using ES modules (import/export)</li>
+                  <li>• Avoid importing entire plugin collections</li>
+                </ul>
+              </div>
+            </div>
+          </details>
+          
+          <h2 id="performance-problems">Performance Problems</h2>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Slow validation performance</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Common causes:</strong> Creating validators repeatedly, heavy transformations, or inefficient data structures.
+              </p>
+              
+              <p class="text-sm font-semibold">Debugging validation performance:</p>
+              <CodeBlock code={performanceDebuggingExample} language="typescript" showCopy={true} />
+              
+              <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-4">
+                <p class="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Performance Tips:</p>
+                <ul class="text-xs text-yellow-800 dark:text-yellow-200 space-y-1">
+                  <li>• Create validators once and reuse them</li>
+                  <li>• Move heavy processing outside of transforms</li>
+                  <li>• Use simpler data structures when possible</li>
+                  <li>• Consider using abort-early validation for large objects</li>
+                </ul>
+              </div>
+            </div>
+          </details>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Memory leaks in long-running applications</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Symptom:</strong> Memory usage grows over time in server applications.
+              </p>
+              
+              <p class="text-sm">
+                <strong>Cause:</strong> Creating new validators instead of reusing them.
+              </p>
+              
+              <p class="text-sm font-semibold">Solution:</p>
+              <CodeBlock code={memoryLeakExample} language="typescript" showCopy={true} />
+            </div>
+          </details>
+          
+          <h2 id="runtime-issues">Runtime Issues</h2>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Unexpected validation results</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Debugging steps:</strong>
+              </p>
+              <ol class="text-sm space-y-2">
+                <li>1. Check that all required plugins are imported and registered</li>
+                <li>2. Verify field paths match your data structure exactly</li>
+                <li>3. Test with simplified data to isolate the issue</li>
+                <li>4. Check for type mismatches between expected and actual data</li>
+              </ol>
+              
+              <div class="bg-luq-neutral-100 dark:bg-luq-neutral-800 rounded p-4 mt-4">
+                <p class="text-sm font-semibold mb-2">Debug validation step by step:</p>
+                <CodeBlock 
+                  code={`// Add logging to understand what's happening
+const result = validator.validate(data);
+
+console.log('Validation result:', result.isValid());
+if (!result.isValid()) {
+  console.log('Errors:', result.getErrors());
+  console.log('Data being validated:', JSON.stringify(data, null, 2));
+}`}
+                  language="typescript" 
+                  showCopy={true} 
+                />
+              </div>
+            </div>
+          </details>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Error messages not user-friendly</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Problem:</strong> Default error messages are too technical for end users.
+              </p>
+              
+              <p class="text-sm font-semibold">Solution - Customize error messages:</p>
+              <CodeBlock code={errorMessageCustomizationExample} language="typescript" showCopy={true} />
+            </div>
+          </details>
+          
+          <h2 id="advanced-issues">Advanced Issues</h2>
+          
+          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
+            <summary class="cursor-pointer font-semibold text-lg mb-4">Async validation (database checks, API calls)</summary>
+            <div class="space-y-4">
+              <p class="text-sm">
+                <strong>Luq's approach:</strong> Async validation uses a separate layer design - resolve all async data BEFORE validation, then pass it to the synchronous validator.
+              </p>
+              
+              <p class="text-sm font-semibold">The correct async pattern with type safety:</p>
+              <CodeBlock code={asyncValidationExample} language="typescript" showCopy={true} />
+              
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-4 mt-4">
+                <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Luq's Async Architecture:</p>
+                <ol class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                  <li>1. Create async context with all async operations running in PARALLEL</li>
+                  <li>2. Resolve all async data ONCE before validation</li>
+                  <li>3. Pass pre-resolved context to validator using <code>withAsyncContext</code></li>
+                  <li>4. Validation remains synchronous and fast</li>
+                  <li>5. Plugins access async data via <code>getAsyncContext</code> (no await needed)</li>
+                  <li>6. Full type safety with TypeScript generics</li>
+                </ol>
+              </div>
+              
+              <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-4 mt-4">
+                <p class="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">Performance Benefits:</p>
+                <ul class="text-xs text-green-800 dark:text-green-200 space-y-1">
+                  <li>• All async operations run in parallel (200ms instead of 600ms sequential)</li>
+                  <li>• Only ONE await during the entire validation process</li>
+                  <li>• Synchronous validation performance is unaffected</li>
+                  <li>• Zero overhead when not using async features</li>
+                </ul>
+              </div>
+            </div>
+          </details>
+          
+          <h2 id="getting-help">Getting Help</h2>
+          
+          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 border border-luq-purple-200 dark:border-luq-purple-800 rounded-lg p-6 my-8">
+            <h3 class="text-lg font-semibold mb-4 text-luq-purple-900 dark:text-luq-purple-100">Still having issues?</h3>
+            
+            <div class="space-y-4 text-sm">
+              <div class="flex items-start">
+                <span class="font-semibold mr-2">1.</span>
+                <div>
+                  <p class="font-semibold mb-1">Check the documentation:</p>
+                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Review the core concepts and examples to ensure you're following best practices.</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start">
+                <span class="font-semibold mr-2">2.</span>
+                <div>
+                  <p class="font-semibold mb-1">Create a minimal reproduction:</p>
+                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Strip down your code to the smallest possible example that demonstrates the issue.</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start">
+                <span class="font-semibold mr-2">3.</span>
+                <div>
+                  <p class="font-semibold mb-1">Check GitHub Issues:</p>
+                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Search for similar issues in the <a href="https://github.com/maroonedog/luq/issues" class="underline">GitHub repository</a>.</p>
+                </div>
+              </div>
+              
+              <div class="flex items-start">
+                <span class="font-semibold mr-2">4.</span>
+                <div>
+                  <p class="font-semibold mb-1">Ask for help:</p>
+                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Open a new issue with your minimal reproduction and detailed description.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <a href="/docs/custom-plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Custom Plugins</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Learn how to create your own validation plugins
+                </p>
+              </a>
+              
+              <a href="/docs/examples" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Examples & Patterns</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  See working examples and patterns
+                </p>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <OnThisPage tableOfContents={[
+      { id: 'typescript-errors', title: 'TypeScript Errors', level: 2 },
+      { id: 'array-validation-issues', title: 'Array Validation Issues', level: 2 },
+      { id: 'bundle-size-issues', title: 'Bundle Size Issues', level: 2 },
+      { id: 'performance-problems', title: 'Performance Problems', level: 2 },
+      { id: 'runtime-issues', title: 'Runtime Issues', level: 2 },
+      { id: 'advanced-issues', title: 'Advanced Issues', level: 2 },
+      { id: 'getting-help', title: 'Getting Help', level: 2 },
+    ]} />
+  </div>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    @apply mt-12 mb-6;
+  }
+  
+  .prose h3 {
+    @apply mt-8 mb-4;
+  }
+  
+  details summary {
+    @apply hover:text-luq-purple-600 dark:hover:text-luq-teal-400 transition-colors;
+  }
+  
+  details[open] summary {
+    @apply text-luq-purple-600 dark:text-luq-teal-400;
+  }
+</style>

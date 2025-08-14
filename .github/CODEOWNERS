@@ -1,0 +1,5 @@
+# CODEOWNERS for Luq repository
+# These owners will be requested for review when someone opens a pull request
+
+# Global owners for all files
+* @maroonedog

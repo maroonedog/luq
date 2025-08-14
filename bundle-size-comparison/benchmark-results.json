@@ -1,0 +1,434 @@
+[
+  {
+    "library": "luq",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 73588,
+      "gzipped": 19562,
+      "brotli": 16814
+    },
+    "performance": {
+      "validData": {
+        "duration": 8.096357999999782,
+        "opsPerSecond": 1235123.2492437055
+      },
+      "invalidData": {
+        "duration": 43.108270000000175,
+        "opsPerSecond": 231974.050454819
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "luq",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 95694,
+      "gzipped": 23012,
+      "brotli": 19356
+    },
+    "performance": {
+      "validData": {
+        "duration": 229.75825899999973,
+        "opsPerSecond": 43524.00668217116
+      },
+      "invalidData": {
+        "duration": 189.89925199999925,
+        "opsPerSecond": 52659.5017867687
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 22,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "luq-jsonschema",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 102129,
+      "gzipped": 26682,
+      "brotli": 22975
+    },
+    "performance": {
+      "validData": {
+        "duration": 5.936964000000444,
+        "opsPerSecond": 1684362.5799313004
+      },
+      "invalidData": {
+        "duration": 35.481604999999945,
+        "opsPerSecond": 281836.17962039815
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "luq-jsonschema",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 121388,
+      "gzipped": 29772,
+      "brotli": 25386
+    },
+    "performance": {
+      "validData": {
+        "duration": 341.79380799999944,
+        "opsPerSecond": 29257.40538868983
+      },
+      "invalidData": {
+        "duration": 171.17573600000014,
+        "opsPerSecond": 58419.494688195715
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 22,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "luq-jsonschema-full",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 120263,
+      "gzipped": 32517,
+      "brotli": 27032
+    },
+    "performance": {
+      "validData": {
+        "duration": 6.302528000000166,
+        "opsPerSecond": 1586664.9065263553
+      },
+      "invalidData": {
+        "duration": 21.881948999999622,
+        "opsPerSecond": 456997.68334165175
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "luq-jsonschema-full",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 122745,
+      "gzipped": 33091,
+      "brotli": 27617
+    },
+    "performance": {
+      "validData": {
+        "duration": 317.8435989999998,
+        "opsPerSecond": 31462.014750216837
+      },
+      "invalidData": {
+        "duration": 177.51843399999962,
+        "opsPerSecond": 56332.177873989254
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 22,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "zod",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 248211,
+      "gzipped": 48585,
+      "brotli": 40967
+    },
+    "performance": {
+      "validData": {
+        "duration": 20.564494000000195,
+        "opsPerSecond": 486275.03307399177
+      },
+      "invalidData": {
+        "duration": 220.54013799999848,
+        "opsPerSecond": 45343.22001739234
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "zod",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 250259,
+      "gzipped": 49278,
+      "brotli": 41589
+    },
+    "performance": {
+      "validData": {
+        "duration": 162.63286700000026,
+        "opsPerSecond": 61488.18614874436
+      },
+      "invalidData": {
+        "duration": 1044.6002980000012,
+        "opsPerSecond": 9573.039581882245
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 22,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "yup",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 41046,
+      "gzipped": 13112,
+      "brotli": 11849
+    },
+    "performance": {
+      "validData": {
+        "duration": 76.84691300000122,
+        "opsPerSecond": 130128.84460303358
+      },
+      "invalidData": {
+        "duration": 251.58263599999918,
+        "opsPerSecond": 39748.37118727078
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "yup",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 42898,
+      "gzipped": 13723,
+      "brotli": 12400
+    },
+    "performance": {
+      "validData": {
+        "duration": 1711.9017409999979,
+        "opsPerSecond": 5841.4567615069745
+      },
+      "invalidData": {
+        "duration": 541.5569929999983,
+        "opsPerSecond": 18465.277208598487
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 22,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "valibot",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 3890,
+      "gzipped": 1338,
+      "brotli": 1203
+    },
+    "performance": {
+      "validData": {
+        "duration": 11.07788200000141,
+        "opsPerSecond": 902699.6315720576
+      },
+      "invalidData": {
+        "duration": 42.48988299999837,
+        "opsPerSecond": 235350.142056178
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "valibot",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 7955,
+      "gzipped": 2550,
+      "brotli": 2264
+    },
+    "performance": {
+      "validData": {
+        "duration": 58.359411999997974,
+        "opsPerSecond": 171351.9663289333
+      },
+      "invalidData": {
+        "duration": 97.98139199999787,
+        "opsPerSecond": 102060.19526646669
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 22,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "joi",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 148345,
+      "gzipped": 45503,
+      "brotli": 40167
+    },
+    "performance": {
+      "validData": {
+        "duration": 57.02496299999984,
+        "opsPerSecond": 175361.79725359974
+      },
+      "invalidData": {
+        "duration": 68.56416999999783,
+        "opsPerSecond": 145848.77203356093
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "joi",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 150442,
+      "gzipped": 46081,
+      "brotli": 40633
+    },
+    "performance": {
+      "validData": {
+        "duration": 424.59109700000045,
+        "opsPerSecond": 23552.071794854404
+      },
+      "invalidData": {
+        "duration": 582.9271130000016,
+        "opsPerSecond": 17154.803365613865
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 22,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "ajv",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 125845,
+      "gzipped": 38688,
+      "brotli": 34216
+    },
+    "performance": {
+      "validData": {
+        "duration": 4.031918000000587,
+        "opsPerSecond": 2480209.170920278
+      },
+      "invalidData": {
+        "duration": 2.850126999997883,
+        "opsPerSecond": 3508615.580992506
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "ajv",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 128327,
+      "gzipped": 39253,
+      "brotli": 34689
+    },
+    "performance": {
+      "validData": {
+        "duration": 43.03326299999753,
+        "opsPerSecond": 232378.38134655447
+      },
+      "invalidData": {
+        "duration": 24.515432000000146,
+        "opsPerSecond": 407906.3342632486
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 24,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "ajv-standalone",
+    "structure": "simple",
+    "bundleSize": {
+      "raw": 3416,
+      "gzipped": 1054,
+      "brotli": 911
+    },
+    "performance": {
+      "validData": {
+        "duration": 3.0237689999994473,
+        "opsPerSecond": 3307130.9349364415
+      },
+      "invalidData": {
+        "duration": 2.013437999994494,
+        "opsPerSecond": 4966629.218295942
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 3,
+      "actualErrors": 3,
+      "isCorrect": true
+    }
+  },
+  {
+    "library": "ajv-standalone",
+    "structure": "complex",
+    "bundleSize": {
+      "raw": 36629,
+      "gzipped": 4741,
+      "brotli": 4042
+    },
+    "performance": {
+      "validData": {
+        "duration": 41.69311200000084,
+        "opsPerSecond": 239847.7714975989
+      },
+      "invalidData": {
+        "duration": 22.739188999999897,
+        "opsPerSecond": 439769.42185581225
+      }
+    },
+    "errorCount": {
+      "expectedErrors": 22,
+      "actualErrors": 24,
+      "isCorrect": true
+    }
+  }
+]

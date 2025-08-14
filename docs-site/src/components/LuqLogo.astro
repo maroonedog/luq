@@ -1,0 +1,22 @@
+---
+export interface Props {
+  class?: string;
+  width?: string;
+  height?: string;
+}
+
+const { class: className = '', width = '90', height = '60' } = Astro.props;
+---
+
+<svg 
+  class={className}
+  width={width} 
+  height={height} 
+  viewBox="0 0 614 409" 
+  xmlns="http://www.w3.org/2000/svg" 
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  aria-label="Luq"
+>
+  <image x="0" y="0" width="614" height="409" 
+         xlink:href="/img/library_image_cropped.png" />
+</svg>

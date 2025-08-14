@@ -1,0 +1,43 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+
+# Configuration
+tsconfig.json
+jest.config*.js
+.swcrc
+.prettierrc*
+.eslintrc*
+
+# Test files
+test/
+**/*.test.ts
+**/*.spec.ts
+coverage/
+
+# Development files
+examples/
+docs/
+scripts/
+*.log
+*.md
+!README.md
+
+# Build artifacts
+node_modules/
+.git/
+.github/
+.vscode/
+
+# Project specific
+vscode-extension/
+docs-site/
+bundle-size-comparison/
+bundle-size-test/
+cli/
+
+# Temporary files
+*.tmp
+.DS_Store
+*.swp

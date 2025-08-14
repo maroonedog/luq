@@ -1,0 +1,199 @@
+---
+interface Props {
+  tableOfContents: Array<{
+    id: string;
+    title: string;
+    level: number;
+  }>;
+}
+
+const { tableOfContents } = Astro.props;
+---
+
+<!-- Right sidebar - On this page -->
+<aside class="hidden xl:block w-64 bg-luq-neutral-50 dark:bg-luq-neutral-900 border-l border-luq-neutral-200 dark:border-luq-neutral-800 flex-shrink-0">
+  <div class="sticky top-16 h-screen overflow-y-auto p-6">
+    <!-- Simple header -->
+    <div class="mb-6">
+      <h3 class="font-semibold text-sm uppercase tracking-wide text-luq-neutral-500 dark:text-luq-neutral-400 mb-4">
+        On this page
+      </h3>
+    </div>
+
+    <!-- Table of contents -->
+    <nav class="space-y-1">
+      {tableOfContents.map((item) => (
+        <a
+          href={`#${item.id}`}
+          class={`toc-link block px-3 py-2 text-sm transition-colors rounded ${
+            item.level === 3 
+              ? 'ml-4 text-luq-neutral-600 dark:text-luq-neutral-400 hover:text-luq-teal-600 dark:hover:text-luq-teal-400' 
+              : 'text-luq-neutral-800 dark:text-luq-neutral-200 font-medium hover:text-luq-purple-600 dark:hover:text-luq-purple-400'
+          } hover:bg-luq-neutral-100 dark:hover:bg-luq-neutral-800`}
+          data-target={item.id}
+        >
+          {item.title}
+        </a>
+      ))}
+    </nav>
+
+    <!-- Simple progress indicator -->
+    <div class="mt-8 pt-6 border-t border-luq-neutral-200 dark:border-luq-neutral-800">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-xs font-medium text-luq-neutral-500 dark:text-luq-neutral-400">Reading progress</span>
+      </div>
+      <div class="w-full bg-luq-neutral-200 dark:bg-luq-neutral-700 rounded-full h-1">
+        <div id="reading-progress" class="bg-luq-purple-500 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<style>
+  /* TOC active link styles */
+  .toc-link.active {
+    @apply bg-luq-purple-100 dark:bg-luq-purple-900/30;
+    @apply text-luq-purple-700 dark:text-luq-purple-300 font-semibold;
+  }
+  
+  /* Custom scrollbar for right sidebar */
+  aside::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+  
+  aside::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  aside::-webkit-scrollbar-thumb {
+    @apply bg-luq-neutral-300 dark:bg-luq-neutral-700 rounded-full;
+  }
+  
+  aside::-webkit-scrollbar-thumb:hover {
+    @apply bg-luq-neutral-400 dark:bg-luq-neutral-600;
+  }
+</style>
+
+<script>
+  function initializeOnThisPage() {
+    const tocLinks = document.querySelectorAll('.toc-link');
+    const progressBar = document.getElementById('reading-progress');
+    let lastActiveId = ''; // 前回のアクティブIDを保持
+    if (tocLinks.length === 0) return;
+    
+    // Get only H3 headings (exclude H2) for focus detection
+    const headings = Array.from(tocLinks)
+      .map(link => {
+        const targetId = link.getAttribute('data-target');
+        const element = targetId ? document.getElementById(targetId) : null;
+        return element;
+      })
+      .filter((element): element is HTMLElement => element !== null && element.tagName === 'H3');
+    
+    if (headings.length === 0) return;
+    
+    // Update reading progress
+    function updateProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = Math.min((scrollTop / docHeight) * 100, 100);
+      
+      if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+      }
+    }
+    
+    // Create intersection observer for active section highlighting
+    const observer = new IntersectionObserver((entries) => {
+      let activeId = '';
+      let largestRatio = 0;
+      
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.intersectionRatio > largestRatio) {
+          largestRatio = entry.intersectionRatio;
+          activeId = entry.target.id;
+        }
+      });
+      
+      // If no heading is intersecting, find the most relevant one
+      if (!activeId) {
+        let bestHeading: HTMLElement | null = null;
+        let bestScore = -1;
+        
+        headings.forEach(heading => {
+          if (!heading) return;
+          const rect = heading.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          
+          // Prioritize headings that are visible or just above viewport
+          if (rect.top <= viewportHeight * 0.1 && rect.bottom >= -100) {
+            const score = viewportHeight * 0.1 - rect.top;
+            if (score > bestScore) {
+              bestScore = score;
+              bestHeading = heading;
+            }
+          }
+        });
+        
+        if (bestHeading) {
+          activeId = (bestHeading as HTMLElement).id;
+        }
+      }
+      
+      // Fallback to previous active ID if no active ID found
+      if (!activeId && lastActiveId) {
+        activeId = lastActiveId;
+      }
+      
+      // Update active link only if activeId changed or exists
+      if (activeId) {
+        // Update lastActiveId for future fallback
+        lastActiveId = activeId;
+        
+        tocLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('data-target') === activeId) {
+            link.classList.add('active');
+          }
+        });
+      }
+    }, {
+      rootMargin: '-10% 0% -80% 0%',
+      threshold: [0, 0.5, 1]
+    });
+    
+    // Observe all headings
+    headings.forEach(heading => {
+      if (heading) observer.observe(heading);
+    });
+    
+    // Add smooth scrolling for TOC links
+    tocLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('data-target');
+        const targetElement = targetId ? document.getElementById(targetId) : null;
+        
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+          
+          // Update URL hash immediately
+          history.pushState(null, '', `#${targetId}`);
+        }
+      });
+    });
+    
+    // Update progress on scroll
+    window.addEventListener('scroll', updateProgress);
+    updateProgress(); // Initial call
+  }
+  
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', initializeOnThisPage);
+  
+  // Re-initialize when navigating (for SPA-like behavior)
+  document.addEventListener('astro:page-load', initializeOnThisPage);
+</script>

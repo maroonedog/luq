@@ -1,0 +1,94 @@
+---
+---
+
+<div class="mb-16 bg-luq-neutral-50 dark:bg-luq-neutral-900 rounded-lg p-8">
+  <h3 class="text-sm font-semibold text-luq-neutral-500 dark:text-luq-neutral-400 uppercase tracking-wide mb-6">
+    Your Migration Path
+  </h3>
+  
+  <div class="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-8">
+    <!-- Step 1: Existing Types -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-luq-neutral-200 dark:bg-luq-neutral-800 flex items-center justify-center">
+        <span class="text-sm font-medium">1</span>
+      </div>
+      <div>
+        <div class="font-medium text-luq-neutral-900 dark:text-luq-neutral-100">Existing Types</div>
+        <div class="text-xs text-luq-neutral-500">Start with what you have</div>
+      </div>
+    </div>
+    
+    <svg class="w-6 h-6 text-luq-neutral-300 dark:text-luq-neutral-700 rotate-90 lg:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+    </svg>
+    
+    <!-- Step 2: Luq Validator -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-luq-purple-100 dark:bg-luq-purple-900/30 flex items-center justify-center">
+        <span class="text-sm font-medium text-luq-purple-600 dark:text-luq-purple-400">2</span>
+      </div>
+      <div>
+        <div class="font-medium text-luq-neutral-900 dark:text-luq-neutral-100">Luq Validator</div>
+        <div class="text-xs text-luq-neutral-500">Add validation logic</div>
+      </div>
+    </div>
+    
+    <!-- Bidirectional conversion (TypeScript only) -->
+    <div class="flex flex-col items-center gap-1">
+      <svg class="w-8 h-6 text-luq-purple-500 dark:text-luq-purple-400 rotate-90 lg:rotate-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12l3-3m-3 3l3 3m11-3l-3-3m3 3l-3 3" />
+      </svg>
+      <div class="text-xs text-luq-purple-600 dark:text-luq-purple-400 text-center font-medium px-2 py-1 bg-luq-purple-100 dark:bg-luq-purple-900/20 rounded">
+        TS only
+      </div>
+    </div>
+    
+    <!-- Step 3: .luq Format -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-luq-neutral-200 dark:bg-luq-neutral-800 flex items-center justify-center">
+        <span class="text-sm font-medium">3</span>
+      </div>
+      <div>
+        <div class="font-medium text-luq-neutral-900 dark:text-luq-neutral-100">.luq Format</div>
+        <div class="text-xs text-luq-neutral-500">Declarative syntax</div>
+      </div>
+    </div>
+    
+    <!-- One-way conversion to multi-language -->
+    <div class="flex flex-col items-center gap-1">
+      <svg class="w-6 h-6 text-blue-500 dark:text-blue-400 rotate-90 lg:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+      </svg>
+      <div class="text-xs text-blue-600 dark:text-blue-400 text-center font-medium px-2 py-1 bg-blue-100 dark:bg-blue-900/20 rounded">
+        One-way
+      </div>
+    </div>
+    
+    <!-- Step 4: Multi-language -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-luq-neutral-200 dark:bg-luq-neutral-800 flex items-center justify-center">
+        <span class="text-sm font-medium">4</span>
+      </div>
+      <div>
+        <div class="font-medium text-luq-neutral-900 dark:text-luq-neutral-100">Multi-language</div>
+        <div class="text-xs text-luq-neutral-500">Generate everywhere</div>
+      </div>
+    </div>
+  </div>
+  
+  <p class="text-center text-xs text-luq-neutral-500 dark:text-luq-neutral-400 mt-6">
+    Each step is optional. Adopt what makes sense for your project.
+  </p>
+  
+  <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded text-xs">
+    <div class="flex items-start gap-2 text-amber-700 dark:text-amber-300">
+      <svg class="w-4 h-4 text-amber-500 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <div>
+        <strong>*TypeScript bidirectional conversion:</strong> Builder → .luq (full support), .luq → AOT compiled validator only (no Builder pattern output).<br/>
+        Other languages: one-way generation only.
+      </div>
+    </div>
+  </div>
+</div>

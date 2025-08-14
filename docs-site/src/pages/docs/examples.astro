@@ -1,0 +1,483 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import OnThisPage from '../../components/OnThisPage.astro';
+
+// Table of contents for "On this page"
+const tableOfContents = [
+  { id: 'basic-patterns', title: 'Basic Patterns', level: 2 },
+  { id: 'nested-objects', title: 'Nested Objects', level: 3 },
+  { id: 'arrays-and-collections', title: 'Arrays and Collections', level: 3 },
+  { id: 'conditional-validation', title: 'Conditional Validation', level: 3 },
+  { id: 'advanced-patterns', title: 'Advanced Patterns', level: 2 },
+  { id: 'data-transformation', title: 'Data Transformation', level: 3 },
+  { id: 'custom-business-rules', title: 'Custom Plugins', level: 3 },
+  { id: 'error-handling-patterns', title: 'Error Handling Patterns', level: 2 },
+  { id: 'structured-error-processing', title: 'Structured Error Processing', level: 3 },
+  { id: 'performance-patterns', title: 'Performance Patterns', level: 2 },
+  { id: 'validator-reuse', title: 'Validator Reuse', level: 3 },
+  { id: 'real-world-examples', title: 'Real-World Examples', level: 2 },
+  { id: 'ecommerce-product-validation', title: 'E-commerce Product Validation', level: 3 },
+  { id: 'user-registration-with-complex-rules', title: 'User Registration with Complex Rules', level: 3 },
+];
+
+// Code examples
+const nestedObjectsExample = `type UserProfile = {
+  user: {
+    name: string;
+    email: string;
+  };
+  settings: {
+    notifications: boolean;
+    theme: 'light' | 'dark';
+  };
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .use(objectPlugin)
+  .use(oneOfPlugin)
+  .for<UserProfile>()
+  .v('user', b => b.object.required())
+  .v('user.name', b => b.string.required().min(2))
+  .v('user.email', b => b.string.required().email())
+  .v('settings', b => b.object.required())
+  .v('settings.notifications', b => b.boolean.required())
+  .v('settings.theme', b => b.string.required().oneOf(['light', 'dark']))
+  .build();`;
+
+const arraysExample = `type Product = {
+  id: string;
+  name: string;
+  tags: string[];
+  prices: number[];
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(arrayMinLengthPlugin)
+  .use(arrayMaxLengthPlugin)
+  .use(arrayUniquePlugin)
+  .use(stringMinPlugin)
+  .use(numberMinPlugin)
+  .for<Product>()
+  .v('id', b => b.string.required())
+  .v('name', b => b.string.required())
+  .v('tags', b => b.array.required().minLength(1).maxLength(5).unique())
+  .v('tags[*]', b => b.string.required().min(1))
+  .v('prices', b => b.array.required().minLength(1))
+  .v('prices[*]', b => b.number.required().min(0))
+  .build();`;
+
+const conditionalValidationExample = `type Order = {
+  type: 'personal' | 'business';
+  companyName?: string;
+  taxId?: string;
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(requiredIfPlugin)
+  .use(optionalPlugin)
+  .use(stringMinPlugin)
+  .use(stringPatternPlugin)
+  .use(oneOfPlugin)
+  .for<Order>()
+  .v('type', b => b.string.required().oneOf(['personal', 'business']))
+  .v('companyName', b => 
+    b.string.requiredIf((data) => data?.type === 'business').min(2)
+  )
+  .v('taxId', b =>
+    b.string
+      .requiredIf((data) => data?.type === 'business')
+      .pattern(/^[0-9]{2}-[0-9]{7}$/)
+  )
+  .build();`;
+
+const errorHandlingExample = `const result = validator.validate(invalidData);
+
+// Check if validation passed
+if (result.isValid()) {
+  // Get validated data safely
+  const validData = result.unwrap();
+  console.log('Validation passed:', validData);
+} else {
+  // Handle validation errors
+  const errors = result.errors;
+  
+  errors.forEach(error => {
+    console.log(\`Field: \${error.path}\`);
+    console.log(\`Message: \${error.message}\`);
+    console.log(\`Code: \${error.code}\`);
+  });
+  
+  // Example output:
+  // Field: user.email
+  // Message: Invalid email format
+  // Code: stringEmail
+}
+
+// Functional approach with Result type
+const processedData = result
+  .map(data => ({ ...data, processed: true }))
+  .unwrapOr({ processed: false });
+
+// Use with default value
+const safeData = result.unwrapOr(defaultUserData);`;
+
+
+const transformExample = `type FormData = {
+  email: string;
+  age: string; // comes from form as string
+};
+
+type ProcessedData = {
+  email: string;  // lowercase transformed
+  age: number;     // transformed to number
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .use(transformPlugin)
+  .for<FormData>()
+  .v('email', b => 
+    b.string
+      .required()
+      .email()
+      .transform((email) => email.toLowerCase())
+  )
+  .v('age', b => 
+    b.string
+      .required()
+      .transform((ageStr) => parseInt(ageStr, 10))
+  )
+  .build();
+
+// ⚠️ IMPORTANT: Use parse() for transformed values, not validate()
+const formData = { email: 'USER@EXAMPLE.COM', age: '25' };
+
+// validate() returns original values
+const validateResult = validator.validate(formData);
+if (validateResult.isValid()) {
+  const data = validateResult.unwrap();
+  // data.email = 'USER@EXAMPLE.COM' (original)
+  // data.age = '25' (still string)
+}
+
+// parse() returns transformed values
+const parseResult = validator.parse(formData);
+if (parseResult.isValid()) {
+  const data = parseResult.unwrap();
+  // data.email = 'user@example.com' (lowercased)
+  // data.age = 25 (number)
+}`;
+---
+
+<BaseLayout title="Examples & Patterns - Luq Documentation">
+  <Header />
+  
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/examples" />
+    
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+      <!-- Main content -->
+      <article class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Examples & Patterns</h1>
+        
+        <div class="prose prose-lg dark:prose-invert max-w-none">
+          <p class="lead">
+            Learn common validation patterns and see practical examples of how to use Luq in real applications.
+          </p>
+          
+          <!-- Content Overview -->
+          <div class="not-prose bg-gradient-to-r from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 rounded-lg p-6 mb-12">
+            <h2 class="text-xl font-bold mb-4 luq-gradient-text">What you'll learn</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-4">
+                <div class="w-8 h-8 bg-luq-purple-100 dark:bg-luq-purple-900/50 rounded-lg flex items-center justify-center mb-3">
+                  <svg class="w-4 h-4 text-luq-purple-600 dark:text-luq-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                  </svg>
+                </div>
+                <h3 class="font-semibold mb-2">Basic Patterns</h3>
+                <p class="text-xs text-luq-neutral-600 dark:text-luq-neutral-400">Nested objects, arrays, conditional validation</p>
+              </div>
+              
+              <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-4">
+                <div class="w-8 h-8 bg-luq-teal-100 dark:bg-luq-teal-900/50 rounded-lg flex items-center justify-center mb-3">
+                  <svg class="w-4 h-4 text-luq-teal-600 dark:text-luq-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                </div>
+                <h3 class="font-semibold mb-2">Advanced Patterns</h3>
+                <p class="text-xs text-luq-neutral-600 dark:text-luq-neutral-400">Data transformation, custom business rules</p>
+              </div>
+              
+              <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-4">
+                <div class="w-8 h-8 bg-luq-orange-100 dark:bg-luq-orange-900/50 rounded-lg flex items-center justify-center mb-3">
+                  <svg class="w-4 h-4 text-luq-orange-600 dark:text-luq-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                  </svg>
+                </div>
+                <h3 class="font-semibold mb-2">Error Handling</h3>
+                <p class="text-xs text-luq-neutral-600 dark:text-luq-neutral-400">Structured errors, form integration</p>
+              </div>
+              
+              <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-4">
+                <div class="w-8 h-8 bg-luq-green-100 dark:bg-luq-green-900/50 rounded-lg flex items-center justify-center mb-3">
+                  <svg class="w-4 h-4 text-luq-green-600 dark:text-luq-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V8a2 2 0 01-2 2H8a2 2 0 01-2-2V6m8 0H8m0 0v.01M8 6v.01"></path>
+                  </svg>
+                </div>
+                <h3 class="font-semibold mb-2">Real-World</h3>
+                <p class="text-xs text-luq-neutral-600 dark:text-luq-neutral-400">E-commerce, user registration examples</p>
+              </div>
+            </div>
+          </div>
+          
+          <h2 id="basic-patterns">Basic Patterns</h2>
+          
+          <h3 id="nested-objects">Nested Objects</h3>
+          
+          <p>
+            Validate complex nested object structures using dot notation to access deeply nested fields:
+          </p>
+          
+          <CodeBlock code={nestedObjectsExample} language="typescript" showCopy={true} />
+          
+          <h3 id="arrays-and-collections">Arrays and Collections</h3>
+          
+          <p>
+            Handle array validation with length constraints, uniqueness checks, and more:
+          </p>
+          
+          <CodeBlock code={arraysExample} language="typescript" showCopy={true} />
+          
+          <h3 id="conditional-validation">Conditional Validation</h3>
+          
+          <p>
+            Implement business logic where field requirements depend on other field values:
+          </p>
+          
+          <CodeBlock code={conditionalValidationExample} language="typescript" showCopy={true} />
+          
+          <h2 id="advanced-patterns">Advanced Patterns</h2>
+          
+          <h3 id="data-transformation">Data Transformation</h3>
+          
+          <p>
+            Transform data during validation, such as normalizing input or converting types:
+          </p>
+          
+          <CodeBlock code={transformExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-luq-teal-50 dark:bg-luq-teal-900/20 rounded-lg p-6 my-8">
+            <h3 class="text-lg font-semibold mb-4 text-luq-teal-800 dark:text-luq-teal-300">🔌 Need Custom Validation?</h3>
+            <p class="text-sm text-luq-neutral-700 dark:text-luq-neutral-300 mb-4">
+              Create powerful, type-safe custom plugins that integrate seamlessly with Luq's architecture.
+            </p>
+            <a 
+              href="/docs/custom-plugins" 
+              class="inline-flex items-center px-4 py-2 bg-luq-teal-600 hover:bg-luq-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Learn Custom Plugins
+              <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </a>
+          </div>
+
+          <h2 id="error-handling-patterns">Error Handling Patterns</h2>
+          
+          <h3 id="structured-error-processing">Structured Error Processing</h3>
+          
+          <p>
+            Luq provides detailed error information that you can use to build user-friendly error messages:
+          </p>
+          
+          <CodeBlock code={errorHandlingExample} language="typescript" showCopy={true} />
+          
+          
+          <h2 id="performance-patterns">Performance Patterns</h2>
+          
+          <h3 id="validator-reuse">Validator Reuse</h3>
+          
+          <div class="not-prose bg-luq-teal-50 dark:bg-luq-teal-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">✅ Do: Create validators once and reuse them</h4>
+            <CodeBlock 
+              code={`// Good: Create once, reuse many times
+const userValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .for<User>()
+  .v('email', b => b.string.required().email())
+  .build();
+
+// Reuse in multiple places
+app.post('/users', (req, res) => {
+  const result = userValidator.validate(req.body);
+  // ...
+});
+
+app.put('/users/:id', (req, res) => {
+  const result = userValidator.validate(req.body);
+  // ...
+});`}
+              language="typescript" 
+              showCopy={true} 
+            />
+          </div>
+          
+          <div class="not-prose bg-red-50 dark:bg-red-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">❌ Don't: Create validators repeatedly</h4>
+            <CodeBlock 
+              code={`// Bad: Creating validators inside request handlers
+app.post('/users', (req, res) => {
+  const validator = Builder() // This creates overhead
+    .use(requiredPlugin)
+    .use(stringEmailPlugin)
+    .for<User>()
+    .v('email', b => b.string.required().email())
+    .build();
+  
+  const result = validator.validate(req.body);
+  // ...
+});`}
+              language="typescript" 
+              showCopy={true} 
+            />
+          </div>
+          
+          <h2 id="real-world-examples">Real-World Examples</h2>
+          
+          <h3 id="ecommerce-product-validation">E-commerce Product Validation</h3>
+          
+          <CodeBlock 
+            code={`type Product = {
+  id: string;
+  name: string;
+  price: number;
+  category: 'electronics' | 'clothing' | 'books';
+  specifications: Record<string, string>;
+  inStock: boolean;
+  tags?: string[];
+};
+
+const productValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(numberMinPlugin)
+  .use(oneOfPlugin)
+  .use(optionalPlugin)
+  .use(arrayMaxLengthPlugin)
+  .for<Product>()
+  .v('id', b => b.string.required().min(1))
+  .v('name', b => b.string.required().min(2))
+  .v('price', b => b.number.required().min(0))
+  .v('category', b => b.string.required().oneOf(['electronics', 'clothing', 'books']))
+  .v('specifications', b => b.object.required())
+  .v('inStock', b => b.boolean.required())
+  .v('tags', b => b.array.optional().maxLength(10))
+  .v('tags[*]', b => b.string.required().min(1))
+  .build();`}
+            language="typescript" 
+            showCopy={true} 
+          />
+          
+          <h3 id="user-registration-with-complex-rules">User Registration with Complex Rules</h3>
+          
+          <CodeBlock 
+            code={`type UserRegistration = {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  age: number;
+  terms: boolean;
+  marketingOptIn?: boolean;
+};
+
+const registrationValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringMaxPlugin)
+  .use(stringEmailPlugin)
+  .use(numberMinPlugin)
+  .use(compareFieldPlugin)
+  .use(optionalPlugin)
+  .for<UserRegistration>()
+  .v('username', b => 
+    b.string
+      .required()
+      .min(3)
+      .max(20)
+      .pattern(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers and underscore allowed')
+  )
+  .v('email', b => b.string.required().email())
+  .v('password', b => 
+    b.string
+      .required()
+      .min(8)
+      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, 'Must contain uppercase, lowercase and number')
+  )
+  .v('confirmPassword', b => 
+    b.string
+      .required()
+      .compareField('password', 'Passwords must match')
+  )
+  .v('age', b => b.number.required().min(13))
+  .v('terms', b => 
+    b.boolean
+      .required()
+      .equals(true, 'You must accept the terms and conditions')
+  )
+  .v('marketingOptIn', b => b.boolean.optional())
+  .build();`}
+            language="typescript" 
+            showCopy={true} 
+          />
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <a href="/docs/api/builder" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Builder API</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Complete API reference for the Builder
+                </p>
+              </a>
+              
+              <a href="/plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Plugin Library</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Browse all available plugins and generate custom validators
+                </p>
+              </a>
+            </div>
+          </div>
+        </div>
+        </article>
+    </main>
+    
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    @apply mt-12 mb-6;
+  }
+  
+  .prose h3 {
+    @apply mt-8 mb-4;
+  }
+</style>
+

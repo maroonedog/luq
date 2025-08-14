@@ -1,0 +1,94 @@
+---
+import LuqLogo from './LuqLogo.astro';
+---
+
+<section class="relative overflow-hidden bg-white dark:bg-luq-neutral-950">
+  <!-- Background pattern -->
+  <div class="absolute inset-0 luq-pattern opacity-50"></div>
+  
+  <!-- Animated background elements -->
+  <div class="absolute top-20 left-10 w-72 h-72 bg-luq-purple-200/30 dark:bg-luq-purple-800/20 rounded-full filter blur-3xl animate-float"></div>
+  <div class="absolute bottom-20 right-10 w-96 h-96 bg-luq-teal-200/30 dark:bg-luq-teal-800/20 rounded-full filter blur-3xl animate-float" style="animation-delay: 3s;"></div>
+  
+  <div class="relative z-10 px-4 py-24 sm:px-6 lg:px-8">
+    <div class="container mx-auto max-w-6xl">
+      <div class="text-center">
+        <!-- Logo with animation -->
+        <div class="flex justify-center mb-8">
+          <div class="relative group cursor-pointer">
+            <LuqLogo class="h-32 w-auto luq-float transition-all duration-500 group-hover:scale-110 group-hover:rotate-3" />
+            <!-- Glow effect on hover -->
+            <div class="absolute inset-0 rounded-full bg-gradient-to-r from-luq-purple-400 to-luq-teal-400 opacity-0 blur-3xl group-hover:opacity-30 transition-opacity duration-500"></div>
+            <!-- Particle effects -->
+            <div class="absolute inset-0 pointer-events-none">
+              <span class="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-luq-purple-400 rounded-full opacity-0 group-hover:animate-particle-1"></span>
+              <span class="absolute top-1/2 right-0 -translate-y-1/2 w-2 h-2 bg-luq-teal-400 rounded-full opacity-0 group-hover:animate-particle-2"></span>
+              <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-luq-purple-400 rounded-full opacity-0 group-hover:animate-particle-3"></span>
+              <span class="absolute top-1/2 left-0 -translate-y-1/2 w-2 h-2 bg-luq-teal-400 rounded-full opacity-0 group-hover:animate-particle-4"></span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Main heading -->
+        <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6">
+          <span class="block text-luq-neutral-900 dark:text-luq-neutral-100">
+            TypeScript
+          </span>
+          <span class="block luq-gradient-text">
+            Validation
+          </span>
+          <span class="block text-luq-neutral-900 dark:text-luq-neutral-100">
+            Made Simple
+          </span>
+        </h1>
+        
+        <!-- Subtitle -->
+        <p class="text-xl sm:text-2xl text-luq-neutral-600 dark:text-luq-neutral-400 mb-12 max-w-3xl mx-auto">
+          Use your existing TypeScript types to build validators. No schema rewriting, just add validation rules to the types you already have.
+        </p>
+        
+        <!-- Key benefits -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mb-12 max-w-3xl mx-auto">
+          <div class="luq-feature-card">
+            <div class="relative z-10">
+              <div class="text-3xl font-bold luq-gradient-text mb-1">Works Today</div>
+              <div class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">With your existing types</div>
+            </div>
+          </div>
+          <div class="luq-feature-card">
+            <div class="relative z-10">
+              <div class="text-3xl font-bold luq-gradient-text mb-1">Type Safe</div>
+              <div class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Full IDE autocomplete</div>
+            </div>
+          </div>
+          <div class="luq-feature-card">
+            <div class="relative z-10">
+              <div class="text-3xl font-bold luq-gradient-text mb-1">19KB</div>
+              <div class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Tree-shakable plugins</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- CTA buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <a href="/docs/getting-started" class="luq-button-gradient text-lg">
+            Get Started
+          </a>
+          <a href="https://github.com/maroonedog/luq" target="_blank" rel="noopener noreferrer" class="luq-button-secondary text-lg">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+        
+        <!-- Quick install -->
+        <div class="inline-block bg-luq-neutral-900 dark:bg-luq-neutral-800 rounded-lg p-4 text-left">
+          <code class="text-sm sm:text-base text-luq-teal-400 font-mono">
+            npm install @maroonedog/luq
+          </code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

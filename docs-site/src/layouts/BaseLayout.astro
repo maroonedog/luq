@@ -1,0 +1,201 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+const { title, description = 'Luq - A lightweight, type-first validation library for TypeScript', image = '/og-image.png' } = Astro.props;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Favicon - Luq logo -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/library_image_cropped.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/img/library_image_cropped.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- SEO -->
+    <title>{title} | Luq</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(image, Astro.site)} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(image, Astro.site)} />
+    
+    <!-- Theme Color - Luq brand color -->
+    <meta name="theme-color" content="#8B5CF6" />
+    <meta name="msapplication-TileColor" content="#8B5CF6" />
+    
+    <!-- Fonts preload -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Prism.js CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-dark.min.css" rel="stylesheet" />
+    
+    <!-- Dark mode script -->
+    <script is:inline>
+      const theme = (() => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+          return localStorage.getItem('theme');
+        }
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      })();
+      
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      window.localStorage.setItem('theme', theme);
+    </script>
+  </head>
+  <body>
+    <slot />
+    
+    <!-- Prism.js JavaScript - Sequential loading to ensure proper dependency order -->
+    <script>
+      // Load Prism.js scripts sequentially to avoid dependency issues
+      function loadPrismScript(src: string) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      // Load scripts in proper order
+      async function loadPrismScripts() {
+        try {
+          // Core must be loaded first
+          await loadPrismScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-core.min.js');
+          
+          // Load language dependencies in order
+          await loadPrismScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-clike.min.js');
+          await loadPrismScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-javascript.min.js');
+          await loadPrismScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-typescript.min.js');
+          await loadPrismScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-json.min.js');
+          await loadPrismScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-bash.min.js');
+          
+          // Autoloader last
+          await loadPrismScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/autoloader/prism-autoloader.min.js');
+          
+          console.log('All Prism.js scripts loaded successfully');
+          
+          // Trigger custom event when all scripts are loaded
+          window.dispatchEvent(new CustomEvent('prismLoaded'));
+        } catch (error) {
+          console.error('Failed to load Prism.js scripts:', error);
+        }
+      }
+
+      // Start loading when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadPrismScripts);
+      } else {
+        loadPrismScripts();
+      }
+    </script>
+    
+    <!-- Initialize Prism.js after all scripts are loaded -->
+    <script is:inline>
+      // Function to highlight all code blocks with proper language detection
+      function highlightAllCode() {
+        if (typeof Prism === 'undefined') {
+          console.warn('Prism is not loaded yet');
+          return;
+        }
+
+        const codeBlocks = document.querySelectorAll('pre code');
+        console.log(`Found ${codeBlocks.length} code blocks to highlight`);
+        
+        codeBlocks.forEach((block) => {
+          // Ensure TypeScript is recognized as the default language
+          if (!block.className.includes('language-') || block.className.includes('language-typescript')) {
+            block.className = 'language-typescript';
+          }
+          
+          // Force re-highlight
+          delete block.dataset.highlighted;
+          Prism.highlightElement(block);
+        });
+      }
+
+      // Initialize Prism.js when scripts are loaded
+      function initializePrism() {
+        if (typeof Prism !== 'undefined') {
+          console.log('Initializing Prism.js');
+          
+          // Configure Prism.js for better TypeScript support
+          Prism.manual = true; // Disable automatic highlighting to control it manually
+          
+          // Highlight immediately
+          highlightAllCode();
+          
+          // Re-highlight when new code blocks are added dynamically
+          const observer = new MutationObserver((mutations) => {
+            let shouldHighlight = false;
+            mutations.forEach((mutation) => {
+              mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1) {
+                  if (node.tagName === 'PRE' || node.tagName === 'CODE' || 
+                      node.querySelector && node.querySelector('pre code')) {
+                    shouldHighlight = true;
+                  }
+                }
+              });
+            });
+            
+            if (shouldHighlight) {
+              setTimeout(highlightAllCode, 50);
+            }
+          });
+          
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        } else {
+          console.error('Prism is still not defined after loading scripts');
+        }
+      }
+
+      // Listen for the custom event when all Prism scripts are loaded
+      window.addEventListener('prismLoaded', initializePrism);
+      
+      // Fallback: also try on window load
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (typeof Prism !== 'undefined') {
+            initializePrism();
+          }
+        }, 200);
+      });
+    </script>
+  </body>
+</html>

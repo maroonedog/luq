@@ -1,0 +1,160 @@
+---
+import CodeBlock from './CodeBlock.astro';
+
+const existingCode = `// Keep your types as-is
+interface User {
+  name: string;
+  email: string;
+  age: number;
+}
+
+// Your existing function
+function saveUser(user: User) {
+  // No validation... 😬
+  return api.post('/users', user);
+}`;
+
+const luqCode = `// Same interface, no changes needed
+interface User {
+  name: string;
+  email: string;
+  age: number;
+}
+
+// Build validator from your type
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .use(numberMinPlugin)
+  .for<User>()
+  .v("name", b => b.string.required())
+  .v("email", b => b.string.required().email())
+  .v("age", b => b.number.required().min(13))
+  .build();
+
+function saveUser(userData: unknown) {
+  const result = validator.validate(userData);
+  
+  if (result.isValid()) {
+    const user = result.unwrap(); // Type: User
+    return api.post('/users', user);
+  } else {
+    throw new Error(result.errors[0].message);
+  }
+}`;
+---
+
+<section class="py-16 px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto max-w-6xl">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold mb-4">
+        <span class="luq-gradient-text">How It Works</span>
+      </h2>
+      <p class="text-lg text-luq-neutral-600 dark:text-luq-neutral-400 max-w-2xl mx-auto">
+        Three simple steps to add validation to your existing TypeScript types
+      </p>
+    </div>
+    
+    <div class="grid md:grid-cols-3 gap-8 mb-16">
+      <div class="text-center">
+        <div class="w-16 h-16 bg-gradient-to-r from-luq-purple-500 to-luq-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl font-bold text-white">1</span>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">Use Your Types</h3>
+        <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+          Keep your existing TypeScript interfaces exactly as they are
+        </p>
+      </div>
+      
+      <div class="text-center">
+        <div class="w-16 h-16 bg-gradient-to-r from-luq-purple-500 to-luq-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl font-bold text-white">2</span>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">Add Validation</h3>
+        <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+          Build validators using the plugins you need
+        </p>
+      </div>
+      
+      <div class="text-center">
+        <div class="w-16 h-16 bg-gradient-to-r from-luq-teal-500 to-luq-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl font-bold text-white">3</span>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">Validate Data</h3>
+        <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+          Get type-safe results with detailed error messages
+        </p>
+      </div>
+    </div>
+
+    <!-- Before/After Example -->
+    <div class="bg-white dark:bg-luq-neutral-900 rounded-2xl shadow-xl overflow-hidden">
+      <div class="grid md:grid-cols-2">
+        <!-- Your Existing Code -->
+        <div class="p-8">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-6 h-6 bg-luq-neutral-200 dark:bg-luq-neutral-700 rounded mr-2 flex items-center justify-center">
+              <span class="text-xs">✓</span>
+            </span>
+            Your existing code
+          </h3>
+          <div class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-4">
+            <CodeBlock code={existingCode} language="typescript" showCopy={false} class="text-sm" />
+          </div>
+        </div>
+        
+        <!-- Add Luq -->
+        <div class="p-8 bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-neutral-800 dark:to-luq-neutral-900">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-6 h-6 bg-luq-gradient rounded mr-2 flex items-center justify-center">
+              <span class="text-xs text-white">+</span>
+            </span>
+            Add validation with Luq
+          </h3>
+          <div class="bg-luq-neutral-900 dark:bg-luq-neutral-950 rounded-lg p-4">
+            <CodeBlock code={luqCode} language="typescript" showCopy={false} class="text-sm" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Benefits -->
+    <div class="mt-16 grid md:grid-cols-3 gap-8">
+      <div class="bg-white dark:bg-luq-neutral-800 rounded-xl p-6 border border-luq-neutral-200 dark:border-luq-neutral-700">
+        <div class="w-12 h-12 bg-luq-purple-100 dark:bg-luq-purple-900 rounded-lg flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-luq-purple-600 dark:text-luq-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+        </div>
+        <h4 class="font-semibold mb-2">No Rewriting</h4>
+        <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+          Use your existing TypeScript interfaces. No need to convert to schemas or learn new syntax.
+        </p>
+      </div>
+      
+      <div class="bg-white dark:bg-luq-neutral-800 rounded-xl p-6 border border-luq-neutral-200 dark:border-luq-neutral-700">
+        <div class="w-12 h-12 bg-luq-teal-100 dark:bg-luq-teal-900 rounded-lg flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-luq-teal-600 dark:text-luq-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h4 class="font-semibold mb-2">Type Safe</h4>
+        <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+          Full TypeScript integration. IDE autocomplete works perfectly with your field names and types.
+        </p>
+      </div>
+      
+      <div class="bg-white dark:bg-luq-neutral-800 rounded-xl p-6 border border-luq-neutral-200 dark:border-luq-neutral-700">
+        <div class="w-12 h-12 bg-luq-purple-100 dark:bg-luq-purple-900 rounded-lg flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-luq-purple-600 dark:text-luq-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h4 class="font-semibold mb-2">Small Bundle</h4>
+        <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+          Import only the validation rules you need. Tree-shaking ensures minimal bundle size.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

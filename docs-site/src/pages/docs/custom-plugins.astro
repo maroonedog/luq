@@ -1,0 +1,761 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import OnThisPage from '../../components/OnThisPage.astro';
+
+// Table of contents for "On this page"
+const tableOfContents = [
+  { id: 'category-overview', title: 'Category Overview', level: 2 },
+  { id: 'why-categories-matter', title: 'Why Categories Matter', level: 3 },
+  { id: 'type-variable-control', title: 'Type Variable Control', level: 3 },
+  { id: 'category-reference', title: 'Category Reference', level: 2 },
+  { id: 'standard-plugins', title: 'Standard Plugins', level: 3 },
+  { id: 'fieldreference-plugins', title: 'Field Reference Plugins', level: 3 },
+  { id: 'transform-plugins', title: 'Transform Plugins', level: 3 },
+  { id: 'conditional-plugins', title: 'Conditional Plugins', level: 3 },
+  { id: 'multifieldreference-plugins', title: 'Multi-Field Reference', level: 3 },
+  { id: 'context-plugins', title: 'Context Plugins', level: 3 },
+  { id: 'implementation-examples', title: 'Implementation Examples', level: 2 },
+  { id: 'complete-examples', title: 'Complete Examples', level: 3 },
+];
+
+// Code examples
+const categoryOverviewExample = `// 🎯 Categories control ChainableFieldBuilder type variables
+// Based on the actual ChainableFieldBuilder implementation
+
+export type ChainableFieldBuilder<
+  TObject extends object,     // The complete object type
+  TPlugins = {},             // Available plugins
+  TType extends TypeName | undefined = undefined,  // Field type name
+  TCurrentType = TType extends TypeName ? TypeMapping[TType] : any,  // Current value type
+  TTypeState extends TypeStateFlags = {},  // Required/optional/nullable state
+> = ...
+
+// How categories affect the signature:
+
+// Standard category: Basic field validation
+// → ChainableFieldBuilder<TObject, TPlugins, TType, TCurrentType, TTypeState>
+//   All type parameters available, no special behavior
+
+// FieldReference category: Compare with other fields  
+// → Methods get (fieldPath: NestedKeyOf<TObject> & string, ...)
+//   TObject type enables type-safe field path access
+
+// Transform category: Data transformation
+// → Methods get <TOutput>(fn: (value: TCurrentType) => TOutput)
+//   Returns ChainableFieldBuilder<..., TOutput, ...>
+//   Changes TCurrentType to TOutput for subsequent methods
+
+// Conditional category: Dynamic validation control
+// → Methods get (condition: (allValues: TObject) => boolean, ...)
+//   TObject type enables condition evaluation against other fields
+
+// MultiFieldReference: Complex cross-field validation
+// → Methods get <TFields extends readonly (NestedKeyOf<TObject> & string)[]>(...)
+//   Type-safe access to multiple fields with compile-time validation`;
+
+const standardPluginExample = `import { plugin } from '@maroonedog/luq';
+
+// Standard category: Basic value validation
+const productCodePlugin = plugin({
+  name: 'productCode',
+  methodName: 'productCode',
+  allowedTypes: ['string'] as const,
+  category: 'standard', // ChainableFieldBuilder<T>
+  impl: (options?) => ({
+    check: (value: string) => {
+      const isValid = value.startsWith('PROD-') && value.length === 10;
+      return isValid;
+    },
+    code: 'productCode',
+    getErrorMessage: (value, path) => 
+      \`\${path} must be a valid product code (PROD-XXXXXX)\`
+  })
+});
+
+// Usage
+const validator = Builder()
+  .use(productCodePlugin)
+  .for<{ code: string }>()
+  .v('code', b => b.string.required().productCode())
+  .build();`;
+
+const fieldReferenceExample = `// Field Reference category: Compare with other fields
+const confirmPasswordPlugin = plugin({
+  name: 'confirmPassword',
+  methodName: 'confirmPassword',
+  allowedTypes: ['string'] as const,
+  category: 'fieldReference', // ChainableFieldBuilder<T, TObject>
+  impl: (fieldPath: string) => ({
+    check: (value: string, allValues: any) => {
+      // Helper to get nested field value
+      const getValue = (obj: any, path: string) => {
+        return path.split('.').reduce((current, key) => current?.[key], obj);
+      };
+      
+      const otherValue = getValue(allValues, fieldPath);
+      return value === otherValue;
+    },
+    code: 'confirmPassword',
+    getErrorMessage: () => 'Password confirmation does not match'
+  })
+});
+
+// Usage - type-safe field reference
+type UserForm = {
+  password: string;
+  confirmPassword: string;
+};
+
+const validator = Builder()
+  .use(confirmPasswordPlugin)
+  .for<UserForm>()
+  .v('confirmPassword', b => 
+    b.string.required().confirmPassword('password') // Type-safe!
+  )
+  .build();`;
+
+const transformExample = `// Transform category: Data conversion
+const parseIntPlugin = plugin({
+  name: 'parseInt',
+  methodName: 'parseInt',
+  allowedTypes: ['string'] as const,
+  category: 'transform', // ChainableFieldBuilder<TInput, TOutput>
+  impl: () => ({
+    check: (value: string) => {
+      const num = parseInt(value, 10);
+      return {
+        valid: !isNaN(num),
+        transformedValue: num // string → number
+      };
+    },
+    code: 'parseInt',
+    getErrorMessage: (value, path) => \`\${path} must be a valid integer\`
+  })
+});
+
+// Usage - transforms string to number
+type FormData = { ageString: string };
+type ProcessedData = { ageString: number }; // After transform
+
+const validator = Builder()
+  .use(parseIntPlugin)
+  .for<FormData>()
+  .v('ageString', b => b.string.required().parseInt())
+  .build();
+
+// IMPORTANT: Use parse() to get transformed values, not validate()
+const result = validator.parse({ ageString: '25' });
+if (result.isValid()) {
+  const data = result.unwrap();
+  // data.ageString is now number type!
+}
+
+// Note: validate() returns original values, parse() returns transformed values
+// validator.validate() → { ageString: '25' } (string)
+// validator.parse()    → { ageString: 25 }   (number)`;
+
+const predefinedTransformExample = `import { pluginPredefinedTransform } from '@maroonedog/luq';
+
+// Predefined transform: toUpperCase (no parameters)
+const toUpperCasePlugin = pluginPredefinedTransform({
+  name: 'toUpperCase',
+  allowedTypes: ['string'] as const,
+  impl: () => (value: string, ctx) => ({
+    valid: true,
+    __isTransform: true,
+    __transformFn: (value: string) => value.toUpperCase()
+  })
+});
+
+// Predefined transform: trim (no parameters)
+const trimPlugin = pluginPredefinedTransform({
+  name: 'trim',
+  allowedTypes: ['string'] as const,
+  impl: () => (value: string, ctx) => ({
+    valid: true,
+    __isTransform: true,
+    __transformFn: (value: string) => value.trim()
+  })
+});
+
+// Usage - no parameters required
+const validator = Builder()
+  .use(toUpperCasePlugin)
+  .use(trimPlugin)
+  .for<{ name: string }>()\n  .v('name', b => 
+    b.string
+      .required()
+      .trim()        // Fixed transformation
+      .toUpperCase() // Fixed transformation
+  )
+  .build();
+
+// IMPORTANT: Use parse() to get transformed values
+const result = validator.parse({ name: '  hello world  ' });
+if (result.isValid()) {
+  console.log(result.unwrap().name); // "HELLO WORLD" (trimmed and uppercase)
+}
+
+// validate() returns original, parse() returns transformed
+// validator.validate() → { name: '  hello world  ' }
+// validator.parse()    → { name: 'HELLO WORLD' }`;
+
+const configurableTransformExample = `import { pluginConfigurableTransform } from '@maroonedog/luq';
+
+// Configurable transform: split with delimiter
+const splitPlugin = pluginConfigurableTransform({
+  name: 'split',
+  allowedTypes: ['string'] as const,
+  impl: (delimiter: string) => (value: string, ctx) => ({
+    valid: true,
+    __isTransform: true,
+    __transformFn: (value: string) => value.split(delimiter)
+  })
+});
+
+// Configurable transform: round to specified decimal places
+const roundToPlugin = pluginConfigurableTransform({
+  name: 'roundTo',
+  allowedTypes: ['number'] as const,
+  impl: (decimals: number) => (value: number, ctx) => ({
+    valid: true,
+    __isTransform: true,
+    __transformFn: (value: number) => Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  })
+});
+
+// Configurable transform: pad string with character
+const padStartPlugin = pluginConfigurableTransform({
+  name: 'padStart',
+  allowedTypes: ['string'] as const,
+  impl: (targetLength: number, padString: string = ' ') => (value: string, ctx) => ({
+    valid: true,
+    __isTransform: true,
+    __transformFn: (value: string) => value.padStart(targetLength, padString)
+  })
+});
+
+// Usage with configuration parameters
+type FormData = {
+  tags: string;        // "apple,banana,cherry"
+  price: number;       // 19.999
+  productId: string;   // "123"
+};
+
+type ProcessedData = {
+  tags: string[];      // ["apple", "banana", "cherry"]
+  price: number;       // 20.00
+  productId: string;   // "00123"
+};
+
+const validator = Builder()
+  .use(splitPlugin)
+  .use(roundToPlugin)
+  .use(padStartPlugin)
+  .for<FormData>()\n  .v('tags', b => 
+    b.string
+      .required()
+      .split(',')        // Transform: string → string[]
+  )
+  .v('price', b => 
+    b.number
+      .required()
+      .roundTo(2)        // Transform: 19.999 → 20.00
+  )
+  .v('productId', b => 
+    b.string
+      .required()
+      .padStart(5, '0')  // Transform: "123" → "00123"
+  )
+  .build();
+
+// IMPORTANT: Use parse() to get transformed values
+const result = validator.parse({
+  tags: 'apple,banana,cherry',
+  price: 19.999,
+  productId: '123'
+});
+
+if (result.isValid()) {
+  const processed = result.unwrap();
+  // processed.tags is string[] → ["apple", "banana", "cherry"]
+  // processed.price is 20.00
+  // processed.productId is "00123"
+}
+
+// Remember the difference:
+// validate() → Original types (tags: string, price: number, productId: string)
+// parse()    → Transformed types (tags: string[], price: number, productId: string)`;
+
+const conditionalExample = `// Conditional category: Dynamic validation control
+const requiredWhenPlugin = plugin({
+  name: 'requiredWhen',
+  methodName: 'requiredWhen',
+  allowedTypes: ['string', 'number', 'boolean'] as const,
+  category: 'conditional', // ChainableFieldBuilder<T, TObject>
+  impl: (condition: (obj: any) => boolean) => ({
+    check: (value: any, allValues: any) => {
+      // Skip validation if condition not met
+      if (!condition(allValues)) {
+        return { valid: true, __skipAllValidation: true };
+      }
+      
+      // Apply required validation
+      return value != null && value !== '';
+    },
+    code: 'requiredWhen',
+    getErrorMessage: (value, path) => \`\${path} is required\`
+  })
+});
+
+// Usage - conditional validation based on other fields
+type BusinessForm = {
+  userType: 'personal' | 'business';
+  companyName?: string;
+  taxId?: string;
+};
+
+const validator = Builder()
+  .use(requiredWhenPlugin)
+  .for<BusinessForm>()
+  .v('companyName', b => 
+    b.string.requiredWhen(data => data.userType === 'business')
+  )
+  .v('taxId', b => 
+    b.string.requiredWhen(data => data.userType === 'business')
+  )
+  .build();`;
+
+const multiFieldReferenceExample = `// Multi-Field Reference: Complex cross-field validation
+const dateRangePlugin = plugin({
+  name: 'dateRange',
+  methodName: 'afterDate',
+  allowedTypes: ['string'] as const,
+  category: 'multiFieldReference', // ChainableFieldBuilder<T, TObject>
+  impl: (fieldPaths: readonly string[]) => ({
+    check: (endDate: string, allValues: any) => {
+      const getValue = (obj: any, path: string) => {
+        return path.split('.').reduce((current, key) => current?.[key], obj);
+      };
+      
+      // Get all referenced field values
+      const referencedValues = fieldPaths.map(path => getValue(allValues, path));
+      const startDate = referencedValues[0];
+      
+      if (!startDate) return true; // Skip if no start date
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      return end > start;
+    },
+    code: 'dateRange',
+    getErrorMessage: () => 'End date must be after start date'
+  })
+});
+
+// Usage - validates against multiple other fields
+type EventForm = {
+  startDate: string;
+  endDate: string;
+  publishDate: string;
+};
+
+const validator = Builder()
+  .use(dateRangePlugin)
+  .for<EventForm>()
+  .v('endDate', b => 
+    b.string.required().afterDate(['startDate'] as const)
+  )
+  .v('publishDate', b =>
+    b.string.required().afterDate(['startDate', 'endDate'] as const)
+  )
+  .build();`;
+
+const contextExample = `// Context category: External data validation
+const uniqueEmailPlugin = plugin({
+  name: 'uniqueEmail',
+  methodName: 'uniqueEmail',
+  allowedTypes: ['string'] as const,
+  category: 'context', // ChainableFieldBuilder<T, TContext>
+  impl: () => ({
+    check: (email: string, allValues: any, context: any) => {
+      // Use external context for validation (sync only)
+      const existingEmails = context?.existingEmails || [];
+      const isUnique = !existingEmails.includes(email);
+      
+      return isUnique;
+    },
+    code: 'uniqueEmail',
+    getErrorMessage: () => 'Email already exists'
+  })
+});
+
+// Usage with context
+const validator = Builder()
+  .use(uniqueEmailPlugin)
+  .for<{ email: string }>()
+  .v('email', b => b.string.required().email().uniqueEmail())
+  .build();
+
+// Validate with context
+const context = {
+  existingEmails: ['user@example.com', 'admin@example.com']
+};
+
+const result = validator.validateWithContext(
+  { email: 'new@example.com' },
+  context
+);`;
+
+const completeExampleCode = `import { Builder, plugin } from '@maroonedog/luq';
+
+// 1. Create custom plugins for different categories
+const businessEmailPlugin = plugin({
+  name: 'businessEmail',
+  methodName: 'businessEmail',
+  allowedTypes: ['string'] as const,
+  category: 'standard',
+  impl: () => ({
+    check: (email: string) => {
+      const businessDomains = ['company.com', 'business.org', 'corp.net'];
+      const domain = email.split('@')[1];
+      return businessDomains.includes(domain);
+    },
+    code: 'businessEmail',
+    getErrorMessage: () => 'Must use a business email domain'
+  })
+});
+
+const passwordMatchPlugin = plugin({
+  name: 'passwordMatch',
+  methodName: 'matchesPassword',
+  allowedTypes: ['string'] as const,
+  category: 'fieldReference',
+  impl: () => ({
+    check: (confirmPassword: string, allValues: any) => {
+      return confirmPassword === allValues.password;
+    },
+    code: 'passwordMatch',
+    getErrorMessage: () => 'Passwords do not match'
+  })
+});
+
+const normalizeEmailPlugin = plugin({
+  name: 'normalizeEmail',
+  methodName: 'normalize',
+  allowedTypes: ['string'] as const,
+  category: 'transform',
+  impl: () => ({
+    check: (email: string) => ({
+      valid: true,
+      transformedValue: email.toLowerCase().trim()
+    }),
+    code: 'normalizeEmail'
+  })
+});
+
+// 2. Define your data types
+type RegistrationForm = {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  company: string;
+  plan: 'basic' | 'premium';
+  premiumFeatures?: string[];
+};
+
+// 3. Build comprehensive validator
+const registrationValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .use(stringMinPlugin)
+  .use(businessEmailPlugin)
+  .use(passwordMatchPlugin)
+  .use(normalizeEmailPlugin)
+  .use(arrayMinLengthPlugin)
+  .for<RegistrationForm>()
+  .v('email', b => 
+    b.string
+      .required()
+      .email()
+      .businessEmail()
+      .normalize() // transform: string → normalized string
+  )
+  .v('password', b => 
+    b.string
+      .required()
+      .min(8)
+  )
+  .v('confirmPassword', b => 
+    b.string
+      .required()
+      .matchesPassword() // fieldReference: compares with password
+  )
+  .v('company', b => 
+    b.string.required().min(2)
+  )
+  .v('premiumFeatures', b =>
+    b.array
+      .requiredWhen(data => data.plan === 'premium') // conditional
+      .minLength(1)
+  )
+  .build();
+
+// 4. Use the validator
+const formData = {
+  email: '  USER@COMPANY.COM  ',
+  password: 'securePassword123',
+  confirmPassword: 'securePassword123',
+  company: 'Acme Corp',
+  plan: 'premium' as const,
+  premiumFeatures: ['analytics', 'api-access']
+};
+
+const result = registrationValidator.validate(formData);
+
+if (result.isValid()) {
+  const validatedData = result.unwrap();
+  // validatedData.email is now normalized: 'user@company.com'
+  console.log('Registration successful!', validatedData);
+} else {
+  console.log('Validation errors:', result.errors);
+}`;
+
+---
+
+<BaseLayout title="Custom Plugins - Luq Documentation">
+  <Header />
+  
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/custom-plugins" />
+    
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+      <!-- Main content -->
+      <article class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Custom Plugins</h1>
+        
+        <div class="prose prose-lg dark:prose-invert max-w-none">
+          <p class="lead">
+            Create powerful, type-safe custom validation plugins that integrate seamlessly with Luq's architecture.
+          </p>
+          
+          <!-- Hero Section -->
+          <div class="not-prose bg-gradient-to-r from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 rounded-lg p-8 mb-12">
+            <h2 class="text-2xl font-bold mb-4 luq-gradient-text">🎯 Why Plugin Categories Matter</h2>
+            <p class="text-luq-neutral-700 dark:text-luq-neutral-300 mb-6">
+              Plugin categories aren't just organizational tools—they're <strong>essential for controlling type variables in ChainableFieldBuilder</strong>. Each category determines what type parameters are passed to the builder, ensuring complete type safety.
+            </p>
+            
+            <div class="grid md:grid-cols-3 gap-4">
+              <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-4">
+                <code class="text-luq-purple-600 dark:text-luq-purple-400 font-semibold">standard</code>
+                <div class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 mt-2">ChainableFieldBuilder&lt;T&gt;</div>
+                <div class="text-xs text-luq-neutral-500 dark:text-luq-neutral-500 mt-1">Basic field validation</div>
+              </div>
+              <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-4">
+                <code class="text-luq-teal-600 dark:text-luq-teal-400 font-semibold">fieldReference</code>
+                <div class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 mt-2">ChainableFieldBuilder&lt;T, TObject&gt;</div>
+                <div class="text-xs text-luq-neutral-500 dark:text-luq-neutral-500 mt-1">Cross-field validation</div>
+              </div>
+              <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-4">
+                <code class="text-luq-orange-600 dark:text-luq-orange-400 font-semibold">transform</code>
+                <div class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 mt-2">ChainableFieldBuilder&lt;TIn, TOut&gt;</div>
+                <div class="text-xs text-luq-neutral-500 dark:text-luq-neutral-500 mt-1">Data transformation</div>
+              </div>
+            </div>
+          </div>
+          
+          <h2 id="category-overview">Category Overview</h2>
+          
+          <h3 id="why-categories-matter">Why Categories Matter</h3>
+          
+          <p>
+            Plugin categories are <strong>fundamental to Luq's type system</strong>. They directly control which type parameters are passed to ChainableFieldBuilder, enabling precise type inference and method availability. The category determines the builder's generic signature, which in turn controls what methods are available and how they behave.
+          </p>
+          
+          <h3 id="type-variable-control">Type Variable Control</h3>
+          
+          <p>
+            Here's how categories map to different ChainableFieldBuilder signatures in the actual implementation:
+          </p>
+          
+          <CodeBlock code={categoryOverviewExample} language="typescript" showCopy={true} />
+          
+          <h2 id="category-reference">Category Reference</h2>
+          
+          <h3 id="standard-plugins">Standard Plugins</h3>
+          
+          <p>
+            <strong>Purpose</strong>: Basic value validation for individual fields<br>
+            <strong>ChainableFieldBuilder signature</strong>: Full signature with all type parameters available<br>
+            <strong>Method signature</strong>: Standard parameters (<code>(...args: TArgs)</code>)<br>
+            <strong>Use Cases</strong>: Format validation, range checks, pattern matching
+          </p>
+          
+          <CodeBlock code={standardPluginExample} language="typescript" showCopy={true} />
+          
+          <h3 id="fieldreference-plugins">Field Reference Plugins</h3>
+          
+          <p>
+            <strong>Purpose</strong>: Validation that compares with other fields<br>
+            <strong>Method signature override</strong>: <code>(fieldPath: NestedKeyOf&lt;TObject&gt; & string, options?: ValidationOptions)</code><br>
+            <strong>Type safety</strong>: Field path is validated against the object structure at compile time<br>
+            <strong>Use Cases</strong>: Password confirmation, field matching, comparative validation
+          </p>
+          
+          <CodeBlock code={fieldReferenceExample} language="typescript" showCopy={true} />
+          
+          <h3 id="transform-plugins">Transform Plugins</h3>
+          
+          <p>
+            <strong>Purpose</strong>: Data transformation after successful validation<br>
+            <strong>Method signature override</strong>: <code>&lt;TOutput&gt;(fn: (value: TCurrentType) => TOutput)</code><br>
+            <strong>Return type change</strong>: Returns <code>ChainableFieldBuilder&lt;..., TOutput, ...&gt;</code><br>
+            <strong>Type flow</strong>: Changes <code>TCurrentType</code> to <code>TOutput</code> for subsequent methods<br>
+            <strong>Use Cases</strong>: Type conversion, normalization, computed values
+          </p>
+          
+          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border border-amber-300 dark:border-amber-700">
+            <h4 class="font-semibold mb-3 text-amber-800 dark:text-amber-300">⚠️ Important: validate() vs parse()</h4>
+            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-400">
+              <li>• <code>validate()</code> - Returns original values (no transformation applied)</li>
+              <li>• <code>parse()</code> - Returns transformed values (applies all transformations)</li>
+              <li>• Always use <code>parse()</code> when you need transformed data</li>
+              <li>• Type system reflects the difference: <code>validate()</code> returns original types, <code>parse()</code> returns transformed types</li>
+            </ul>
+          </div>
+          
+          <p>
+            Luq provides three ways to create transform plugins:
+          </p>
+          
+          <div class="not-prose bg-luq-blue-50 dark:bg-luq-blue-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-4">🔧 Transform Plugin Creation Methods</h4>
+            <div class="grid md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <h5 class="font-semibold mb-2">1. Generic Transform</h5>
+                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                  User provides transform function at runtime using <code>plugin()</code>
+                </p>
+              </div>
+              <div>
+                <h5 class="font-semibold mb-2">2. Predefined Transform</h5>
+                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Fixed transformation with no parameters using <code>pluginPredefinedTransform()</code>
+                </p>
+              </div>
+              <div>
+                <h5 class="font-semibold mb-2">3. Configurable Transform</h5>
+                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Transformation with configuration parameters using <code>pluginConfigurableTransform()</code>
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <CodeBlock code={transformExample} language="typescript" showCopy={true} />
+          
+          <h4 class="text-lg font-semibold mt-8 mb-4">Predefined Transform Plugins</h4>
+          
+          <p>
+            Use <code>pluginPredefinedTransform</code> for fixed transformations that don't require parameters:
+          </p>
+          
+          <CodeBlock code={predefinedTransformExample} language="typescript" showCopy={true} />
+          
+          <h4 class="text-lg font-semibold mt-8 mb-4">Configurable Transform Plugins</h4>
+          
+          <p>
+            Use <code>pluginConfigurableTransform</code> for transformations that accept configuration parameters:
+          </p>
+          
+          <CodeBlock code={configurableTransformExample} language="typescript" showCopy={true} />
+          
+          <h3 id="conditional-plugins">Conditional Plugins</h3>
+          
+          <p>
+            <strong>Purpose</strong>: Dynamic validation control based on conditions<br>
+            <strong>Method signature override</strong>: <code>(condition: (allValues: TObject) => boolean, options?: ValidationOptions)</code><br>
+            <strong>Type safety</strong>: Condition function receives typed <code>TObject</code> for safe field access<br>
+            <strong>Use Cases</strong>: Conditional requirements, skip logic, dynamic validation
+          </p>
+          
+          <CodeBlock code={conditionalExample} language="typescript" showCopy={true} />
+          
+          <h3 id="multifieldreference-plugins">Multi-Field Reference</h3>
+          
+          <p>
+            <strong>Purpose</strong>: Complex validation involving multiple other fields<br>
+            <strong>Method signature override</strong>: <code>&lt;const TFields extends readonly (NestedKeyOf&lt;TObject&gt; & string)[]&gt;(...)</code><br>
+            <strong>Type safety</strong>: Field paths are validated at compile time, field values are properly typed<br>
+            <strong>Advanced feature</strong>: Uses <code>FieldsToObject</code> type to extract and type field values<br>
+            <strong>Use Cases</strong>: Date ranges, complex business rules, multi-field constraints
+          </p>
+          
+          <CodeBlock code={multiFieldReferenceExample} language="typescript" showCopy={true} />
+          
+          <h3 id="context-plugins">Context Plugins</h3>
+          
+          <p>
+            <strong>Purpose</strong>: Validation using external context data<br>
+            <strong>Method signature</strong>: Standard signature with context access in implementation<br>
+            <strong>Runtime behavior</strong>: Context data passed through validation pipeline (synchronous only)<br>
+            <strong>Use Cases</strong>: Pre-loaded data validation, cached lookups, context-aware rules<br>
+            <strong>Note</strong>: Async validation is not currently supported
+          </p>
+          
+          <CodeBlock code={contextExample} language="typescript" showCopy={true} />
+          
+          <h2 id="implementation-examples">Implementation Examples</h2>
+          
+          <h3 id="complete-examples">Complete Examples</h3>
+          
+          <p>
+            Here's a comprehensive example showing how different plugin categories work together:
+          </p>
+          
+          <CodeBlock code={completeExampleCode} language="typescript" showCopy={true} />
+          
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <a href="/plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Plugin Catalog</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Browse built-in plugins for inspiration and reference
+                </p>
+              </a>
+              
+              <a href="/docs/api/builder" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Builder API</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Learn about the Builder API and validation setup
+                </p>
+              </a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+    
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    @apply mt-12 mb-6;
+  }
+  
+  .prose h3 {
+    @apply mt-8 mb-4;
+  }
+</style>

@@ -1,0 +1,477 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ProgressiveAbstraction from '../components/roadmap/ProgressiveAbstraction.astro';
+
+// 将来のビジョン例 - .luqフォーマットは2026年Q1-Q3に実装予定
+const visionExample = `// IMPORTANT: .luq is NOT TypeScript - it's a TypeScript-like DSL
+// Phase 1: Universal Model & API Definition (Coming Q1-Q3 2026)
+// order.luq - Complete API, model, validation, and business logic
+
+// Standard adapters for database and cache
+@database("postgresql")
+adapter db {
+  orders: Order[];
+  customers: Customer[];
+}
+
+@cache("redis")
+adapter cache {
+  ttl: 3600;
+}
+
+// API endpoint definition
+@endpoint("/api/orders")
+@authenticated
+interface OrderAPI {
+  @post("/")
+  @rateLimit(100)
+  create(body: CreateOrderRequest): OrderResponse;
+  
+  @get("/:id")
+  @cache(300)
+  getById(id: string): Order;
+}
+
+// Data model with validation
+interface Order {
+  @uuid()
+  id: string;
+  
+  @required @min(0)
+  @computed(calculateTotal)  // Use business logic functions
+  total: number;
+  
+  @minLength(1) @maxLength(100)
+  items: OrderItem[];
+  
+  @required
+  customer: Customer;
+}
+
+// Cross-field validation with proper types
+@crossField
+function validateDiscount(this: Order): ValidationResult {
+  if (this.discount > 0 && this.customer.tier !== "premium") {
+    return error("Discount requires premium tier");
+  }
+  return ok();
+}
+
+// Phase 2: Generate validators for your stack (Q4 2026 - v1.0)
+$ luq generate user.luq --lang=typescript  # Frontend validation
+$ luq generate user.luq --lang=java       # Backend validation (v1.0)
+$ luq generate user.luq --lang=python     # Additional languages (2027+)
+
+// Backend usage (Java example - Q4 2026 v1.0):
+public User createUser(UserData userData) {
+    ValidationResult validation = validateUser(userData);  // Generated validator
+    if (validation.isValid()) {
+        return userRepository.save(validation.getData());
+    }
+    throw new ValidationException(validation.getErrors());
+}
+
+// Frontend validation:
+const result = validateUser(formData);  // Consistent with backend
+if (result.isValid()) {
+  await api.createUser(result.data);
+}
+
+// Phase 3: API integration (future)
+$ luq generate user.luq --openapi  # OpenAPI specification support
+
+// Generated OpenAPI specification:
+paths:
+  /users:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+
+// Extended example: E-commerce validation
+// product.luq - E-commerce example
+interface Product {
+  @required @pattern(/^SKU-\d{6}$/)
+  sku: string;
+  
+  @required @min(1) @max(1000)
+  name: string;
+  
+  @required @positive @multipleOf(0.01)
+  price: number;
+  
+  @required @min(0) @integer
+  stock: number;
+  
+  @required @oneOf(["electronics", "clothing", "books"])
+  category: string;
+}
+
+// Generate everything:
+$ luq generate product.luq --target=all
+
+✓ Backend code generation (Q4 2026 - Java)
+✓ Client SDK generation (TypeScript)
+✓ API documentation (OpenAPI)
+✓ Additional languages (2027+)
+
+// Use in production:
+// Backend (Java example - Q4 2026 v1.0)
+import com.example.generated.models.Product;
+import com.example.generated.validators.ProductValidator;
+
+// Generated code works with your choice of framework
+// Adapters allow integration with existing infrastructure
+
+// Frontend (TypeScript example)
+import { ProductAPI } from './generated/api-client';
+import { Product } from './generated/models';
+
+// Type-safe API client
+const api = new ProductAPI();
+
+// Consistent validation across all platforms
+const product = await api.create(productData);
+
+// Summary: Define everything once in .luq
+// Generate complete API infrastructure for your entire stack
+// Perfect consistency across all platforms`;
+---
+
+<BaseLayout title="Roadmap - Luq Development Timeline">
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero: 明確なビジョン -->
+    <section class="relative overflow-hidden bg-gradient-to-br from-luq-purple-50 via-white to-luq-teal-50 dark:from-luq-neutral-950 dark:via-luq-neutral-950 dark:to-luq-neutral-950 py-24 md:py-40">
+      <!-- 洗練された背景パターン -->
+      <div class="absolute inset-0">
+        <div class="absolute inset-0 bg-gradient-to-br from-luq-purple-100/20 via-transparent to-luq-teal-100/20 dark:from-luq-purple-900/10 dark:via-transparent dark:to-luq-teal-900/10"></div>
+        <svg class="absolute inset-0 w-full h-full opacity-[0.08] dark:opacity-[0.05]" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <pattern id="roadmap-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="10" cy="10" r="0.8" fill="currentColor" opacity="0.4"/>
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.3"/>
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#roadmap-grid)" />
+        </svg>
+      </div>
+      
+      <div class="relative container mx-auto max-w-6xl px-4">
+        <div class="text-center max-w-4xl mx-auto">
+          <!-- ステータスバッジ -->
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-luq-neutral-800/80 backdrop-blur-sm rounded-full border border-luq-neutral-200 dark:border-luq-neutral-700 mb-8">
+            <div class="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+            <span class="text-sm font-medium text-luq-neutral-700 dark:text-luq-neutral-300">Alpha Stage</span>
+            <span class="text-sm text-luq-neutral-500 dark:text-luq-neutral-400">→</span>
+            <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Multi-language Vision</span>
+          </div>
+          
+          <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 tracking-tight">
+            <span class="bg-gradient-to-r from-luq-neutral-900 via-luq-purple-700 to-luq-teal-600 dark:from-luq-neutral-100 dark:via-luq-purple-300 dark:to-luq-teal-300 bg-clip-text text-transparent">
+              Universal<br/>Platform
+            </span>
+          </h1>
+          
+          <p class="text-xl md:text-2xl text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed mb-6 max-w-3xl mx-auto">
+            One source of truth for<br class="hidden md:block"/>
+            <span class="font-semibold text-luq-neutral-800 dark:text-luq-neutral-200">API, Models, Validation, and Business Logic.</span>
+          </p>
+          
+          <p class="text-lg text-luq-neutral-500 dark:text-luq-neutral-500">
+            Building toward v1.0 (Q4 2026) with complete code generation
+          </p>
+          
+          <!-- Disclaimer -->
+          <div class="mt-8 inline-flex items-center gap-2 px-4 py-3 bg-amber-50/80 dark:bg-amber-900/20 backdrop-blur-sm rounded-lg border border-amber-200 dark:border-amber-800">
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-sm text-amber-700 dark:text-amber-300">
+              <strong>Note:</strong> This roadmap represents our current vision and is subject to change. Features and timelines may be adjusted based on community feedback and technical discoveries.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Progressive Abstraction Architecture -->
+    <ProgressiveAbstraction />
+    
+
+    <!-- Current State: 達成したこと -->
+    <section class="py-24 px-4 bg-luq-neutral-50 dark:bg-luq-neutral-900">
+      <div class="container mx-auto max-w-4xl">
+        <h2 class="text-4xl font-bold mb-8">Where We Are</h2>
+        <div class="space-y-6">
+          <div class="flex gap-4">
+            <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg mb-1">Type-First Foundation Complete</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                Mature TypeScript validation library with plugin architecture
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex gap-4">
+            <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg mb-1">Plugin Architecture</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                Modular, tree-shakeable, zero dependencies
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex gap-4">
+            <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg mb-1">Alpha Stage Foundation</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                Core validation library stable, preparing for multi-language generation
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timeline: 洗練されたロードマップ -->
+    <section class="py-24 px-4 bg-white dark:bg-luq-neutral-950">
+      <div class="container mx-auto max-w-6xl">
+        <h2 class="text-4xl font-bold mb-16 text-center">The Path Forward</h2>
+        
+        <!-- タイムライン -->
+        <div class="relative">
+          <!-- 縦線 -->
+          <div class="absolute left-8 top-0 bottom-0 w-0.5 bg-luq-neutral-200 dark:bg-luq-neutral-800"></div>
+          
+          <!-- Q3 2025: 現在 -->
+          <div class="relative flex items-start mb-16">
+            <div class="absolute left-8 w-4 h-4 bg-luq-purple-600 rounded-full -translate-x-1/2">
+              <div class="absolute inset-0 bg-luq-purple-600 rounded-full animate-ping opacity-75"></div>
+            </div>
+            <div class="ml-20">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-sm text-luq-neutral-500">Q3 2025 - Now</span>
+                <span class="text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full font-medium">Alpha Release</span>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">TypeScript Library Maturation</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-4">
+                Continuing to refine and optimize the core TypeScript validation library with enhanced performance.
+              </p>
+              <ul class="space-y-2 text-luq-neutral-600 dark:text-luq-neutral-400">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-purple-400 rounded-full"></span>
+                  Continuous performance improvements
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-purple-400 rounded-full"></span>
+                  Enhanced plugin ecosystem
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-purple-400 rounded-full"></span>
+                  Developer experience improvements
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-purple-400 rounded-full"></span>
+                  Community feedback integration
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Q4 2025 -->
+          <div class="relative flex items-start mb-16">
+            <div class="absolute left-8 w-4 h-4 bg-luq-neutral-300 dark:bg-luq-neutral-700 rounded-full -translate-x-1/2"></div>
+            <div class="ml-20">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-sm text-luq-neutral-500">Q4 2025</span>
+                <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full font-medium">Beta Release</span>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">Frontend Framework Integration</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-4">
+                Native integration with popular frontend frameworks for seamless form validation.
+              </p>
+              <ul class="space-y-2 text-luq-neutral-600 dark:text-luq-neutral-400">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  React Hooks integration
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Other popular frameworks support
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Framework-specific form state management
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Q1-Q3 2026 -->
+          <div class="relative flex items-start mb-16">
+            <div class="absolute left-8 w-4 h-4 bg-luq-neutral-300 dark:bg-luq-neutral-700 rounded-full -translate-x-1/2"></div>
+            <div class="ml-20">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-sm text-luq-neutral-500">Q1-Q3 2026</span>
+                <span class="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full font-medium">.luq Format & Infrastructure</span>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">Universal Model Definition Language</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-4">
+                Building the complete .luq language with API, model, validation, and business logic definitions.
+              </p>
+              <ul class="space-y-2 text-luq-neutral-600 dark:text-luq-neutral-400">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  .luq format specification (TypeScript-like DSL, NOT TypeScript)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Custom VSCode extension (new language support)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Independent Language Server Protocol implementation
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Standard adapters (database, cache, queue)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Cross-language import system
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Code generation pipeline for Java
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Q4 2026 -->
+          <div class="relative flex items-start mb-16">
+            <div class="absolute left-8 w-4 h-4 bg-luq-neutral-300 dark:bg-luq-neutral-700 rounded-full -translate-x-1/2"></div>
+            <div class="ml-20">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-sm text-luq-neutral-500">Q4 2026</span>
+                <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full font-medium">v1.0 Release</span>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">Production Release with Multi-Language Support</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-4">
+                Complete platform with Java support and production-ready toolchain.
+              </p>
+              <ul class="space-y-2 text-luq-neutral-600 dark:text-luq-neutral-400">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Java code generation (Spring Boot, JPA)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  TypeScript client SDK generation
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  OpenAPI/GraphQL generation
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Production stability guarantee
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Long-term support (LTS) commitment
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          
+          <!-- Beyond 2026 -->
+          <div class="relative flex items-start mb-16">
+            <div class="absolute left-8 w-4 h-4 bg-luq-neutral-300 dark:bg-luq-neutral-700 rounded-full -translate-x-1/2"></div>
+            <div class="ml-20">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-sm text-luq-neutral-500">Beyond 2026</span>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">Future Expansion</h3>
+              <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-4">
+                Post-migration roadmap will be shaped by community feedback and real-world usage.
+              </p>
+              <ul class="space-y-2 text-luq-neutral-600 dark:text-luq-neutral-400">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Additional language support (Python, Go, Swift, Kotlin)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Complete API generation (controllers, models, SDKs)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-luq-neutral-400 rounded-full"></span>
+                  Platform expansion (Level 3 - unified API/model/validation)
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          
+        </div>
+      </div>
+    </section>
+
+
+
+
+
+  </main>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  /* Subtle animations */
+  @keyframes ping {
+    75%, 100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  .animate-ping {
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+</style>

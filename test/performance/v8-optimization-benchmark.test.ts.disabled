@@ -1,0 +1,440 @@
+/**
+ * V8最適化バリデータのパフォーマンスベンチマーク
+ * 従来版との性能比較と最適化効果の測定
+ */
+
+import { 
+  createFastValidator,
+  createSlowValidator 
+} from '../../src/core/optimization/fast-validator';
+import { 
+  createFastValidatorV8,
+  createSlowValidatorV8,
+  getV8OptimizationStats,
+  clearV8OptimizationCache
+} from '../../src/core/optimization/fast-validator-v8';
+import { 
+  Builder, 
+  requiredPlugin, 
+  stringMinPlugin, 
+  stringMaxPlugin,
+  numberMinPlugin,
+  numberMaxPlugin,
+  arrayMinLengthPlugin,
+  arrayUniquePlugin,
+  oneOfPlugin
+} from '../../src/index';
+
+// テスト用データ型
+interface SimpleUser {
+  name: string;
+  email: string;
+  age: number;
+}
+
+interface ComplexUser {
+  id: number;
+  profile: {
+    name: string;
+    email: string;
+    age: number;
+    tags: string[];
+    preferences: {
+      theme: 'light' | 'dark';
+      notifications: boolean;
+    };
+  };
+  history: Array<{
+    action: string;
+    timestamp: number;
+  }>;
+}
+
+describe('V8 Optimization Performance Benchmark', () => {
+  beforeEach(() => {
+    // キャッシュをクリアして公平なテスト環境を作る
+    clearV8OptimizationCache();
+  });
+
+  describe('Simple Validation Performance', () => {
+    it('should benchmark simple string validation (V8 vs Original)', async () => {
+      const plugins = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin)
+        .use(stringMaxPlugin);
+
+      // 従来版
+      const originalValidator = createFastValidator(
+        {
+          path: 'name',
+          builderFunction: (b) => b.string.required().min(2).max(50)
+        },
+        plugins as any
+      );
+
+      // V8最適化版
+      const v8Validator = createFastValidatorV8(
+        {
+          path: 'name',
+          builderFunction: (b) => b.string.required().min(2).max(50)
+        },
+        plugins as any
+      );
+
+      const testData = 'John Doe';
+      const iterations = 100000;
+
+      // ウォームアップ
+      for (let i = 0; i < 1000; i++) {
+        originalValidator.validateFast(testData, {});
+        v8Validator.validateFast(testData, {});
+      }
+
+      // 従来版のベンチマーク
+      const originalStart = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        originalValidator.validateFast(testData, {});
+      }
+      const originalTime = performance.now() - originalStart;
+
+      // V8最適化版のベンチマーク
+      const v8Start = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        v8Validator.validateFast(testData, {});
+      }
+      const v8Time = performance.now() - v8Start;
+
+      const improvement = ((originalTime - v8Time) / originalTime) * 100;
+
+      console.log(`\n=== Simple Validation Benchmark (${iterations} iterations) ===`);
+      console.log(`Original FastValidator: ${originalTime.toFixed(2)}ms`);
+      console.log(`V8 Optimized Validator: ${v8Time.toFixed(2)}ms`);
+      console.log(`Performance improvement: ${improvement.toFixed(1)}%`);
+      console.log(`Speed ratio: ${(originalTime / v8Time).toFixed(2)}x faster`);
+
+      // V8統計情報
+      if (v8Validator.getStats) {
+        const stats = v8Validator.getStats();
+        console.log(`V8 Stats - Total validations: ${stats.totalValidations}`);
+        console.log(`V8 Stats - Average time: ${stats.averageTime.toFixed(4)}ms`);
+        console.log(`V8 Stats - Generated code usage: ${stats.generatedCodeUsage}`);
+      }
+
+      // 性能向上を期待
+      expect(v8Time).toBeLessThan(originalTime);
+    });
+
+    it('should benchmark number validation with multiple constraints', async () => {
+      const plugins = Builder()
+        .use(requiredPlugin)
+        .use(numberMinPlugin)
+        .use(numberMaxPlugin);
+
+      const originalValidator = createFastValidator(
+        {
+          path: 'age',
+          builderFunction: (b) => b.number.required().min(18).max(120)
+        },
+        plugins as any
+      );
+
+      const v8Validator = createFastValidatorV8(
+        {
+          path: 'age',
+          builderFunction: (b) => b.number.required().min(18).max(120)
+        },
+        plugins as any
+      );
+
+      const testData = 25;
+      const iterations = 50000;
+
+      // ウォームアップ
+      for (let i = 0; i < 500; i++) {
+        originalValidator.validateFast(testData, {});
+        v8Validator.validateFast(testData, {});
+      }
+
+      const originalStart = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        originalValidator.validateFast(testData, {});
+      }
+      const originalTime = performance.now() - originalStart;
+
+      const v8Start = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        v8Validator.validateFast(testData, {});
+      }
+      const v8Time = performance.now() - v8Start;
+
+      const improvement = ((originalTime - v8Time) / originalTime) * 100;
+
+      console.log(`\n=== Number Validation Benchmark (${iterations} iterations) ===`);
+      console.log(`Original: ${originalTime.toFixed(2)}ms`);
+      console.log(`V8 Optimized: ${v8Time.toFixed(2)}ms`);
+      console.log(`Improvement: ${improvement.toFixed(1)}%`);
+
+      expect(v8Time).toBeLessThan(originalTime * 1.1); // 許容範囲内
+    });
+  });
+
+  describe('Complex Validation Performance', () => {
+    it('should benchmark array validation performance', async () => {
+      const plugins = Builder()
+        .use(requiredPlugin)
+        .use(arrayMinLengthPlugin)
+        .use(arrayUniquePlugin);
+
+      const originalValidator = createFastValidator(
+        {
+          path: 'tags',
+          builderFunction: (b) => b.array.required().minLength(1).unique()
+        },
+        plugins as any
+      );
+
+      const v8Validator = createFastValidatorV8(
+        {
+          path: 'tags',
+          builderFunction: (b) => b.array.required().minLength(1).unique()
+        },
+        plugins as any
+      );
+
+      const testData = ['javascript', 'typescript', 'node.js', 'react', 'vue'];
+      const iterations = 20000;
+
+      // ウォームアップ
+      for (let i = 0; i < 200; i++) {
+        originalValidator.validateFast(testData, {});
+        v8Validator.validateFast(testData, {});
+      }
+
+      const originalStart = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        originalValidator.validateFast(testData, {});
+      }
+      const originalTime = performance.now() - originalStart;
+
+      const v8Start = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        v8Validator.validateFast(testData, {});
+      }
+      const v8Time = performance.now() - v8Start;
+
+      const improvement = ((originalTime - v8Time) / originalTime) * 100;
+
+      console.log(`\n=== Array Validation Benchmark (${iterations} iterations) ===`);
+      console.log(`Original: ${originalTime.toFixed(2)}ms`);
+      console.log(`V8 Optimized: ${v8Time.toFixed(2)}ms`);
+      console.log(`Improvement: ${improvement.toFixed(1)}%`);
+
+      expect(v8Time).toBeLessThan(originalTime * 1.2); // 配列処理は複雑なので許容範囲を広げる
+    });
+
+    it('should benchmark oneOf validation with large enum', async () => {
+      const plugins = Builder()
+        .use(requiredPlugin)
+        .use(oneOfPlugin);
+
+      const largeEnum = Array.from({ length: 100 }, (_, i) => `option_${i}`);
+
+      const originalValidator = createFastValidator(
+        {
+          path: 'status',
+          builderFunction: (b) => b.string.required().oneOf(largeEnum)
+        },
+        plugins as any
+      );
+
+      const v8Validator = createFastValidatorV8(
+        {
+          path: 'status',
+          builderFunction: (b) => b.string.required().oneOf(largeEnum)
+        },
+        plugins as any
+      );
+
+      const testData = 'option_50';
+      const iterations = 30000;
+
+      // ウォームアップ
+      for (let i = 0; i < 300; i++) {
+        originalValidator.validateFast(testData, {});
+        v8Validator.validateFast(testData, {});
+      }
+
+      const originalStart = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        originalValidator.validateFast(testData, {});
+      }
+      const originalTime = performance.now() - originalStart;
+
+      const v8Start = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        v8Validator.validateFast(testData, {});
+      }
+      const v8Time = performance.now() - v8Start;
+
+      const improvement = ((originalTime - v8Time) / originalTime) * 100;
+
+      console.log(`\n=== OneOf Validation Benchmark (${iterations} iterations, 100 options) ===`);
+      console.log(`Original: ${originalTime.toFixed(2)}ms`);
+      console.log(`V8 Optimized: ${v8Time.toFixed(2)}ms`);
+      console.log(`Improvement: ${improvement.toFixed(1)}%`);
+
+      expect(v8Time).toBeLessThan(originalTime * 1.3);
+    });
+  });
+
+  describe('Memory and Scale Performance', () => {
+    it('should benchmark large dataset validation', async () => {
+      const plugins = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin)
+        .use(numberMinPlugin);
+
+      const originalValidator = createFastValidator(
+        {
+          path: 'user',
+          builderFunction: (b) => b.object.required()
+        },
+        plugins as any
+      );
+
+      const v8Validator = createFastValidatorV8(
+        {
+          path: 'user',
+          builderFunction: (b) => b.object.required()
+        },
+        plugins as any
+      );
+
+      // 大量のユーザーデータを生成
+      const largeDataset = Array.from({ length: 10000 }, (_, i) => ({
+        id: i,
+        name: `User ${i}`,
+        email: `user${i}@example.com`,
+        age: 20 + (i % 50)
+      }));
+
+      // ウォームアップ
+      for (let i = 0; i < 10; i++) {
+        originalValidator.validateFast(largeDataset[i], {});
+        v8Validator.validateFast(largeDataset[i], {});
+      }
+
+      // メモリ使用量の測定（Node.js環境）
+      const initialMemory = process.memoryUsage();
+
+      const originalStart = performance.now();
+      for (const user of largeDataset) {
+        originalValidator.validateFast(user, {});
+      }
+      const originalTime = performance.now() - originalStart;
+      const originalMemory = process.memoryUsage();
+
+      // メモリをリセット（GCを促進）
+      if (global.gc) {
+        global.gc();
+      }
+
+      const v8Start = performance.now();
+      for (const user of largeDataset) {
+        v8Validator.validateFast(user, {});
+      }
+      const v8Time = performance.now() - v8Start;
+      const v8Memory = process.memoryUsage();
+
+      const timeImprovement = ((originalTime - v8Time) / originalTime) * 100;
+      const memoryDiff = (v8Memory.heapUsed - originalMemory.heapUsed) / 1024 / 1024;
+
+      console.log(`\n=== Large Dataset Benchmark (10,000 objects) ===`);
+      console.log(`Original: ${originalTime.toFixed(2)}ms`);
+      console.log(`V8 Optimized: ${v8Time.toFixed(2)}ms`);
+      console.log(`Time improvement: ${timeImprovement.toFixed(1)}%`);
+      console.log(`Memory difference: ${memoryDiff.toFixed(2)}MB`);
+      console.log(`Throughput - Original: ${(largeDataset.length / originalTime * 1000).toFixed(0)} validations/sec`);
+      console.log(`Throughput - V8: ${(largeDataset.length / v8Time * 1000).toFixed(0)} validations/sec`);
+
+      expect(v8Time).toBeLessThan(originalTime * 1.1);
+    });
+  });
+
+  describe('Cache and Code Generation Effects', () => {
+    it('should measure code generation cache effectiveness', async () => {
+      clearV8OptimizationCache();
+
+      const plugins = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin);
+
+      console.log('\n=== Code Generation Cache Test ===');
+
+      // 初回実行（キャッシュなし）
+      const validator1 = createFastValidatorV8(
+        {
+          path: 'name',
+          builderFunction: (b) => b.string.required().min(3)
+        },
+        plugins as any
+      );
+
+      const firstGenStart = performance.now();
+      validator1.validateFast('test', {});
+      const firstGenTime = performance.now() - firstGenStart;
+
+      // 同じパターンで2回目（キャッシュあり）
+      const validator2 = createFastValidatorV8(
+        {
+          path: 'name',
+          builderFunction: (b) => b.string.required().min(3)
+        },
+        plugins as any
+      );
+
+      const secondGenStart = performance.now();
+      validator2.validateFast('test', {});
+      const secondGenTime = performance.now() - secondGenStart;
+
+      const cacheStats = getV8OptimizationStats();
+
+      console.log(`First generation: ${firstGenTime.toFixed(4)}ms`);
+      console.log(`Second generation (cached): ${secondGenTime.toFixed(4)}ms`);
+      console.log(`Cache improvement: ${((firstGenTime - secondGenTime) / firstGenTime * 100).toFixed(1)}%`);
+      console.log(`Cache size: ${cacheStats.codeGenCache.size}`);
+      console.log(`Cache keys: ${cacheStats.codeGenCache.keys.length}`);
+
+      // キャッシュ効果を期待
+      expect(secondGenTime).toBeLessThanOrEqual(firstGenTime);
+    });
+
+    it('should verify generated code quality', async () => {
+      const plugins = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin)
+        .use(stringMaxPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'name',
+          builderFunction: (b) => b.string.required().min(2).max(50)
+        },
+        plugins as any
+      ) as any;
+
+      // 生成されたコードの確認（デバッグ用）
+      if (validator.getGeneratedCode) {
+        const generatedCode = validator.getGeneratedCode();
+        console.log('\n=== Generated Code Sample ===');
+        console.log(generatedCode.substring(0, 500) + '...');
+        
+        // 生成されたコードに期待される最適化が含まれているかチェック
+        expect(generatedCode).toContain('typeof');
+        expect(generatedCode).toContain('length');
+      }
+
+      expect(validator).toBeDefined();
+    });
+  });
+});

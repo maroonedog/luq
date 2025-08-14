@@ -1,0 +1,364 @@
+/**
+ * V8最適化バリデータの統合テスト
+ * 既存システムとの互換性と基本機能を確認
+ */
+
+import { 
+  Builder, 
+  requiredPlugin, 
+  stringMinPlugin, 
+  stringMaxPlugin,
+  numberMinPlugin,
+  arrayMinLengthPlugin,
+  arrayUniquePlugin,
+  oneOfPlugin,
+  transformPlugin
+} from '../../src/index';
+import { createFastValidatorV8 } from '../../src/core/optimization/fast-validator-v8';
+import { createFieldContext } from '../../src/core/builder/context/field-context';
+
+describe('V8 Optimization Integration Tests', () => {
+  describe('Basic Validation Integration', () => {
+    it('should integrate with existing plugin system', () => {
+      console.log('=== Testing V8 Integration ===');
+      
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin)
+        .use(stringMaxPlugin);
+
+      // V8最適化バリデータを作成
+      const validator = createFastValidatorV8(
+        {
+          path: 'name',
+          builderFunction: (context: any) => {
+            // 実際のBuilderのチェーニングをシミュレート
+            return context.string.required().min(3).max(50);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // 有効なデータのテスト
+      const validResult = validator.validateFast('John Doe', {});
+      console.log('Valid result:', validResult);
+      expect(validresult.isValid()).toBe(true);
+      expect(validResult.errors).toEqual([]);
+
+      // 無効なデータのテスト（短すぎる）
+      const invalidShortResult = validator.validateFast('Jo', {});
+      console.log('Invalid short result:', invalidShortResult);
+      expect(invalidShortresult.isValid()).toBe(false);
+      expect(invalidShortResult.errors.length).toBeGreaterThan(0);
+
+      // 無効なデータのテスト（長すぎる）
+      const longString = 'a'.repeat(100);
+      const invalidLongResult = validator.validateFast(longString, {});
+      console.log('Invalid long result:', invalidLongResult);
+      expect(invalidLongresult.isValid()).toBe(false);
+      expect(invalidLongResult.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should handle missing required fields', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'email',
+          builderFunction: (context: any) => {
+            return context.string.required().min(5);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // null値のテスト
+      const nullResult = validator.validateFast(null, {});
+      expect(nullresult.isValid()).toBe(false);
+      expect(nullResult.errors.length).toBeGreaterThan(0);
+
+      // undefined値のテスト
+      const undefinedResult = validator.validateFast(undefined, {});
+      expect(undefinedresult.isValid()).toBe(false);
+
+      // 空文字列のテスト
+      const emptyResult = validator.validateFast('', {});
+      expect(emptyresult.isValid()).toBe(false);
+    });
+
+    it('should handle number validation', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(numberMinPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'age',
+          builderFunction: (context: any) => {
+            return context.number.required().min(18);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // 有効な数値
+      const validResult = validator.validateFast(25, {});
+      expect(validresult.isValid()).toBe(true);
+
+      // 無効な数値（最小値未満）
+      const invalidResult = validator.validateFast(15, {});
+      expect(invalidresult.isValid()).toBe(false);
+
+      // 無効な型
+      const typeResult = validator.validateFast('25', {});
+      expect(typeresult.isValid()).toBe(false);
+    });
+  });
+
+  describe('Array Validation Integration', () => {
+    it('should handle array validation', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(arrayMinLengthPlugin)
+        .use(arrayUniquePlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'tags',
+          builderFunction: (context: any) => {
+            return context.array.required().minLength(2).unique();
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // 有効な配列
+      const validResult = validator.validateFast(['tag1', 'tag2', 'tag3'], {});
+      expect(validresult.isValid()).toBe(true);
+
+      // 短すぎる配列
+      const shortResult = validator.validateFast(['tag1'], {});
+      expect(shortresult.isValid()).toBe(false);
+
+      // 重複のある配列
+      const duplicateResult = validator.validateFast(['tag1', 'tag2', 'tag1'], {});
+      expect(duplicateresult.isValid()).toBe(false);
+
+      // 配列でない値
+      const notArrayResult = validator.validateFast('not an array', {});
+      expect(notArrayresult.isValid()).toBe(false);
+    });
+  });
+
+  describe('OneOf Validation Integration', () => {
+    it('should handle oneOf validation', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(oneOfPlugin);
+
+      const allowedValues = ['admin', 'user', 'guest'];
+      
+      const validator = createFastValidatorV8(
+        {
+          path: 'role',
+          builderFunction: (context: any) => {
+            return context.string.required().oneOf(allowedValues);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // 有効な値
+      const validResult = validator.validateFast('admin', {});
+      expect(validresult.isValid()).toBe(true);
+
+      // 無効な値
+      const invalidResult = validator.validateFast('superuser', {});
+      expect(invalidresult.isValid()).toBe(false);
+
+      // 型が違う値
+      const typeResult = validator.validateFast(123, {});
+      expect(typeresult.isValid()).toBe(false);
+    });
+  });
+
+  describe('Complex Validation Scenarios', () => {
+    it('should handle multiple validators on single field', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin)
+        .use(stringMaxPlugin)
+        .use(oneOfPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'username',
+          builderFunction: (context: any) => {
+            return context.string
+              .required()
+              .min(3)
+              .max(20)
+              .oneOf(['admin', 'moderator', 'user_with_long_name']);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // すべての条件を満たす値
+      const validResult = validator.validateFast('admin', {});
+      expect(validresult.isValid()).toBe(true);
+
+      // oneOfに含まれているが長すぎる値
+      const longValidResult = validator.validateFast('user_with_long_name', {});
+      // これは長さの制限によって失敗するか、oneOfで通るかはプラグインの順序による
+      console.log('Long valid result:', longValidResult);
+
+      // oneOfにないが長さ条件は満たす値
+      const notInListResult = validator.validateFast('other', {});
+      expect(notInListresult.isValid()).toBe(false);
+
+      // 短すぎる値
+      const shortResult = validator.validateFast('ab', {});
+      expect(shortresult.isValid()).toBe(false);
+    });
+
+    it('should handle parse mode with transforms', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin)
+        .use(transformPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'name',
+          builderFunction: (context: any) => {
+            return context.string
+              .required()
+              .min(2)
+              .transform((value: string) => value.toUpperCase());
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // パースモードのテスト
+      const parseResult = validator.parseFast('john', {});
+      console.log('Parse result:', parseResult);
+      
+      // transformが適用されることを確認
+      if (parseresult.isValid()) {
+        expect(parseResult.data).toBe('JOHN');
+      }
+
+      // 無効なデータのパースモード
+      const invalidParseResult = validator.parseFast('j', {});
+      expect(invalidParseresult.isValid()).toBe(false);
+      expect(invalidParseResult.data).toBeUndefined();
+    });
+  });
+
+  describe('Performance and Statistics', () => {
+    it('should provide performance statistics', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'name',
+          builderFunction: (context: any) => {
+            return context.string.required().min(3);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // 複数回実行
+      for (let i = 0; i < 100; i++) {
+        validator.validateFast(`test${i}`, {});
+      }
+
+      // 統計情報の取得
+      if (validator.getStats) {
+        const stats = validator.getStats();
+        console.log('Validation statistics:', stats);
+        
+        expect(stats.totalValidations).toBe(100);
+        expect(stats.averageTime).toBeGreaterThan(0);
+        expect(typeof stats.cacheHits).toBe('number');
+        expect(typeof stats.generatedCodeUsage).toBe('number');
+      }
+    });
+
+    it('should demonstrate ultra-fast validation method', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'email',
+          builderFunction: (context: any) => {
+            return context.string.required().min(5);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // Ultra-fastメソッドのテスト
+      if (validator.validateUltraFast) {
+        const ultraResult = validator.validateUltraFast('test@example.com', {});
+        expect(ultraresult.isValid()).toBe(true);
+
+        const ultraInvalidResult = validator.validateUltraFast('test', {});
+        expect(ultraInvalidresult.isValid()).toBe(false);
+
+        console.log('Ultra-fast validation working correctly');
+      }
+    });
+  });
+
+  describe('Error Handling and Edge Cases', () => {
+    it('should handle malformed validator configurations gracefully', () => {
+      const validator = createFastValidatorV8(
+        {
+          path: 'test',
+          builderFunction: () => {
+            // 空のbuilderFunction
+            return null;
+          }
+        },
+        {} as any
+      );
+
+      // エラーなく動作することを確認
+      const result = validator.validateFast('any value', {});
+      expect(result).toBeDefined();
+      expect(typeof result.isValid()).toBe('boolean');
+      expect(Array.isArray(result.errors)).toBe(true);
+    });
+
+    it('should handle large input values', () => {
+      const pluginBuilder = Builder()
+        .use(requiredPlugin)
+        .use(stringMinPlugin);
+
+      const validator = createFastValidatorV8(
+        {
+          path: 'content',
+          builderFunction: (context: any) => {
+            return context.string.required().min(1);
+          }
+        },
+        pluginBuilder as any
+      );
+
+      // 大きな文字列での動作確認
+      const largeString = 'x'.repeat(100000);
+      const result = validator.validateFast(largeString, {});
+      expect(result.isValid()).toBe(true);
+    });
+  });
+});

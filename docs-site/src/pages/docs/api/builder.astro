@@ -1,0 +1,723 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import DocsSidebar from '../../../components/DocsSidebar.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import OnThisPage from '../../../components/OnThisPage.astro';
+
+// Table of contents
+const tableOfContents = [
+  { id: 'overview', title: 'Overview', level: 2 },
+  { id: 'creating-builder', title: 'Creating a Builder', level: 2 },
+  { id: 'use-method', title: 'use() - Adding Plugins', level: 3 },
+  { id: 'for-method', title: 'for() - Setting Type', level: 3 },
+  { id: 'field-methods', title: 'Field Definition Methods', level: 2 },
+  { id: 'v-method', title: 'v() - Define Field', level: 3 },
+  { id: 'field-options', title: 'Field Options', level: 3 },
+  { id: 'usefield-method', title: 'useField() - Reuse Rules', level: 3 },
+  { id: 'builder-modes', title: 'Builder Modes', level: 2 },
+  { id: 'strict-mode', title: 'strict() Mode', level: 3 },
+  { id: 'build-method', title: 'build() - Create Validator', level: 2 },
+  { id: 'type-inference', title: 'Type Inference', level: 2 },
+  { id: 'chaining-pattern', title: 'Method Chaining', level: 3 },
+  { id: 'complete-example', title: 'Complete Example', level: 2 },
+];
+
+// Code examples
+const basicUsageExample = `import { Builder } from '@maroonedog/luq/core';
+
+// Create a new builder instance
+const builder = Builder();`;
+
+const useMethodExample = `import { 
+  requiredPlugin, 
+  stringMinPlugin, 
+  numberMinPlugin,
+  stringEmailPlugin 
+} from '@maroonedog/luq/plugin';
+
+// Add plugins one by one
+const builder = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(numberMinPlugin)
+  .use(stringEmailPlugin);
+
+// Or add multiple plugins at once
+const builder = Builder()
+  .use(
+    requiredPlugin,
+    stringMinPlugin,
+    numberMinPlugin,
+    stringEmailPlugin
+  );`;
+
+const forMethodExample = `type UserProfile = {
+  name: string;
+  age: number;
+  email: string;
+  preferences?: {
+    theme: 'light' | 'dark';
+    notifications: boolean;
+  };
+};
+
+// Specify the type your validator will validate
+const builder = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<UserProfile>(); // Type parameter sets the validation target`;
+
+const vMethodExample = `// Basic field definition
+builder.v('name', b => b.string.required().min(2));
+
+// Nested field using dot notation
+builder.v('preferences.theme', b => b.string.oneOf(['light', 'dark']));
+
+// Array element validation
+builder.v('tags[*]', b => b.string.required().min(1));
+
+// Complex validation chain
+builder.v('email', b => 
+  b.string
+    .required()
+    .email()
+    .transform(email => email.toLowerCase())
+);`;
+
+const fieldOptionsExample = `interface FieldOptions<T> {
+  default?: T | (() => T);      // Default value when undefined/null
+  applyDefaultToNull?: boolean; // Apply default to null (default: true)
+  description?: string;          // Field description for documentation
+  deprecated?: boolean | string; // Mark field as deprecated
+  metadata?: Record<string, any>; // Custom metadata
+}
+
+// Using field options with default value
+builder.v('theme',
+  b => b.string.optional(),
+  {
+    default: 'light',
+    description: 'User theme preference',
+    metadata: { group: 'preferences' }
+  }
+);
+
+// Shorthand syntax - just default value
+builder.v('language',
+  b => b.string.optional(),
+  'en' // Default value shorthand
+);
+
+// Function as default value
+builder.v('timestamp',
+  b => b.number.optional(),
+  () => Date.now() // Dynamic default
+);
+
+// With deprecated field
+builder.v('oldField',
+  b => b.string.optional(),
+  {
+    deprecated: 'Use newField instead',
+    default: ''
+  }
+);`;
+
+const useFieldExample = `import { createPluginRegistry } from '@maroonedog/luq/core/registry';
+import { 
+  requiredPlugin, 
+  stringEmailPlugin,
+  stringMinPlugin 
+} from '@maroonedog/luq/plugin';
+
+// Create registry with plugins
+const registry = createPluginRegistry()
+  .register(requiredPlugin)
+  .register(stringEmailPlugin)
+  .register(stringMinPlugin);
+
+// Create reusable field rules using registry
+const emailRule = registry.createFieldRule<string>(
+  b => b.string.required().email(),
+  { 
+    name: 'email', 
+    description: 'Valid email address',
+    fieldOptions: {
+      default: '',
+      metadata: { validation: 'strict' }
+    }
+  }
+);
+
+const passwordRule = registry.createFieldRule<string>(
+  b => b.string.required().min(8),
+  { name: 'password', description: 'Secure password' }
+);
+
+// Use field rules in builder
+const builder = registry
+  .toBuilder()
+  .for<{ email: string; password: string; backupEmail: string }>()
+  .useField('email', emailRule)
+  .useField('backupEmail', emailRule)
+  .useField('password', passwordRule);`;
+
+const strictModeExample = `type User = {
+  id: string;
+  name: string;
+  email: string;
+  age: number;
+};
+
+// Without strict mode - no type checking for missing fields
+const validator = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v('name', b => b.string.required())
+  .v('email', b => b.string.required())
+  .build(); // Missing 'id' and 'age' - builds successfully
+
+// With strict mode - type error if fields are missing
+const strictValidator = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v('id', b => b.string.required())
+  .v('name', b => b.string.required())
+  .v('email', b => b.string.required())
+  .v('age', b => b.number.required())
+  .strict() // ✅ All fields defined - returns builder
+  .build();
+
+// Attempting strict with missing fields
+const incompleteValidator = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v('name', b => b.string.required())
+  .strict() // ❌ Type error: Returns error object instead of builder
+  .build(); // TypeScript error: Property 'build' does not exist on type
+
+// Can continue adding validations after strict()
+const continueAfterStrict = Builder()
+  .use(requiredPlugin, stringMinPlugin)
+  .for<User>()
+  .v('id', b => b.string.required())
+  .v('name', b => b.string.required())
+  .v('email', b => b.string.required())
+  .v('age', b => b.number.required())
+  .strict() // All fields present - returns builder
+  .v('name', b => b.string.required().min(2)) // Can add more validations
+  .build(); // Works fine`;
+
+const extraPropertiesExample = `// To reject extra properties at runtime, use objectAdditionalProperties
+import { objectAdditionalPropertiesPlugin } from '@maroonedog/luq/plugin';
+
+type User = {
+  name: string;
+  age: number;
+  email: string;
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(objectAdditionalPropertiesPlugin)
+  .for<{ user: User }>()
+  .v('user', b => b.object.additionalProperties(false, {
+    allowedProperties: ['name', 'age', 'email']
+  }))
+  .build();
+
+// This will fail validation
+const result = validator.validate({
+  user: {
+    name: 'John',
+    age: 30,
+    email: 'john@example.com',
+    extra: 'field' // ❌ Extra property not allowed
+  }
+});`;
+
+const buildMethodExample = `// build() creates the final validator instance
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<UserProfile>()
+  .v('name', b => b.string.required().min(2))
+  .v('age', b => b.number.required().min(18))
+  .build();
+
+// The validator has two main methods:
+// 1. validate() - validates and returns original values
+const validateResult = validator.validate({
+  name: 'John',
+  age: 25
+});
+
+// 2. parse() - validates and returns transformed values
+const parseResult = validator.parse({
+  name: 'John',
+  age: 25
+});`;
+
+const typeInferenceExample = `type FormData = {
+  username: string;
+  age: string;  // String from form input
+  tags: string; // Comma-separated string
+};
+
+type ProcessedData = {
+  username: string;    // Stays string
+  age: number;        // Transformed to number
+  tags: string[];     // Transformed to array
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(transformPlugin)
+  .for<FormData>()
+  .v('username', b => b.string.required())
+  .v('age', b => b.string.required().transform(v => parseInt(v, 10)))
+  .v('tags', b => b.string.required().transform(v => v.split(',')))
+  .build();
+
+// TypeScript knows the types
+const result = validator.parse({ 
+  username: 'john',
+  age: '25',
+  tags: 'js,ts,react'
+});
+
+if (result.isValid()) {
+  const data = result.unwrap();
+  // data.age is number
+  // data.tags is string[]
+}`;
+
+const completeExample = `import { Builder } from '@maroonedog/luq/core';
+import {
+  requiredPlugin,
+  optionalPlugin,
+  stringMinPlugin,
+  stringMaxPlugin,
+  stringEmailPlugin,
+  stringPatternPlugin,
+  numberMinPlugin,
+  numberMaxPlugin,
+  arrayMinLengthPlugin,
+  arrayMaxLengthPlugin,
+  objectPlugin,
+  oneOfPlugin,
+  compareFieldPlugin,
+  transformPlugin
+} from '@maroonedog/luq/plugin';
+
+// Define your data types
+type RegistrationForm = {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  age: string;  // From form input
+  acceptTerms: boolean;
+  preferences?: {
+    newsletter: boolean;
+    theme: 'light' | 'dark' | 'auto';
+  };
+  interests: string[];
+};
+
+// Build comprehensive validator
+const registrationValidator = Builder()
+  // Add all required plugins
+  .use(
+    requiredPlugin,
+    optionalPlugin,
+    stringMinPlugin,
+    stringMaxPlugin,
+    stringEmailPlugin,
+    stringPatternPlugin,
+    numberMinPlugin,
+    arrayMinLengthPlugin,
+    arrayMaxLengthPlugin,
+    objectPlugin,
+    oneOfPlugin,
+    compareFieldPlugin,
+    transformPlugin
+  )
+  // Set the type
+  .for<RegistrationForm>()
+  // Define field validations
+  .v('username', b => 
+    b.string
+      .required()
+      .min(3)
+      .max(20)
+      .pattern(/^[a-zA-Z0-9_]+$/)
+  )
+  .v('email', b => 
+    b.string
+      .required()
+      .email()
+      .transform(email => email.toLowerCase())
+  )
+  .v('password', b => 
+    b.string
+      .required()
+      .min(8)
+      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/)
+  )
+  .v('confirmPassword', b => 
+    b.string
+      .required()
+      .compareField('password')
+  )
+  .v('age', b => 
+    b.string
+      .required()
+      .transform(v => parseInt(v, 10))
+      .min(13)
+      .max(120)
+  )
+  .v('acceptTerms', b => 
+    b.boolean
+      .required()
+      .equals(true)
+  )
+  .v('preferences', b => 
+    b.object.optional()
+  )
+  .v('preferences.newsletter', b => 
+    b.boolean.optional()
+  )
+  .v('preferences.theme', b => 
+    b.string
+      .optional()
+      .oneOf(['light', 'dark', 'auto'])
+  )
+  .v('interests', b => 
+    b.array
+      .required()
+      .minLength(1)
+      .maxLength(10)
+  )
+  .v('interests[*]', b => 
+    b.string.required().min(2)
+  )
+  // Ensure all required fields are defined
+  .strict()
+  // Build the final validator
+  .build();
+
+// Use the validator
+const formData = {
+  username: 'john_doe',
+  email: 'JOHN@EXAMPLE.COM',
+  password: 'SecurePass123',
+  confirmPassword: 'SecurePass123',
+  age: '25',
+  acceptTerms: true,
+  preferences: {
+    newsletter: true,
+    theme: 'dark' as const
+  },
+  interests: ['programming', 'music', 'sports']
+};
+
+// Validate and transform
+const result = registrationValidator.parse(formData);
+
+if (result.isValid()) {
+  const validatedData = result.unwrap();
+  console.log('Registration successful!', validatedData);
+  // validatedData.email is 'john@example.com' (lowercased)
+  // validatedData.age is 25 (number)
+} else {
+  console.log('Validation errors:', result.errors);
+}`;
+---
+
+<BaseLayout title="Builder API - Luq Documentation">
+  <Header />
+  
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/api/builder" />
+    
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+      <article class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Builder API</h1>
+        
+        <div class="prose prose-lg dark:prose-invert max-w-none">
+          <p class="lead">
+            The Builder API is the core of Luq's validation system. It provides a fluent, type-safe interface for constructing validators with plugins and field definitions.
+          </p>
+          
+          <h2 id="overview">Overview</h2>
+          
+          <p>
+            The Builder follows a fluent API pattern with these key steps:
+          </p>
+          
+          <ol>
+            <li><strong>Create</strong> - Initialize a new Builder instance</li>
+            <li><strong>Configure</strong> - Add plugins with <code>use()</code></li>
+            <li><strong>Type</strong> - Set the validation target type with <code>for&lt;T&gt;()</code></li>
+            <li><strong>Define</strong> - Add field validations with <code>v()</code></li>
+            <li><strong>Build</strong> - Create the final validator with <code>build()</code></li>
+          </ol>
+          
+          <h2 id="creating-builder">Creating a Builder</h2>
+          
+          <CodeBlock code={basicUsageExample} language="typescript" showCopy={true} />
+          
+          <p>
+            The <code>Builder()</code> function creates a new builder instance. It's a factory function that returns a chainable builder object.
+          </p>
+          
+          <h3 id="use-method">use() - Adding Plugins</h3>
+          
+          <p>
+            The <code>use()</code> method adds plugins to the builder. Plugins provide validation methods that become available on field builders.
+          </p>
+          
+          <CodeBlock code={useMethodExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-luq-blue-50 dark:bg-luq-blue-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">💡 Plugin Loading</h4>
+            <ul class="space-y-2 text-sm">
+              <li>• Plugins must be added before calling <code>for()</code></li>
+              <li>• Each plugin is loaded only once (duplicates are ignored)</li>
+              <li>• Plugins determine available validation methods</li>
+              <li>• Order doesn't matter for most plugins</li>
+            </ul>
+          </div>
+          
+          <h3 id="for-method">for() - Setting Type</h3>
+          
+          <p>
+            The <code>for&lt;T&gt;()</code> method sets the TypeScript type that the validator will validate. This enables type-safe field paths and type inference.
+          </p>
+          
+          <CodeBlock code={forMethodExample} language="typescript" showCopy={true} />
+          
+          <h2 id="field-methods">Field Definition Methods</h2>
+          
+          <h3 id="v-method">v() - Define Field</h3>
+          
+          <p>
+            The <code>v()</code> method (short for "validate") defines validation rules for a field. It takes a field path and a builder function.
+          </p>
+          
+          <CodeBlock code={vMethodExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">📝 Field Path Syntax</h4>
+            <ul class="space-y-2 text-sm">
+              <li>• <code>fieldName</code> - Top-level field</li>
+              <li>• <code>nested.field.path</code> - Nested object fields</li>
+              <li>• <code>array[*]</code> - All array elements</li>
+              <li>• <code>nested.array[*].field</code> - Fields in array objects</li>
+            </ul>
+          </div>
+          
+          <h3 id="field-options">Field Options</h3>
+          
+          <p>
+            The <code>v()</code> method accepts an optional third parameter for field-specific configuration:
+          </p>
+          
+          <CodeBlock code={fieldOptionsExample} language="typescript" showCopy={true} />
+          
+          <h3 id="usefield-method">useField() - Reuse Rules</h3>
+          
+          <p>
+            The <code>useField()</code> method allows you to reuse pre-defined field rules across multiple fields. Field rules are created using the Plugin Registry's <code>createFieldRule()</code> method:
+          </p>
+          
+          <CodeBlock code={useFieldExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">📌 About FieldRule</h4>
+            <ul class="space-y-2 text-sm">
+              <li>• FieldRule objects are created through <code>registry.createFieldRule()</code></li>
+              <li>• They encapsulate validation logic and field options</li>
+              <li>• Each rule can be tested individually with <code>rule.validate(value)</code></li>
+              <li>• Rules are reusable across multiple fields and validators</li>
+              <li>• See the <a href="/docs/api/plugin-registry" class="text-luq-purple-600 hover:underline">Plugin Registry API</a> for details</li>
+            </ul>
+          </div>
+          
+          <h2 id="builder-modes">Builder Modes</h2>
+          
+          <h3 id="strict-mode">strict() Mode</h3>
+          
+          <p>
+            The <code>strict()</code> method enables compile-time type checking to ensure all fields in the type have validation rules defined. When fields are missing, it shows errors in your editor/IDE and prevents compilation:
+          </p>
+          
+          <CodeBlock code={strictModeExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-luq-blue-50 dark:bg-luq-blue-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">💡 Strict Mode Behavior</h4>
+            <ul class="space-y-2 text-sm">
+              <li>• <strong>Editor Warning:</strong> Shows type errors in your editor/IDE when fields are missing</li>
+              <li>• <strong>Compile-Time Check:</strong> Prevents TypeScript compilation if not all fields have validators</li>
+              <li>• <strong>Return Type:</strong> Uses conditional types - returns error type if fields missing, builder if complete</li>
+              <li>• <strong>Continuable:</strong> If all fields are present, you can continue chaining more validations after <code>strict()</code></li>
+              <li>• <strong>Position Flexible:</strong> Can be called at any point in the chain, not just at the end</li>
+              <li>• <strong>NO Runtime Effect:</strong> Does NOT validate for extra/undefined fields at runtime</li>
+              <li>• <strong>Error Prevention:</strong> Error type lacks <code>build()</code> method, preventing incomplete validators from being built</li>
+            </ul>
+          </div>
+          
+          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">📝 Note</h4>
+            <p class="text-sm">
+              There's also a <code>strictOnEditor()</code> method which is just an alias for <code>strict()</code>. They are identical - use <code>strict()</code> as it's more concise.
+            </p>
+          </div>
+          
+          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border border-amber-300 dark:border-amber-700">
+            <h4 class="font-semibold mb-3 text-amber-800 dark:text-amber-300">⚠️ Common Misconception</h4>
+            <p class="text-sm text-amber-700 dark:text-amber-400 mb-3">
+              <code>strict()</code> does NOT validate for extra properties at runtime. It only ensures all type fields have validators at compile time.
+            </p>
+            <p class="text-sm text-amber-700 dark:text-amber-400">
+              To reject extra properties at runtime, use the <code>objectAdditionalProperties</code> plugin with <code>additionalProperties(false)</code>:
+            </p>
+          </div>
+          
+          <CodeBlock code={extraPropertiesExample} language="typescript" showCopy={true} />
+          
+          <h2 id="build-method">build() - Create Validator</h2>
+          
+          <p>
+            The <code>build()</code> method finalizes the builder and returns a validator instance:
+          </p>
+          
+          <CodeBlock code={buildMethodExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border border-amber-300 dark:border-amber-700">
+            <h4 class="font-semibold mb-3 text-amber-800 dark:text-amber-300">⚠️ validate() vs parse()</h4>
+            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-400">
+              <li>• <code>validate()</code> - Returns original values (no transformations)</li>
+              <li>• <code>parse()</code> - Returns transformed values (applies all transformations)</li>
+              <li>• Use <code>parse()</code> when you have transform plugins</li>
+            </ul>
+          </div>
+          
+          <h2 id="type-inference">Type Inference</h2>
+          
+          <h3 id="chaining-pattern">Method Chaining</h3>
+          
+          <p>
+            The Builder uses advanced TypeScript features to provide complete type safety and inference throughout the chain:
+          </p>
+          
+          <CodeBlock code={typeInferenceExample} language="typescript" showCopy={true} />
+          
+          <h2 id="complete-example">Complete Example</h2>
+          
+          <p>
+            Here's a comprehensive example showing all Builder API features:
+          </p>
+          
+          <CodeBlock code={completeExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">API Reference</h3>
+            <div class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-6">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <th class="text-left py-2">Method</th>
+                    <th class="text-left py-2">Returns</th>
+                    <th class="text-left py-2">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="text-sm">
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>Builder()</code></td>
+                    <td class="py-2">IChainableBuilder</td>
+                    <td class="py-2">Creates new builder instance</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>use(...plugins)</code></td>
+                    <td class="py-2">IChainableBuilder</td>
+                    <td class="py-2">Adds plugins to builder</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>for&lt;T&gt;()</code></td>
+                    <td class="py-2">FieldBuilder</td>
+                    <td class="py-2">Sets validation target type</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>v(path, builder, options?)</code></td>
+                    <td class="py-2">FieldBuilder</td>
+                    <td class="py-2">Defines field validation</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>useField(path, rule)</code></td>
+                    <td class="py-2">FieldBuilder</td>
+                    <td class="py-2">Uses pre-defined rule</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>strict()</code></td>
+                    <td class="py-2">FieldBuilder | Error</td>
+                    <td class="py-2">Type-check all fields defined</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2"><code>build()</code></td>
+                    <td class="py-2">Validator</td>
+                    <td class="py-2">Creates final validator</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <a href="/docs/api/validator" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Validator API</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Learn about the validator instance and its methods
+                </p>
+              </a>
+              
+              <a href="/docs/custom-plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Custom Plugins</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Create your own validation plugins
+                </p>
+              </a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+    
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    @apply mt-12 mb-6;
+  }
+  
+  .prose h3 {
+    @apply mt-8 mb-4;
+  }
+  
+  table {
+    @apply text-luq-neutral-700 dark:text-luq-neutral-300;
+  }
+  
+  td code, th {
+    @apply font-mono text-xs;
+  }
+</style>

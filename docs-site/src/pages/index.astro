@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import SimplifiedFeatures from '../components/SimplifiedFeatures.astro';
+import CodeExample from '../components/CodeExample.astro';
+import PracticalExamples from '../components/PracticalExamples.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout title="Type-First Validation Library for TypeScript">
+  <Header />
+  
+  <main>
+    <!-- Hero Section -->
+    <Hero />
+    
+    <!-- Quick Example -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8">
+      <div class="container mx-auto max-w-6xl">
+        <h2 class="text-3xl font-bold text-center mb-12">
+          <span class="luq-gradient-text">See It In Action</span>
+        </h2>
+        <CodeExample />
+      </div>
+    </section>
+    
+    <!-- Practical Examples -->
+    <PracticalExamples />
+    
+    <!-- Features Section -->
+    <SimplifiedFeatures />
+    
+    
+    <!-- CTA Section -->
+    <section class="py-20 px-4 sm:px-6 lg:px-8">
+      <div class="container mx-auto max-w-4xl text-center">
+        <h2 class="text-4xl font-bold mb-6">
+          Ready to Start Using <span class="luq-gradient-text">Type-Safe Validation</span>?
+        </h2>
+        <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 mb-8">
+          Start using Luq today and experience type-safe, plugin-based validation
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/docs/getting-started" class="luq-button-gradient">
+            Get Started
+          </a>
+          <a href="/plugins" class="luq-button-secondary">
+            Plugin Builder
+          </a>
+          <a href="/roadmap" class="luq-button-secondary">
+            View Roadmap
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <Footer />
+</BaseLayout>

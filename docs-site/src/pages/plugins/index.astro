@@ -1,0 +1,1094 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { plugins, pluginCategories } from '../../data/plugins';
+
+// Group plugins by category for better organization
+const pluginsByCategory = plugins.reduce((acc, plugin) => {
+  if (!acc[plugin.category]) {
+    acc[plugin.category] = [];
+  }
+  acc[plugin.category].push(plugin);
+  return acc;
+}, {} as Record<string, typeof plugins>);
+
+// Create a mapping for quick plugin lookup
+const pluginMap = plugins.reduce((acc, plugin) => {
+  acc[plugin.functionName] = plugin;
+  return acc;
+}, {} as Record<string, (typeof plugins)[0]>);
+---
+
+<BaseLayout title="Plugins - Luq">
+  <Header />
+  
+  <main class="min-h-screen bg-gradient-to-b from-luq-neutral-50 to-white dark:from-luq-neutral-950 dark:to-luq-neutral-900">
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-luq-purple-100/20 via-transparent to-luq-teal-100/20 dark:from-luq-purple-900/10 dark:to-luq-teal-900/10"></div>
+      <div class="relative py-16 px-4">
+        <div class="text-center mb-8">
+          <h1 class="text-5xl font-bold mb-4 leading-tight pb-2 bg-gradient-to-r from-luq-purple-600 to-luq-teal-600 dark:from-luq-purple-400 dark:to-luq-teal-400 bg-clip-text text-transparent">
+            Plugin Library & Builder
+          </h1>
+          <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 max-w-2xl mx-auto">
+            Browse validation plugins and generate your custom type-safe builder. Works seamlessly with existing TypeScript types.
+          </p>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Full-width Generator Interface -->
+    <section class="px-4 sm:px-6 lg:px-8 pb-24">
+      <div class="max-w-screen-2xl mx-auto">
+        <div class="space-y-6">
+          
+          <!-- Plugin Selection Panel -->
+          <div class="bg-white dark:bg-luq-neutral-900 rounded-2xl shadow-lg border border-luq-neutral-200 dark:border-luq-neutral-800 p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-luq-neutral-900 dark:text-luq-neutral-100 leading-normal pb-1">Plugin Library</h2>
+                <p class="text-sm text-luq-neutral-500 dark:text-luq-neutral-400 mt-1">
+                  Select validation rules for your builder
+                </p>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                  <button id="show-generated-code" class="px-4 py-2 text-sm bg-luq-purple-600 hover:bg-luq-purple-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                    </svg>
+                    View Code
+                  </button>
+                  <button id="quick-copy" class="p-2 text-sm bg-luq-neutral-200 hover:bg-luq-neutral-300 dark:bg-luq-neutral-700 dark:hover:bg-luq-neutral-600 text-luq-neutral-700 dark:text-luq-neutral-300 rounded-lg transition-colors" title="Copy code to clipboard">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <button id="clear-all" class="text-sm text-luq-neutral-500 hover:text-luq-purple-600 dark:hover:text-luq-teal-400 transition-colors">
+                  Clear all
+                </button>
+              </div>
+            </div>
+              
+              <!-- Plugin Search -->
+              <div class="mb-6">
+                <div class="relative">
+                  <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-luq-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                  <input
+                    type="text"
+                    id="plugin-search"
+                    placeholder="Search plugins by name or type..."
+                    class="w-full pl-12 pr-4 py-2.5 text-sm border border-luq-neutral-200 dark:border-luq-neutral-700 rounded-lg bg-luq-neutral-50 dark:bg-luq-neutral-800 focus:bg-white dark:focus:bg-luq-neutral-900 focus:ring-2 focus:ring-luq-purple-500 dark:focus:ring-luq-teal-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+              
+              <!-- Type Filters -->
+              <div class="mb-6">
+                <div class="flex items-center gap-2 mb-3">
+                  <svg class="w-4 h-4 text-luq-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                  </svg>
+                  <span class="text-sm font-medium text-luq-neutral-600 dark:text-luq-neutral-400">Filter by type:</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <button class="type-filter-btn active" data-type="all">
+                    <span class="emoji">✨</span> All
+                  </button>
+                  <button class="type-filter-btn" data-type="string">
+                    <span class="emoji">📝</span> String
+                  </button>
+                  <button class="type-filter-btn" data-type="number">
+                    <span class="emoji">🔢</span> Number
+                  </button>
+                  <button class="type-filter-btn" data-type="boolean">
+                    <span class="emoji">✅</span> Bool
+                  </button>
+                  <button class="type-filter-btn" data-type="array">
+                    <span class="emoji">📚</span> Array
+                  </button>
+                  <button class="type-filter-btn" data-type="object">
+                    <span class="emoji">📦</span> Object
+                  </button>
+                  <button class="type-filter-btn" data-type="date">
+                    <span class="emoji">📅</span> Date
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Selected Plugins Display -->
+              <div id="selected-plugins-display" class="mb-4 p-4 bg-gradient-to-r from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 rounded-lg border border-luq-purple-200 dark:border-luq-purple-800">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-semibold text-luq-purple-700 dark:text-luq-purple-300">Selected Plugins</h3>
+                  <span id="selected-count-badge" class="text-xs font-bold text-luq-purple-600 dark:text-luq-purple-400 bg-white dark:bg-luq-neutral-800 px-2 py-1 rounded-full">0</span>
+                </div>
+                <div id="selected-plugins-list" class="flex flex-wrap gap-2 min-h-[32px]">
+                  <span class="text-xs text-luq-purple-600/60 dark:text-luq-purple-400/60 italic">No plugins selected yet - Choose from below to build your validator</span>
+                </div>
+              </div>
+              
+              <!-- Plugin Cards - Compact Grid -->
+              <div id="plugin-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pr-2 pb-8">
+                {plugins.sort((a, b) => a.displayName.localeCompare(b.displayName)).map((plugin) => {
+                  // Use supportedTypes if available, otherwise determine from name/usage
+                  const supportedTypes = plugin.supportedTypes || [];
+                  
+                  // If no supportedTypes, try to guess from plugin name/usage
+                  const guessedType = (() => {
+                    const name = plugin.functionName.toLowerCase();
+                    const usage = plugin.usage.toLowerCase();
+                    if (name.includes('string') || usage.includes('.string')) return 'string';
+                    if (name.includes('number') || usage.includes('.number')) return 'number';
+                    if (name.includes('boolean') || usage.includes('.boolean')) return 'boolean';
+                    if (name.includes('array') || usage.includes('.array')) return 'array';
+                    if (name.includes('object') || usage.includes('.object')) return 'object';
+                    if (name.includes('date') || usage.includes('.date')) return 'date';
+                    return 'any';
+                  })();
+                  
+                  // Use supportedTypes if available, otherwise use guessed type
+                  const pluginTypes = supportedTypes.length > 0 ? supportedTypes : [guessedType];
+                  const primaryType = pluginTypes[0]; // Use first type for filtering
+                  
+                  const typeEmoji: { [key: string]: string } = {
+                    'string': '📝',
+                    'number': '🔢',
+                    'boolean': '✅',
+                    'array': '📚',
+                    'object': '📦',
+                    'date': '📅',
+                    'union': '🔀',
+                    'tuple': '📊',
+                    'any': '🌐'
+                  };
+                  
+                  return (
+                    <div class="plugin-card group relative bg-white dark:bg-luq-neutral-800 border-2 border-luq-neutral-200 dark:border-luq-neutral-700 rounded-lg p-4 cursor-pointer hover:shadow-lg hover:border-luq-purple-300 dark:hover:border-luq-teal-500 transition-all duration-200" 
+                         data-plugin={plugin.functionName} 
+                         data-category={plugin.category}
+                         data-type={primaryType}
+                         data-types={pluginTypes.join(',')}>
+                      <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-1 flex-wrap">
+                          {pluginTypes.slice(0, 3).map((type) => (
+                            <span class="text-sm" title={type}>{typeEmoji[type] || '✨'}</span>
+                          ))}
+                          {pluginTypes.length > 3 && (
+                            <span class="text-xs text-luq-neutral-500 dark:text-luq-neutral-400">+{pluginTypes.length - 3}</span>
+                          )}
+                        </div>
+                        <div class="relative">
+                          <input type="checkbox" 
+                                 class="plugin-checkbox w-5 h-5 rounded border-2 border-luq-neutral-300 dark:border-luq-neutral-600 text-luq-purple-600 focus:ring-2 focus:ring-luq-purple-500 dark:text-luq-teal-500 dark:focus:ring-luq-teal-500 cursor-pointer"
+                                 data-plugin={plugin.functionName} />
+                          <div class="plugin-status absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full opacity-0 transition-all duration-300 transform scale-0"></div>
+                        </div>
+                      </div>
+                      
+                      <h4 class="font-semibold text-sm text-luq-neutral-900 dark:text-luq-neutral-100 mb-2 group-hover:text-luq-purple-600 dark:group-hover:text-luq-teal-400 transition-colors">
+                        {plugin.displayName}
+                      </h4>
+                      
+                      <p class="text-xs text-luq-neutral-600 dark:text-luq-neutral-400 mb-3 leading-relaxed line-clamp-2">
+                        {plugin.description.length > 60 ? plugin.description.substring(0, 60) + '...' : plugin.description}
+                      </p>
+                      
+                      <div class="flex items-center justify-between">
+                        <button class="view-details text-xs text-luq-purple-600 dark:text-luq-teal-400 hover:text-luq-purple-700 dark:hover:text-luq-teal-300 font-medium transition-colors flex items-center gap-1" 
+                                data-plugin={plugin.functionName}>
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          Details
+                        </button>
+                        {plugin.parameters && plugin.parameters.length > 0 && (
+                          <span class="text-xs px-2 py-0.5 bg-luq-purple-100 dark:bg-luq-purple-900/30 text-luq-purple-700 dark:text-luq-purple-300 rounded">
+                            {plugin.parameters.length}p
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Generated Code Modal -->
+    <div id="generated-code-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+      <div class="bg-white dark:bg-luq-neutral-900 rounded-xl shadow-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-luq-neutral-200 dark:border-luq-neutral-700">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-2xl font-bold text-luq-neutral-900 dark:text-luq-neutral-100">Generated Builder Code</h3>
+            <button id="close-code-modal" class="p-2 text-luq-neutral-400 hover:text-luq-neutral-600 dark:hover:text-luq-neutral-300 hover:bg-luq-neutral-100 dark:hover:bg-luq-neutral-800 rounded-lg transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Code Area -->
+          <div class="bg-[#1E1E1E] rounded-lg p-4 mb-4">
+            <pre id="generated-code-content" class="text-[#D4D4D4] text-sm font-mono overflow-x-auto whitespace-pre">// Select plugins to generate your Luq builder code</pre>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex gap-3">
+            <button id="copy-generated-code" class="flex-1 px-4 py-2 bg-luq-purple-600 hover:bg-luq-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              Copy to Clipboard
+            </button>
+            <button id="download-generated-code" class="flex-1 px-4 py-2 bg-luq-teal-600 hover:bg-luq-teal-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+              </svg>
+              Download as File
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Plugin Detail Modal -->
+    <div id="plugin-detail-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+      <div class="bg-white dark:bg-luq-neutral-900 rounded-xl shadow-2xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-luq-neutral-200 dark:border-luq-neutral-700">
+        <div class="p-6">
+          <!-- Header with better layout -->
+          <div class="flex items-start justify-between mb-6">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <h3 id="modal-plugin-name" class="text-3xl font-bold text-luq-neutral-900 dark:text-luq-neutral-100"></h3>
+                <span id="modal-plugin-category-badge" class="px-3 py-1 bg-gradient-to-r from-luq-purple-100 to-luq-teal-100 dark:from-luq-purple-900/40 dark:to-luq-teal-900/40 text-luq-purple-700 dark:text-luq-teal-300 rounded-full text-sm font-medium"></span>
+              </div>
+              <p id="modal-plugin-category" class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 mb-3"></p>
+              <div id="modal-plugin-description" class="text-luq-neutral-700 dark:text-luq-neutral-300 leading-relaxed"></div>
+            </div>
+            <button id="close-modal" class="ml-4 p-2 text-luq-neutral-400 hover:text-luq-neutral-600 dark:hover:text-luq-neutral-300 hover:bg-luq-neutral-100 dark:hover:bg-luq-neutral-800 rounded-lg transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Single Column Layout -->
+          <div class="space-y-6">
+            <!-- Supported Types Section -->
+            <div id="modal-types-section" class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-4">
+              <h4 class="font-semibold mb-3 text-luq-neutral-900 dark:text-luq-neutral-100 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                </svg>
+                Supported Types
+              </h4>
+              <div id="modal-plugin-types" class="flex flex-wrap gap-2"></div>
+            </div>
+            
+            <!-- Parameters Section - Full width single column -->
+            <div id="modal-parameters-section" class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-4">
+              <h4 class="font-semibold mb-3 text-luq-neutral-900 dark:text-luq-neutral-100 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Parameters
+              </h4>
+              <div id="modal-plugin-parameters" class="space-y-3"></div>
+            </div>
+            
+            <!-- Returns Section - Full width single column -->
+            <div id="modal-returns-section" class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-4">
+              <h4 class="font-semibold mb-3 text-luq-neutral-900 dark:text-luq-neutral-100 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                </svg>
+                Returns
+              </h4>
+              <p id="modal-plugin-returns" class="text-luq-neutral-700 dark:text-luq-neutral-300"></p>
+            </div>
+            
+            <!-- Code Examples - Full width with 2 columns -->
+            <div class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-4">
+              <h4 class="font-semibold mb-3 text-luq-neutral-900 dark:text-luq-neutral-100 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                </svg>
+                Code Examples
+              </h4>
+              <div id="modal-plugin-examples" class="grid gap-4 grid-cols-1 md:grid-cols-2"></div>
+            </div>
+          </div>
+          
+          <!-- Footer Actions -->
+          <div class="flex gap-3 mt-8 pt-6 border-t border-luq-neutral-200 dark:border-luq-neutral-700">
+            <button id="modal-select-plugin" class="luq-button-gradient flex-1 py-3 font-semibold">
+              <span class="select-text">Select Plugin</span>
+            </button>
+            <button id="close-modal-btn" class="px-6 py-3 bg-luq-neutral-200 dark:bg-luq-neutral-700 text-luq-neutral-700 dark:text-luq-neutral-300 rounded-lg hover:bg-luq-neutral-300 dark:hover:bg-luq-neutral-600 transition-colors font-medium">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <Footer />
+</BaseLayout>
+
+<script define:vars={{ plugins: plugins, pluginMap: pluginMap, pluginCategories: pluginCategories }}>
+  let selectedPlugins = new Set();
+  let currentTypeFilter = 'all';
+  let searchTerm = '';
+  
+  function initializeGenerator() {
+    setupEventListeners();
+    updatePluginVisibility();
+    updateGeneratedCode();
+    updateSelectedPluginsDisplay();
+  }
+  
+  function setupEventListeners() {
+    // Show generated code modal
+    document.getElementById('show-generated-code')?.addEventListener('click', showGeneratedCodeModal);
+    document.getElementById('close-code-modal')?.addEventListener('click', hideGeneratedCodeModal);
+    document.getElementById('copy-generated-code')?.addEventListener('click', copyGeneratedCode);
+    document.getElementById('download-generated-code')?.addEventListener('click', downloadGeneratedCode);
+    document.getElementById('quick-copy')?.addEventListener('click', quickCopyCode);
+    
+    // Plugin selection
+    document.querySelectorAll('.plugin-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', updateSelectedPlugins);
+    });
+    
+    // Plugin cards click
+    document.querySelectorAll('.plugin-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('view-details') && !e.target.classList.contains('plugin-checkbox')) {
+          const checkbox = card.querySelector('.plugin-checkbox');
+          checkbox.checked = !checkbox.checked;
+          updateSelectedPlugins();
+        }
+      });
+    });
+    
+    // Plugin details
+    document.querySelectorAll('.view-details').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showPluginDetails(e.target.dataset.plugin);
+      });
+    });
+    
+    // Search
+    document.getElementById('plugin-search')?.addEventListener('input', (e) => {
+      searchTerm = e.target.value.toLowerCase();
+      updatePluginVisibility();
+    });
+    
+    // Type filters
+    document.querySelectorAll('.type-filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.type-filter-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        currentTypeFilter = e.currentTarget.dataset.type;
+        updatePluginVisibility();
+      });
+    });
+    
+    // Clear all button
+    document.getElementById('clear-all')?.addEventListener('click', clearAll);
+    
+    // Modal
+    document.getElementById('close-modal')?.addEventListener('click', hidePluginDetails);
+    document.getElementById('close-modal-btn')?.addEventListener('click', hidePluginDetails);
+    document.getElementById('modal-select-plugin')?.addEventListener('click', selectPluginFromModal);
+    
+    
+    // Close modals on outside click
+    document.getElementById('plugin-detail-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        hidePluginDetails();
+      }
+    });
+    
+    document.getElementById('generated-code-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        hideGeneratedCodeModal();
+      }
+    });
+  }
+  
+  function escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+  }
+  
+  function updatePluginVisibility() {
+    document.querySelectorAll('.plugin-card').forEach(card => {
+      const pluginTypes = (card.dataset.types || '').split(',').filter(t => t);
+      const pluginName = card.dataset.plugin.toLowerCase();
+      const description = card.querySelector('p').textContent.toLowerCase();
+      
+      // Check if any of the plugin's types matches the filter
+      const matchesType = currentTypeFilter === 'all' || 
+                         pluginTypes.includes(currentTypeFilter);
+      
+      const matchesSearch = searchTerm === '' || 
+                           pluginName.includes(searchTerm) || 
+                           description.includes(searchTerm) ||
+                           pluginTypes.some(type => type.includes(searchTerm));
+      
+      card.style.display = matchesType && matchesSearch ? 'block' : 'none';
+    });
+  }
+  
+  function showPluginDetails(pluginName) {
+    const plugin = pluginMap[pluginName];
+    if (!plugin) return;
+    
+    // Header information
+    document.getElementById('modal-plugin-name').textContent = plugin.displayName;
+    document.getElementById('modal-plugin-category-badge').textContent = pluginCategories[plugin.category] || plugin.category;
+    document.getElementById('modal-plugin-category').textContent = `Plugin Category: ${plugin.category}`;
+    document.getElementById('modal-plugin-description').textContent = plugin.description;
+    
+    // Supported Types
+    const typesContainer = document.getElementById('modal-plugin-types');
+    const supportedTypes = plugin.supportedTypes || [];
+    const typeEmoji = {
+      'string': '📝',
+      'number': '🔢',
+      'boolean': '✅',
+      'array': '📚',
+      'object': '📦',
+      'date': '📅',
+      'union': '🔀',
+      'tuple': '📊',
+      'any': '🌐'
+    };
+    
+    if (supportedTypes.length > 0) {
+      typesContainer.innerHTML = supportedTypes.map(type => `
+        <div class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-luq-neutral-900 rounded-full text-sm border border-luq-neutral-200 dark:border-luq-neutral-600">
+          <span>${typeEmoji[type] || '✨'}</span>
+          <span class="font-medium text-luq-neutral-700 dark:text-luq-neutral-300">${type}</span>
+        </div>
+      `).join('');
+      document.getElementById('modal-types-section').style.display = 'block';
+    } else {
+      document.getElementById('modal-types-section').style.display = 'none';
+    }
+    
+    // Parameters
+    const parametersSection = document.getElementById('modal-parameters-section');
+    const parametersContainer = document.getElementById('modal-plugin-parameters');
+    
+    if (plugin.parameters && plugin.parameters.length > 0) {
+      parametersSection.style.display = 'block';
+      parametersContainer.innerHTML = plugin.parameters.map(param => `
+        <div class="border border-luq-neutral-200 dark:border-luq-neutral-600 rounded-lg p-4 bg-white dark:bg-luq-neutral-900">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 min-w-[200px]">
+              <div class="flex items-center gap-2 flex-wrap">
+                <code class="text-sm font-mono bg-luq-purple-100 dark:bg-luq-purple-900/30 text-luq-purple-800 dark:text-luq-purple-200 px-2 py-1 rounded font-semibold">${param.name}</code>
+                <span class="text-xs px-2 py-1 bg-luq-teal-100 dark:bg-luq-teal-900/30 text-luq-teal-700 dark:text-luq-teal-300 rounded-full font-mono">${param.type}</span>
+                ${param.optional ? '<span class="text-xs bg-luq-amber-100 dark:bg-luq-amber-900/30 text-luq-amber-700 dark:text-luq-amber-300 px-2 py-1 rounded-full">Optional</span>' : '<span class="text-xs bg-luq-red-100 dark:bg-luq-red-900/30 text-luq-red-700 dark:text-luq-red-300 px-2 py-1 rounded-full">Required</span>'}
+              </div>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">${param.description}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      parametersSection.style.display = 'none';
+    }
+    
+    // Examples
+    const examplesHtml = plugin.examples.map((example, index) => `
+      <div class="border border-luq-neutral-200 dark:border-luq-neutral-600 rounded-lg p-4 bg-white dark:bg-luq-neutral-900">
+        <div class="flex items-center justify-between mb-2">
+          <h5 class="text-sm font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">${example.title}</h5>
+          <button class="copy-example text-xs text-luq-purple-600 dark:text-luq-teal-400 hover:text-luq-purple-700 dark:hover:text-luq-teal-300 font-medium" data-code="${example.code.replace(/"/g, '&quot;')}">
+            Copy
+          </button>
+        </div>
+        <pre class="bg-[#1E1E1E] text-[#D4D4D4] p-3 rounded-lg text-sm overflow-x-auto font-mono leading-relaxed">${example.code}</pre>
+      </div>
+    `).join('');
+    
+    // Set innerHTML and ensure grid is working
+    const examplesContainer = document.getElementById('modal-plugin-examples');
+    examplesContainer.innerHTML = examplesHtml;
+    
+    // Force 2-column layout on larger screens
+    if (plugin.examples.length > 1) {
+      examplesContainer.className = 'grid gap-4 grid-cols-1 md:grid-cols-2';
+    } else {
+      examplesContainer.className = 'block w-full';
+    }
+    
+    // Add copy functionality to example buttons
+    document.querySelectorAll('.copy-example').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const code = e.target.dataset.code.replace(/&quot;/g, '"');
+        copyToClipboard(code, e.target);
+      });
+    });
+    
+    // Returns
+    const returnsSection = document.getElementById('modal-returns-section');
+    const returnsElement = document.getElementById('modal-plugin-returns');
+    
+    if (plugin.returns) {
+      returnsSection.style.display = 'block';
+      returnsElement.textContent = plugin.returns;
+    } else {
+      returnsSection.style.display = 'none';
+    }
+    
+    // Update select button
+    const selectBtn = document.getElementById('modal-select-plugin');
+    const selectText = selectBtn.querySelector('.select-text');
+    const isSelected = selectedPlugins.has(pluginName);
+    
+    selectText.textContent = isSelected ? 'Deselect Plugin' : 'Select Plugin';
+    selectBtn.className = isSelected 
+      ? 'luq-button-secondary flex-1 py-3 font-semibold' 
+      : 'luq-button-gradient flex-1 py-3 font-semibold';
+    selectBtn.dataset.plugin = pluginName;
+    
+    document.getElementById('plugin-detail-modal').classList.remove('hidden');
+  }
+  
+  function hidePluginDetails() {
+    document.getElementById('plugin-detail-modal').classList.add('hidden');
+  }
+  
+  function selectPluginFromModal() {
+    const btn = document.getElementById('modal-select-plugin');
+    const pluginName = btn.dataset.plugin;
+    const checkbox = document.querySelector(`[data-plugin="${pluginName}"].plugin-checkbox`);
+    
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      updateSelectedPlugins();
+      
+      // Update button state
+      const selectText = btn.querySelector('.select-text');
+      const isSelected = selectedPlugins.has(pluginName);
+      selectText.textContent = isSelected ? 'Deselect Plugin' : 'Select Plugin';
+      btn.className = isSelected 
+        ? 'luq-button-secondary flex-1 py-3 font-semibold' 
+        : 'luq-button-gradient flex-1 py-3 font-semibold';
+    }
+  }
+  
+  function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+      const originalText = button.textContent;
+      button.textContent = 'Copied!';
+      button.classList.add('bg-green-600', 'text-white');
+      
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('bg-green-600', 'text-white');
+      }, 2000);
+    }).catch(() => {
+      console.error('Failed to copy to clipboard');
+    });
+  }
+  
+  function updateSelectedPlugins() {
+    selectedPlugins.clear();
+    document.querySelectorAll('.plugin-checkbox:checked').forEach(checkbox => {
+      selectedPlugins.add(checkbox.dataset.plugin);
+    });
+    
+    updateSelectedPluginsDisplay();
+    updateGeneratedCode();
+    updateStatistics();
+  }
+  
+  function updateSelectedPluginsDisplay() {
+    const count = selectedPlugins.size;
+    const countBadge = document.getElementById('selected-count-badge');
+    const listContainer = document.getElementById('selected-plugins-list');
+    
+    countBadge.textContent = count;
+    
+    if (count === 0) {
+      // Show empty state
+      listContainer.innerHTML = '<span class="text-xs text-luq-purple-600/60 dark:text-luq-purple-400/60 italic">No plugins selected yet - Choose from below to build your validator</span>';
+    } else {
+      // Create plugin badges
+      listContainer.innerHTML = Array.from(selectedPlugins).map(name => {
+        const plugin = pluginMap[name];
+        if (!plugin) return '';
+        return `
+          <div class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-luq-neutral-800 rounded-full text-xs">
+            <span class="font-medium text-luq-purple-700 dark:text-luq-purple-300">${plugin.displayName}</span>
+            <button class="remove-plugin ml-1 text-luq-neutral-400 hover:text-luq-red-600 dark:hover:text-luq-red-400" data-plugin="${name}">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        `;
+      }).join('');
+      
+      // Add remove handlers
+      document.querySelectorAll('.remove-plugin').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const pluginName = e.currentTarget.dataset.plugin;
+          const checkbox = document.querySelector(`[data-plugin="${pluginName}"].plugin-checkbox`);
+          if (checkbox) {
+            checkbox.checked = false;
+            updateSelectedPlugins();
+          }
+        });
+      });
+    }
+    
+    // Update visual state of cards
+    document.querySelectorAll('.plugin-card').forEach(card => {
+      const isSelected = selectedPlugins.has(card.dataset.plugin);
+      const statusIndicator = card.querySelector('.plugin-status');
+      
+      if (isSelected) {
+        card.classList.add('selected');
+        statusIndicator.classList.remove('opacity-0', 'scale-0');
+        statusIndicator.classList.add('opacity-100', 'scale-100');
+      } else {
+        card.classList.remove('selected');
+        statusIndicator.classList.add('opacity-0', 'scale-0');
+        statusIndicator.classList.remove('opacity-100', 'scale-100');
+      }
+    });
+  }
+  
+  function showGeneratedCodeModal() {
+    updateGeneratedCode();
+    document.getElementById('generated-code-modal').classList.remove('hidden');
+  }
+  
+  function hideGeneratedCodeModal() {
+    document.getElementById('generated-code-modal').classList.add('hidden');
+  }
+  
+  function updateGeneratedCode() {
+    const codeElement = document.getElementById('generated-code-content');
+    if (!codeElement) return;
+    
+    if (selectedPlugins.size === 0) {
+      codeElement.textContent = `// Select plugins to generate your Luq builder code
+// 
+// 1. Choose plugins from the Plugin Library
+// 2. Click "View Code" to see your generated builder
+// 3. Copy or download the generated code`;
+      return;
+    }
+    
+    
+    let code = '';
+    
+    // Add imports
+    code += "import { Builder } from '@maroonedog/luq';\n";
+    if (selectedPlugins.size > 0) {
+      const pluginImports = Array.from(selectedPlugins).map(p => `${p}Plugin`).join(', ');
+      code += `import { ${pluginImports} } from '@maroonedog/luq';\n`;
+    }
+    code += '\n';
+    
+    // Add builder construction
+    code += `// Create validator for your TypeScript type\n`;
+    code += 'const validator = Builder()\n';
+    
+    // Add plugin usage
+    Array.from(selectedPlugins).sort().forEach(plugin => {
+      code += `  .use(${plugin}Plugin)\n`;
+    });
+    
+    code += `  .for<YourType>()\n`;
+    
+    // Generate realistic field examples based on selected plugins
+    const fieldExamples = generateFieldExamples(selectedPlugins);
+    fieldExamples.forEach(example => {
+      code += `  .v("${example.field}", b => b.${example.chain})\n`;
+    });
+    
+    code += '  .build();\n\n';
+    
+    code += '// Usage example:\n';
+    code += 'const result = validator.validate(data);\n';
+    code += 'if (result.isValid()) {\n';  
+    code += '  console.log("Valid data:", result.value);\n';
+    code += '} else {\n';
+    code += '  console.log("Validation errors:", result.errors);\n';
+    code += '}';
+    
+    // Update the code element content
+    codeElement.textContent = code;
+  }
+  
+  function generateFieldExamples(selectedPlugins) {
+    const examples = [];
+    const pluginArray = Array.from(selectedPlugins);
+    
+    // Generate examples based on available plugins
+    if (pluginArray.includes('required')) {
+      if (pluginArray.includes('stringEmail')) {
+        examples.push({ field: 'email', chain: 'string.required().email()' });
+      } else if (pluginArray.includes('stringMin')) {
+        examples.push({ field: 'name', chain: 'string.required().min(2)' });
+      } else {
+        examples.push({ field: 'name', chain: 'string.required()' });
+      }
+      
+      if (pluginArray.includes('numberMin')) {
+        examples.push({ field: 'age', chain: 'number.required().min(18)' });
+      } else if (pluginArray.includes('numberMax')) {
+        examples.push({ field: 'score', chain: 'number.required().max(100)' });
+      } else if (pluginArray.includes('numberPositive')) {
+        examples.push({ field: 'price', chain: 'number.required().positive()' });
+      }
+    }
+    
+    if (pluginArray.includes('optional')) {
+      if (pluginArray.includes('stringMax')) {
+        examples.push({ field: 'bio', chain: 'string.optional().max(500)' });
+      } else {
+        examples.push({ field: 'middleName', chain: 'string.optional()' });
+      }
+    }
+    
+    if (pluginArray.includes('arrayMinLength') && !examples.some(e => e.chain.includes('array'))) {
+      examples.push({ field: 'tags', chain: 'array.minLength(1)' });
+    }
+    
+    if (pluginArray.includes('arrayIncludes') && !examples.some(e => e.chain.includes('array'))) {
+      examples.push({ field: 'roles', chain: 'array.includes("user")' });
+    }
+    
+    if (pluginArray.includes('booleanTruthy')) {
+      examples.push({ field: 'acceptTerms', chain: 'boolean.truthy()' });
+    }
+    
+    if (pluginArray.includes('stringUrl') && !examples.some(e => e.field === 'website')) {
+      examples.push({ field: 'website', chain: 'string.url()' });
+    }
+    
+    if (pluginArray.includes('stringPattern')) {
+      examples.push({ field: 'phone', chain: 'string.pattern(/^\\\\d{3}-\\\\d{3}-\\\\d{4}$/)' });
+    }
+    
+    if (pluginArray.includes('uuid')) {
+      examples.push({ field: 'id', chain: 'string.uuid()' });
+    }
+    
+    // If no specific examples were generated, create basic ones
+    if (examples.length === 0) {
+      if (pluginArray.length > 0) {
+        examples.push({ field: 'fieldName', chain: 'string' });
+      }
+    }
+    
+    // Limit to 3-4 examples to keep code readable
+    return examples.slice(0, 4);
+  }
+  
+  function getBaseType(type) {
+    const lower = type.toLowerCase();
+    if (lower.includes('string')) return 'string';
+    if (lower.includes('number')) return 'number';
+    if (lower.includes('boolean')) return 'boolean';
+    if (lower.includes('date')) return 'date';
+    if (lower.includes('array') || lower.includes('[]')) return 'array';
+    if (lower.includes('{') || lower.includes('object')) return 'object';
+    return 'unknown';
+  }
+  
+  function getPluginMethodName(pluginName) {
+    // Map plugin function names to method names
+    const methodMap = {
+      'required': 'required',
+      'optional': 'optional',
+      'stringMin': 'min',
+      'stringMax': 'max',
+      'stringEmail': 'email',
+      'stringUrl': 'url',
+      'numberMin': 'min',
+      'numberMax': 'max',
+      'arrayMinLength': 'minLength',
+      'arrayMaxLength': 'maxLength',
+      'arrayIncludes': 'includes',
+      'arrayUnique': 'unique'
+    };
+    
+    return methodMap[pluginName] || pluginName;
+  }
+  
+  function updateStatistics() {
+    const pluginCount = selectedPlugins.size;
+    const code = document.getElementById('generated-code').textContent;
+    const estimatedSize = Math.round(code.length / 100) / 10;
+    
+  }
+  
+  function clearAll() {
+    selectedPlugins.clear();
+    document.querySelectorAll('.plugin-checkbox').forEach(cb => cb.checked = false);
+    updateSelectedPluginsDisplay();
+    updateGeneratedCode();
+    updateStatistics();
+    
+    // Show feedback
+    const btn = document.getElementById('clear-all');
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = 'Cleared!';
+      btn.classList.add('text-green-600', 'dark:text-green-400');
+      
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('text-green-600', 'dark:text-green-400');
+      }, 1000);
+    }
+  }
+  
+  function quickCopyCode() {
+    // First update the generated code
+    updateGeneratedCode();
+    
+    const code = document.getElementById('generated-code-content').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      // Show success feedback on the quick copy button
+      const btn = document.getElementById('quick-copy');
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      `;
+      btn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white');
+      btn.classList.remove('bg-luq-neutral-200', 'hover:bg-luq-neutral-300', 'dark:bg-luq-neutral-700', 'dark:hover:bg-luq-neutral-600');
+      
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white');
+        btn.classList.add('bg-luq-neutral-200', 'hover:bg-luq-neutral-300', 'dark:bg-luq-neutral-700', 'dark:hover:bg-luq-neutral-600');
+      }, 2000);
+    }).catch(() => {
+      alert('Failed to copy code to clipboard');
+    });
+  }
+  
+  function copyGeneratedCode() {
+    const code = document.getElementById('generated-code-content').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      // Show success feedback
+      const btn = document.getElementById('copy-generated-code');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        Copied!
+      `;
+      btn.classList.add('bg-green-600', 'hover:bg-green-700');
+      btn.classList.remove('bg-luq-purple-600', 'hover:bg-luq-purple-700');
+      
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        btn.classList.add('bg-luq-purple-600', 'hover:bg-luq-purple-700');
+      }, 2000);
+    }).catch(() => {
+      alert('Failed to copy code to clipboard');
+    });
+  }
+  
+  function downloadGeneratedCode() {
+    const code = document.getElementById('generated-code-content').textContent;
+    const filename = 'luq-validator.ts';
+    const blob = new Blob([code], { type: 'text/typescript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  
+  // Initialize when page loads
+  document.addEventListener('DOMContentLoaded', initializeGenerator);
+</script>
+
+<style>
+  /* Fix text clipping issues */
+  h1, h2, h3, h4, h5, h6 {
+    @apply leading-tight;
+    padding-bottom: 0.125rem; /* 2px padding to prevent descender clipping */
+  }
+  
+  /* Line clamp utility */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  /* Type filter buttons - Compact */
+  .type-filter-btn {
+    @apply px-3 py-1.5 text-xs rounded-md border border-luq-neutral-200 dark:border-luq-neutral-700 
+           bg-white dark:bg-luq-neutral-800 text-luq-neutral-600 dark:text-luq-neutral-400
+           hover:bg-luq-neutral-50 dark:hover:bg-luq-neutral-700 transition-all duration-200
+           flex items-center gap-1.5 font-medium;
+  }
+  
+  .type-filter-btn:hover {
+    @apply shadow-md border-luq-purple-300 dark:border-luq-teal-500;
+  }
+  
+  .type-filter-btn.active {
+    @apply bg-gradient-to-r from-luq-purple-500 to-luq-teal-500 text-white border-transparent shadow-md;
+  }
+  
+  .type-filter-btn .emoji {
+    @apply text-base;
+  }
+  
+  /* Plugin card selection state - Compact */
+  .plugin-card {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .plugin-card:hover {
+    @apply transform -translate-y-1 shadow-lg border-luq-purple-300 dark:border-luq-teal-500;
+  }
+  
+  .plugin-card.selected {
+    @apply ring-2 ring-luq-purple-400 dark:ring-luq-teal-400 
+           bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 
+           dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 
+           border-luq-purple-400 dark:border-luq-teal-400;
+  }
+  
+  /* Custom scrollbar styling */
+  #plugin-container::-webkit-scrollbar,
+  #generated-code::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  
+  #plugin-container::-webkit-scrollbar-track,
+  #generated-code::-webkit-scrollbar-track {
+    @apply bg-luq-neutral-100 dark:bg-luq-neutral-800 rounded-full;
+  }
+  
+  #plugin-container::-webkit-scrollbar-thumb,
+  #generated-code::-webkit-scrollbar-thumb {
+    @apply bg-gradient-to-b from-luq-purple-400 to-luq-teal-400 dark:from-luq-purple-600 dark:to-luq-teal-600 rounded-full;
+  }
+  
+  #plugin-container::-webkit-scrollbar-thumb:hover,
+  #generated-code::-webkit-scrollbar-thumb:hover {
+    @apply from-luq-purple-500 to-luq-teal-500 dark:from-luq-purple-500 dark:to-luq-teal-500;
+  }
+  
+  /* For Firefox */
+  #plugin-container,
+  #generated-code {
+    scrollbar-width: thin;
+    scrollbar-color: #a78bfa #f5f5f5;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    #plugin-container,
+    #generated-code {
+      scrollbar-color: #8b5cf6 #262626;
+    }
+  }
+  
+  /* Code block styling */
+  #generated-code {
+    font-family: 'JetBrains Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    line-height: 1.6;
+    tab-size: 2;
+  }
+  
+  /* Modal animations */
+  #plugin-detail-modal {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  #plugin-detail-modal > div {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideIn {
+    from { 
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  /* Enhanced button styling */
+  .copy-example {
+    @apply transition-all duration-200;
+  }
+  
+  .copy-example:hover {
+    @apply transform scale-105;
+  }
+  
+  /* Enhanced visual feedback for selected plugins */
+  .plugin-status {
+    @apply transition-all duration-300;
+  }
+  
+  /* Better focus states */
+  .plugin-checkbox:focus {
+    @apply ring-2 ring-offset-2;
+  }
+  
+  /* Improved filter button styles */
+  .filter-btn {
+    @apply transition-all duration-200 transform;
+  }
+  
+  .filter-btn:hover {
+    @apply scale-105;
+  }
+  
+  .filter-btn.active {
+    @apply transform scale-105 shadow-md;
+  }
+</style>

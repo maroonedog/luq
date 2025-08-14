@@ -1,0 +1,288 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+
+const mappingData = [
+  { category: 'Core Types', items: [
+    { feature: 'type: "string"', plugin: 'Built-in', description: 'String type validation' },
+    { feature: 'type: "number"', plugin: 'Built-in', description: 'Number type validation' },
+    { feature: 'type: "integer"', plugin: 'numberIntegerPlugin', description: 'Integer validation' },
+    { feature: 'type: "boolean"', plugin: 'Built-in', description: 'Boolean type validation' },
+    { feature: 'type: "null"', plugin: 'nullablePlugin', description: 'Null type validation' },
+    { feature: 'type: "array"', plugin: 'Built-in', description: 'Array type validation' },
+    { feature: 'type: "object"', plugin: 'Built-in', description: 'Object type validation' },
+  ]},
+  { category: 'String Constraints', items: [
+    { feature: 'minLength', plugin: 'stringMinPlugin', description: 'Minimum string length' },
+    { feature: 'maxLength', plugin: 'stringMaxPlugin', description: 'Maximum string length' },
+    { feature: 'pattern', plugin: 'stringPatternPlugin', description: 'Regex pattern matching' },
+  ]},
+  { category: 'String Formats', items: [
+    { feature: 'format: "email"', plugin: 'stringEmailPlugin', description: 'Email validation' },
+    { feature: 'format: "url"/"uri"', plugin: 'stringUrlPlugin', description: 'URL/URI validation' },
+    { feature: 'format: "uuid"', plugin: 'uuidPlugin', description: 'UUID validation' },
+    { feature: 'format: "ipv4"', plugin: 'stringIpv4Plugin', description: 'IPv4 address validation' },
+    { feature: 'format: "ipv6"', plugin: 'stringIpv6Plugin', description: 'IPv6 address validation' },
+    { feature: 'format: "hostname"', plugin: 'stringHostnamePlugin', description: 'Hostname validation' },
+    { feature: 'format: "date-time"', plugin: 'stringDatetimePlugin', description: 'ISO 8601 date-time with timezone support' },
+    { feature: 'format: "date"', plugin: 'stringDatePlugin', description: 'ISO 8601 date (YYYY-MM-DD)' },
+    { feature: 'format: "time"', plugin: 'stringTimePlugin', description: 'Time format (HH:MM:SS)' },
+    { feature: 'format: "duration"', plugin: 'stringDurationPlugin', description: 'ISO 8601 duration' },
+    { feature: 'format: "json-pointer"', plugin: 'stringJsonPointerPlugin', description: 'JSON Pointer (RFC 6901)' },
+    { feature: 'format: "relative-json-pointer"', plugin: 'stringRelativeJsonPointerPlugin', description: 'Relative JSON Pointer' },
+    { feature: 'format: "iri"', plugin: 'stringIriPlugin', description: 'IRI (RFC 3987)' },
+    { feature: 'format: "iri-reference"', plugin: 'stringIriReferencePlugin', description: 'IRI reference' },
+    { feature: 'format: "uri-template"', plugin: 'stringUriTemplatePlugin', description: 'URI Template (RFC 6570)' },
+  ]},
+  { category: 'Number Constraints', items: [
+    { feature: 'minimum', plugin: 'numberMinPlugin', description: 'Minimum value (inclusive)' },
+    { feature: 'maximum', plugin: 'numberMaxPlugin', description: 'Maximum value (inclusive)' },
+    { feature: 'exclusiveMinimum', plugin: 'numberMinPlugin', description: 'Minimum value (exclusive)' },
+    { feature: 'exclusiveMaximum', plugin: 'numberMaxPlugin', description: 'Maximum value (exclusive)' },
+    { feature: 'multipleOf', plugin: 'numberMultipleOfPlugin', description: 'Multiple of a number' },
+  ]},
+  { category: 'Array Constraints', items: [
+    { feature: 'minItems', plugin: 'arrayMinLengthPlugin', description: 'Minimum array length' },
+    { feature: 'maxItems', plugin: 'arrayMaxLengthPlugin', description: 'Maximum array length' },
+    { feature: 'uniqueItems', plugin: 'arrayUniquePlugin', description: 'Unique array items' },
+    { feature: 'contains', plugin: 'arrayContainsPlugin', description: 'Array contains schema' },
+    { feature: 'items (tuple)', plugin: 'tupleBuilderPlugin', description: 'Tuple validation' },
+  ]},
+  { category: 'Object Constraints', items: [
+    { feature: 'minProperties', plugin: 'objectMinPropertiesPlugin', description: 'Minimum properties count' },
+    { feature: 'maxProperties', plugin: 'objectMaxPropertiesPlugin', description: 'Maximum properties count' },
+    { feature: 'required', plugin: 'requiredPlugin', description: 'Required properties' },
+    { feature: 'additionalProperties', plugin: 'objectAdditionalPropertiesPlugin', description: 'Additional properties validation' },
+    { feature: 'properties', plugin: 'Built-in', description: 'Object properties definition' },
+    { feature: 'patternProperties', plugin: 'objectPatternPropertiesPlugin', description: 'Pattern-based properties' },
+    { feature: 'propertyNames', plugin: 'objectPropertyNamesPlugin', description: 'Property name validation' },
+    { feature: 'dependentRequired', plugin: 'objectDependentRequiredPlugin', description: 'Conditional required fields' },
+    { feature: 'dependentSchemas', plugin: 'objectDependentSchemasPlugin', description: 'Conditional schemas' },
+  ]},
+  { category: 'Value Constraints', items: [
+    { feature: 'enum', plugin: 'oneOfPlugin', description: 'Enumeration values' },
+    { feature: 'const', plugin: 'literalPlugin', description: 'Constant value' },
+  ]},
+  { category: 'Schema Composition', items: [
+    { feature: 'allOf', plugin: 'customPlugin', description: 'All schemas must match' },
+    { feature: 'anyOf', plugin: 'customPlugin', description: 'Any schema must match' },
+    { feature: 'oneOf', plugin: 'oneOfPlugin + customPlugin', description: 'Exactly one schema must match' },
+    { feature: 'not', plugin: 'customPlugin', description: 'Schema must not match' },
+  ]},
+  { category: 'Conditional Validation', items: [
+    { feature: 'if/then/else', plugin: 'requiredIfPlugin + customPlugin', description: 'Conditional validation' },
+  ]},
+  { category: 'References', items: [
+    { feature: '$ref', plugin: 'Built-in (jsonSchemaPlugin)', description: 'Schema references' },
+    { feature: 'definitions/$defs', plugin: 'Built-in (jsonSchemaPlugin)', description: 'Schema definitions' },
+  ]},
+  { category: 'Content Validation', items: [
+    { feature: 'contentEncoding', plugin: 'stringContentEncodingPlugin', description: 'Content encoding validation' },
+    { feature: 'contentMediaType', plugin: 'stringContentMediaTypePlugin', description: 'Media type validation' },
+  ]},
+  { category: 'Access Control', items: [
+    { feature: 'readOnly', plugin: 'readOnlyWriteOnlyPlugin', description: 'Read-only field validation' },
+    { feature: 'writeOnly', plugin: 'readOnlyWriteOnlyPlugin', description: 'Write-only field validation' },
+  ]},
+];
+---
+
+<BaseLayout title="JSON Schema Support - Luq">
+  <Header />
+  
+  <main>
+    <!-- Header -->
+    <section class="luq-gradient-section text-white py-16">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+        <div class="animate-fade-in">
+          <h1 class="text-4xl font-bold mb-4">JSON Schema Support</h1>
+          <p class="text-xl opacity-90">
+            Complete mapping of JSON Schema Draft-07 features to Luq plugins
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Setup -->
+    <section class="py-12 bg-white dark:bg-luq-neutral-900">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+        <h2 class="text-2xl font-bold mb-6 text-luq-neutral-900 dark:text-white">Quick Setup</h2>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="luq-card overflow-hidden">
+            <div class="bg-luq-neutral-100 dark:bg-luq-neutral-800 px-6 py-4 border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+              <h3 class="font-semibold">Full Feature Import</h3>
+            </div>
+            <div class="p-6">
+              <CodeBlock 
+                code={`import { Builder } from "@maroonedog/luq";
+import { jsonSchemaFullFeaturePlugin } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
+
+const validator = Builder()
+  .use(jsonSchemaFullFeaturePlugin)
+  .fromJsonSchema(schema)
+  .build();`} 
+                language="typescript" 
+                showCopy={true} 
+                class="" 
+              />
+            </div>
+          </div>
+
+          <div class="luq-card overflow-hidden">
+            <div class="bg-luq-neutral-100 dark:bg-luq-neutral-800 px-6 py-4 border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+              <h3 class="font-semibold">Selective Import</h3>
+            </div>
+            <div class="p-6">
+              <CodeBlock 
+                code={`import { Builder } from "@maroonedog/luq";
+import { jsonSchemaPlugin } from "@maroonedog/luq/plugins/jsonSchema";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+
+const validator = Builder()
+  .use(jsonSchemaPlugin)
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .fromJsonSchema(schema)
+  .build();`} 
+                language="typescript" 
+                showCopy={true} 
+                class="" 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mapping Table -->
+    <section class="py-12">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+        <h2 class="text-3xl font-bold mb-8 text-luq-neutral-900 dark:text-white">
+          Complete Feature Mapping
+        </h2>
+
+        {mappingData.map((category) => (
+          <div class="mb-8 animate-fade-in-up">
+            <h3 class="text-xl font-semibold mb-4 text-luq-neutral-800 dark:text-luq-neutral-200">
+              {category.category}
+            </h3>
+            <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow overflow-hidden">
+              <table class="min-w-full divide-y divide-luq-neutral-200 dark:divide-luq-neutral-700">
+                <thead class="bg-luq-neutral-50 dark:bg-luq-neutral-700">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-luq-neutral-500 dark:text-luq-neutral-300 uppercase tracking-wider">
+                      JSON Schema Feature
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-luq-neutral-500 dark:text-luq-neutral-300 uppercase tracking-wider">
+                      Luq Plugin
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-luq-neutral-500 dark:text-luq-neutral-300 uppercase tracking-wider">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-luq-neutral-800 divide-y divide-luq-neutral-200 dark:divide-luq-neutral-700">
+                  {category.items.map((item) => (
+                    <tr class="hover:bg-luq-neutral-50 dark:hover:bg-luq-neutral-700 transition-colors">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-luq-neutral-900 dark:text-luq-neutral-100">
+                        {item.feature}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <code class="bg-luq-purple-100 dark:bg-luq-purple-900 text-luq-purple-800 dark:text-luq-purple-200 px-2 py-1 rounded">
+                          {item.plugin}
+                        </code>
+                      </td>
+                      <td class="px-6 py-4 text-sm text-luq-neutral-500 dark:text-luq-neutral-400">
+                        {item.description}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Usage Example -->
+    <section class="py-12 bg-luq-neutral-100 dark:bg-luq-neutral-800">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+        <h2 class="text-2xl font-bold mb-6 text-luq-neutral-900 dark:text-white">
+          Complete Example
+        </h2>
+        <div class="luq-card overflow-hidden">
+          <div class="bg-gradient-to-r from-luq-purple-100 to-luq-teal-100 dark:from-luq-purple-900/30 dark:to-luq-teal-900/30 px-6 py-4 border-b border-luq-purple-200 dark:border-luq-purple-800">
+            <h3 class="font-semibold">JSON Schema to Luq Conversion</h3>
+          </div>
+          <div class="p-6">
+            <CodeBlock 
+              code={`// JSON Schema Definition
+const userSchema = {
+  type: "object",
+  properties: {
+    name: {
+      type: "string",
+      minLength: 3,
+      maxLength: 50
+    },
+    email: {
+      type: "string",
+      format: "email"
+    },
+    age: {
+      type: "number",
+      minimum: 18,
+      maximum: 120
+    },
+    roles: {
+      type: "array",
+      items: {
+        type: "string",
+        enum: ["admin", "user", "guest"]
+      },
+      minItems: 1,
+      uniqueItems: true
+    }
+  },
+  required: ["name", "email"],
+  additionalProperties: false
+};
+
+// Luq Validator
+const validator = Builder()
+  .use(jsonSchemaFullFeaturePlugin)
+  .fromJsonSchema(userSchema)
+  .build();
+
+// Validation
+const result = validator.validate({
+  name: "John Doe",
+  email: "john@example.com",
+  age: 25,
+  roles: ["admin"]
+});
+
+if (result.isValid()) {
+  console.log("Valid data:", result.unwrap());
+} else {
+  console.log("Validation errors:", result.errors);
+}`} 
+              language="typescript" 
+              showCopy={true} 
+              class="" 
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <Footer />
+</BaseLayout>

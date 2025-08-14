@@ -1,0 +1,110 @@
+---
+import CodeBlock from './CodeBlock.astro';
+
+const features = [
+  {
+    title: 'Works With Your Existing Types',
+    description: 'No need to rewrite your interfaces or convert to schemas. Luq works with the TypeScript types you already have.',
+    icon: 'types',
+    example: `// Your existing interface
+interface User {
+  name: string;
+  email: string;
+  age: number;
+}
+
+// Just add validation
+.for<User>() // Full type safety`
+  },
+  {
+    title: 'Type-Safe Builder Pattern',
+    description: 'IntelliSense shows only the methods available for each field type. String fields get string methods, numbers get number methods.',
+    icon: 'builder',
+    example: `// IDE autocomplete works perfectly
+.v("name", b => b.string.required().min(2))
+.v("age", b => b.number.required().min(13))
+.v("email", b => b.string.required().email())`
+  },
+  {
+    title: 'Small Bundle Size',
+    description: 'Import only the validation plugins you need. Unused plugins are automatically tree-shaken from your bundle.',
+    icon: 'bundle',
+    example: `// Only import what you use
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+
+// Final bundle: ~19KB gzipped`
+  },
+  {
+    title: 'Cross-Field Validation',
+    description: 'Validate fields that depend on other fields. Compare passwords, check conditional requirements, and more.',
+    icon: 'crossfield',
+    example: `// Password confirmation
+.v("confirmPassword", b => 
+  b.string.required().compareField("password")
+)
+
+// Conditional validation
+.v("phone", b => 
+  b.string.requiredIf((data) => data.contactMethod === "phone")
+)`
+  }
+];
+
+const getIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    types: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+    builder: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    bundle: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+    crossfield: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'
+  };
+  return icons[type] || '';
+};
+---
+
+<section class="py-20 px-4 sm:px-6 lg:px-8 bg-luq-neutral-50 dark:bg-luq-neutral-900">
+  <div class="container mx-auto max-w-7xl">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl font-bold mb-4">
+        Why Choose <span class="luq-gradient-text">Luq</span>?
+      </h2>
+      <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 max-w-2xl mx-auto">
+        Built for teams who want validation without the complexity
+      </p>
+    </div>
+    
+    <div class="space-y-20">
+      {features.map((feature, index) => (
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div class:list={[index % 2 === 1 && 'lg:order-2']}>
+            <div class="flex items-start mb-6">
+              <div class="w-14 h-14 bg-gradient-to-r from-luq-purple-500 to-luq-teal-500 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d={getIcon(feature.icon)} />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold mb-4">{feature.title}</h3>
+                <p class="text-lg text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div class:list={[index % 2 === 1 && 'lg:order-1']}>
+            <CodeBlock 
+              code={feature.example} 
+              language="typescript"
+              fileName="example.ts"
+              showWindowControls={true}
+              showCopy={false}
+              class="shadow-2xl"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</section>

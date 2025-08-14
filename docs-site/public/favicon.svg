@@ -1,0 +1,17 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- Background with rounded corners for favicon -->
+  <rect width="32" height="32" rx="4" fill="#f8fafc"/>
+  
+  <!-- Clipped area for header image -->
+  <defs>
+    <clipPath id="favicon-clip">
+      <rect width="32" height="32" rx="4"/>
+    </clipPath>
+  </defs>
+  
+  <!-- Header image scaled and positioned for favicon -->
+  <image x="0" y="0" width="32" height="21.3" 
+         clip-path="url(#favicon-clip)"
+         xlink:href="/img/library_image_cropped.png" 
+         preserveAspectRatio="xMidYMid slice"/>
+</svg>

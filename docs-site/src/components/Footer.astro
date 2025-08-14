@@ -1,0 +1,99 @@
+---
+import LuqLogo from './LuqLogo.astro';
+
+interface FooterLink {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+const footerLinks: Record<string, FooterLink[]> = {
+  Documentation: [
+    { label: 'Getting Started', href: '/docs/getting-started' },
+    { label: 'Core Concepts', href: '/docs/core-concepts' },
+    { label: 'API Reference', href: '/docs/api/builder' },
+    { label: 'Plugin Catalog', href: '/plugins' },
+  ],
+  Resources: [
+    { label: 'Builder Generator', href: '/plugins' },
+    { label: 'Roadmap', href: '/roadmap' },
+  ],
+  More: [
+    { label: 'GitHub', href: 'https://github.com/maroonedog/luq', external: true },
+  ],
+};
+---
+
+<footer class="bg-luq-neutral-50 dark:bg-luq-neutral-900 border-t border-luq-neutral-200 dark:border-luq-neutral-800">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Main footer content -->
+    <div class="py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
+      <!-- Logo and description -->
+      <div class="col-span-2 md:col-span-1">
+        <div class="flex items-center mb-4">
+          <LuqLogo class="h-12 w-auto" />
+        </div>
+        <p class="text-xs text-luq-neutral-500 dark:text-luq-neutral-500 mb-4">
+          Fully open-source • MIT licensed
+        </p>
+      </div>
+      
+      <!-- Link columns -->
+      {Object.entries(footerLinks).map(([category, links]) => (
+        <div>
+          <h3 class="font-semibold text-luq-neutral-900 dark:text-luq-neutral-100 mb-4">{category}</h3>
+          <ul class="space-y-2">
+            {links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={link.external ? '_blank' : undefined}
+                  rel={link.external ? 'noopener noreferrer' : undefined}
+                  class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 hover:text-luq-purple-600 dark:hover:text-luq-teal-400 transition-colors luq-underline"
+                >
+                  {link.label}
+                  {link.external && (
+                    <svg class="inline-block w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+    
+    <!-- Bottom bar -->
+    <div class="py-6 border-t border-luq-neutral-200 dark:border-luq-neutral-800">
+      <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+          © {new Date().getFullYear()} Luq. Released under the MIT License.
+        </div>
+        
+        <!-- Version and status -->
+        <div class="flex items-center space-x-6 text-sm">
+          <span class="flex items-center text-luq-neutral-600 dark:text-luq-neutral-400">
+            <span class="w-2 h-2 bg-luq-teal-500 rounded-full mr-2 animate-pulse"></span>
+            v0.1.0
+          </span>
+          <a
+            href="https://www.npmjs.com/package/luq"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-luq-neutral-600 dark:text-luq-neutral-400 hover:text-luq-purple-600 dark:hover:text-luq-teal-400"
+          >
+            npm
+          </a>
+          <a
+            href="/docs/changelog"
+            class="text-luq-neutral-600 dark:text-luq-neutral-400 hover:text-luq-purple-600 dark:hover:text-luq-teal-400"
+          >
+            Changelog
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>

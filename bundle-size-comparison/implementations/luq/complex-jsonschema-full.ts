@@ -1,0 +1,17 @@
+import { Builder } from "../../../dist/index.js";
+import { jsonSchemaFullFeaturePlugin } from "../../../dist/plugins/jsonSchemaFullFeature.js";
+import { jsonSchema } from "../../schemas/shared-types";
+
+// Use JSON Schema full feature plugin (includes all necessary plugins)
+const builder = Builder()
+  .use(jsonSchemaFullFeaturePlugin);
+
+// Build validator from JSON Schema
+export const validator = builder.fromJsonSchema(jsonSchema).build();
+
+// Export validation function
+export function validate(data: unknown): boolean {
+  return validator
+    .validate(data, { abortEarly: false, abortEarlyOnEachField: false })
+    .isValid();
+}

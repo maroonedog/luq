@@ -1,0 +1,371 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import OnThisPage from '../../components/OnThisPage.astro';
+
+// Code examples
+const tsconfigExample = `{
+  "compilerOptions": {
+    "strict": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "target": "ES2015" // or higher
+  }
+}`;
+
+const basicUsageExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+
+// 1. Define your TypeScript type
+type User = {
+  name: string;
+  email: string;
+  age: number;
+};
+
+// 2. Create a validator with only the plugins you need
+const userValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .use(numberMinPlugin)
+  .for<User>()
+  .v('name', b => b.string.required().min(2))
+  .v('email', b => b.string.required().email())
+  .v('age', b => b.number.required().min(18))
+  .build();
+
+// 3. Validate your data
+const result = userValidator.validate({
+  name: 'John Doe',
+  email: 'john@example.com',
+  age: 25
+});
+
+if (result.isValid()) {
+  console.log('Valid user:', result.value);
+} else {
+  console.log('Validation errors:', result.getErrors());
+}`;
+
+const pluginArchitectureExample = `// Import only what you need
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+import { numberRangePlugin } from '@maroonedog/luq/plugins/numberRange';
+
+// Each plugin is tree-shakeable
+// Only imported plugins are included in your bundle`;
+
+const schemaFirstExample = `// Define schema
+const UserSchema = z.object({
+  name: z.string(),
+  email: z.string().email()
+});
+
+// Extract type
+type User = z.infer<typeof UserSchema>;`;
+
+const typeFirstExample = `// Use existing type
+type User = {
+  name: string;
+  email: string;
+};
+
+// Build validator
+const validator = Builder()
+  .for<User>()
+  // ...`;
+
+const nestedObjectsExample = `type UserProfile = {
+  user: {
+    name: string;
+    email: string;
+  };
+  settings: {
+    notifications: boolean;
+    theme: 'light' | 'dark';
+  };
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .use(objectPlugin)
+  .use(oneOfPlugin)
+  .for<UserProfile>()
+  .v('user', b => b.object.required())
+  .v('user.name', b => b.string.required().min(2))
+  .v('user.email', b => b.string.required().email())
+  .v('settings', b => b.object.required())
+  .v('settings.notifications', b => b.boolean.required())
+  .v('settings.theme', b => b.string.required().oneOf(['light', 'dark']))
+  .build();`;
+
+const arraysExample = `type Product = {
+  id: string;
+  name: string;
+  tags: string[];
+  prices: number[];
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(arrayMinLengthPlugin)
+  .use(arrayMaxLengthPlugin)
+  .use(arrayUniquePlugin)
+  .for<Product>()
+  .v('id', b => b.string.required())
+  .v('name', b => b.string.required())
+  .v('tags', b => b.array.required().minLength(1).maxLength(5).unique())
+  .v('prices', b => b.array.required().minLength(1))
+  .build();`;
+
+const conditionalValidationExample = `type Order = {
+  type: 'personal' | 'business';
+  companyName?: string;
+  taxId?: string;
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(requiredIfPlugin)
+  .use(optionalPlugin)
+  .use(stringMinPlugin)
+  .use(stringPatternPlugin)
+  .use(oneOfPlugin)
+  .for<Order>()
+  .v('type', b => b.string.required().oneOf(['personal', 'business']))
+  .v('companyName', b => 
+    b.string.requiredIf((data) => data?.type === 'business').min(2)
+  )
+  .v('taxId', b =>
+    b.string
+      .requiredIf((data) => data?.type === 'business')
+      .pattern(/^[0-9]{2}-[0-9]{7}$/)
+  )
+  .build();`;
+
+const errorHandlingExample = `const result = validator.validate(invalidData);
+
+if (!result.isValid()) {
+  // Get structured errors
+  const errors = result.getErrors();
+  
+  errors.forEach(error => {
+    console.log(\`Field: \${error.path}\`);
+    console.log(\`Message: \${error.message}\`);
+    console.log(\`Code: \${error.code}\`);
+  });
+  
+  // Example output:
+  // Field: user.email
+  // Message: Invalid email format
+  // Code: stringEmail
+  
+  // You can also get all error messages as an array
+  const messages = result.getErrorMessages();
+  // ['user.email: Invalid email format', 'age: Must be at least 18']
+}`;
+
+const importBestPracticesExample = `// ✅ Good - specific imports
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+// ❌ Avoid - importing everything (no longer supported)
+// import * as plugins from '@maroonedog/luq/plugins';`;
+---
+
+<BaseLayout title="Getting Started - Luq Documentation">
+  <Header />
+  
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/getting-started" />
+    
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Getting Started with Luq</h1>
+        
+        <div class="prose prose-lg dark:prose-invert max-w-none">
+          <p class="lead">
+            Luq is a lightweight, type-first validation library for TypeScript. Get started in minutes with your existing types.
+          </p>
+          
+          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 border border-luq-purple-200 dark:border-luq-purple-800 rounded-lg p-6 mb-8">
+            <div class="grid md:grid-cols-3 gap-4 text-center">
+              <div class="text-luq-purple-800 dark:text-luq-purple-200">
+                <div class="font-bold text-lg">Type-First</div>
+                <div class="text-sm">Use existing TypeScript types</div>
+              </div>
+              <div class="text-luq-purple-800 dark:text-luq-purple-200">
+                <div class="font-bold text-lg">Tree-Shakeable</div>
+                <div class="text-sm">Import only what you need</div>
+              </div>
+              <div class="text-luq-purple-800 dark:text-luq-purple-200">
+                <div class="font-bold text-lg">Type-Safe</div>
+                <div class="text-sm">Full TypeScript support</div>
+              </div>
+            </div>
+          </div>
+          
+          <h2 id="prerequisites">Prerequisites</h2>
+          
+          <p>Before installing Luq, ensure you have:</p>
+          
+          <ul>
+            <li>Node.js 14.0 or higher</li>
+            <li>TypeScript 4.1 or higher</li>
+            <li>Strict mode enabled in your <code>tsconfig.json</code> (recommended)</li>
+          </ul>
+          
+          <h2 id="installation">Installation</h2>
+          
+          <p>Install Luq using your preferred package manager:</p>
+          
+          <div class="not-prose">
+            <div class="tabs mb-8">
+              <div class="tab-list flex space-x-4 border-b border-luq-neutral-200 dark:border-luq-neutral-800 mb-4">
+                <button class="tab-button active px-4 py-2 font-medium" data-tab="npm">npm</button>
+                <button class="tab-button px-4 py-2 font-medium" data-tab="yarn">yarn</button>
+                <button class="tab-button px-4 py-2 font-medium" data-tab="pnpm">pnpm</button>
+              </div>
+              
+              <div class="tab-content" data-content="npm">
+                <CodeBlock code="npm install @maroonedog/luq" language="bash" showCopy={true} />
+              </div>
+              
+              <div class="tab-content hidden" data-content="yarn">
+                <CodeBlock code="yarn add @maroonedog/luq" language="bash" showCopy={true} />
+              </div>
+              
+              <div class="tab-content hidden" data-content="pnpm">
+                <CodeBlock code="pnpm add @maroonedog/luq" language="bash" showCopy={true} />
+              </div>
+            </div>
+          </div>
+          
+          <h3 id="typescript-configuration">TypeScript Configuration</h3>
+          
+          <p>For the best development experience, ensure your <code>tsconfig.json</code> includes:</p>
+          
+          <CodeBlock code={tsconfigExample} language="json" showCopy={true} />
+          
+          <h2 id="basic-usage">Basic Usage</h2>
+          
+          <p>
+            Luq follows a type-first approach. Start with your existing TypeScript types and build validators using plugins:
+          </p>
+          
+          <CodeBlock code={basicUsageExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-6 my-8">
+            <h3 class="text-lg font-semibold mb-3">Key Concepts</h3>
+            <div class="grid md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <h4 class="font-semibold mb-2">Plugin Architecture</h4>
+                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Each validation rule is a separate plugin. Import only what you need for optimal bundle size.
+                </p>
+              </div>
+              <div>
+                <h4 class="font-semibold mb-2">Type-First Design</h4>
+                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Use existing TypeScript types instead of defining schemas. No duplication needed.
+                </p>
+              </div>
+              <div>
+                <h4 class="font-semibold mb-2">Builder Pattern</h4>
+                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Fluent API with full TypeScript support and intelligent autocomplete.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <h2 id="next-steps">Next Steps</h2>
+          
+          <div class="not-prose grid md:grid-cols-3 gap-4 mt-6">
+            <a href="/docs/core-concepts" class="luq-card p-4 hover:shadow-lg transition-shadow">
+              <h4 class="font-semibold mb-1">Core Concepts</h4>
+              <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                Deep dive into Luq's architecture
+              </p>
+            </a>
+            
+            <a href="/plugins" class="luq-card p-4 hover:shadow-lg transition-shadow">
+              <h4 class="font-semibold mb-1">Plugin Library</h4>
+              <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                Browse plugins & generate code
+              </p>
+            </a>
+            
+            <a href="/docs/examples" class="luq-card p-4 hover:shadow-lg transition-shadow">
+              <h4 class="font-semibold mb-1">Examples & Patterns</h4>
+              <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                Common validation patterns
+              </p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <OnThisPage tableOfContents={[
+      { id: 'prerequisites', title: 'Prerequisites', level: 2 },
+      { id: 'installation', title: 'Installation', level: 2 },
+      { id: 'typescript-configuration', title: 'TypeScript Configuration', level: 3 },
+      { id: 'basic-usage', title: 'Basic Usage', level: 2 },
+      { id: 'next-steps', title: 'Next Steps', level: 2 },
+    ]} />
+  </div>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  .tab-button {
+    @apply relative text-luq-neutral-600 dark:text-luq-neutral-400 hover:text-luq-purple-600 dark:hover:text-luq-teal-400 transition-colors;
+  }
+  
+  .tab-button.active {
+    @apply text-luq-purple-600 dark:text-luq-teal-400;
+  }
+  
+  .tab-button.active::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-luq-purple-600 dark:bg-luq-teal-400;
+  }
+</style>
+
+<script>
+  // Tab functionality
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  tabButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const tab = (button as HTMLElement).dataset.tab;
+      
+      // Update active button
+      tabButtons.forEach((btn) => btn.classList.remove('active'));
+      button.classList.add('active');
+      
+      // Show corresponding content
+      tabContents.forEach((content) => {
+        const contentTab = (content as HTMLElement).dataset.content;
+        if (contentTab === tab) {
+          content.classList.remove('hidden');
+        } else {
+          content.classList.add('hidden');
+        }
+      });
+    });
+  });
+</script>

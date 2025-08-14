@@ -1,0 +1,39 @@
+---
+import CodeBlock from './CodeBlock.astro';
+
+export interface Props {
+  code: string;
+  title?: string;
+  fileName?: string;
+  showWindowControls?: boolean;
+  showCopy?: boolean;
+  language?: string;
+}
+
+const { 
+  code, 
+  title,
+  fileName,
+  showWindowControls = true,
+  showCopy = true,
+  language = 'typescript'
+} = Astro.props;
+---
+
+<div class="my-6">
+  {title && (
+    <div class="mb-3">
+      <h3 class="text-lg font-semibold text-luq-neutral-800 dark:text-luq-neutral-200">
+        {title}
+      </h3>
+    </div>
+  )}
+  <CodeBlock 
+    code={code} 
+    language={language}
+    fileName={fileName}
+    showWindowControls={showWindowControls}
+    showCopy={showCopy}
+    class="shadow-lg"
+  />
+</div>

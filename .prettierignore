@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-test/
+build/
+coverage/
+lcov-report/
+out/
+test-out/
+.next/
+*.log
+
+# Generated files
+*.js.map
+*.d.ts.map
+
+# Test fixtures and generated test files
+test/compiled/
+test/types/
+
+# Specific directories
+bundle-size-comparison/dist/
+docs-site/.next/
+vscode-extension/out/
+
+# Other
+.git/
+*.min.js
+*.min.css

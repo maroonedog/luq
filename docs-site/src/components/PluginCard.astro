@@ -1,0 +1,136 @@
+---
+import CodeBlock from './CodeBlock.astro';
+
+export interface Props {
+  plugin: {
+    name: string;
+    category: string;
+    description: string;
+    bundleSize: string;
+  };
+}
+
+const { plugin } = Astro.props;
+
+// Generate import statement
+const importStatement = `import { ${plugin.name}Plugin } from '@/core/plugin/${plugin.name}';`;
+
+// Helper function to generate example code
+function getExampleCode(pluginName: string): string {
+  const examples: Record<string, string> = {
+    required: `builder.v('name', b => b.string.required())`,
+    stringMin: `builder.v('username', b => b.string.required().min(3))`,
+    stringEmail: `builder.v('email', b => b.string.required().email())`,
+    numberMin: `builder.v('age', b => b.number.required().min(18))`,
+    arrayMinLength: `builder.v('tags', b => b.array.minLength(1))`,
+    // Add more examples as needed
+  };
+  
+  return examples[pluginName] || `builder.v('field', b => b.${pluginName}())`;
+}
+---
+
+<div
+  class="luq-card p-6 h-full flex flex-col plugin-card"
+  data-plugin-name={plugin.name}
+  data-plugin-description={plugin.description}
+>
+  <!-- Plugin name and size -->
+  <div class="flex items-start justify-between mb-3">
+    <h3 class="text-lg font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">
+      {plugin.name}
+    </h3>
+    <span class="text-xs bg-luq-teal-100 dark:bg-luq-teal-900/30 text-luq-teal-700 dark:text-luq-teal-300 px-2 py-1 rounded-full">
+      {plugin.bundleSize}
+    </span>
+  </div>
+  
+  <!-- Description -->
+  <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 mb-4 flex-1">
+    {plugin.description}
+  </p>
+  
+  <!-- Import statement -->
+  <div class="mt-auto">
+    <CodeBlock 
+      code={importStatement}
+      language="typescript"
+      showWindowControls={false}
+      showCopy={true}
+      class="text-xs"
+    />
+    
+    <!-- Actions -->
+    <div class="flex items-center justify-between mt-3 text-sm">
+      <a
+        href={`/docs/plugins/${plugin.name}`}
+        class="text-luq-purple-600 dark:text-luq-teal-400 hover:underline luq-underline"
+      >
+        View docs →
+      </a>
+      <button
+        class="text-luq-neutral-500 hover:text-luq-purple-600 dark:hover:text-luq-teal-400 example-toggle"
+        data-plugin={plugin.name}
+      >
+        <span class="flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          Example
+        </span>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Example (hidden by default) -->
+  <div class="hidden mt-4 pt-4 border-t border-luq-neutral-200 dark:border-luq-neutral-800 example-content" data-example-for={plugin.name}>
+    <CodeBlock 
+      code={getExampleCode(plugin.name)}
+      language="typescript"
+      showWindowControls={false}
+      showCopy={false}
+      class="text-xs"
+    />
+  </div>
+</div>
+
+<script>
+  // Copy functionality
+  document.querySelectorAll('.copy-button').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const btn = button as HTMLButtonElement;
+      const text = btn.dataset.copyText || '';
+      
+      try {
+        await navigator.clipboard.writeText(text);
+        
+        // Show success state
+        const copyIcon = btn.querySelector('.copy-icon');
+        const checkIcon = btn.querySelector('.check-icon');
+        
+        copyIcon?.classList.add('hidden');
+        checkIcon?.classList.remove('hidden');
+        
+        setTimeout(() => {
+          copyIcon?.classList.remove('hidden');
+          checkIcon?.classList.add('hidden');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+  });
+  
+  // Example toggle
+  document.querySelectorAll('.example-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+      const btn = button as HTMLButtonElement;
+      const pluginName = btn.dataset.plugin;
+      const example = document.querySelector(`[data-example-for="${pluginName}"]`);
+      
+      if (example) {
+        example.classList.toggle('hidden');
+      }
+    });
+  });
+</script>

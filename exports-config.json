@@ -1,0 +1,292 @@
+{
+  ".": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.mjs",
+    "require": "./dist/index.js"
+  },
+  "./plugins/required": {
+    "types": "./dist/plugins/required.d.ts",
+    "import": "./dist/plugins/required.mjs",
+    "require": "./dist/plugins/required.js"
+  },
+  "./plugins/optional": {
+    "types": "./dist/plugins/optional.d.ts",
+    "import": "./dist/plugins/optional.mjs",
+    "require": "./dist/plugins/optional.js"
+  },
+  "./plugins/nullable": {
+    "types": "./dist/plugins/nullable.d.ts",
+    "import": "./dist/plugins/nullable.mjs",
+    "require": "./dist/plugins/nullable.js"
+  },
+  "./plugins/stringMin": {
+    "types": "./dist/plugins/stringMin.d.ts",
+    "import": "./dist/plugins/stringMin.mjs",
+    "require": "./dist/plugins/stringMin.js"
+  },
+  "./plugins/stringMax": {
+    "types": "./dist/plugins/stringMax.d.ts",
+    "import": "./dist/plugins/stringMax.mjs",
+    "require": "./dist/plugins/stringMax.js"
+  },
+  "./plugins/stringEmail": {
+    "types": "./dist/plugins/stringEmail.d.ts",
+    "import": "./dist/plugins/stringEmail.mjs",
+    "require": "./dist/plugins/stringEmail.js"
+  },
+  "./plugins/stringPattern": {
+    "types": "./dist/plugins/stringPattern.d.ts",
+    "import": "./dist/plugins/stringPattern.mjs",
+    "require": "./dist/plugins/stringPattern.js"
+  },
+  "./plugins/stringUrl": {
+    "types": "./dist/plugins/stringUrl.d.ts",
+    "import": "./dist/plugins/stringUrl.mjs",
+    "require": "./dist/plugins/stringUrl.js"
+  },
+  "./plugins/stringDate": {
+    "types": "./dist/plugins/stringDate.d.ts",
+    "import": "./dist/plugins/stringDate.mjs",
+    "require": "./dist/plugins/stringDate.js"
+  },
+  "./plugins/stringDatetime": {
+    "types": "./dist/plugins/stringDatetime.d.ts",
+    "import": "./dist/plugins/stringDatetime.mjs",
+    "require": "./dist/plugins/stringDatetime.js"
+  },
+  "./plugins/stringTime": {
+    "types": "./dist/plugins/stringTime.d.ts",
+    "import": "./dist/plugins/stringTime.mjs",
+    "require": "./dist/plugins/stringTime.js"
+  },
+  "./plugins/stringIpv4": {
+    "types": "./dist/plugins/stringIpv4.d.ts",
+    "import": "./dist/plugins/stringIpv4.mjs",
+    "require": "./dist/plugins/stringIpv4.js"
+  },
+  "./plugins/stringIpv6": {
+    "types": "./dist/plugins/stringIpv6.d.ts",
+    "import": "./dist/plugins/stringIpv6.mjs",
+    "require": "./dist/plugins/stringIpv6.js"
+  },
+  "./plugins/stringHostname": {
+    "types": "./dist/plugins/stringHostname.d.ts",
+    "import": "./dist/plugins/stringHostname.mjs",
+    "require": "./dist/plugins/stringHostname.js"
+  },
+  "./plugins/stringDuration": {
+    "types": "./dist/plugins/stringDuration.d.ts",
+    "import": "./dist/plugins/stringDuration.mjs",
+    "require": "./dist/plugins/stringDuration.js"
+  },
+  "./plugins/stringBase64": {
+    "types": "./dist/plugins/stringBase64.d.ts",
+    "import": "./dist/plugins/stringBase64.mjs",
+    "require": "./dist/plugins/stringBase64.js"
+  },
+  "./plugins/stringJsonPointer": {
+    "types": "./dist/plugins/stringJsonPointer.d.ts",
+    "import": "./dist/plugins/stringJsonPointer.mjs",
+    "require": "./dist/plugins/stringJsonPointer.js"
+  },
+  "./plugins/stringRelativeJsonPointer": {
+    "types": "./dist/plugins/stringRelativeJsonPointer.d.ts",
+    "import": "./dist/plugins/stringRelativeJsonPointer.mjs",
+    "require": "./dist/plugins/stringRelativeJsonPointer.js"
+  },
+  "./plugins/stringIri": {
+    "types": "./dist/plugins/stringIri.d.ts",
+    "import": "./dist/plugins/stringIri.mjs",
+    "require": "./dist/plugins/stringIri.js"
+  },
+  "./plugins/stringIriReference": {
+    "types": "./dist/plugins/stringIriReference.d.ts",
+    "import": "./dist/plugins/stringIriReference.mjs",
+    "require": "./dist/plugins/stringIriReference.js"
+  },
+  "./plugins/stringUriTemplate": {
+    "types": "./dist/plugins/stringUriTemplate.d.ts",
+    "import": "./dist/plugins/stringUriTemplate.mjs",
+    "require": "./dist/plugins/stringUriTemplate.js"
+  },
+  "./plugins/stringContentEncoding": {
+    "types": "./dist/plugins/stringContentEncoding.d.ts",
+    "import": "./dist/plugins/stringContentEncoding.mjs",
+    "require": "./dist/plugins/stringContentEncoding.js"
+  },
+  "./plugins/stringContentMediaType": {
+    "types": "./dist/plugins/stringContentMediaType.d.ts",
+    "import": "./dist/plugins/stringContentMediaType.mjs",
+    "require": "./dist/plugins/stringContentMediaType.js"
+  },
+  "./plugins/uuid": {
+    "types": "./dist/plugins/uuid.d.ts",
+    "import": "./dist/plugins/uuid.mjs",
+    "require": "./dist/plugins/uuid.js"
+  },
+  "./plugins/numberMin": {
+    "types": "./dist/plugins/numberMin.d.ts",
+    "import": "./dist/plugins/numberMin.mjs",
+    "require": "./dist/plugins/numberMin.js"
+  },
+  "./plugins/numberMax": {
+    "types": "./dist/plugins/numberMax.d.ts",
+    "import": "./dist/plugins/numberMax.mjs",
+    "require": "./dist/plugins/numberMax.js"
+  },
+  "./plugins/numberPositive": {
+    "types": "./dist/plugins/numberPositive.d.ts",
+    "import": "./dist/plugins/numberPositive.mjs",
+    "require": "./dist/plugins/numberPositive.js"
+  },
+  "./plugins/numberNegative": {
+    "types": "./dist/plugins/numberNegative.d.ts",
+    "import": "./dist/plugins/numberNegative.mjs",
+    "require": "./dist/plugins/numberNegative.js"
+  },
+  "./plugins/numberInteger": {
+    "types": "./dist/plugins/numberInteger.d.ts",
+    "import": "./dist/plugins/numberInteger.mjs",
+    "require": "./dist/plugins/numberInteger.js"
+  },
+  "./plugins/numberMultipleOf": {
+    "types": "./dist/plugins/numberMultipleOf.d.ts",
+    "import": "./dist/plugins/numberMultipleOf.mjs",
+    "require": "./dist/plugins/numberMultipleOf.js"
+  },
+  "./plugins/booleanTruthy": {
+    "types": "./dist/plugins/booleanTruthy.d.ts",
+    "import": "./dist/plugins/booleanTruthy.mjs",
+    "require": "./dist/plugins/booleanTruthy.js"
+  },
+  "./plugins/booleanFalsy": {
+    "types": "./dist/plugins/booleanFalsy.d.ts",
+    "import": "./dist/plugins/booleanFalsy.mjs",
+    "require": "./dist/plugins/booleanFalsy.js"
+  },
+  "./plugins/arrayMinLength": {
+    "types": "./dist/plugins/arrayMinLength.d.ts",
+    "import": "./dist/plugins/arrayMinLength.mjs",
+    "require": "./dist/plugins/arrayMinLength.js"
+  },
+  "./plugins/arrayMaxLength": {
+    "types": "./dist/plugins/arrayMaxLength.d.ts",
+    "import": "./dist/plugins/arrayMaxLength.mjs",
+    "require": "./dist/plugins/arrayMaxLength.js"
+  },
+  "./plugins/arrayUnique": {
+    "types": "./dist/plugins/arrayUnique.d.ts",
+    "import": "./dist/plugins/arrayUnique.mjs",
+    "require": "./dist/plugins/arrayUnique.js"
+  },
+  "./plugins/arrayIncludes": {
+    "types": "./dist/plugins/arrayIncludes.d.ts",
+    "import": "./dist/plugins/arrayIncludes.mjs",
+    "require": "./dist/plugins/arrayIncludes.js"
+  },
+  "./plugins/arrayContains": {
+    "types": "./dist/plugins/arrayContains.d.ts",
+    "import": "./dist/plugins/arrayContains.mjs",
+    "require": "./dist/plugins/arrayContains.js"
+  },
+  "./plugins/object": {
+    "types": "./dist/plugins/object.d.ts",
+    "import": "./dist/plugins/object.mjs",
+    "require": "./dist/plugins/object.js"
+  },
+  "./plugins/objectMinProperties": {
+    "types": "./dist/plugins/objectMinProperties.d.ts",
+    "import": "./dist/plugins/objectMinProperties.mjs",
+    "require": "./dist/plugins/objectMinProperties.js"
+  },
+  "./plugins/objectMaxProperties": {
+    "types": "./dist/plugins/objectMaxProperties.d.ts",
+    "import": "./dist/plugins/objectMaxProperties.mjs",
+    "require": "./dist/plugins/objectMaxProperties.js"
+  },
+  "./plugins/objectAdditionalProperties": {
+    "types": "./dist/plugins/objectAdditionalProperties.d.ts",
+    "import": "./dist/plugins/objectAdditionalProperties.mjs",
+    "require": "./dist/plugins/objectAdditionalProperties.js"
+  },
+  "./plugins/objectPropertyNames": {
+    "types": "./dist/plugins/objectPropertyNames.d.ts",
+    "import": "./dist/plugins/objectPropertyNames.mjs",
+    "require": "./dist/plugins/objectPropertyNames.js"
+  },
+  "./plugins/objectPatternProperties": {
+    "types": "./dist/plugins/objectPatternProperties.d.ts",
+    "import": "./dist/plugins/objectPatternProperties.mjs",
+    "require": "./dist/plugins/objectPatternProperties.js"
+  },
+  "./plugins/objectDependentRequired": {
+    "types": "./dist/plugins/objectDependentRequired.d.ts",
+    "import": "./dist/plugins/objectDependentRequired.mjs",
+    "require": "./dist/plugins/objectDependentRequired.js"
+  },
+  "./plugins/objectDependentSchemas": {
+    "types": "./dist/plugins/objectDependentSchemas.d.ts",
+    "import": "./dist/plugins/objectDependentSchemas.mjs",
+    "require": "./dist/plugins/objectDependentSchemas.js"
+  },
+  "./plugins/oneOf": {
+    "types": "./dist/plugins/oneOf.d.ts",
+    "import": "./dist/plugins/oneOf.mjs",
+    "require": "./dist/plugins/oneOf.js"
+  },
+  "./plugins/literal": {
+    "types": "./dist/plugins/literal.d.ts",
+    "import": "./dist/plugins/literal.mjs",
+    "require": "./dist/plugins/literal.js"
+  },
+  "./plugins/compareField": {
+    "types": "./dist/plugins/compareField.d.ts",
+    "import": "./dist/plugins/compareField.mjs",
+    "require": "./dist/plugins/compareField.js"
+  },
+  "./plugins/requiredIf": {
+    "types": "./dist/plugins/requiredIf.d.ts",
+    "import": "./dist/plugins/requiredIf.mjs",
+    "require": "./dist/plugins/requiredIf.js"
+  },
+  "./plugins/validateIf": {
+    "types": "./dist/plugins/validateIf.d.ts",
+    "import": "./dist/plugins/validateIf.mjs",
+    "require": "./dist/plugins/validateIf.js"
+  },
+  "./plugins/skip": {
+    "types": "./dist/plugins/skip.d.ts",
+    "import": "./dist/plugins/skip.mjs",
+    "require": "./dist/plugins/skip.js"
+  },
+  "./plugins/transform": {
+    "types": "./dist/plugins/transform.d.ts",
+    "import": "./dist/plugins/transform.mjs",
+    "require": "./dist/plugins/transform.js"
+  },
+  "./plugins/tupleBuilder": {
+    "types": "./dist/plugins/tupleBuilder.d.ts",
+    "import": "./dist/plugins/tupleBuilder.mjs",
+    "require": "./dist/plugins/tupleBuilder.js"
+  },
+  "./plugins/readOnlyWriteOnly": {
+    "types": "./dist/plugins/readOnlyWriteOnly.d.ts",
+    "import": "./dist/plugins/readOnlyWriteOnly.mjs",
+    "require": "./dist/plugins/readOnlyWriteOnly.js"
+  },
+  "./plugins/custom": {
+    "types": "./dist/plugins/custom.d.ts",
+    "import": "./dist/plugins/custom.mjs",
+    "require": "./dist/plugins/custom.js"
+  },
+  "./plugins/jsonSchema": {
+    "types": "./dist/plugins/jsonSchema.d.ts",
+    "import": "./dist/plugins/jsonSchema.mjs",
+    "require": "./dist/plugins/jsonSchema.js"
+  },
+  "./plugins/jsonSchemaFullFeature": {
+    "types": "./dist/plugins/jsonSchemaFullFeature.d.ts",
+    "import": "./dist/plugins/jsonSchemaFullFeature.mjs",
+    "require": "./dist/plugins/jsonSchemaFullFeature.js"
+  }
+}

@@ -1,0 +1,1011 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import DocsSidebar from '../../../components/DocsSidebar.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import OnThisPage from '../../../components/OnThisPage.astro';
+
+// Table of contents
+const tableOfContents = [
+  { id: 'overview', title: 'Overview', level: 2 },
+  { id: 'key-concepts', title: 'Key Concepts', level: 2 },
+  { id: 'creating-registry', title: 'Creating a Registry', level: 2 },
+  { id: 'registering-plugins', title: 'Registering Plugins', level: 3 },
+  { id: 'field-rules', title: 'Field Rules', level: 2 },
+  { id: 'create-field-rule', title: 'createFieldRule() Method', level: 3 },
+  { id: 'using-field-rules', title: 'Using Field Rules', level: 3 },
+  { id: 'testing-rules', title: 'Testing Field Rules', level: 3 },
+  { id: 'builder-integration', title: 'Builder Integration', level: 2 },
+  { id: 'to-builder', title: 'toBuilder() Method', level: 3 },
+  { id: 'use-field', title: 'useField() with Rules', level: 3 },
+  { id: 'patterns', title: 'Common Patterns', level: 2 },
+  { id: 'team-rules', title: 'Team-Wide Rules', level: 3 },
+  { id: 'composition', title: 'Rule Composition', level: 3 },
+  { id: 'complete-examples', title: 'Complete Examples', level: 2 },
+];
+
+// Code examples
+const creatingRegistryExample = `import { createPluginRegistry } from '@maroonedog/luq/core/registry';
+import {
+  requiredPlugin,
+  optionalPlugin,
+  stringMinPlugin,
+  stringMaxPlugin,
+  stringEmailPlugin,
+  stringPatternPlugin,
+  numberMinPlugin,
+  numberMaxPlugin,
+  transformPlugin
+} from '@maroonedog/luq/plugin';
+
+// Create a registry and register plugins
+const registry = createPluginRegistry()
+  .use(requiredPlugin)
+  .use(optionalPlugin)
+  .use(stringMinPlugin)
+  .use(stringMaxPlugin)
+  .use(stringEmailPlugin)
+  .use(stringPatternPlugin)
+  .use(numberMinPlugin)
+  .use(numberMaxPlugin)
+  .use(transformPlugin);
+
+// Registry now has all plugin methods available for field rules`;
+
+const registeringPluginsExample = `// Method 1: Chain multiple use() calls
+const registry1 = createPluginRegistry()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin);
+
+// Method 2: Custom plugins can also be registered
+const customPlugin = plugin({
+  name: 'customValidator',
+  methodName: 'customRule',
+  allowedTypes: ['string'],
+  category: 'standard',
+  create: (options) => ({
+    check: (value, context) => {
+      // Custom validation logic
+      return myCustomCheck(value);
+    }
+  })
+});
+
+const registry2 = createPluginRegistry()
+  .use(requiredPlugin)
+  .use(customPlugin); // Custom plugin registered
+
+// Type-safe: registry knows about all registered plugins
+// IDE will autocomplete available methods`;
+
+const createFieldRuleExample = `// Define your data structure
+interface UserProfile {
+  email: string;
+  username: string;
+  age: number;
+  password: string;
+  profile: {
+    firstName: string;
+    lastName: string;
+    bio?: string;
+  };
+  address: {
+    street: string;
+    city: string;
+    country: {
+      code: string;
+      name: string;
+    };
+  };
+  tags: string[];
+}
+
+// NEW: Type-safe registry with for<Type>()
+const typedRegistry = registry.for<UserProfile>();
+
+// Now createFieldRule has type-safe names and automatic type inference!
+const emailRule = typedRegistry.createFieldRule(
+  b => b.string.required().email(),
+  { 
+    name: 'email', // ✅ TypeScript knows this must be a valid field path
+    description: 'Valid email address'
+  }
+);
+// emailRule is automatically typed as FieldRule<string>
+
+// Nested fields - name must use dot notation
+const firstNameRule = typedRegistry.createFieldRule(
+  b => b.string.required().min(2),
+  {
+    name: 'profile.firstName', // ✅ Type-safe, must be valid path
+    description: 'First name (min 2 chars)'
+  }
+);
+// Automatically inferred as FieldRule<string>
+
+// Deeply nested field - TypeScript enforces correct path
+const countryCodeRule = typedRegistry.createFieldRule(
+  b => b.string.required().pattern(/^[A-Z]{2}$/),
+  {
+    name: 'address.country.code', // ✅ Type-checked path
+    description: 'ISO country code'
+  }
+);
+
+// Invalid path causes TypeScript error
+// const invalidRule = typedRegistry.createFieldRule(
+//   b => b.string.required(),
+//   { name: 'invalid.path' } // ❌ TypeScript Error: not a valid path
+// );
+
+// Optional field - type is correctly inferred as string | undefined
+const bioRule = typedRegistry.createFieldRule(
+  b => b.string.optional().max(500),
+  {
+    name: 'profile.bio', // Type inferred as string | undefined
+    description: 'User biography'
+  }
+);
+
+// Explicit type override when needed
+const ageFromStringRule = typedRegistry.createFieldRule<string>(
+  b => b.string.required().pattern(/^\\d+$/),
+  {
+    name: 'age', // Override: treating number field as string input
+    description: 'Age from form input'
+  }
+);
+
+// Array validation
+const tagsRule = typedRegistry.createFieldRule(
+  b => b.array.required().minLength(1),
+  {
+    name: 'tags', // Automatically typed as string[]
+    description: 'User tags'
+  }
+);`;
+
+const usingFieldRulesExample = `// Type-safe usage with the defined UserProfile interface
+const userValidator = registry
+  .toBuilder()
+  .for<UserProfile>() // Same interface used in field rules
+  .useField('email', emailRule)
+  .useField('profile.firstName', firstNameRule)        // ✅ Dot notation
+  .useField('profile.bio', bioRule)                   // ✅ Optional field
+  .useField('address.country.code', countryCodeRule)  // ✅ Deeply nested
+  .useField('tags', tagsRule)                        // ✅ Array field
+  .useField('tags[*]', tagElementRule)               // ✅ Array elements
+  .v('username', b => b.string.required())           // Can mix with inline
+  .build();
+
+// Standalone validation - field rules work independently
+const emailResult = emailRule.validate('user@example.com');
+if (emailResult.isValid()) {
+  const validEmail: string = emailResult.unwrap(); // Type-safe result
+}
+
+// Type mismatch protection
+// const wrongRule = registry.createFieldRule<number>(...) 
+// userValidator.useField('email', wrongRule) // ❌ TypeScript error!
+
+// Correct type extraction for complex fields
+type AddressCountryCode = TypeOfPath<UserProfile, 'address.country.code'>; // string
+type ProfileBio = TypeOfPath<UserProfile, 'profile.bio'>; // string | undefined
+
+// Using with partial types
+interface UserUpdateForm {
+  email?: string;
+  profile?: {
+    firstName?: string;
+    bio?: string;
+  };
+}
+
+const updateValidator = registry
+  .toBuilder()
+  .for<UserUpdateForm>()
+  .useField('email', emailRule)                      // Reuse same rules
+  .useField('profile.firstName', firstNameRule)      // Even for partial types
+  .build();`;
+
+const testingRulesExample = `// Unit testing individual field rules
+describe('Email Rule', () => {
+  it('should accept valid emails', () => {
+    const result = emailRule.validate('test@example.com');
+    expect(result.isValid()).toBe(true);
+  });
+
+  it('should reject invalid emails', () => {
+    const result = emailRule.validate('not-an-email');
+    expect(result.isValid()).toBe(false);
+    expect(result.errors[0].code).toBe('invalid_email');
+  });
+
+  it('should handle empty values', () => {
+    const result = emailRule.validate('');
+    expect(result.isValid()).toBe(false);
+    expect(result.errors[0].code).toBe('required');
+  });
+});
+
+// Testing with different inputs
+const testCases = [
+  { input: 'valid@email.com', expected: true },
+  { input: 'invalid.email', expected: false },
+  { input: '', expected: false },
+  { input: null, expected: false },
+];
+
+testCases.forEach(({ input, expected }) => {
+  const result = emailRule.validate(input);
+  console.log(\`Input: \${input}, Valid: \${result.isValid()}, Expected: \${expected}\`);
+});`;
+
+const toBuilderExample = `// Convert registry to builder with all registered plugins
+const builder = registry.toBuilder();
+
+// The builder has all plugins from the registry
+const validator = builder
+  .for<FormData>()
+  .v('field1', b => b.string.required().min(5))
+  .v('field2', b => b.number.required().min(0).max(100))
+  .build();
+
+// Useful for creating multiple validators with same plugins
+const validator1 = registry.toBuilder()
+  .for<Form1>()
+  .v('email', b => b.string.email())
+  .build();
+
+const validator2 = registry.toBuilder()
+  .for<Form2>()
+  .v('username', b => b.string.min(3))
+  .build();
+
+// All validators share the same plugin configuration`;
+
+const teamRulesExample = `// team-validation-rules.ts - Shared across the team
+import { createPluginRegistry } from '@maroonedog/luq/core/registry';
+import { 
+  requiredPlugin, 
+  stringEmailPlugin,
+  stringMinPlugin,
+  stringPatternPlugin,
+  numberMinPlugin,
+  transformPlugin
+} from '@maroonedog/luq/plugin';
+
+// Create team registry with all needed plugins
+export const teamRegistry = createPluginRegistry()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .use(stringMinPlugin)
+  .use(stringPatternPlugin)
+  .use(numberMinPlugin)
+  .use(transformPlugin);
+
+// Define team-wide validation rules
+export const teamRules = {
+  // Company email must use corporate domain
+  corporateEmail: teamRegistry.createFieldRule<string>(
+    b => b.string
+      .required()
+      .email()
+      .pattern(/@mycompany\\.com$/),
+    {
+      name: 'corporateEmail',
+      description: 'Corporate email address (@mycompany.com)',
+      fieldOptions: {
+        metadata: {
+          errorMessage: 'Please use your corporate email address'
+        }
+      }
+    }
+  ),
+
+  // Employee ID format
+  employeeId: teamRegistry.createFieldRule<string>(
+    b => b.string
+      .required()
+      .pattern(/^EMP-\\d{6}$/),
+    {
+      name: 'employeeId',
+      description: 'Employee ID (EMP-XXXXXX format)'
+    }
+  ),
+
+  // Phone number with normalization
+  phoneNumber: teamRegistry.createFieldRule<string>(
+    b => b.string
+      .required()
+      .pattern(/^[\\d\\s\\-\\(\\)\\+]+$/)
+      .transform(v => v.replace(/[\\s\\-\\(\\)]/g, '')),
+    {
+      name: 'phoneNumber',
+      description: 'Phone number (will be normalized)'
+    }
+  ),
+
+  // Department code
+  departmentCode: teamRegistry.createFieldRule<string>(
+    b => b.string
+      .required()
+      .pattern(/^[A-Z]{3}\\d{3}$/),
+    {
+      name: 'departmentCode',
+      description: 'Department code (XXX000 format)'
+    }
+  ),
+
+  // Salary range
+  salary: teamRegistry.createFieldRule<number>(
+    b => b.number
+      .required()
+      .min(30000)
+      .max(500000),
+    {
+      name: 'salary',
+      description: 'Annual salary (30k-500k range)'
+    }
+  )
+};
+
+// Usage in different parts of the application
+import { teamRules, teamRegistry } from './team-validation-rules';
+
+// HR form validator
+const hrFormValidator = teamRegistry.toBuilder()
+  .for<HRForm>()
+  .useField('email', teamRules.corporateEmail)
+  .useField('employeeId', teamRules.employeeId)
+  .useField('department', teamRules.departmentCode)
+  .useField('salary', teamRules.salary)
+  .build();
+
+// Employee profile validator
+const profileValidator = teamRegistry.toBuilder()
+  .for<EmployeeProfile>()
+  .useField('workEmail', teamRules.corporateEmail)
+  .useField('phone', teamRules.phoneNumber)
+  .useField('empId', teamRules.employeeId)
+  .build();`;
+
+const compositionExample = `// Composing complex rules from simpler ones
+const baseRegistry = createPluginRegistry()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringMaxPlugin)
+  .use(stringPatternPlugin)
+  .use(transformPlugin);
+
+// Base rules
+const trimmedStringRule = baseRegistry.createFieldRule<string>(
+  b => b.string.transform(v => v.trim()),
+  { name: 'trimmedString' }
+);
+
+const nonEmptyStringRule = baseRegistry.createFieldRule<string>(
+  b => b.string.required().min(1),
+  { name: 'nonEmptyString' }
+);
+
+// Composed rules using base rules as building blocks
+const nameRule = baseRegistry.createFieldRule<string>(
+  b => b.string
+    .required()
+    .transform(v => v.trim())
+    .min(2)
+    .max(50)
+    .pattern(/^[a-zA-Z\\s]+$/),
+  {
+    name: 'personName',
+    description: 'Person name (2-50 chars, letters only)'
+  }
+);
+
+// Domain-specific rules
+const productCodeRule = baseRegistry.createFieldRule<string>(
+  b => b.string
+    .required()
+    .transform(v => v.toUpperCase().trim())
+    .pattern(/^[A-Z]{3}-\\d{4}$/),
+  {
+    name: 'productCode',
+    description: 'Product code (XXX-0000 format)'
+  }
+);
+
+// Rules with complex transformations
+const priceRule = baseRegistry.createFieldRule<string>(
+  b => b.string
+    .required()
+    .pattern(/^\\d+(\\.\\d{1,2})?$/)
+    .transform(v => parseFloat(v))
+    .transform(v => Math.round(v * 100) / 100), // Ensure 2 decimal places
+  {
+    name: 'price',
+    description: 'Price with up to 2 decimal places'
+  }
+);`;
+
+const typeSafePatternExample1 = `// ✅ CORRECT - Type-safe
+interface User {
+  email: string;
+  profile: { name: string; age: number; };
+}
+
+const emailRule = registry.createFieldRule<User['email']>(...)
+const nameRule = registry.createFieldRule<TypeOfPath<User, 'profile.name'>>(...)
+
+// ❌ WRONG - Loses type connection
+const emailRule = registry.createFieldRule<string>(...)  // Too generic!`;
+
+const typeSafePatternExample2 = `// ✅ CORRECT - Dot notation for nested
+{ name: 'profile.name' }
+{ name: 'address.country.code' }
+{ name: 'items[*].price' }
+
+// ❌ WRONG - Invalid path formats
+{ name: 'profile_name' }      // Underscore instead of dot
+{ name: 'profile/name' }      // Slash instead of dot
+{ name: 'profile' }           // Missing nested field`;
+
+const builderPickExample = `// If you have a Builder, use pick() instead of Plugin Registry
+const validator = Builder()...build();
+const emailValidator = validator.pick('email');
+const result = emailValidator.validate('test@example.com');`;
+
+const completeExample = `// Complete example: Multi-step form validation
+import { createPluginRegistry } from '@maroonedog/luq/core/registry';
+import { 
+  requiredPlugin,
+  optionalPlugin,
+  stringMinPlugin,
+  stringEmailPlugin,
+  stringPatternPlugin,
+  numberMinPlugin,
+  numberMaxPlugin,
+  compareFieldPlugin,
+  transformPlugin,
+  conditionalPlugin
+} from '@maroonedog/luq/plugin';
+
+// 1. Setup registry with all needed plugins
+const formRegistry = createPluginRegistry()
+  .use(requiredPlugin)
+  .use(optionalPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .use(stringPatternPlugin)
+  .use(numberMinPlugin)
+  .use(numberMaxPlugin)
+  .use(compareFieldPlugin)
+  .use(transformPlugin)
+  .use(conditionalPlugin);
+
+// 2. Define reusable field rules
+const formRules = {
+  email: formRegistry.createFieldRule<string>(
+    b => b.string.required().email(),
+    { 
+      name: 'email',
+      fieldOptions: {
+        metadata: { 
+          placeholder: 'email@example.com',
+          autocomplete: 'email' 
+        }
+      }
+    }
+  ),
+
+  password: formRegistry.createFieldRule<string>(
+    b => b.string
+      .required()
+      .min(8)
+      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])/),
+    {
+      name: 'password',
+      description: 'Password with uppercase, lowercase, number, and special char'
+    }
+  ),
+
+  confirmPassword: formRegistry.createFieldRule<string>(
+    b => b.string.required(),
+    { name: 'confirmPassword' }
+  ),
+
+  age: formRegistry.createFieldRule<string>(
+    b => b.string
+      .required()
+      .pattern(/^\\d+$/)
+      .transform(v => parseInt(v, 10))
+      .min(13)
+      .max(120),
+    { name: 'age' }
+  ),
+
+  phoneNumber: formRegistry.createFieldRule<string>(
+    b => b.string
+      .optional()
+      .pattern(/^\\+?[1-9]\\d{1,14}$/)
+      .transform(v => v?.replace(/\\D/g, '')),
+    { 
+      name: 'phoneNumber',
+      fieldOptions: {
+        default: '',
+        metadata: { format: 'E.164' }
+      }
+    }
+  ),
+
+  zipCode: formRegistry.createFieldRule<string>(
+    b => b.string
+      .required()
+      .pattern(/^\\d{5}(-\\d{4})?$/),
+    { name: 'zipCode' }
+  )
+};
+
+// 3. Create validators for different form steps
+// Step 1: Account Info
+const step1Validator = formRegistry.toBuilder()
+  .for<Step1Data>()
+  .useField('email', formRules.email)
+  .useField('password', formRules.password)
+  .useField('confirmPassword', formRules.confirmPassword)
+  .v('confirmPassword', b => b.string.compareField('password'))
+  .build();
+
+// Step 2: Personal Info
+const step2Validator = formRegistry.toBuilder()
+  .for<Step2Data>()
+  .v('firstName', b => b.string.required().min(2))
+  .v('lastName', b => b.string.required().min(2))
+  .useField('age', formRules.age)
+  .useField('phone', formRules.phoneNumber)
+  .build();
+
+// Step 3: Address Info
+const step3Validator = formRegistry.toBuilder()
+  .for<Step3Data>()
+  .v('street', b => b.string.required())
+  .v('city', b => b.string.required())
+  .v('state', b => b.string.required().min(2).max(2))
+  .useField('zipCode', formRules.zipCode)
+  .build();
+
+// 4. Form handler with validation
+class MultiStepForm {
+  private currentStep = 1;
+  private formData: any = {};
+
+  async validateStep1(data: Step1Data) {
+    const result = step1Validator.parse(data);
+    
+    if (result.isValid()) {
+      this.formData = { ...this.formData, ...result.unwrap() };
+      this.currentStep = 2;
+      return { success: true };
+    }
+    
+    return { 
+      success: false, 
+      errors: result.errors 
+    };
+  }
+
+  async validateStep2(data: Step2Data) {
+    const result = step2Validator.parse(data);
+    
+    if (result.isValid()) {
+      this.formData = { ...this.formData, ...result.unwrap() };
+      this.currentStep = 3;
+      return { success: true };
+    }
+    
+    return { 
+      success: false, 
+      errors: result.errors 
+    };
+  }
+
+  async validateStep3(data: Step3Data) {
+    const result = step3Validator.parse(data);
+    
+    if (result.isValid()) {
+      this.formData = { ...this.formData, ...result.unwrap() };
+      return this.submitForm();
+    }
+    
+    return { 
+      success: false, 
+      errors: result.errors 
+    };
+  }
+
+  private async submitForm() {
+    // All data has been validated and transformed
+    console.log('Submitting form:', this.formData);
+    // API call here
+    return { success: true, id: 'user-123' };
+  }
+}
+
+// 5. Testing individual rules
+describe('Form Field Rules', () => {
+  test('email rule validates correctly', () => {
+    expect(formRules.email.validate('test@example.com').isValid()).toBe(true);
+    expect(formRules.email.validate('invalid').isValid()).toBe(false);
+  });
+
+  test('password rule enforces complexity', () => {
+    expect(formRules.password.validate('weak').isValid()).toBe(false);
+    expect(formRules.password.validate('Strong1@Pass').isValid()).toBe(true);
+  });
+
+  test('age rule transforms string to number', () => {
+    const result = formRules.age.parse('25');
+    expect(result.isValid()).toBe(true);
+    expect(typeof result.unwrap()).toBe('number');
+    expect(result.unwrap()).toBe(25);
+  });
+});`;
+---
+
+<BaseLayout title="Plugin Registry API - Luq Documentation">
+  <Header />
+  
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/api/plugin-registry" />
+    
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+      <article class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Plugin Registry API</h1>
+        
+        <div class="prose prose-lg dark:prose-invert max-w-none">
+          <p class="lead">
+            The Plugin Registry provides a powerful system for managing plugins and creating reusable field validation rules that can be shared across multiple validators and tested independently.
+          </p>
+          
+          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border-2 border-amber-400 dark:border-amber-600">
+            <h3 class="text-lg font-bold mb-3 text-amber-800 dark:text-amber-300">When to Use Plugin Registry</h3>
+            <div class="space-y-3 text-sm text-amber-700 dark:text-amber-400">
+              <p class="font-semibold">Use Plugin Registry for:</p>
+              <ul class="space-y-1 ml-4">
+                <li>• <strong>Single field validation</strong> - Testing and validating individual fields in isolation</li>
+                <li>• <strong>Reusable field rules</strong> - Creating field validation logic that can be shared across multiple forms</li>
+                <li>• <strong>Unit testing</strong> - Testing field validation logic independently before integration</li>
+                <li>• <strong>Team-wide field standards</strong> - Defining consistent validation for common fields (email, phone, etc.)</li>
+              </ul>
+              
+              <p class="font-semibold mt-4">Use Builder directly for:</p>
+              <ul class="space-y-1 ml-4">
+                <li>• <strong>Objects and Arrays</strong> - When validating objects with multiple fields or arrays of items</li>
+                <li>• <strong>Multi-field validation</strong> - When fields depend on each other (e.g., compareField)</li>
+                <li>• <strong>Complete forms</strong> - When validating entire data structures</li>
+                <li>• <strong>One-off validators</strong> - When field rules won't be reused</li>
+              </ul>
+              
+              <div class="bg-amber-100 dark:bg-amber-900/40 rounded p-3 mt-4">
+                <p class="font-bold">Key Point: Plugin Registry is primarily for <span class="underline">single field validation</span> scenarios where you need to test, reuse, or standardize individual field rules.</p>
+                
+                <p class="mt-2"><strong>Important:</strong> Builder also provides a <code>pick()</code> API to extract and validate individual fields. <span class="font-bold underline">If you already have a Builder, use it instead of Plugin Registry whenever possible.</span></p>
+                
+                <div class="mt-3">
+                  <CodeBlock code={builderPickExample} language="typescript" showCopy={true} />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <h2 id="overview">Overview</h2>
+          
+          <div class="not-prose bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6 border border-blue-300 dark:border-blue-700">
+            <p class="text-sm font-semibold text-blue-800 dark:text-blue-300">
+              📌 <strong>Recommendation:</strong> When possible, use Builder directly instead of Plugin Registry. Builder's <code>pick()</code> API can extract individual field validators, making Plugin Registry unnecessary in most cases.
+            </p>
+          </div>
+          
+          <p>
+            The Plugin Registry serves three main purposes:
+          </p>
+          
+          <ol>
+            <li><strong>Single Field Validation</strong> - Create and test individual field validation rules in isolation (when Builder is not available)</li>
+            <li><strong>Field Rule Reusability</strong> - Pre-define validation rules that can be shared across multiple forms and validators</li>
+            <li><strong>Team Standardization</strong> - Ensure consistent validation logic for common fields across teams and projects</li>
+          </ol>
+          
+          <h2 id="key-concepts">Key Concepts</h2>
+          
+          <div class="not-prose bg-luq-blue-50 dark:bg-luq-blue-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">Core Concepts</h4>
+            <ul class="space-y-2 text-sm">
+              <li>• <strong>Registry</strong>: Container for plugins that can create field rules and builders</li>
+              <li>• <strong>Field Rule</strong>: Pre-defined, reusable validation logic for a single field</li>
+              <li>• <strong>Plugin Accumulation</strong>: Registry tracks all registered plugins with type safety</li>
+              <li>• <strong>Standalone Validation</strong>: Field rules can validate data independently</li>
+              <li>• <strong>Builder Integration</strong>: Seamless use with Builder API via <code>useField()</code></li>
+            </ul>
+          </div>
+          
+          <h2 id="creating-registry">Creating a Registry</h2>
+          
+          <p>
+            Start by creating a registry and registering the plugins you need:
+          </p>
+          
+          <CodeBlock code={creatingRegistryExample} language="typescript" showCopy={true} />
+          
+          <h3 id="registering-plugins">Registering Plugins</h3>
+          
+          <p>
+            Plugins can be registered using the <code>use()</code> method, which accumulates type information:
+          </p>
+          
+          <CodeBlock code={registeringPluginsExample} language="typescript" showCopy={true} />
+          
+          <h2 id="field-rules">Field Rules</h2>
+          
+          <p>
+            Field Rules are the core feature of the Plugin Registry - they encapsulate validation logic for individual fields and can be reused across multiple validators.
+          </p>
+          
+          <h3 id="create-field-rule">createFieldRule() Method</h3>
+          
+          <p>
+            The <code>createFieldRule()</code> method creates a reusable validation rule with full type safety:
+          </p>
+          
+          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border border-amber-300 dark:border-amber-700">
+            <h4 class="font-semibold mb-3 text-amber-800 dark:text-amber-300">Important: Field Names and Type Safety</h4>
+            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-400">
+              <li>• <strong>Nested fields MUST use dot notation</strong>: <code>'profile.firstName'</code>, <code>'address.country.code'</code></li>
+              <li>• <strong>Array elements use bracket notation</strong>: <code>'tags[*]'</code>, <code>'items[*].price'</code></li>
+              <li>• <strong>Extract types from your interface</strong>: Use <code>TypeOfPath&lt;T, 'field.path'&gt;</code> for type safety</li>
+              <li>• <strong>Use actual field types</strong>: <code>createFieldRule&lt;UserProfile['email']&gt;</code> not <code>createFieldRule&lt;string&gt;</code></li>
+            </ul>
+          </div>
+          
+          <CodeBlock code={createFieldRuleExample} language="typescript" showCopy={true} />
+          
+          <h3 id="using-field-rules">Using Field Rules</h3>
+          
+          <p>
+            Field rules can be used standalone or integrated with builders:
+          </p>
+          
+          <CodeBlock code={usingFieldRulesExample} language="typescript" showCopy={true} />
+          
+          <h3 id="testing-rules">Testing Field Rules</h3>
+          
+          <p>
+            One of the key benefits is the ability to unit test field rules in isolation:
+          </p>
+          
+          <CodeBlock code={testingRulesExample} language="typescript" showCopy={true} />
+          
+          <h2 id="builder-integration">Builder Integration</h2>
+          
+          <h3 id="to-builder">toBuilder() Method</h3>
+          
+          <p>
+            Convert a registry to a builder with all registered plugins:
+          </p>
+          
+          <CodeBlock code={toBuilderExample} language="typescript" showCopy={true} />
+          
+          <h3 id="use-field">useField() with Rules</h3>
+          
+          <p>
+            The <code>useField()</code> method on builders accepts field rules created by the registry. This provides type safety and reusability.
+          </p>
+          
+          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border border-amber-300 dark:border-amber-700">
+            <h4 class="font-semibold mb-3 text-amber-800 dark:text-amber-300">Important Note</h4>
+            <p class="text-sm text-amber-700 dark:text-amber-400">
+              Field rules created with <code>createFieldRule()</code> include both validation logic AND field options (defaults, metadata). 
+              When using <code>useField()</code>, these options are automatically applied.
+            </p>
+          </div>
+          
+          <h2 id="patterns">Common Patterns</h2>
+          
+          <div class="not-prose bg-luq-blue-50 dark:bg-luq-blue-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">Type-Safe Pattern</h4>
+            <div class="text-sm space-y-3">
+              <p class="font-semibold">Always extract types from your actual interfaces:</p>
+              <CodeBlock code={typeSafePatternExample1} language="typescript" showCopy={false} />
+              
+              <p class="font-semibold mt-4">Field names must match exact paths:</p>
+              <CodeBlock code={typeSafePatternExample2} language="typescript" showCopy={false} />
+            </div>
+          </div>
+          
+          <h3 id="team-rules">Team-Wide Rules</h3>
+          
+          <p>
+            Create a centralized module for team-wide validation rules with proper type safety:
+          </p>
+          
+          <CodeBlock code={teamRulesExample} language="typescript" showCopy={true} />
+          
+          <h3 id="composition">Rule Composition</h3>
+          
+          <p>
+            Build complex rules by composing simpler ones:
+          </p>
+          
+          <CodeBlock code={compositionExample} language="typescript" showCopy={true} />
+          
+          <h2 id="complete-examples">Complete Examples</h2>
+          
+          <p>
+            Here's a complete example showing a multi-step form with shared validation rules:
+          </p>
+          
+          <CodeBlock code={completeExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">API Reference</h3>
+            <div class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-6">
+              <h4 class="font-semibold mb-4">Registry Methods</h4>
+              <table class="w-full mb-8">
+                <thead>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <th class="text-left py-2">Method</th>
+                    <th class="text-left py-2">Returns</th>
+                    <th class="text-left py-2">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="text-sm">
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>createPluginRegistry()</code></td>
+                    <td class="py-2">PluginRegistry</td>
+                    <td class="py-2">Creates new registry instance</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>use(plugin)</code></td>
+                    <td class="py-2">PluginRegistry</td>
+                    <td class="py-2">Register a plugin</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>for&lt;T&gt;()</code></td>
+                    <td class="py-2">TypedPluginRegistry&lt;T&gt;</td>
+                    <td class="py-2">Create type-safe registry with automatic field inference</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>createFieldRule(builder, options)</code></td>
+                    <td class="py-2">FieldRule&lt;T&gt;</td>
+                    <td class="py-2">Create reusable field rule</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>toBuilder()</code></td>
+                    <td class="py-2">IChainableBuilder</td>
+                    <td class="py-2">Convert to builder with plugins</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2"><code>getPlugins()</code></td>
+                    <td class="py-2">Record&lt;string, Plugin&gt;</td>
+                    <td class="py-2">Get all registered plugins</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <h4 class="font-semibold mb-4">FieldRule Methods</h4>
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <th class="text-left py-2">Method</th>
+                    <th class="text-left py-2">Returns</th>
+                    <th class="text-left py-2">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="text-sm">
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>validate(value, options?)</code></td>
+                    <td class="py-2">Result&lt;T&gt;</td>
+                    <td class="py-2">Validate single field value</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>parse(value, options?)</code></td>
+                    <td class="py-2">Result&lt;T&gt;</td>
+                    <td class="py-2">Parse with transformations</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2"><code>getPluginRegistry()</code></td>
+                    <td class="py-2">PluginRegistry</td>
+                    <td class="py-2">Get parent registry</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <h4 class="font-semibold mb-4 mt-8">createFieldRule Options</h4>
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <th class="text-left py-2">Option</th>
+                    <th class="text-left py-2">Type</th>
+                    <th class="text-left py-2">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="text-sm">
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>name</code></td>
+                    <td class="py-2">string</td>
+                    <td class="py-2">Rule identifier</td>
+                  </tr>
+                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                    <td class="py-2"><code>description</code></td>
+                    <td class="py-2">string</td>
+                    <td class="py-2">Rule description</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2"><code>fieldOptions</code></td>
+                    <td class="py-2">FieldOptions</td>
+                    <td class="py-2">Default values and metadata</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 rounded-lg p-6 my-6">
+            <h4 class="font-semibold mb-3">Best Practices</h4>
+            <ul class="space-y-2 text-sm">
+              <li>• Create a shared registry module for team-wide consistency</li>
+              <li>• Unit test field rules independently before integration</li>
+              <li>• Use descriptive names and descriptions for field rules</li>
+              <li>• Leverage field options for defaults and metadata</li>
+              <li>• Compose complex rules from simpler, tested components</li>
+              <li>• Document business rules in field rule descriptions</li>
+            </ul>
+          </div>
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <a href="/docs/custom-plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Custom Plugins</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Learn how to create custom validation plugins
+                </p>
+              </a>
+              
+              <a href="/docs/advanced-patterns" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Advanced Patterns</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Explore advanced validation patterns
+                </p>
+              </a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+    
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    @apply mt-12 mb-6;
+  }
+  
+  .prose h3 {
+    @apply mt-8 mb-4;
+  }
+  
+  table {
+    @apply text-luq-neutral-700 dark:text-luq-neutral-300;
+  }
+  
+  td code, th {
+    @apply font-mono text-xs;
+  }
+</style>

@@ -1,0 +1,167 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import OnThisPage from '../../components/OnThisPage.astro';
+
+// Simplified code examples
+const typeFirstExample = `// Define your TypeScript type as usual
+type User = {
+  name: string;
+  age: number;
+};
+
+// Build a validator from the existing type
+const validator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<User>()  // Reference your existing type
+  .v('name', b => b.string.required())
+  .v('age', b => b.number.required())
+  .build();`;
+
+const pluginExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
+
+// Only import what you need - tree-shaking friendly
+const validator = Builder()
+  .use(requiredPlugin)      // Adds .required() method
+  .use(stringMinPlugin)     // Adds .min() for strings
+  .use(numberMinPlugin)     // Adds .min() for numbers
+  .for<UserProfile>()
+  .v('name', b => b.string.required().min(2))
+  .v('age', b => b.number.required().min(18))
+  .build();`;
+
+const validationExample = `const result = validator.validate({
+  name: 'John',
+  age: 25
+});
+
+if (result.isValid()) {
+  const data = result.unwrap();
+  // data is fully typed as UserProfile
+} else {
+  result.errors.forEach(error => {
+    console.log(\`\${error.path}: \${error.message}\`);
+  });
+}`;
+---
+
+<BaseLayout title="Core Concepts - Luq Documentation">
+  <Header />
+  
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/core-concepts" />
+    
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Core Concepts</h1>
+        
+        <div class="prose prose-lg dark:prose-invert max-w-none">
+          <p class="lead">
+            Luq's design centers around three key principles: type-first validation, plugin architecture, and runtime safety.
+          </p>
+          
+          <h2 id="type-first-design">Type-First Design</h2>
+          
+          <p>
+            Luq builds validators from your existing TypeScript types. Your types remain the single source of truth.
+          </p>
+          
+          <CodeBlock code={typeFirstExample} language="typescript" showCopy={true} />
+          
+          <h2 id="plugin-architecture">Plugin Architecture</h2>
+          
+          <p>
+            Validation methods come from plugins. Import only what you need for optimal bundle size.
+          </p>
+          
+          <CodeBlock code={pluginExample} language="typescript" showCopy={true} />
+          
+          <h2 id="validation-results">Validation & Results</h2>
+          
+          <p>
+            Validators return Result objects for safe error handling.
+          </p>
+          
+          <CodeBlock code={validationExample} language="typescript" showCopy={true} />
+          
+          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border border-amber-300 dark:border-amber-700">
+            <h3 class="font-semibold mb-3 text-amber-800 dark:text-amber-300">validate() vs parse()</h3>
+            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-400">
+              <li>• <code>validate()</code> - Returns original values, validates structure</li>
+              <li>• <code>parse()</code> - Returns transformed values (when using transform plugins)</li>
+            </ul>
+          </div>
+          
+          <h2 id="field-path-system">Field Path System</h2>
+          
+          <p>
+            Access nested fields using dot notation. TypeScript provides autocomplete for valid paths.
+          </p>
+          
+          <CodeBlock code={`type UserProfile = {
+  name: string;
+  address: {
+    street: string;
+    city: string;
+  };
+  tags: string[];
+};
+
+const validator = Builder()
+  .use(requiredPlugin)
+  .for<UserProfile>()
+  .v('name', b => b.string.required())
+  .v('address.street', b => b.string.required())  // Nested access
+  .v('address.city', b => b.string.required())
+  .v('tags', b => b.array.required())
+  .build();`} language="typescript" showCopy={true} />
+          
+          <div class="not-prose mt-12">
+            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+              <a href="/docs/api/builder" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Builder API</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Complete API reference for building validators
+                </p>
+              </a>
+              
+              <a href="/plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
+                <h4 class="text-lg font-semibold mb-2">Plugin Library</h4>
+                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                  Browse all available validation plugins
+                </p>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <OnThisPage tableOfContents={[
+      { id: 'type-first-design', title: 'Type-First Design', level: 2 },
+      { id: 'plugin-architecture', title: 'Plugin Architecture', level: 2 },
+      { id: 'validation-results', title: 'Validation & Results', level: 2 },
+      { id: 'field-path-system', title: 'Field Path System', level: 2 },
+    ]} />
+  </div>
+  
+  <Footer />
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    @apply mt-12 mb-6;
+  }
+  
+  .prose h3 {
+    @apply mt-8 mb-4;
+  }
+</style>

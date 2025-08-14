@@ -1,0 +1,40 @@
+{
+  "name": "formtailor-bundle-size-comparison",
+  "version": "1.0.0",
+  "description": "Bundle size comparison between FormTailor and other validation libraries",
+  "private": true,
+  "scripts": {
+    "build": "node build-all.js",
+    "compare": "node compare-sizes.js",
+    "benchmark": "npm run build && npm run compare",
+    "unified": "tsx run-unified-benchmark.ts",
+    "measure-full": "node measure-full-libraries.js",
+    "full-comparison": "npm run build && npm run compare && npm run measure-full"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "ajv-cli": "^5.0.0",
+    "brotli-size": "^4.0.0",
+    "chalk": "^4.1.2",
+    "esbuild": "^0.20.0",
+    "filesize": "^10.1.0",
+    "gzip-size": "^7.0.0",
+    "rollup": "^2.79.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "table": "^6.8.1",
+    "tsx": "^4.7.0"
+  },
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1",
+    "io-ts": "^2.2.20",
+    "joi": "^17.12.0",
+    "superstruct": "^1.0.3",
+    "typia": "^5.5.0",
+    "valibot": "^0.25.0",
+    "yup": "^1.4.0",
+    "zod": "^4.0.10"
+  }
+}

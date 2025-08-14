@@ -1,0 +1,51 @@
+---
+export interface Props {
+  level: number;
+  status: string;
+  statusColor: string;
+  title: string;
+  description: string;
+  codeExample: string[];
+  features: string[];
+  note?: string;
+}
+
+const { level, status, statusColor, title, description, codeExample, features, note } = Astro.props;
+---
+
+<div class="border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg overflow-hidden">
+  <div class="p-6 border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+    <div class="flex items-center justify-between mb-4">
+      <span class={`text-xs font-medium ${statusColor}`}>{status}</span>
+      <span class="text-xs text-luq-neutral-500">Level {level}</span>
+    </div>
+    <h3 class="text-xl font-semibold mb-2 text-luq-neutral-900 dark:text-luq-neutral-100">{title}</h3>
+    <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+      {description}
+    </p>
+  </div>
+  <div class="p-6">
+    <div class="bg-luq-neutral-50 dark:bg-luq-neutral-900 rounded border border-luq-neutral-200 dark:border-luq-neutral-800 p-3 text-xs font-mono mb-4">
+      {codeExample.map((line, index) => (
+        <div class={index === 0 ? "text-luq-purple-600 dark:text-luq-purple-400" : "text-luq-neutral-600 dark:text-luq-neutral-400"}>
+          <Fragment set:html={line} />
+        </div>
+      ))}
+    </div>
+    <div class="space-y-2 text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+      {features.map(feature => (
+        <div>• {feature}</div>
+      ))}
+    </div>
+    {note && (
+      <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded text-xs text-amber-700 dark:text-amber-300">
+        <div class="flex items-start gap-2">
+          <svg class="w-4 h-4 text-amber-500 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>{note}</span>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
