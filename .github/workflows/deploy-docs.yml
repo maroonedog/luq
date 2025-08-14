@@ -65,16 +65,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      
-      - name: Configure Custom Domain
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "Setting custom domain for GitHub Pages..."
-          gh api \
-            --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/pages \
-            -f cname='luq.dev'
