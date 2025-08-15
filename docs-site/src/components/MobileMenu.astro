@@ -24,7 +24,7 @@ const currentPath = Astro.url.pathname;
 <!-- Mobile menu overlay -->
 <div
   id="mobile-menu"
-  class="fixed inset-0 z-50 hidden"
+  class="fixed inset-0 z-[100] hidden"
   aria-hidden="true"
 >
   <!-- Background overlay -->
@@ -59,7 +59,7 @@ const currentPath = Astro.url.pathname;
                   block px-4 py-3 rounded-lg font-medium transition-colors
                   ${currentPath.startsWith(item.href) 
                     ? 'bg-luq-purple-100 text-luq-purple-700 dark:bg-luq-purple-900/20 dark:text-luq-teal-400' 
-                    : 'hover:bg-luq-neutral-100 dark:hover:bg-luq-neutral-800'}
+                    : 'text-luq-neutral-700 dark:text-luq-neutral-300 hover:bg-luq-neutral-100 dark:hover:bg-luq-neutral-800'}
                 `}
               >
                 {item.label}

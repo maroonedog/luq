@@ -1,15 +1,17 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
+import Header, { navItems } from '../components/Header.astro';
 import Hero from '../components/Hero.astro';
 import SimplifiedFeatures from '../components/SimplifiedFeatures.astro';
 import CodeExample from '../components/CodeExample.astro';
 import PracticalExamples from '../components/PracticalExamples.astro';
 import Footer from '../components/Footer.astro';
+import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 ---
 
 <BaseLayout title="Type-First Validation Library for TypeScript">
   <Header />
+  <MobileMenuOverlay navItems={navItems} />
   
   <main>
     <!-- Hero Section -->
