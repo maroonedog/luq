@@ -1,0 +1,316 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Benchmark data
+const bundleSizeData = [
+  { library: 'AJV Standalone', simple: 1.03, complex: 4.63, notes: 'Pre-compiled validation' },
+  { library: 'Valibot', simple: 1.31, complex: 2.49, notes: 'Modular design' },
+  { library: 'Yup', simple: 12.80, complex: 13.40, notes: 'Simple API' },
+  { library: 'Luq', simple: 19.10, complex: 22.47, notes: 'Tree-shakeable plugins', highlight: true },
+  { library: 'Luq (JsonSchema)', simple: 26.06, complex: 29.07, notes: 'JSON Schema with individual plugins' },
+  { library: 'Luq (JsonSchema Full)', simple: 31.75, complex: 32.32, notes: 'All JSON Schema features' },
+  { library: 'AJV', simple: 37.78, complex: 38.33, notes: 'Full JSON Schema' },
+  { library: 'Joi', simple: 44.44, complex: 45.00, notes: 'Server-focused' },
+  { library: 'Zod', simple: 47.45, complex: 48.12, notes: 'Feature-rich' }
+];
+
+const simplePerformanceData = [
+  { library: 'AJV Standalone', ops: 3307131, relative: 267.6, csp: true, dynamic: false },
+  { library: 'AJV', ops: 2480209, relative: 200.6, csp: false, dynamic: true },
+  { library: 'Luq (JsonSchema)', ops: 1684363, relative: 136.2, csp: true, dynamic: true },
+  { library: 'Luq (JsonSchema Full)', ops: 1586665, relative: 128.3, csp: true, dynamic: true },
+  { library: 'Luq', ops: 1235123, relative: 100.0, csp: true, dynamic: true, highlight: true },
+  { library: 'Valibot', ops: 902700, relative: 73.0, csp: true, dynamic: true },
+  { library: 'Zod', ops: 486275, relative: 39.3, csp: true, dynamic: true },
+  { library: 'Joi', ops: 175362, relative: 14.2, csp: true, dynamic: true },
+  { library: 'Yup', ops: 130129, relative: 10.5, csp: true, dynamic: true }
+];
+
+const complexPerformanceData = [
+  { library: 'AJV Standalone', ops: 239848, relative: 5.51, csp: true, dynamic: false },
+  { library: 'AJV', ops: 232378, relative: 5.34, csp: false, dynamic: true },
+  { library: 'Valibot', ops: 171352, relative: 3.94, csp: true, dynamic: true },
+  { library: 'Zod', ops: 61488, relative: 1.41, csp: true, dynamic: true },
+  { library: 'Luq', ops: 43524, relative: 1.00, csp: true, dynamic: true, highlight: true },
+  { library: 'Luq (JsonSchema Full)', ops: 31462, relative: 0.72, csp: true, dynamic: true },
+  { library: 'Luq (JsonSchema)', ops: 29257, relative: 0.67, csp: true, dynamic: true },
+  { library: 'Joi', ops: 23552, relative: 0.54, csp: true, dynamic: true },
+  { library: 'Yup', ops: 5841, relative: 0.13, csp: true, dynamic: true }
+];
+
+function formatNumber(num: number): string {
+  return num.toLocaleString('en-US');
+}
+
+function getBarWidth(value: number, max: number): number {
+  return Math.max(5, (value / max) * 100);
+}
+---
+
+<BaseLayout title="Benchmarks - Luq">
+  <main class="container mx-auto px-4 py-16 max-w-7xl">
+    <!-- Hero Section -->
+    <div class="text-center mb-16">
+      <h1 class="text-5xl font-bold mb-6 bg-gradient-to-r from-luq-purple-600 to-luq-teal-500 bg-clip-text text-transparent">
+        Performance Benchmarks
+      </h1>
+      <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 max-w-3xl mx-auto">
+        Real-world performance metrics and bundle size comparisons for TypeScript validation libraries
+      </p>
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
+          <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Bundle Size</span>
+          <p class="text-2xl font-bold text-luq-purple-600 dark:text-luq-purple-400">19-23KB</p>
+        </div>
+        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
+          <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Speed (Simple)</span>
+          <p class="text-2xl font-bold text-luq-purple-600 dark:text-luq-purple-400">1.2M ops/sec</p>
+        </div>
+        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
+          <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">CSP Safe</span>
+          <p class="text-2xl font-bold text-green-600 dark:text-green-400">✓ Always</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Insights -->
+    <div class="mb-16 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
+      <h2 class="text-lg font-semibold text-amber-800 dark:text-amber-300 mb-3">Key Insights</h2>
+      <ul class="space-y-2 text-amber-700 dark:text-amber-400">
+        <li class="flex items-start gap-2">
+          <span class="text-amber-600 dark:text-amber-500 mt-1">•</span>
+          <span><strong>AJV's speed comes at a cost:</strong> Uses <code>new Function()</code> which fails in CSP-restricted environments</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-amber-600 dark:text-amber-500 mt-1">•</span>
+          <span><strong>AJV Standalone limitations:</strong> Requires build-time compilation, can't adapt to dynamic schemas</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-amber-600 dark:text-amber-500 mt-1">•</span>
+          <span><strong>Luq's balance:</strong> Works everywhere, reasonable performance, dynamic validation support</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Bundle Size Comparison -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold mb-8">Bundle Size Comparison (gzipped)</h2>
+      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
+                <th class="text-left py-3 px-4">Library</th>
+                <th class="text-right py-3 px-4">Simple Schema</th>
+                <th class="text-right py-3 px-4">Complex Schema</th>
+                <th class="text-left py-3 px-4">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bundleSizeData.map((item) => (
+                <tr class={`border-b border-luq-neutral-100 dark:border-luq-neutral-700 ${item.highlight ? 'bg-luq-purple-50 dark:bg-luq-purple-900/20' : ''}`}>
+                  <td class="py-3 px-4 font-medium">{item.library}</td>
+                  <td class="text-right py-3 px-4">
+                    <span class="font-mono">{item.simple.toFixed(2)} KB</span>
+                  </td>
+                  <td class="text-right py-3 px-4">
+                    <span class="font-mono">{item.complex.toFixed(2)} KB</span>
+                  </td>
+                  <td class="py-3 px-4 text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
+                    {item.notes}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Performance Comparison - Simple Schema -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold mb-8">Performance - Simple Schema</h2>
+      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
+        <div class="space-y-4">
+          {simplePerformanceData.map((item) => (
+            <div class={`${item.highlight ? 'ring-2 ring-luq-purple-500 rounded-lg p-2' : ''}`}>
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-4">
+                  <span class="font-medium min-w-[180px]">{item.library}</span>
+                  <div class="flex gap-2">
+                    {item.csp ? (
+                      <span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded">CSP ✓</span>
+                    ) : (
+                      <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded">CSP ✗</span>
+                    )}
+                    {item.dynamic ? (
+                      <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded">Dynamic ✓</span>
+                    ) : (
+                      <span class="px-2 py-1 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400 text-xs rounded">Static only</span>
+                    )}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="font-mono text-sm">{formatNumber(item.ops)} ops/sec</span>
+                  <span class="text-xs text-luq-neutral-500 ml-2">({item.relative}x)</span>
+                </div>
+              </div>
+              <div class="w-full bg-luq-neutral-200 dark:bg-luq-neutral-700 rounded-full h-2">
+                <div 
+                  class={`h-2 rounded-full transition-all ${
+                    item.highlight 
+                      ? 'bg-gradient-to-r from-luq-purple-500 to-luq-teal-500' 
+                      : 'bg-luq-neutral-400'
+                  }`}
+                  style={`width: ${getBarWidth(item.ops, 3307131)}%`}
+                ></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Performance Comparison - Complex Schema -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold mb-8">Performance - Complex Schema</h2>
+      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
+        <div class="space-y-4">
+          {complexPerformanceData.map((item) => (
+            <div class={`${item.highlight ? 'ring-2 ring-luq-purple-500 rounded-lg p-2' : ''}`}>
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-4">
+                  <span class="font-medium min-w-[180px]">{item.library}</span>
+                  <div class="flex gap-2">
+                    {item.csp ? (
+                      <span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded">CSP ✓</span>
+                    ) : (
+                      <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded">CSP ✗</span>
+                    )}
+                    {item.dynamic ? (
+                      <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded">Dynamic ✓</span>
+                    ) : (
+                      <span class="px-2 py-1 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400 text-xs rounded">Static only</span>
+                    )}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="font-mono text-sm">{formatNumber(item.ops)} ops/sec</span>
+                  <span class="text-xs text-luq-neutral-500 ml-2">({item.relative}x)</span>
+                </div>
+              </div>
+              <div class="w-full bg-luq-neutral-200 dark:bg-luq-neutral-700 rounded-full h-2">
+                <div 
+                  class={`h-2 rounded-full transition-all ${
+                    item.highlight 
+                      ? 'bg-gradient-to-r from-luq-purple-500 to-luq-teal-500' 
+                      : 'bg-luq-neutral-400'
+                  }`}
+                  style={`width: ${getBarWidth(item.ops, 239848)}%`}
+                ></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Use Case Recommendations -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold mb-8">Which Library Should You Choose?</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 rounded-lg p-6">
+          <h3 class="text-xl font-bold mb-4 text-luq-purple-600 dark:text-luq-purple-400">Choose Luq if you need:</h3>
+          <ul class="space-y-2">
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
+              <span>CSP-restricted environments (no eval/Function)</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
+              <span>Dynamic schema loading from API/CMS</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
+              <span>Existing TypeScript types (no rewriting)</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
+              <span>Custom business rules as plugins</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
+              <span>JSON Schema migration path</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-6">
+          <h3 class="text-xl font-bold mb-4">Consider alternatives if:</h3>
+          <ul class="space-y-3">
+            <li>
+              <strong>Minimal bundle critical:</strong>
+              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> Valibot (1-2KB)</span>
+            </li>
+            <li>
+              <strong>Pre-compiled validation only:</strong>
+              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> AJV Standalone</span>
+            </li>
+            <li>
+              <strong>Maximum raw speed, no CSP:</strong>
+              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> AJV</span>
+            </li>
+            <li>
+              <strong>Rich ecosystem needed:</strong>
+              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> Zod</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Test Environment -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold mb-8">Test Methodology</h2>
+      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
+        <dl class="grid md:grid-cols-2 gap-6">
+          <div>
+            <dt class="font-semibold text-luq-neutral-700 dark:text-luq-neutral-300 mb-2">Test Environment</dt>
+            <dd class="text-luq-neutral-600 dark:text-luq-neutral-400">
+              <ul class="space-y-1">
+                <li>• AMD Ryzen 7 5825U</li>
+                <li>• 5.8GB RAM</li>
+                <li>• Node.js v22.12.0</li>
+                <li>• Measured: 2025-08-14</li>
+              </ul>
+            </dd>
+          </div>
+          <div>
+            <dt class="font-semibold text-luq-neutral-700 dark:text-luq-neutral-300 mb-2">Test Data</dt>
+            <dd class="text-luq-neutral-600 dark:text-luq-neutral-400">
+              <ul class="space-y-1">
+                <li>• Simple: 3 fields (name, age, email)</li>
+                <li>• Complex: Nested objects, arrays, conditionals</li>
+                <li>• Iterations: 1,000,000 operations per benchmark</li>
+                <li>• Source: <code class="text-sm">bundle-size-comparison/</code></li>
+              </ul>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="text-center">
+      <a 
+        href="/docs/getting-started" 
+        class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-luq-purple-600 to-luq-teal-500 text-white rounded-lg font-semibold hover:from-luq-purple-700 hover:to-luq-teal-600 transition-all transform hover:scale-105"
+      >
+        Get Started with Luq
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+        </svg>
+      </a>
+    </div>
+  </main>
+</BaseLayout>
