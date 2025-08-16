@@ -1,6 +1,6 @@
 {
   "name": "@maroonedog/luq",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha",
   "description": "Universal Model & API Definition Platform - TypeScript validation library evolving into cross-language code generation",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

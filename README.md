@@ -109,21 +109,30 @@ async function loadValidator() {
 ## Custom Business Logic
 
 ```typescript
+import { plugin } from "@maroonedog/luq/core/builder/plugins/plugin-creator";
+
 // Create reusable, type-safe business rules
-const customPlugin = plugin({
-  name: "businessRules",
-  validators: {
-    productCode: {
-      validate: (value: string) => 
-        value.startsWith("PROD-") && value.length === 10,
-      message: "Invalid product code format"
-    }
-  }
+const productCodePlugin = plugin({
+  name: "productCode",
+  methodName: "productCode",
+  allowedTypes: ["string"],
+  category: "custom",
+  impl: (options?: { messageFactory?: (ctx: any) => string }) => ({
+    check: (value: any) => {
+      if (typeof value !== "string") return true;
+      return value.startsWith("PROD-") && value.length === 10;
+    },
+    code: "productCode",
+    getErrorMessage: (value: any, path: string) => 
+      options?.messageFactory?.({ path, value }) || 
+      `Invalid product code format (must be PROD-XXXXX)`,
+    params: [options]
+  })
 });
 
 // Use across your application
 const validator = Builder()
-  .use(customPlugin)
+  .use(productCodePlugin)
   .for<Product>()
   .v("code", b => b.string.productCode())
   .build();
