@@ -328,11 +328,12 @@ import type {
 /**
  * Field definition for deferred building
  */
-export interface FieldBuilderDefinition {
+export interface FieldBuilderDefinition<TObject extends object = any, TPlugins = any, TFieldType = any> {
   path: string;
-  builderFunction: (context: FieldBuilderContext<any, any, any>) => any;
+  builderFunction: (context: FieldBuilderContext<TObject, TPlugins, TFieldType>) => any;
   inferredType?: string;
-  fieldOptions?: import("../types/field-options").FieldOptions<any>;
+  fieldOptions?: import("../types/field-options").FieldOptions<TFieldType>;
+  fieldType?: TFieldType;
 }
 
 // ========================================
