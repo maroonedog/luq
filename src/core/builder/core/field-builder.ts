@@ -37,7 +37,7 @@ export function createFieldBuilderImpl<
 >(
   plugins: TPlugins,
   chainableBuilder: any,
-  fieldDefinitions: Array<FieldBuilderDefinition> = [],
+  fieldDefinitions: Array<FieldBuilderDefinition<TObject, TPlugins, any>> = [],
   isStrict: boolean = false
 ): FieldBuilder<TObject, TMap, TPlugins, TDeclaredFields> {
   // Store field definitions for deferred building with type safety
@@ -90,11 +90,12 @@ export function createFieldBuilderImpl<
       undefined;
 
     // Store field definition with type information and options preserved
-    const fieldDefinition: FieldBuilderDefinition = {
+    const fieldDefinition: FieldBuilderDefinition<TObject, TPlugins, TypeOfPath<TObject, Key>> = {
       path,
       inferredType: inferFieldType<Key>(path),
       builderFunction: definition as any,
       fieldOptions: normalizedOptions, // Store the field options
+      fieldType: {} as TypeOfPath<TObject, Key>, // Type marker for proper inference
     };
 
     // Return new instance with type safety maintained
@@ -136,11 +137,12 @@ export function createFieldBuilderImpl<
     path: Key,
     fieldRule: FieldRule<TypeOfPath<TObject, Key>>
   ): FieldBuilder<TObject, TMap, TPlugins, TDeclaredFields | Key> => {
-    const fieldDefinition: FieldBuilderDefinition = {
+    const fieldDefinition: FieldBuilderDefinition<TObject, TPlugins, TypeOfPath<TObject, Key>> = {
       path,
       inferredType: inferFieldType<Key>(path),
       builderFunction: () => fieldRule,
       fieldOptions: fieldRule.fieldOptions, // Extract field options from the field rule
+      fieldType: {} as TypeOfPath<TObject, Key>, // Type marker for proper inference
     };
 
     return createFieldBuilderImpl<TObject, TMap, TPlugins, TDeclaredFields | Key>(
@@ -198,7 +200,7 @@ export function createFieldBuilderImpl<
 
     // Process field definitions with context creation
     const processedDefinitions = _fieldDefinitions.map((def) => {
-      const context = createFieldContext<TObject, TPlugins, any>(
+      const context = createFieldContext<TObject, TPlugins, typeof def.fieldType>(
         def.path,
         plugins
       );

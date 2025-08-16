@@ -8,6 +8,7 @@ import type {
   ChainableFieldBuilder,
   FieldBuilderContext,
   TransformFunction,
+  TypeMapping,
 } from "../plugins/plugin-types";
 import { attachComposablePlugin } from "../plugins/composable-plugin";
 
@@ -174,7 +175,7 @@ export function createOptimizedTypeBuilder<
     validators: ValidatorWithMeta<unknown>[];
     transforms: Array<TransformFunction<unknown, unknown>>;
   }
-): ChainableFieldBuilder<TObject, TPlugins, TType, any> {
+): ChainableFieldBuilder<TObject, TPlugins, TType, TypeMapping[TType]> {
   // Simplified arrays without ExecutionPlan
   const validators: ValidatorWithMeta<unknown>[] = existingState?.validators
     ? [...existingState.validators]
@@ -303,7 +304,7 @@ export function createOptimizedTypeBuilder<
     );
   };
 
-  return builder as ChainableFieldBuilder<TObject, TPlugins, TType, any>;
+  return builder as ChainableFieldBuilder<TObject, TPlugins, TType, TypeMapping[TType]>;
 }
 
 /**
