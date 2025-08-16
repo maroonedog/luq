@@ -9,36 +9,36 @@ const bundleSizeData = [
   { library: 'AJV Standalone', simple: 1.03, complex: 4.63, notes: 'Pre-compiled validation' },
   { library: 'Valibot', simple: 1.31, complex: 2.49, notes: 'Modular design' },
   { library: 'Yup', simple: 12.80, complex: 13.40, notes: 'Simple API' },
-  { library: 'Luq', simple: 19.10, complex: 22.47, notes: 'Tree-shakeable plugins', highlight: true },
-  { library: 'Luq (JsonSchema)', simple: 26.06, complex: 29.07, notes: 'JSON Schema with individual plugins' },
-  { library: 'Luq (JsonSchema Full)', simple: 31.75, complex: 32.32, notes: 'All JSON Schema features' },
+  { library: 'Luq', simple: 19.10, complex: 22.48, notes: 'Tree-shakeable plugins', highlight: true },
+  { library: 'Luq (JsonSchema)', simple: 26.06, complex: 29.08, notes: 'JSON Schema with individual plugins' },
+  { library: 'Luq (JsonSchema Full)', simple: 31.75, complex: 32.31, notes: 'All JSON Schema features' },
   { library: 'AJV', simple: 37.78, complex: 38.33, notes: 'Full JSON Schema' },
   { library: 'Joi', simple: 44.44, complex: 45.00, notes: 'Server-focused' },
   { library: 'Zod', simple: 47.45, complex: 48.12, notes: 'Feature-rich' }
 ];
 
 const simplePerformanceData = [
-  { library: 'AJV Standalone', ops: 3307131, relative: 267.6, csp: true, dynamic: false },
-  { library: 'AJV', ops: 2480209, relative: 200.6, csp: false, dynamic: true },
-  { library: 'Luq (JsonSchema)', ops: 1684363, relative: 136.2, csp: true, dynamic: true },
-  { library: 'Luq (JsonSchema Full)', ops: 1586665, relative: 128.3, csp: true, dynamic: true },
-  { library: 'Luq', ops: 1235123, relative: 100.0, csp: true, dynamic: true, highlight: true },
-  { library: 'Valibot', ops: 902700, relative: 73.0, csp: true, dynamic: true },
-  { library: 'Zod', ops: 486275, relative: 39.3, csp: true, dynamic: true },
-  { library: 'Joi', ops: 175362, relative: 14.2, csp: true, dynamic: true },
-  { library: 'Yup', ops: 130129, relative: 10.5, csp: true, dynamic: true }
+  { library: 'AJV Standalone', ops: 3176536, relative: 457.3, csp: true, dynamic: false },
+  { library: 'AJV', ops: 2640781, relative: 380.1, csp: false, dynamic: true },
+  { library: 'Luq (JsonSchema)', ops: 1498347, relative: 215.7, csp: true, dynamic: true },
+  { library: 'Luq (JsonSchema Full)', ops: 1403639, relative: 202.1, csp: true, dynamic: true },
+  { library: 'Valibot', ops: 1016119, relative: 146.3, csp: true, dynamic: true },
+  { library: 'Luq', ops: 694692, relative: 100.0, csp: true, dynamic: true, highlight: true },
+  { library: 'Zod', ops: 623385, relative: 89.7, csp: true, dynamic: true },
+  { library: 'Joi', ops: 171594, relative: 24.7, csp: true, dynamic: true },
+  { library: 'Yup', ops: 135276, relative: 19.5, csp: true, dynamic: true }
 ];
 
 const complexPerformanceData = [
-  { library: 'AJV Standalone', ops: 239848, relative: 5.51, csp: true, dynamic: false },
-  { library: 'AJV', ops: 232378, relative: 5.34, csp: false, dynamic: true },
-  { library: 'Valibot', ops: 171352, relative: 3.94, csp: true, dynamic: true },
-  { library: 'Zod', ops: 61488, relative: 1.41, csp: true, dynamic: true },
-  { library: 'Luq', ops: 43524, relative: 1.00, csp: true, dynamic: true, highlight: true },
-  { library: 'Luq (JsonSchema Full)', ops: 31462, relative: 0.72, csp: true, dynamic: true },
-  { library: 'Luq (JsonSchema)', ops: 29257, relative: 0.67, csp: true, dynamic: true },
-  { library: 'Joi', ops: 23552, relative: 0.54, csp: true, dynamic: true },
-  { library: 'Yup', ops: 5841, relative: 0.13, csp: true, dynamic: true }
+  { library: 'AJV', ops: 215535, relative: 599.6, csp: false, dynamic: true },
+  { library: 'AJV Standalone', ops: 192183, relative: 534.6, csp: true, dynamic: false },
+  { library: 'Valibot', ops: 170637, relative: 474.7, csp: true, dynamic: true },
+  { library: 'Zod', ops: 66448, relative: 184.9, csp: true, dynamic: true },
+  { library: 'Luq', ops: 35946, relative: 100.0, csp: true, dynamic: true, highlight: true },
+  { library: 'Luq (JsonSchema Full)', ops: 25605, relative: 71.2, csp: true, dynamic: true },
+  { library: 'Luq (JsonSchema)', ops: 24119, relative: 67.1, csp: true, dynamic: true },
+  { library: 'Joi', ops: 23324, relative: 64.9, csp: true, dynamic: true },
+  { library: 'Yup', ops: 6419, relative: 17.9, csp: true, dynamic: true }
 ];
 
 function formatNumber(num: number): string {
@@ -69,7 +69,7 @@ function getBarWidth(value: number, max: number): number {
         </div>
         <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
           <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Speed (Simple)</span>
-          <p class="text-2xl font-bold text-luq-purple-600 dark:text-luq-purple-400">1.2M ops/sec</p>
+          <p class="text-2xl font-bold text-luq-purple-600 dark:text-luq-purple-400">695K ops/sec</p>
         </div>
         <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
           <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">CSP Safe</span>
@@ -167,7 +167,7 @@ function getBarWidth(value: number, max: number): number {
                       ? 'bg-gradient-to-r from-luq-purple-500 to-luq-teal-500' 
                       : 'bg-luq-neutral-400'
                   }`}
-                  style={`width: ${getBarWidth(item.ops, 3307131)}%`}
+                  style={`width: ${getBarWidth(item.ops, 3176536)}%`}
                 ></div>
               </div>
             </div>
@@ -211,7 +211,7 @@ function getBarWidth(value: number, max: number): number {
                       ? 'bg-gradient-to-r from-luq-purple-500 to-luq-teal-500' 
                       : 'bg-luq-neutral-400'
                   }`}
-                  style={`width: ${getBarWidth(item.ops, 239848)}%`}
+                  style={`width: ${getBarWidth(item.ops, 215535)}%`}
                 ></div>
               </div>
             </div>

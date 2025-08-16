@@ -46,6 +46,6 @@ export const validator = builder.fromJsonSchema(jsonSchema).build();
 // Export validation function
 export function validate(data: unknown): boolean {
   return validator
-    .validate(data, { abortEarly: false, abortEarlyOnEachField: false })
+    .parse(data, { abortEarly: false, abortEarlyOnEachField: false })
     .isValid();
 }

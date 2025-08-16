@@ -3,18 +3,18 @@
     "library": "luq",
     "structure": "simple",
     "bundleSize": {
-      "raw": 73588,
+      "raw": 73585,
       "gzipped": 19562,
-      "brotli": 16814
+      "brotli": 16796
     },
     "performance": {
       "validData": {
-        "duration": 8.096357999999782,
-        "opsPerSecond": 1235123.2492437055
+        "duration": 14.394870000000083,
+        "opsPerSecond": 694691.9284439486
       },
       "invalidData": {
-        "duration": 43.108270000000175,
-        "opsPerSecond": 231974.050454819
+        "duration": 45.55978700000014,
+        "opsPerSecond": 219491.80754510482
       }
     },
     "errorCount": {
@@ -27,18 +27,18 @@
     "library": "luq",
     "structure": "complex",
     "bundleSize": {
-      "raw": 95694,
-      "gzipped": 23012,
-      "brotli": 19356
+      "raw": 95691,
+      "gzipped": 23015,
+      "brotli": 19326
     },
     "performance": {
       "validData": {
-        "duration": 229.75825899999973,
-        "opsPerSecond": 43524.00668217116
+        "duration": 278.19219200000043,
+        "opsPerSecond": 35946.37192405452
       },
       "invalidData": {
-        "duration": 189.89925199999925,
-        "opsPerSecond": 52659.5017867687
+        "duration": 157.40457700000024,
+        "opsPerSecond": 63530.5541337593
       }
     },
     "errorCount": {
@@ -51,18 +51,18 @@
     "library": "luq-jsonschema",
     "structure": "simple",
     "bundleSize": {
-      "raw": 102129,
-      "gzipped": 26682,
-      "brotli": 22975
+      "raw": 102126,
+      "gzipped": 26684,
+      "brotli": 23009
     },
     "performance": {
       "validData": {
-        "duration": 5.936964000000444,
-        "opsPerSecond": 1684362.5799313004
+        "duration": 6.6740219999992405,
+        "opsPerSecond": 1498346.8738942032
       },
       "invalidData": {
-        "duration": 35.481604999999945,
-        "opsPerSecond": 281836.17962039815
+        "duration": 26.671682000000146,
+        "opsPerSecond": 374929.48513708083
       }
     },
     "errorCount": {
@@ -75,18 +75,18 @@
     "library": "luq-jsonschema",
     "structure": "complex",
     "bundleSize": {
-      "raw": 121388,
-      "gzipped": 29772,
+      "raw": 121385,
+      "gzipped": 29773,
       "brotli": 25386
     },
     "performance": {
       "validData": {
-        "duration": 341.79380799999944,
-        "opsPerSecond": 29257.40538868983
+        "duration": 414.61130200000025,
+        "opsPerSecond": 24118.97589805691
       },
       "invalidData": {
-        "duration": 171.17573600000014,
-        "opsPerSecond": 58419.494688195715
+        "duration": 132.90122900000006,
+        "opsPerSecond": 75243.84894890622
       }
     },
     "errorCount": {
@@ -99,18 +99,18 @@
     "library": "luq-jsonschema-full",
     "structure": "simple",
     "bundleSize": {
-      "raw": 120263,
+      "raw": 120260,
       "gzipped": 32517,
-      "brotli": 27032
+      "brotli": 27067
     },
     "performance": {
       "validData": {
-        "duration": 6.302528000000166,
-        "opsPerSecond": 1586664.9065263553
+        "duration": 7.124338999999964,
+        "opsPerSecond": 1403638.990227732
       },
       "invalidData": {
-        "duration": 21.881948999999622,
-        "opsPerSecond": 456997.68334165175
+        "duration": 25.321155999999974,
+        "opsPerSecond": 394926.6771232723
       }
     },
     "errorCount": {
@@ -123,18 +123,18 @@
     "library": "luq-jsonschema-full",
     "structure": "complex",
     "bundleSize": {
-      "raw": 122745,
-      "gzipped": 33091,
-      "brotli": 27617
+      "raw": 122742,
+      "gzipped": 33090,
+      "brotli": 27634
     },
     "performance": {
       "validData": {
-        "duration": 317.8435989999998,
-        "opsPerSecond": 31462.014750216837
+        "duration": 390.54502799999955,
+        "opsPerSecond": 25605.24211820208
       },
       "invalidData": {
-        "duration": 177.51843399999962,
-        "opsPerSecond": 56332.177873989254
+        "duration": 138.4315970000007,
+        "opsPerSecond": 72237.84321436349
       }
     },
     "errorCount": {
@@ -153,12 +153,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 20.564494000000195,
-        "opsPerSecond": 486275.03307399177
+        "duration": 16.041447999999946,
+        "opsPerSecond": 623385.1208444546
       },
       "invalidData": {
-        "duration": 220.54013799999848,
-        "opsPerSecond": 45343.22001739234
+        "duration": 210.12184100000013,
+        "opsPerSecond": 47591.43529491536
       }
     },
     "errorCount": {
@@ -177,12 +177,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 162.63286700000026,
-        "opsPerSecond": 61488.18614874436
+        "duration": 150.49388199999885,
+        "opsPerSecond": 66447.88390799884
       },
       "invalidData": {
-        "duration": 1044.6002980000012,
-        "opsPerSecond": 9573.039581882245
+        "duration": 986.1477530000011,
+        "opsPerSecond": 10140.468271188149
       }
     },
     "errorCount": {
@@ -201,12 +201,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 76.84691300000122,
-        "opsPerSecond": 130128.84460303358
+        "duration": 73.92308700000285,
+        "opsPerSecond": 135275.73598217854
       },
       "invalidData": {
-        "duration": 251.58263599999918,
-        "opsPerSecond": 39748.37118727078
+        "duration": 252.75952700000198,
+        "opsPerSecond": 39563.296065196075
       }
     },
     "errorCount": {
@@ -225,12 +225,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 1711.9017409999979,
-        "opsPerSecond": 5841.4567615069745
+        "duration": 1557.786898000002,
+        "opsPerSecond": 6419.363272883289
       },
       "invalidData": {
-        "duration": 541.5569929999983,
-        "opsPerSecond": 18465.277208598487
+        "duration": 513.5098480000015,
+        "opsPerSecond": 19473.823216726258
       }
     },
     "errorCount": {
@@ -249,12 +249,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 11.07788200000141,
-        "opsPerSecond": 902699.6315720576
+        "duration": 9.841369999998278,
+        "opsPerSecond": 1016118.6907922118
       },
       "invalidData": {
-        "duration": 42.48988299999837,
-        "opsPerSecond": 235350.142056178
+        "duration": 43.32028999999966,
+        "opsPerSecond": 230838.71322191236
       }
     },
     "errorCount": {
@@ -273,12 +273,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 58.359411999997974,
-        "opsPerSecond": 171351.9663289333
+        "duration": 58.60392099999808,
+        "opsPerSecond": 170637.0466235583
       },
       "invalidData": {
-        "duration": 97.98139199999787,
-        "opsPerSecond": 102060.19526646669
+        "duration": 91.31339699999808,
+        "opsPerSecond": 109512.95569477293
       }
     },
     "errorCount": {
@@ -297,12 +297,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 57.02496299999984,
-        "opsPerSecond": 175361.79725359974
+        "duration": 58.276991999999154,
+        "opsPerSecond": 171594.30603419177
       },
       "invalidData": {
-        "duration": 68.56416999999783,
-        "opsPerSecond": 145848.77203356093
+        "duration": 65.00887999999759,
+        "opsPerSecond": 153825.13896563626
       }
     },
     "errorCount": {
@@ -321,12 +321,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 424.59109700000045,
-        "opsPerSecond": 23552.071794854404
+        "duration": 428.7512109999989,
+        "opsPerSecond": 23323.54928322296
       },
       "invalidData": {
-        "duration": 582.9271130000016,
-        "opsPerSecond": 17154.803365613865
+        "duration": 590.3005539999976,
+        "opsPerSecond": 16940.52281035135
       }
     },
     "errorCount": {
@@ -345,12 +345,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 4.031918000000587,
-        "opsPerSecond": 2480209.170920278
+        "duration": 3.7867590000023483,
+        "opsPerSecond": 2640780.6781455586
       },
       "invalidData": {
-        "duration": 2.850126999997883,
-        "opsPerSecond": 3508615.580992506
+        "duration": 3.1674500000008265,
+        "opsPerSecond": 3157113.766593755
       }
     },
     "errorCount": {
@@ -369,12 +369,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 43.03326299999753,
-        "opsPerSecond": 232378.38134655447
+        "duration": 46.39619400000083,
+        "opsPerSecond": 215534.92081699247
       },
       "invalidData": {
-        "duration": 24.515432000000146,
-        "opsPerSecond": 407906.3342632486
+        "duration": 24.036080999998376,
+        "opsPerSecond": 416041.2007265525
       }
     },
     "errorCount": {
@@ -393,12 +393,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 3.0237689999994473,
-        "opsPerSecond": 3307130.9349364415
+        "duration": 3.1480830000000424,
+        "opsPerSecond": 3176536.3238516473
       },
       "invalidData": {
-        "duration": 2.013437999994494,
-        "opsPerSecond": 4966629.218295942
+        "duration": 1.9790839999986929,
+        "opsPerSecond": 5052842.628209113
       }
     },
     "errorCount": {
@@ -417,12 +417,12 @@
     },
     "performance": {
       "validData": {
-        "duration": 41.69311200000084,
-        "opsPerSecond": 239847.7714975989
+        "duration": 52.0336610000013,
+        "opsPerSecond": 192183.28689191694
       },
       "invalidData": {
-        "duration": 22.739188999999897,
-        "opsPerSecond": 439769.42185581225
+        "duration": 26.90147699999943,
+        "opsPerSecond": 371726.80146893836
       }
     },
     "errorCount": {
