@@ -3,8 +3,7 @@ import { jsonSchemaFullFeaturePlugin } from "../../../dist/plugins/jsonSchemaFul
 import { jsonSchema } from "../../schemas/shared-types";
 
 // Use JSON Schema full feature plugin (includes all necessary plugins)
-const builder = Builder()
-  .use(jsonSchemaFullFeaturePlugin);
+const builder = Builder().use(jsonSchemaFullFeaturePlugin);
 
 // Build validator from JSON Schema
 export const validator = builder.fromJsonSchema(jsonSchema).build();
@@ -12,6 +11,6 @@ export const validator = builder.fromJsonSchema(jsonSchema).build();
 // Export validation function
 export function validate(data: unknown): boolean {
   return validator
-    .validate(data, { abortEarly: false, abortEarlyOnEachField: false })
+    .parse(data, { abortEarly: false, abortEarlyOnEachField: false })
     .isValid();
 }
