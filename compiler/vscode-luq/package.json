@@ -1,0 +1,73 @@
+{
+  "name": "vscode-luq",
+  "displayName": "Luq Language Support",
+  "description": "Language support for Luq validation files",
+  "version": "0.1.0",
+  "publisher": "@maroonedog",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:luq"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "luq",
+        "aliases": [
+          "Luq",
+          "luq"
+        ],
+        "extensions": [
+          ".luq"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "luq",
+        "scopeName": "source.luq",
+        "path": "./syntaxes/luq.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Luq",
+      "properties": {
+        "luq.server.path": {
+          "type": "string",
+          "default": "luq-lsp",
+          "description": "Path to the Luq language server executable"
+        },
+        "luq.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,10 @@
+import * as validators from "./validators.luq";
+
+interface Test {
+    @required
+    email: string;
+}
+
+export function testValidator(): boolean {
+    return validators.validateEmail("test@example.com");
+}

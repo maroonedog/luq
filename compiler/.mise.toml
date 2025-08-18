@@ -1,0 +1,6 @@
+[tools]
+rust = "1.75.0"
+
+[env]
+CARGO_HOME = "~/.cargo"
+RUSTUP_HOME = "~/.rustup"

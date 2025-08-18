@@ -1,0 +1,28 @@
+// user-service.luq - インポート文のテスト
+
+// Named imports
+import { validateEmail, validatePhone } from "./validators.luq";
+import { EmailValidator } from "./validators.luq";
+
+// Default import
+import UserValidator from "./validators.luq";
+
+// Type import from TypeScript
+import { type User } from "../src-ts/types/user.ts";
+
+// バリデーション関数を使用
+export function validateUserInput(email: string, phone: string): boolean {
+    return validateEmail(email) && validatePhone(phone);
+}
+
+// 拡張インターフェース
+export interface ExtendedUserValidator extends UserValidator {
+    @required @min(18) @max(120)
+    age: number;
+    
+    @required @arrayMin(1)
+    roles: string[];
+}
+
+// Re-export
+export { EmailValidator } from "./validators.luq";

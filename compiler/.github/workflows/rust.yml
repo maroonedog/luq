@@ -1,0 +1,56 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'compiler/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'compiler/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, '1.75.0']
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+        components: rustfmt, clippy
+    
+    - name: Cache cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Build
+      working-directory: ./compiler
+      run: cargo build --verbose
+    
+    - name: Run tests
+      working-directory: ./compiler
+      run: cargo test --verbose
+    
+    - name: Check formatting
+      working-directory: ./compiler
+      run: cargo fmt -- --check
+    
+    - name: Clippy
+      working-directory: ./compiler
+      run: cargo clippy -- -D warnings
