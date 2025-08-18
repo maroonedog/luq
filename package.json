@@ -305,7 +305,9 @@
     "lint": "eslint src/**/*.ts",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
-    "generate-docs": "npx ts-node --project scripts/tsconfig.json scripts/docs-generator/index.ts"
+    "generate-docs": "npx ts-node --project scripts/tsconfig.json scripts/docs-generator/index.ts",
+    "install-vscode-ext": "cd compiler/vscode-luq && npm install && npx @vscode/vsce package && code --install-extension *.vsix",
+    "install-luq-dev": "cd compiler && cargo build --release --bin luq-lsp && sudo cp target/release/luq-lsp /usr/local/bin/ && cd vscode-luq && npm install && npx @vscode/vsce package && code --install-extension *.vsix && echo 'Luq LSP server and VS Code extension installed successfully!'"
   },
   "repository": {
     "type": "git",
