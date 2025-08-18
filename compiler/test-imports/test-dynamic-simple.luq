@@ -1,0 +1,3 @@
+export function loadValidator() {
+    return import("./validators.luq");
+}

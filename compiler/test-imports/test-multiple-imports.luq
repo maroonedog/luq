@@ -1,0 +1,8 @@
+// Multiple imports from same file
+import { validateEmail, validatePhone } from "./validators.luq";
+import { EmailValidator } from "./validators.luq";
+
+interface Test {
+    @required
+    email: string;
+}

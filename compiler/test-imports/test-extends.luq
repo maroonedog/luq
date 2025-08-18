@@ -1,0 +1,6 @@
+import UserValidator from "./validators.luq";
+
+interface ExtendedUserValidator extends UserValidator {
+    @required @min(18) @max(120)
+    age: number;
+}

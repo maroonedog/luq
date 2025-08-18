@@ -1,0 +1,13 @@
+export function validateUser(name: string, age: number): boolean {
+    if (name.length < 3) {
+        return false;
+    }
+    
+    if (age < 18) {
+        return false;
+    }
+    
+    const isValid = name.length > 0 && age >= 18;
+    
+    return isValid;
+}

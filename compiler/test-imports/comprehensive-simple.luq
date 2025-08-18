@@ -1,0 +1,35 @@
+// Comprehensive test of all features
+import { validateEmail, validatePhone } from "./validators.luq";
+import { EmailValidator } from "./validators.luq";
+import UserValidator from "./validators.luq";
+import * as utils from "./validators.luq";
+import { type User } from "../types/user.ts";
+
+// Export interface with extends
+export interface ExtendedValidator extends UserValidator {
+    @required @min(1) @max(100)
+    priority: number;
+    
+    @optional
+    metadata?: string;
+}
+
+// Export function with complex body
+export function processValidation(email: string, phone: string): boolean {
+    // Logical operations
+    if (!validateEmail(email)) {
+        return false;
+    }
+    
+    // Binary operations and function calls
+    return validateEmail(email) && validatePhone(phone) && utils.validateEmail(email);
+}
+
+// Export function with dynamic import
+export function loadExtraValidators() {
+    return import("./extra-validators.luq");
+}
+
+// Re-export
+export { EmailValidator as Validator } from "./validators.luq";
+export * from "./validators.luq";

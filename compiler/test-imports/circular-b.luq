@@ -1,0 +1,15 @@
+// circular-b.luq - 循環依存テスト B
+
+import { ServiceA } from "./circular-a.luq";
+
+export interface ServiceB {
+    @required
+    id: string;
+    
+    @required
+    relatedA: ServiceA;  // 循環依存
+}
+
+export function processB(): void {
+    // ServiceAを使用する処理
+}

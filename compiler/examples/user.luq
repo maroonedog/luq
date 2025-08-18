@@ -1,0 +1,40 @@
+@validator
+interface User {
+  @required
+  @min(3)
+  @max(50)
+  name: string;
+  
+  @required
+  @min(18)
+  @max(120)
+  age: number;
+  
+  @required
+  @email
+  email: string;
+  
+  @optional
+  @pattern(/^\+?[\d-]+$/)
+  phone?: string;
+  
+  @array
+  @minLength(1)
+  @maxLength(5)
+  addresses: Address[];
+}
+
+interface Address {
+  @required
+  street: string;
+  
+  @required
+  @pattern(/^\d{5}(-\d{4})?$/)
+  postalCode: string;
+  
+  @required
+  city: string;
+  
+  @required
+  isDefault: boolean;
+}
