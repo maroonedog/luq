@@ -17,12 +17,12 @@ export function activate(context: vscode.ExtensionContext) {
     const serverOptions: ServerOptions = {
         run: {
             command: serverCommand,
-            args: ['--stdio'],
+            args: [],
             transport: TransportKind.stdio
         },
         debug: {
             command: serverCommand,
-            args: ['--stdio', '--debug'],
+            args: [],
             transport: TransportKind.stdio
         }
     };

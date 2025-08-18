@@ -1,0 +1,41 @@
+// Test file for VS Code Luq extension
+// This file should be recognized with syntax highlighting
+
+interface User {
+  @required
+  @min(3)
+  name: string;
+  
+  @required
+  @email
+  email: string;
+  
+  @min(18)
+  @max(120)
+  age: number;
+  
+  @optional
+  address?: {
+    street: string;
+    city: string;
+    @pattern("^[0-9]{5}$")
+    zipCode: string;
+  };
+}
+
+// Function declaration
+function validateUser(user: User): boolean {
+  return true;
+}
+
+// Import statement
+import { Validator } from "./validators";
+
+// Export statement
+export interface Product {
+  @required
+  id: string;
+  
+  @min(0)
+  price: number;
+}

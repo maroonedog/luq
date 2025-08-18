@@ -3,7 +3,7 @@
   "displayName": "Luq Language Support",
   "description": "Language support for Luq validation files",
   "version": "0.1.0",
-  "publisher": "@maroonedog",
+  "publisher": "maroonedog",
   "engines": {
     "vscode": "^1.75.0"
   },
