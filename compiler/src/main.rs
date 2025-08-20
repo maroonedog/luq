@@ -1,9 +1,13 @@
 #![recursion_limit = "256"]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 
 mod ast;
 mod cli;
 mod codegen;
 mod config;
+mod dependency;
 mod lexer;
 mod parallel;
 mod parser;

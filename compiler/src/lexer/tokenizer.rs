@@ -78,8 +78,23 @@ impl Lexer {
             ':' => Ok(TokenKind::Colon),
             '.' => Ok(TokenKind::Dot),
             '?' => Ok(TokenKind::Question),
-            '|' => Ok(TokenKind::Pipe),
-            '&' => Ok(TokenKind::Ampersand),
+            '|' => {
+                if self.peek() == Some('|') {
+                    self.advance();
+                    Ok(TokenKind::OrOr)
+                } else {
+                    Ok(TokenKind::Pipe)
+                }
+            }
+            '&' => {
+                if self.peek() == Some('&') {
+                    self.advance();
+                    Ok(TokenKind::AndAnd)
+                } else {
+                    Ok(TokenKind::Ampersand)
+                }
+            }
+            '%' => Ok(TokenKind::Percent),
             '*' => {
                 // Check if this is a block comment start
                 if self.peek() == Some('/') {
@@ -93,14 +108,36 @@ impl Lexer {
                 if self.peek() == Some('>') {
                     self.advance();
                     Ok(TokenKind::Arrow)
+                } else if self.peek() == Some('=') {
+                    self.advance();
+                    if self.peek() == Some('=') {
+                        self.advance();
+                        Ok(TokenKind::EqualsEqualsEquals)
+                    } else {
+                        Ok(TokenKind::EqualsEquals)
+                    }
                 } else {
                     Ok(TokenKind::Equals)
                 }
             }
             '"' => self.read_string('"'),
             '\'' => self.read_string('\''),
-            '<' => Ok(TokenKind::LessThan),
-            '>' => Ok(TokenKind::GreaterThan),
+            '<' => {
+                if self.peek() == Some('=') {
+                    self.advance();
+                    Ok(TokenKind::LessThanEquals)
+                } else {
+                    Ok(TokenKind::LessThan)
+                }
+            }
+            '>' => {
+                if self.peek() == Some('=') {
+                    self.advance();
+                    Ok(TokenKind::GreaterThanEquals)
+                } else {
+                    Ok(TokenKind::GreaterThan)
+                }
+            }
             '-' => {
                 // Check if this is a negative number
                 if let Some(ch) = self.peek() {
@@ -118,8 +155,8 @@ impl Lexer {
                     self.read_line_comment()
                 } else if self.peek() == Some('*') {
                     self.read_block_comment()
-                } else if self.peek() == Some('=') || self.peek() == Some('\\') {
-                    // Likely a regex
+                } else if self.is_regex_context() {
+                    // This is a regex literal
                     self.read_regex()
                 } else {
                     // Division operator
@@ -127,7 +164,20 @@ impl Lexer {
                 }
             }
             '+' => Ok(TokenKind::Plus),
-            '!' => Ok(TokenKind::Exclamation),
+            '^' => Ok(TokenKind::Caret),
+            '!' => {
+                if self.peek() == Some('=') {
+                    self.advance();
+                    if self.peek() == Some('=') {
+                        self.advance();
+                        Ok(TokenKind::BangEqualsEquals)
+                    } else {
+                        Ok(TokenKind::BangEquals)
+                    }
+                } else {
+                    Ok(TokenKind::Exclamation)
+                }
+            }
             '\n' => {
                 self.line += 1;
                 self.column = 1;
@@ -332,5 +382,20 @@ impl Lexer {
 
     fn is_at_end(&self) -> bool {
         self.current >= self.input.len()
+    }
+
+    fn is_regex_context(&self) -> bool {
+        // Check if we're in a context where `/` is likely to start a regex
+        // This is a simple heuristic: check if the next character looks like regex content
+        if let Some(next_char) = self.peek() {
+            // Common regex starting characters
+            match next_char {
+                '^' | '[' | '\\' | '(' | '.' | '*' | '+' | '?' | '|' => true,
+                c if c.is_alphanumeric() => true,
+                _ => false,
+            }
+        } else {
+            false
+        }
     }
 }

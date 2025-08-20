@@ -1,0 +1,30 @@
+# Build artifacts
+/target/
+/target-wsl/
+/target-windows/
+/target-rust-analyzer/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+*.pdb
+
+# Rust
+**/*.rs.bk
+Cargo.lock
+
+# Test output
+*.luq.out
+*.luq.json
+
+# Temporary files
+*.tmp
+temp/

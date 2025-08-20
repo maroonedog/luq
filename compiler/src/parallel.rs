@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use anyhow::Result;
 use rayon::prelude::*;
 use std::path::PathBuf;
@@ -5,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 use futures::future::join_all;
 
-use crate::ast::Program;
+use crate::ast::{Program, AstContext};
 use crate::config::CompilerConfig;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
@@ -14,6 +16,7 @@ use crate::parser::Parser;
 pub struct ParallelParseResult {
     pub file_path: PathBuf,
     pub program: Result<Program>,
+    pub context: Option<AstContext>,
     pub elapsed_ms: u128,
 }
 
@@ -54,7 +57,7 @@ impl ParallelProcessor {
     fn parse_file_sync(&self, file_path: PathBuf) -> ParallelParseResult {
         let start = std::time::Instant::now();
         
-        let result = (|| -> Result<Program> {
+        let (result, context) = (|| -> Result<(Program, AstContext)> {
             let source = std::fs::read_to_string(&file_path)?;
             
             // Create runtime for async operations
@@ -62,20 +65,17 @@ impl ParallelProcessor {
                 .enable_all()
                 .build()?;
             
-            runtime.block_on(async {
-                let mut lexer = Lexer::new(&source);
-                let tokens = lexer.tokenize().await?;
-                
-                let mut parser = Parser::new(tokens);
-                parser.parse().await
-            })
-        })();
+            let parser = Parser::new(source.clone());
+            parser.parse(&source)
+                .map_err(|e| anyhow::anyhow!("Parse error: {}", e))
+        })().map(|(prog, ctx)| (Ok(prog), Some(ctx))).unwrap_or_else(|e| (Err(e), None));
         
         let elapsed_ms = start.elapsed().as_millis();
         
         ParallelParseResult {
             file_path,
             program: result,
+            context,
             elapsed_ms,
         }
     }
@@ -88,7 +88,7 @@ impl ParallelProcessor {
             // Process files with controlled concurrency
             let futures = files.into_iter().map(|file| {
                 let semaphore = Arc::clone(&self.semaphore);
-                let config = Arc::clone(&config);
+                let _config = Arc::clone(&config);
                 
                 async move {
                     // Acquire semaphore permit to limit concurrent operations
@@ -113,21 +113,23 @@ impl ParallelProcessor {
     async fn parse_file_async(&self, file_path: PathBuf) -> ParallelParseResult {
         let start = tokio::time::Instant::now();
         
-        let result = async {
+        let (result, context) = match async {
             let source = tokio::fs::read_to_string(&file_path).await?;
             
-            let mut lexer = Lexer::new(&source);
-            let tokens = lexer.tokenize().await?;
-            
-            let mut parser = Parser::new(tokens);
-            parser.parse().await
-        }.await;
+            let parser = Parser::new(source.clone());
+            parser.parse(&source)
+                .map_err(|e| anyhow::anyhow!("Parse error: {}", e))
+        }.await {
+            Ok((ast, ctx)) => (Ok(ast), Some(ctx)),
+            Err(e) => (Err(e), None),
+        };
         
         let elapsed_ms = start.elapsed().as_millis();
         
         ParallelParseResult {
             file_path,
             program: result,
+            context,
             elapsed_ms,
         }
     }

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration, Instant};
 use std::sync::Arc;

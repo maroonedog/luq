@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 mod ast;
 mod lexer;
 mod parser;
@@ -6,6 +10,7 @@ mod config;
 mod parallel;
 mod cli;
 mod lsp;
+mod dependency;
 
 use anyhow::Result;
 

@@ -1,6 +1,9 @@
+#![allow(dead_code)]
+
 use crate::ast::Program;
 use anyhow::Result;
 
+#[allow(dead_code)]
 pub trait CodeGenerator {
     fn generate(&self, program: &Program) -> Result<String>;
     
@@ -10,12 +13,14 @@ pub trait CodeGenerator {
     }
 }
 
+#[allow(dead_code)]
 pub struct GeneratorOptions {
     pub aot: bool,
     pub include_types: bool,
     pub module_system: ModuleSystem,
 }
 
+#[allow(dead_code)]
 pub enum ModuleSystem {
     CommonJS,
     ESModules,

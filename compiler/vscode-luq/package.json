@@ -4,6 +4,11 @@
   "description": "Language support for Luq validation files",
   "version": "0.1.0",
   "publisher": "maroonedog",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maroonedog/luq.git"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -35,6 +40,13 @@
         "path": "./syntaxes/luq.tmLanguage.json"
       }
     ],
+    "themes": [
+      {
+        "label": "Luq Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/luq-color-theme.json"
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "Luq",
@@ -58,16 +70,21 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "vscode:prepublish": "npm run package",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production",
+    "postinstall": "node scripts/postinstall.js",
+    "build-lsp": "cd .. && cargo build --release --bin luq-lsp && cd vscode-luq && node scripts/postinstall.js"
   },
   "dependencies": {
+    "tar": "^6.2.0",
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.75.0",
+    "esbuild": "^0.25.9",
     "typescript": "^5.0.0"
   }
 }
