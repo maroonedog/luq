@@ -2,8 +2,11 @@
 
 import { ServiceB } from "./circular-b.luq";
 
+/**
+ * ServiceA - 循環依存のテスト用サービス
+ */
 export interface ServiceA {
-    @required
+    @validateUser()
     id: string;
     
     @required
@@ -12,4 +15,9 @@ export interface ServiceA {
 
 export function processA(): void {
     // ServiceBを使用する処理
+}
+
+@validator
+function validateUser() {
+    return true;
 }

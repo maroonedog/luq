@@ -1,36 +1,42 @@
-use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
-use std::time::SystemTime;
-use crate::ast::{Program, Statement, ImportDecl, ExportDecl, ImportSpecifier};
-use crate::lexer::Span;
-use anyhow::Result;
+#![allow(dead_code)]
 
-#[derive(Debug, Clone)]
+use std::collections::HashMap;
+use std::path::PathBuf;
+use anyhow::Result;
+use crate::ast::{Program, AstContext};
+
+/// 依存関係グラフ
+#[derive(Debug, Clone, Default)]
 pub struct DependencyGraph {
-    // ファイルパス -> モジュール情報
+    /// パスからモジュールノードへのマップ
     pub nodes: HashMap<PathBuf, ModuleNode>,
-    // エクスポートシンボルのグローバルインデックス
-    // シンボル名 -> それをエクスポートしているファイルのリスト
-    pub export_index: HashMap<String, Vec<PathBuf>>,
+    /// エクスポート名からモジュールパスへのインデックス
+    export_index: HashMap<String, Vec<PathBuf>>,
 }
 
+/// モジュールノード
 #[derive(Debug, Clone)]
 pub struct ModuleNode {
     pub path: PathBuf,
     pub imports: Vec<ImportInfo>,
     pub exports: Vec<ExportInfo>,
-    pub dependencies: HashSet<PathBuf>,  // このモジュールが依存するファイル
-    pub dependents: HashSet<PathBuf>,    // このモジュールに依存するファイル  
-    pub last_modified: SystemTime,
-    pub cached_ast: Option<Program>,
 }
 
+/// インポート情報
 #[derive(Debug, Clone)]
 pub struct ImportInfo {
-    pub source: String,  // "./user.luq"
+    pub source: String,
     pub resolved_path: Option<PathBuf>,
-    pub specifiers: Vec<ImportSpecifier>,
-    pub span: Option<Span>,
+    pub specifiers: Vec<crate::ast::ImportSpecifier>,
+    pub span: Option<crate::ast::SourceSpan>,
+}
+
+/// エクスポート情報
+#[derive(Debug, Clone)]
+pub struct ParamInfo {
+    pub name: String,
+    pub type_str: Option<String>,
+    pub optional: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -38,9 +44,13 @@ pub struct ExportInfo {
     pub name: String,
     pub kind: ExportKind,
     pub is_default: bool,
+    pub is_validator: bool,
+    pub param_count: Option<usize>,
+    pub params: Vec<ParamInfo>,
 }
 
-#[derive(Debug, Clone)]
+/// エクスポートの種類
+#[derive(Debug, Clone, PartialEq)]
 pub enum ExportKind {
     Interface,
     Function,
@@ -57,72 +67,123 @@ impl DependencyGraph {
         }
     }
 
-    /// ファイルをグラフに追加または更新
-    pub fn add_or_update_module(&mut self, path: PathBuf, program: &Program) -> Result<()> {
+    /// Add or update a module in the graph
+    pub fn add_or_update_module(&mut self, path: PathBuf, _program: &Program) -> Result<()> {
+        // For the new zero-copy AST, we would need the AstContext to access actual data
+        // For now, create empty node as we can't access string values without context
+        let node = ModuleNode {
+            path: path.clone(),
+            imports: Vec::new(),
+            exports: Vec::new(),
+        };
+
+        self.nodes.insert(path, node);
+        Ok(())
+    }
+
+    /// Add or update a module with context
+    pub fn add_or_update_module_with_context(
+        &mut self, 
+        path: PathBuf, 
+        program: &Program,
+        context: &AstContext
+    ) -> Result<()> {
+        eprintln!("=== add_or_update_module_with_context for {:?}", path);
         let mut imports = Vec::new();
         let mut exports = Vec::new();
 
-        // ASTからimport/export情報を抽出
-        for statement in &program.statements {
-            match statement {
-                Statement::Import(import_decl) => {
-                    imports.push(ImportInfo {
-                        source: import_decl.source.clone(),
-                        resolved_path: None,
-                        specifiers: import_decl.specifiers.clone(),
-                        span: None,
-                    });
-                }
-                Statement::Export(export_decl) => {
-                    // エクスポート情報を収集
-                    if let Some(stmt) = &export_decl.statement {
-                        match stmt.as_ref() {
-                            Statement::Interface(interface) => {
-                                exports.push(ExportInfo {
-                                    name: interface.name.clone(),
-                                    kind: ExportKind::Interface,
-                                    is_default: false,
-                                });
-                            }
-                            Statement::Function(function) => {
-                                exports.push(ExportInfo {
-                                    name: function.name.clone(),
-                                    kind: ExportKind::Function,
-                                    is_default: false,
-                                });
-                            }
-                            Statement::TypeAlias(type_alias) => {
-                                exports.push(ExportInfo {
-                                    name: type_alias.name.clone(),
-                                    kind: ExportKind::TypeAlias,
-                                    is_default: false,
-                                });
-                            }
-                            _ => {}
-                        }
+        // Iterate through declarations in the new AST structure
+        for i in 0..program.declarations.len() {
+            let node_id = crate::ast::NodeId { 
+                index: program.declarations.start.index + i as u32 
+            };
+            
+            if let Some(node) = context.get_ast(node_id) {
+                match node {
+                    crate::ast::nodes::AstNode::Import { source, specifiers: _, .. } => {
+                        // Process imports - need to convert StringIds
+                        let source_str = context.get_str(*source).to_string();
+                        
+                        // Convert specifiers - this would need proper conversion logic
+                        let import_specs = Vec::new(); // Placeholder
+                        
+                        imports.push(ImportInfo {
+                            source: source_str,
+                            resolved_path: None,
+                            specifiers: import_specs,
+                            span: None,
+                        });
                     }
+                    crate::ast::nodes::AstNode::Export { .. } => {
+                        // Process exports - would need to extract nested declarations
+                    }
+                    crate::ast::nodes::AstNode::FunctionDecl { name, decorators, params, .. } => {
+                        let name_str = context.get_str(*name).to_string();
+                        
+                        // Check for validator decorator
+                        let is_validator = has_validator_decorator(decorators, context);
+                        
+                        // Extract parameter information
+                        let mut param_infos = Vec::new();
+                        for i in 0..params.len() {
+                            let param_id = crate::ast::NodeId { 
+                                index: params.start.index + i as u32 
+                            };
+                            if let Some(param) = context.get_param(param_id) {
+                                let param_name = context.get_str(param.name).to_string();
+                                let type_str = if let Some(type_id) = param.type_node {
+                                    // Get type as string - simplified for now
+                                    Some(format_type_node(type_id, context))
+                                } else {
+                                    None
+                                };
+                                param_infos.push(ParamInfo {
+                                    name: param_name,
+                                    type_str,
+                                    optional: param.optional,
+                                });
+                            }
+                        }
+                        
+                        exports.push(ExportInfo {
+                            name: name_str.clone(),
+                            kind: ExportKind::Function,
+                            is_default: false,
+                            is_validator,
+                            param_count: Some(params.len()),
+                            params: param_infos,
+                        });
+                    }
+                    crate::ast::nodes::AstNode::TypeDecl { name, .. } => {
+                        let name_str = context.get_str(*name).to_string();
+                        
+                        exports.push(ExportInfo {
+                            name: name_str.clone(),
+                            kind: ExportKind::Interface,
+                            is_default: false,
+                            is_validator: false,
+                            param_count: None,
+                            params: Vec::new(),
+                        });
+                    }
+                    crate::ast::nodes::AstNode::TypeAlias { name, .. } => {
+                        let name_str = context.get_str(*name).to_string();
+                        
+                        exports.push(ExportInfo {
+                            name: name_str.clone(),
+                            kind: ExportKind::TypeAlias,
+                            is_default: false,
+                            is_validator: false,
+                            param_count: None,
+                            params: Vec::new(),
+                        });
+                    }
+                    _ => {}
                 }
-                Statement::Interface(interface) => {
-                    // トップレベルのinterfaceは暗黙的にエクスポート
-                    exports.push(ExportInfo {
-                        name: interface.name.clone(),
-                        kind: ExportKind::Interface,
-                        is_default: false,
-                    });
-                }
-                Statement::Function(function) => {
-                    // トップレベルのfunctionは暗黙的にエクスポート
-                    exports.push(ExportInfo {
-                        name: function.name.clone(),
-                        kind: ExportKind::Function,
-                        is_default: false,
-                    });
-                }
-                _ => {}
             }
         }
 
-        // エクスポートインデックスを更新
+        // Update export index
         for export in &exports {
             self.export_index
                 .entry(export.name.clone())
@@ -130,124 +191,157 @@ impl DependencyGraph {
                 .push(path.clone());
         }
 
-        // ノードを作成または更新
+        // Create or update node
         let node = ModuleNode {
             path: path.clone(),
             imports,
             exports,
-            dependencies: HashSet::new(),
-            dependents: HashSet::new(),
-            last_modified: SystemTime::now(),
-            cached_ast: Some(program.clone()),
         };
+
+        eprintln!("  Added {} imports and {} exports", node.imports.len(), node.exports.len());
+        for import in &node.imports {
+            eprintln!("    Import: {}", import.source);
+        }
+        for export in &node.exports {
+            eprintln!("    Export: {} (validator: {})", export.name, export.is_validator);
+        }
 
         self.nodes.insert(path, node);
         Ok(())
     }
-
-    /// インポートパスを解決して依存関係を更新
-    pub fn resolve_dependencies(&mut self, path: &PathBuf, resolver: &super::resolver::ImportResolver) -> Result<()> {
-        // まずインポートを解決して結果を収集
-        let mut resolved_imports = Vec::new();
-        {
-            let node = self.nodes.get_mut(path).ok_or_else(|| {
-                anyhow::anyhow!("Module not found in graph: {:?}", path)
-            })?;
-
+    
+    /// Resolve imports for a module using the ImportResolver
+    pub fn resolve_imports(&mut self, module_path: &PathBuf, resolver: &crate::dependency::ImportResolver) -> Result<()> {
+        eprintln!("=== resolve_imports for {:?}", module_path);
+        if let Some(node) = self.nodes.get_mut(module_path) {
+            eprintln!("  Found {} imports to resolve", node.imports.len());
             for import in &mut node.imports {
-                // インポートパスを解決
-                match resolver.resolve(path, &import.source) {
+                eprintln!("  Resolving import: {}", import.source);
+                // Try to resolve the import path
+                match resolver.resolve(module_path, &import.source) {
                     Ok(resolved) => {
-                        import.resolved_path = Some(resolved.clone());
-                        resolved_imports.push(resolved.clone());
+                        eprintln!("    Resolved to: {:?}", resolved);
+                        import.resolved_path = Some(resolved);
                     }
                     Err(e) => {
-                        eprintln!("Failed to resolve import '{}': {}", import.source, e);
+                        eprintln!("    Failed to resolve: {}", e);
+                        // Continue even if resolution fails
                     }
                 }
             }
+        } else {
+            eprintln!("  No node found for module path");
         }
-
-        // 依存関係を更新
-        let mut dependencies = HashSet::new();
-        for resolved in &resolved_imports {
-            dependencies.insert(resolved.clone());
-            // 依存先のdependentsを更新
-            if let Some(target) = self.nodes.get_mut(resolved) {
-                target.dependents.insert(path.clone());
-            }
-        }
-
-        if let Some(node) = self.nodes.get_mut(path) {
-            node.dependencies = dependencies;
-        }
-
+        
         Ok(())
     }
 
-    /// 特定のファイルのモジュール情報を取得
+    /// Get a module node by path
     pub fn get_node(&self, path: &PathBuf) -> Option<&ModuleNode> {
         self.nodes.get(path)
     }
 
-    /// エクスポートされているシンボルを検索
-    pub fn find_export(&self, name: &str) -> Vec<&PathBuf> {
+    /// Find modules that export a given symbol
+    pub fn find_exporters(&self, symbol: &str) -> Vec<&PathBuf> {
         self.export_index
-            .get(name)
+            .get(symbol)
             .map(|paths| paths.iter().collect())
             .unwrap_or_default()
     }
 
-    /// 循環依存を検出
-    pub fn detect_cycles(&self) -> Vec<Vec<PathBuf>> {
-        let detector = super::cycle_detector::CycleDetector::from_graph(self);
-        detector.detect_cycles()
+    /// Get all module paths in the graph
+    pub fn get_all_modules(&self) -> Vec<&PathBuf> {
+        self.nodes.keys().collect()
     }
 
-    /// ファイルが変更された時の影響範囲を計算
-    pub fn get_affected_files(&self, changed_file: &PathBuf) -> HashSet<PathBuf> {
-        let mut affected = HashSet::new();
-        affected.insert(changed_file.clone());
-
-        // このファイルに依存している全てのファイルを収集
-        if let Some(node) = self.nodes.get(changed_file) {
-            for dependent in &node.dependents {
-                affected.insert(dependent.clone());
-                // 再帰的に依存を辿る
-                self.collect_dependents_recursive(dependent, &mut affected);
-            }
-        }
-
-        affected
+    /// Check if a module is in the graph
+    pub fn contains_module(&self, path: &PathBuf) -> bool {
+        self.nodes.contains_key(path)
     }
 
-    fn collect_dependents_recursive(&self, path: &PathBuf, collected: &mut HashSet<PathBuf>) {
-        if let Some(node) = self.nodes.get(path) {
-            for dependent in &node.dependents {
-                if collected.insert(dependent.clone()) {
-                    self.collect_dependents_recursive(dependent, collected);
+    /// Remove a module from the graph
+    pub fn remove_module(&mut self, path: &PathBuf) -> Option<ModuleNode> {
+        // Also remove from export index
+        if let Some(node) = self.nodes.remove(path) {
+            for export in &node.exports {
+                if let Some(paths) = self.export_index.get_mut(&export.name) {
+                    paths.retain(|p| p != path);
+                    if paths.is_empty() {
+                        self.export_index.remove(&export.name);
+                    }
                 }
             }
+            Some(node)
+        } else {
+            None
         }
     }
 
-    /// グラフの統計情報
-    pub fn stats(&self) -> GraphStats {
-        GraphStats {
-            total_modules: self.nodes.len(),
-            total_exports: self.export_index.len(),
-            total_dependencies: self.nodes.values()
-                .map(|n| n.dependencies.len())
-                .sum(),
-            cycles: self.detect_cycles().len(),
-        }
+    /// Clear the entire graph
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.export_index.clear();
     }
 }
 
-#[derive(Debug)]
-pub struct GraphStats {
-    pub total_modules: usize,
-    pub total_exports: usize,
-    pub total_dependencies: usize,
-    pub cycles: usize,
+/// Check if a decorator list contains @validator decorator
+fn has_validator_decorator(decorators: &crate::ast::nodes::NodeList, _context: &crate::ast::AstContext) -> bool {
+    // For now, return true for any function with decorators
+    // The excluded_names list in validators.rs will filter out unwanted functions
+    // This is a temporary workaround until decorator parsing is fully implemented
+    
+    // Check if the decorator list has the special marker
+    if decorators.count > 0 && decorators.start.index == u32::MAX {
+        return true;
+    }
+    
+    // If there are any decorators, assume it might be @validator
+    // The filtering is done by name in validators.rs
+    decorators.count > 0
+}
+
+/// Format a type node as a string
+fn format_type_node(type_id: crate::ast::NodeId, context: &crate::ast::AstContext) -> String {
+    use crate::ast::nodes::TypeNode;
+    
+    if let Some(type_node) = context.get_type(type_id) {
+        match type_node {
+            TypeNode::String { .. } => "string".to_string(),
+            TypeNode::Number { .. } => "number".to_string(),
+            TypeNode::Boolean { .. } => "boolean".to_string(),
+            TypeNode::Array { elem, .. } => {
+                format!("{}[]", format_type_node(*elem, context))
+            }
+            TypeNode::Ref { target, .. } => {
+                context.get_str(*target).to_string()
+            }
+            TypeNode::Union { variants, .. } => {
+                let mut types = Vec::new();
+                for i in 0..variants.len() {
+                    let variant_id = crate::ast::NodeId { 
+                        index: variants.start.index + i as u32 
+                    };
+                    types.push(format_type_node(variant_id, context));
+                }
+                types.join(" | ")
+            }
+            TypeNode::Optional { inner, .. } => {
+                format!("{}?", format_type_node(*inner, context))
+            }
+            TypeNode::Literal { value, .. } => {
+                use crate::ast::nodes::LiteralValue;
+                match value {
+                    LiteralValue::String(s) => format!("\"{}\"", context.get_str(*s)),
+                    LiteralValue::Number(n) => n.to_string(),
+                    LiteralValue::Boolean(b) => b.to_string(),
+                    LiteralValue::Regex(r) => format!("/{}/", context.get_str(*r)),
+                    LiteralValue::Null => "null".to_string(),
+                    LiteralValue::Undefined => "undefined".to_string(),
+                }
+            }
+            _ => "unknown".to_string(),
+        }
+    } else {
+        "any".to_string()
+    }
 }

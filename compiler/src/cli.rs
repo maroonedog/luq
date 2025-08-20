@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -77,6 +79,21 @@ enum Commands {
         #[arg(short, long, default_value = "summary")]
         format: String,
     },
+    
+    /// Check for dependency issues (circular dependencies, unused exports)
+    CheckDeps {
+        /// Input directory or .luq files
+        #[arg(required = true)]
+        inputs: Vec<PathBuf>,
+        
+        /// Only show circular dependencies
+        #[arg(long)]
+        cycles_only: bool,
+        
+        /// Only show unused exports
+        #[arg(long)]
+        unused_only: bool,
+    },
 }
 
 impl Cli {
@@ -103,7 +120,7 @@ impl Cli {
         match self.command {
             Commands::Compile {
                 input,
-                output,
+                output: _,
                 target,
                 aot,
             } => {
@@ -119,22 +136,19 @@ impl Cli {
                 use crate::lexer::Lexer;
                 use crate::parser::Parser;
                 use crate::ast::ToJson;
+                use crate::parallel::ParallelLexer;
                 
                 // Read the input file asynchronously
                 let source = fs::read_to_string(&input).await
                     .context(format!("Failed to read file: {}", input.display()))?;
                 
-                // Parse the source asynchronously
-                let mut lexer = Lexer::new(&source);
-                let tokens = lexer.tokenize().await
-                    .context("Failed to tokenize source")?;
-                
-                let mut parser = Parser::new(tokens);
-                let ast = parser.parse().await
-                    .context("Failed to parse source")?;
+                // Parse with nom parser
+                let parser = Parser::new(source.clone());
+                let (ast, context) = parser.parse(&source)
+                    .map_err(|e| anyhow::anyhow!("Failed to parse source: {}", e))?;
                 
                 // Output as JSON using custom serialization
-                let json_value = ast.to_json();
+                let json_value = ast.to_json(&context);
                 if pretty {
                     let json_str = serde_json::to_string_pretty(&json_value)
                         .context("Failed to serialize JSON")?;
@@ -231,6 +245,91 @@ impl Cli {
                             }
                         }
                     }
+                }
+                
+                Ok(())
+            }
+            Commands::CheckDeps { inputs, cycles_only, unused_only } => {
+                use crate::dependency::analyzer::DependencyAnalyzer;
+                use glob::glob;
+                
+                // Collect all .luq files from inputs
+                let mut files = Vec::new();
+                for input in inputs {
+                    if input.is_dir() {
+                        let pattern = format!("{}/**/*.luq", input.display());
+                        files.extend(glob(&pattern)?.filter_map(Result::ok));
+                    } else if input.extension().map_or(false, |ext| ext == "luq") {
+                        files.push(input);
+                    }
+                }
+                
+                if files.is_empty() {
+                    eprintln!("No .luq files found");
+                    return Ok(());
+                }
+                
+                println!("Analyzing {} files for dependency issues...", files.len());
+                
+                // Create dependency analyzer
+                let root = files.first()
+                    .and_then(|f| f.parent())
+                    .unwrap_or_else(|| std::path::Path::new("."))
+                    .to_path_buf();
+                
+                let mut analyzer = DependencyAnalyzer::with_config(root, config);
+                
+                // Analyze all files
+                for file in &files {
+                    if let Ok(content) = tokio::fs::read_to_string(file).await {
+                        if let Err(e) = analyzer.analyze_file(file.clone(), &content).await {
+                            eprintln!("Failed to analyze {}: {}", file.display(), e);
+                        }
+                    }
+                }
+                
+                let mut found_issues = false;
+                
+                // Check for circular dependencies
+                if !unused_only {
+                    let cycles = analyzer.detect_circular_dependencies();
+                    if !cycles.is_empty() {
+                        found_issues = true;
+                        println!("\n🔄 Circular Dependencies Found:");
+                        for (i, cycle) in cycles.iter().enumerate() {
+                            println!("  {}. {}", i + 1, cycle.iter()
+                                .map(|p| p.file_name()
+                                    .and_then(|n| n.to_str())
+                                    .unwrap_or("?"))
+                                .collect::<Vec<_>>()
+                                .join(" -> "));
+                        }
+                    } else if !cycles_only {
+                        println!("✅ No circular dependencies found");
+                    }
+                }
+                
+                // Check for unused exports
+                if !cycles_only {
+                    let unused = analyzer.find_unused_exports();
+                    if !unused.is_empty() {
+                        found_issues = true;
+                        println!("\n⚠️  Unused Exports:");
+                        for (file, exports) in unused {
+                            if !exports.is_empty() {
+                                println!("  {}:", file.display());
+                                for export in exports {
+                                    println!("    - {}", export);
+                                }
+                            }
+                        }
+                    } else if !unused_only {
+                        println!("✅ No unused exports found");
+                    }
+                }
+                
+                if !found_issues {
+                    println!("✅ No dependency issues found!");
                 }
                 
                 Ok(())

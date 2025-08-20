@@ -85,7 +85,19 @@ pub enum TokenKind {
     Plus,                    // +
     Multiply,                // *
     Slash,                   // /
+    Caret,                   // ^
     Exclamation,             // !
+    Percent,                 // %
+    
+    // Compound operators
+    OrOr,                    // ||
+    AndAnd,                  // &&
+    EqualsEquals,            // ==
+    BangEquals,              // !=
+    LessThanEquals,          // <=
+    GreaterThanEquals,       // >=
+    EqualsEqualsEquals,      // ===
+    BangEqualsEquals,        // !==
     
     // Special
     Newline,

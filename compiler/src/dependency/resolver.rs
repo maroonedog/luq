@@ -4,12 +4,16 @@ use anyhow::{Result, bail};
 
 pub struct ImportResolver {
     // プロジェクトルート
+    #[allow(dead_code)]
     root: PathBuf,
     // node_modules パス
+    #[allow(dead_code)]
     node_modules: Vec<PathBuf>,
     // パスエイリアス (tsconfig.jsonのpaths相当)
+    #[allow(dead_code)]
     path_aliases: HashMap<String, Vec<String>>,
     // 解決キャッシュ
+    #[allow(dead_code)]
     cache: HashMap<(PathBuf, String), PathBuf>,
 }
 
@@ -72,7 +76,7 @@ impl ImportResolver {
         let base_dir = from.parent()
             .ok_or_else(|| anyhow::anyhow!("Cannot get parent directory of {:?}", from))?;
         
-        let mut path = base_dir.join(import_path);
+        let path = base_dir.join(import_path);
         
         // 拡張子の補完を試みる
         if !path.exists() {

@@ -1,6 +1,3 @@
-mod parser;
+pub mod nom_parser;
 
-#[cfg(test)]
-mod parser_test;
-
-pub use parser::Parser;
+pub use nom_parser::Parser;

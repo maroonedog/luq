@@ -8,8 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "postinstall": "node dist/npm/postinstall.js",
-    "build:rust": "cargo build --release",
+    "build:lsp": "cargo build --release --bin luq-lsp",
     "build:rust:all": "npm run build:rust:linux && npm run build:rust:windows && npm run build:rust:macos",
     "build:rust:linux": "cargo build --release --target x86_64-unknown-linux-gnu",
     "build:rust:windows": "cargo build --release --target x86_64-pc-windows-msvc",

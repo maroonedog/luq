@@ -18,9 +18,14 @@ impl CycleDetector {
         let mut detector = Self::new();
         
         // 各モジュールの依存関係をグラフに追加
-        for (path, node) in dep_graph.nodes.iter() {
-            for dependency in &node.dependencies {
-                detector.add_edge(path.clone(), dependency.clone());
+        for path in dep_graph.get_all_modules() {
+            if let Some(node) = dep_graph.get_node(path) {
+                // Extract dependencies from imports
+                for import in &node.imports {
+                    if let Some(resolved) = &import.resolved_path {
+                        detector.add_edge(path.clone(), resolved.clone());
+                    }
+                }
             }
         }
         

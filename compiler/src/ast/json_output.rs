@@ -1,375 +1,222 @@
-use serde_json::{json, Value};
-use super::{Program, Statement, InterfaceDecl, InterfaceMember, Decorator, DecoratorArg};
-use super::types::{TypeAnnotation, TypeParam};
-use super::program::{TypeAlias, ImportDecl, ExportDecl, ImportSpecifier};
-use super::function::{FunctionDecl, FunctionParam, FunctionBody};
+// JSON output for AST
 
+use super::*;
+use serde_json::Value;
+use serde_json::json;
+
+/// Trait for converting AST to JSON
 pub trait ToJson {
-    fn to_json(&self) -> Value;
+    fn to_json(&self, context: &AstContext) -> Value;
+}
+
+impl ToJson for (Program, AstContext) {
+    fn to_json(&self, _context: &AstContext) -> Value {
+        self.0.to_json(&self.1)
+    }
 }
 
 impl ToJson for Program {
-    fn to_json(&self) -> Value {
+    fn to_json(&self, context: &AstContext) -> Value {
+        let mut declarations = Vec::new();
+        
+        // Iterate through declarations
+        for i in 0..self.declarations.len() {
+            let node_id = NodeId { 
+                index: self.declarations.start.index + i as u32 
+            };
+            
+            if let Some(node) = context.get_ast(node_id) {
+                declarations.push(node.to_json(context));
+            }
+        }
+        
         json!({
-            "statements": self.statements.iter().map(|s| s.to_json()).collect::<Vec<_>>()
+            "type": "Program",
+            "declarations": declarations
         })
     }
 }
 
-impl ToJson for Statement {
-    fn to_json(&self) -> Value {
+impl ToJson for AstNode {
+    fn to_json(&self, context: &AstContext) -> Value {
         match self {
-            Statement::Interface(i) => json!({
-                "type": "Interface",
-                "data": i.to_json()
-            }),
-            Statement::Function(f) => json!({
-                "type": "Function",
-                "data": f.to_json()
-            }),
-            Statement::TypeAlias(t) => json!({
-                "type": "TypeAlias",
-                "data": t.to_json()
-            }),
-            Statement::Import(i) => json!({
-                "type": "Import",
-                "data": i.to_json()
-            }),
-            Statement::Export(e) => json!({
-                "type": "Export",
-                "data": e.to_json()
-            }),
+            AstNode::TypeDecl { name, body, decorators: _, span, .. } => {
+                let type_name = context.get_str(*name);
+                let body_json = if let Some(type_node) = context.get_type(*body) {
+                    type_node.to_json(context)
+                } else {
+                    json!(null)
+                };
+                
+                json!({
+                    "type": "TypeDecl",
+                    "name": type_name,
+                    "body": body_json,
+                    "span": {
+                        "start": span.start,
+                        "end": span.end
+                    }
+                })
+            }
+            AstNode::FunctionDecl { name, params, return_type, body: _, decorators: _, span, .. } => {
+                let func_name = context.get_str(*name);
+                
+                let mut param_list = Vec::new();
+                for i in 0..params.len() {
+                    let param_id = NodeId { 
+                        index: params.start.index + i as u32 
+                    };
+                    if let Some(param) = context.get_param(param_id) {
+                        param_list.push(param.to_json(context));
+                    }
+                }
+                
+                let return_type_json = if let Some(ret_id) = return_type {
+                    if let Some(type_node) = context.get_type(*ret_id) {
+                        type_node.to_json(context)
+                    } else {
+                        json!(null)
+                    }
+                } else {
+                    json!(null)
+                };
+                
+                json!({
+                    "type": "FunctionDecl",
+                    "name": func_name,
+                    "params": param_list,
+                    "returnType": return_type_json,
+                    "span": {
+                        "start": span.start,
+                        "end": span.end
+                    }
+                })
+            }
+            AstNode::TypeAlias { name, body, .. } => {
+                let alias_name = context.get_str(*name);
+                let body_json = if let Some(type_node) = context.get_type(*body) {
+                    type_node.to_json(context)
+                } else {
+                    json!(null)
+                };
+                
+                json!({
+                    "type": "TypeAlias",
+                    "name": alias_name,
+                    "body": body_json
+                })
+            }
+            AstNode::Import { source, .. } => {
+                let source_str = context.get_str(*source);
+                json!({
+                    "type": "Import",
+                    "source": source_str
+                })
+            }
+            AstNode::Export { .. } => {
+                json!({
+                    "type": "Export"
+                })
+            }
+            _ => json!({ "type": "Unknown" })
         }
     }
 }
 
-impl ToJson for InterfaceDecl {
-    fn to_json(&self) -> Value {
-        json!({
-            "decorators": self.decorators.iter().map(|d| d.to_json()).collect::<Vec<_>>(),
-            "name": self.name,
-            "type_params": self.type_params.as_ref().map(|tp| tp.iter().map(|t| t.to_json()).collect::<Vec<_>>()),
-            "extends": self.extends,
-            "members": self.members.iter().map(|m| m.to_json()).collect::<Vec<_>>()
-        })
+impl ToJson for TypeNode {
+    fn to_json(&self, context: &AstContext) -> Value {
+        match self {
+            TypeNode::String { .. } => json!({ "type": "string" }),
+            TypeNode::Number { .. } => json!({ "type": "number" }),
+            TypeNode::Boolean { .. } => json!({ "type": "boolean" }),
+            TypeNode::Ref { target, .. } => {
+                let ref_name = context.get_str(*target);
+                json!({
+                    "type": "reference",
+                    "name": ref_name
+                })
+            }
+            TypeNode::Array { elem, .. } => {
+                let elem_type = if let Some(type_node) = context.get_type(*elem) {
+                    type_node.to_json(context)
+                } else {
+                    json!(null)
+                };
+                json!({
+                    "type": "array",
+                    "element": elem_type
+                })
+            }
+            TypeNode::Object { fields, .. } => {
+                let mut field_list = Vec::new();
+                for i in 0..fields.len() {
+                    let field_id = NodeId { 
+                        index: fields.start.index + i as u32 
+                    };
+                    if let Some(field) = context.get_field(field_id) {
+                        field_list.push(field.to_json(context));
+                    }
+                }
+                json!({
+                    "type": "object",
+                    "fields": field_list
+                })
+            }
+            TypeNode::Union { variants, .. } => {
+                let mut variant_list = Vec::new();
+                for i in 0..variants.len() {
+                    let variant_id = NodeId { 
+                        index: variants.start.index + i as u32 
+                    };
+                    if let Some(type_node) = context.get_type(variant_id) {
+                        variant_list.push(type_node.to_json(context));
+                    }
+                }
+                json!({
+                    "type": "union",
+                    "variants": variant_list
+                })
+            }
+            _ => json!({ "type": "unknown" })
+        }
     }
 }
 
-impl ToJson for InterfaceMember {
-    fn to_json(&self) -> Value {
+impl ToJson for Field {
+    fn to_json(&self, context: &AstContext) -> Value {
+        let field_name = context.get_str(self.name);
+        let type_json = if let Some(type_node) = context.get_type(self.type_node) {
+            type_node.to_json(context)
+        } else {
+            json!(null)
+        };
+        
         json!({
-            "decorators": self.decorators.iter().map(|d| d.to_json()).collect::<Vec<_>>(),
-            "key": self.key,
+            "name": field_name,
+            "type": type_json,
             "optional": self.optional,
-            "readonly": self.readonly,
-            "type_annotation": self.type_annotation.to_json()
+            "readonly": self.readonly
         })
     }
 }
 
-impl ToJson for Decorator {
-    fn to_json(&self) -> Value {
+impl ToJson for Param {
+    fn to_json(&self, context: &AstContext) -> Value {
+        let param_name = context.get_str(self.name);
+        let type_json = if let Some(type_id) = self.type_node {
+            if let Some(type_node) = context.get_type(type_id) {
+                type_node.to_json(context)
+            } else {
+                json!(null)
+            }
+        } else {
+            json!(null)
+        };
+        
         json!({
-            "name": self.name,
-            "args": self.args.iter().map(|a| a.to_json()).collect::<Vec<_>>()
+            "name": param_name,
+            "type": type_json,
+            "optional": self.optional
         })
-    }
-}
-
-impl ToJson for DecoratorArg {
-    fn to_json(&self) -> Value {
-        match self {
-            DecoratorArg::String(s) => json!({ "type": "String", "value": s }),
-            DecoratorArg::Number(n) => json!({ "type": "Number", "value": n }),
-            DecoratorArg::Boolean(b) => json!({ "type": "Boolean", "value": b }),
-            DecoratorArg::Regex(r) => json!({ "type": "Regex", "value": r }),
-            DecoratorArg::Identifier(i) => json!({ "type": "Identifier", "value": i }),
-            DecoratorArg::Array(arr) => json!({ 
-                "type": "Array", 
-                "value": arr.iter().map(|a| a.to_json()).collect::<Vec<_>>() 
-            }),
-            DecoratorArg::Object(obj) => json!({ 
-                "type": "Object", 
-                "value": obj.iter().map(|(k, v)| json!({ "key": k, "value": v.to_json() })).collect::<Vec<_>>() 
-            }),
-        }
-    }
-}
-
-impl ToJson for TypeAnnotation {
-    fn to_json(&self) -> Value {
-        match self {
-            TypeAnnotation::String => json!({ "kind": "String" }),
-            TypeAnnotation::Number => json!({ "kind": "Number" }),
-            TypeAnnotation::Boolean => json!({ "kind": "Boolean" }),
-            TypeAnnotation::Void => json!({ "kind": "Void" }),
-            TypeAnnotation::Undefined => json!({ "kind": "Undefined" }),
-            TypeAnnotation::Null => json!({ "kind": "Null" }),
-            TypeAnnotation::Array(t) => json!({ 
-                "kind": "Array", 
-                "elementType": t.to_json() 
-            }),
-            TypeAnnotation::Tuple(types) => json!({ 
-                "kind": "Tuple", 
-                "types": types.iter().map(|t| t.to_json()).collect::<Vec<_>>() 
-            }),
-            TypeAnnotation::Union(types) => json!({ 
-                "kind": "Union", 
-                "types": types.iter().map(|t| t.to_json()).collect::<Vec<_>>() 
-            }),
-            TypeAnnotation::Intersection(types) => json!({ 
-                "kind": "Intersection", 
-                "types": types.iter().map(|t| t.to_json()).collect::<Vec<_>>() 
-            }),
-            TypeAnnotation::StringLiteral(s) => json!({ 
-                "kind": "StringLiteral", 
-                "value": s 
-            }),
-            TypeAnnotation::NumberLiteral(n) => json!({ 
-                "kind": "NumberLiteral", 
-                "value": n 
-            }),
-            TypeAnnotation::BooleanLiteral(b) => json!({ 
-                "kind": "BooleanLiteral", 
-                "value": b 
-            }),
-            TypeAnnotation::Reference { name, type_args } => json!({ 
-                "kind": "Reference", 
-                "name": name,
-                "type_args": type_args.as_ref().map(|args| args.iter().map(|t| t.to_json()).collect::<Vec<_>>())
-            }),
-            TypeAnnotation::Object(members) => json!({ 
-                "kind": "Object",
-                "members": members.iter().map(|m| json!({
-                    "decorators": m.decorators.iter().map(|d| d.to_json()).collect::<Vec<_>>(),
-                    "key": m.key,
-                    "optional": m.optional,
-                    "readonly": m.readonly,
-                    "type_annotation": m.type_annotation.to_json()
-                })).collect::<Vec<_>>()
-            }),
-            TypeAnnotation::Optional(t) => json!({ 
-                "kind": "Optional", 
-                "type": t.to_json()
-            }),
-            TypeAnnotation::Readonly(t) => json!({ 
-                "kind": "Readonly", 
-                "type": t.to_json()
-            }),
-        }
-    }
-}
-
-impl ToJson for TypeParam {
-    fn to_json(&self) -> Value {
-        json!({
-            "name": self.name,
-            "constraint": self.constraint.as_ref().map(|c| c.to_json()),
-            "default": self.default.as_ref().map(|d| d.to_json())
-        })
-    }
-}
-
-impl ToJson for TypeAlias {
-    fn to_json(&self) -> Value {
-        json!({
-            "name": self.name,
-            "type_params": self.type_params.as_ref().map(|tp| tp.iter().map(|t| t.to_json()).collect::<Vec<_>>()),
-            "type_annotation": self.type_annotation.to_json()
-        })
-    }
-}
-
-impl ToJson for ImportDecl {
-    fn to_json(&self) -> Value {
-        json!({
-            "specifiers": self.specifiers.iter().map(|s| s.to_json()).collect::<Vec<_>>(),
-            "source": self.source
-        })
-    }
-}
-
-impl ToJson for ImportSpecifier {
-    fn to_json(&self) -> Value {
-        match self {
-            ImportSpecifier::Named { name, alias } => json!({
-                "kind": "Named",
-                "name": name,
-                "alias": alias
-            }),
-            ImportSpecifier::Default(name) => json!({
-                "kind": "Default",
-                "name": name
-            }),
-            ImportSpecifier::Namespace(name) => json!({
-                "kind": "Namespace",
-                "name": name
-            }),
-        }
-    }
-}
-
-impl ToJson for ExportDecl {
-    fn to_json(&self) -> Value {
-        json!({
-            "statement": self.statement.as_ref().map(|s| s.to_json()),
-            "specifiers": self.specifiers.as_ref().map(|specs| specs.iter().map(|s| s.to_json()).collect::<Vec<_>>()),
-            "source": self.source,
-            "is_default": self.is_default
-        })
-    }
-}
-
-impl ToJson for super::program::ExportSpecifier {
-    fn to_json(&self) -> Value {
-        match self {
-            super::program::ExportSpecifier::Named { name, alias } => json!({
-                "kind": "Named",
-                "name": name,
-                "alias": alias
-            }),
-            super::program::ExportSpecifier::Default(name) => json!({
-                "kind": "Default",
-                "name": name
-            }),
-            super::program::ExportSpecifier::Namespace(name) => json!({
-                "kind": "Namespace",
-                "name": name
-            }),
-        }
-    }
-}
-
-impl ToJson for FunctionDecl {
-    fn to_json(&self) -> Value {
-        json!({
-            "decorators": self.decorators.iter().map(|d| d.to_json()).collect::<Vec<_>>(),
-            "name": self.name,
-            "params": self.params.iter().map(|p| p.to_json()).collect::<Vec<_>>(),
-            "return_type": self.return_type.as_ref().map(|t| t.to_json()),
-            "body": self.body.as_ref().map(|b| b.to_json())
-        })
-    }
-}
-
-impl ToJson for FunctionParam {
-    fn to_json(&self) -> Value {
-        json!({
-            "name": self.name,
-            "type_annotation": self.type_annotation.as_ref().map(|t| t.to_json()),
-            "optional": self.optional,
-            "default_value": None::<Value> // TODO: Implement when Expression ToJson is added
-        })
-    }
-}
-
-impl ToJson for FunctionBody {
-    fn to_json(&self) -> Value {
-        json!({
-            "statements": self.statements.iter().map(|s| s.to_json()).collect::<Vec<_>>()
-        })
-    }
-}
-
-impl ToJson for super::function::FunctionStatement {
-    fn to_json(&self) -> Value {
-        match self {
-            super::function::FunctionStatement::Return(expr) => json!({
-                "type": "Return",
-                "value": expr.as_ref().map(|e| e.to_json())
-            }),
-            super::function::FunctionStatement::Expression(expr) => json!({
-                "type": "Expression",
-                "expression": expr.to_json()
-            }),
-            super::function::FunctionStatement::If { condition, then_branch, else_branch } => json!({
-                "type": "If",
-                "condition": condition.to_json(),
-                "then_branch": then_branch.iter().map(|s| s.to_json()).collect::<Vec<_>>(),
-                "else_branch": else_branch.as_ref().map(|eb| eb.iter().map(|s| s.to_json()).collect::<Vec<_>>())
-            }),
-        }
-    }
-}
-
-impl ToJson for super::function::Expression {
-    fn to_json(&self) -> Value {
-        match self {
-            super::function::Expression::Literal(lit) => json!({
-                "type": "Literal",
-                "value": lit.to_json()
-            }),
-            super::function::Expression::Identifier(name) => json!({
-                "type": "Identifier",
-                "name": name
-            }),
-            super::function::Expression::Binary { left, operator, right } => json!({
-                "type": "Binary",
-                "left": left.to_json(),
-                "operator": operator.to_json(),
-                "right": right.to_json()
-            }),
-            super::function::Expression::Call { callee, arguments } => json!({
-                "type": "Call",
-                "callee": callee.to_json(),
-                "arguments": arguments.iter().map(|a| a.to_json()).collect::<Vec<_>>()
-            }),
-            super::function::Expression::DynamicImport { source } => json!({
-                "type": "DynamicImport",
-                "source": source
-            }),
-            super::function::Expression::MemberAccess { object, property } => json!({
-                "type": "MemberAccess",
-                "object": object.to_json(),
-                "property": property
-            }),
-            super::function::Expression::Unary { operator, operand } => json!({
-                "type": "Unary",
-                "operator": operator.to_json(),
-                "operand": operand.to_json()
-            }),
-        }
-    }
-}
-
-impl ToJson for super::function::Literal {
-    fn to_json(&self) -> Value {
-        match self {
-            super::function::Literal::String(s) => json!({ "type": "String", "value": s }),
-            super::function::Literal::Number(n) => json!({ "type": "Number", "value": n }),
-            super::function::Literal::Boolean(b) => json!({ "type": "Boolean", "value": b }),
-            super::function::Literal::Null => json!({ "type": "Null" }),
-            super::function::Literal::Undefined => json!({ "type": "Undefined" }),
-            super::function::Literal::Regex(r) => json!({ "type": "Regex", "value": r }),
-        }
-    }
-}
-
-impl ToJson for super::function::BinaryOperator {
-    fn to_json(&self) -> Value {
-        match self {
-            super::function::BinaryOperator::Add => json!("Add"),
-            super::function::BinaryOperator::Subtract => json!("Subtract"),
-            super::function::BinaryOperator::Multiply => json!("Multiply"),
-            super::function::BinaryOperator::Divide => json!("Divide"),
-            super::function::BinaryOperator::Equal => json!("Equal"),
-            super::function::BinaryOperator::NotEqual => json!("NotEqual"),
-            super::function::BinaryOperator::LessThan => json!("LessThan"),
-            super::function::BinaryOperator::LessThanOrEqual => json!("LessThanOrEqual"),
-            super::function::BinaryOperator::GreaterThan => json!("GreaterThan"),
-            super::function::BinaryOperator::GreaterThanOrEqual => json!("GreaterThanOrEqual"),
-            super::function::BinaryOperator::And => json!("And"),
-            super::function::BinaryOperator::Or => json!("Or"),
-        }
-    }
-}
-
-impl ToJson for super::function::UnaryOperator {
-    fn to_json(&self) -> Value {
-        match self {
-            super::function::UnaryOperator::Not => json!("Not"),
-            super::function::UnaryOperator::Minus => json!("Minus"),
-            super::function::UnaryOperator::Plus => json!("Plus"),
-        }
     }
 }
