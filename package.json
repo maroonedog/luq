@@ -302,14 +302,16 @@
     "test": "jest --no-watch --no-watchman",
     "test:swc": "swc test --config-file .swcrc --out-dir test-compiled && jest test-compiled",
     "test:watch": "jest --watch",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint \"src/**/*.ts\"",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "generate-docs": "npx ts-node --project scripts/tsconfig.json scripts/docs-generator/index.ts",
-    "install-vscode-ext": "cd compiler && cargo build --release --bin luq-lsp && cp target/release/luq-lsp vscode-luq/bin/luq-lsp && cd vscode-luq && npm install && npx @vscode/vsce package && code --install-extension *.vsix",
-    "install-luq-dev": "cd compiler && cargo build --release --bin luq-lsp && sudo cp target/release/luq-lsp /usr/local/bin/ && cd vscode-luq && npm install && npx @vscode/vsce package && code --install-extension *.vsix && echo 'Luq LSP server and VS Code extension installed successfully!'",
-    "install-vscode-ext:win": "cd compiler && cargo build --release --bin luq-lsp && copy target\\release\\luq-lsp.exe vscode-luq\\bin\\luq-lsp.exe && cd vscode-luq && npm install && npm exec -- vsce package && for %f in (*.vsix) do code --install-extension %f",
-    "install-luq-dev:win": "echo Please run the following commands in order: && echo 1. Install Rust from https://rustup.rs/ && echo 2. cd compiler && cargo build --release --bin luq-lsp && echo 3. mkdir \"%USERPROFILE%\\luq\" (if not exists) && echo 4. copy target\\release\\luq-lsp.exe \"%USERPROFILE%\\luq\\luq-lsp.exe\" && echo 5. Add %USERPROFILE%\\luq to PATH && echo 6. cd vscode-luq && npm install && npm exec -- vsce package && echo 7. for %%f in (*.vsix) do code --install-extension %%f"
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "lint:filenames": "node scripts/check-filenames.js",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "verify": "npm run format:check && npm run lint && npm run lint:filenames && npm run typecheck && npm test"
   },
   "repository": {
     "type": "git",

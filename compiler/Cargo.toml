@@ -43,10 +43,6 @@ clap = { version = "4.0", features = ["derive"] }
 # Code generation helpers
 indoc = "2.0"
 
-# LSP support
-tower-lsp = "0.20"
-lsp-types = "0.95"
-
 # Debug utilities
 chrono = "0.4"
 
@@ -58,14 +54,6 @@ tempfile = "3.8"  # Temporary files for testing
 [[bin]]
 name = "luqc"
 path = "src/main.rs"
-
-[[bin]]
-name = "luq-lsp"
-path = "src/lsp_main.rs"
-
-[[bin]]
-name = "luq-lsp-debug"
-path = "src/lsp_debug.rs"
 
 [profile.release]
 opt-level = 2

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo test:*)",
+      "Bash(cargo run:*)",
+      "Bash(cargo build:*)",
+      "Bash(./target/release/luqc examples/user.luq)",
+      "Bash(./luqc.exe:*)",
+      "Bash(npm run compile:*)",
+      "Bash(grep:*)",
+      "Bash(node:*)",
+      "Bash(python3:*)",
+      "Bash(rustc:*)",
+      "Bash(./test_logic)",
+      "Bash(npx vsce package:*)",
+      "Bash(code --uninstall-extension:*)",
+      "Bash(code:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
