@@ -177,3 +177,6 @@ dist/validators/
 *.rar
 *.tar
 *.zip
+
+# Claude Code のローカル設定
+.claude/settings.local.json
