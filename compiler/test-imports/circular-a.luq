@@ -2,22 +2,26 @@
 
 import { ServiceB } from "./circular-b.luq";
 
-/**
- * ServiceA - 循環依存のテスト用サービス
- */
+/// ServiceA - 循環依存のテスト用サービス
+/// これはDart形式のドキュメントコメントです
+/// 複数行のコメントもサポートしています
 export interface ServiceA {
-    @validateUser()
+    @
     id: string;
     
-    @required
+    
     relatedB: ServiceB;
 }
 
+
+/// ServiceAを処理する関数
+/// ServiceBと連携して動作します
 export function processA(): void {
-    // ServiceBを使用する処理
+    /// ServiceBを使用する処理
+    
 }
 
 @validator
-function validateUser() {
+function validateUser(payload: string) {
     return true;
 }

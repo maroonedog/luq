@@ -27,6 +27,9 @@ pub struct CompilerConfig {
     
     /// Timeout for individual operations in milliseconds
     pub operation_timeout_ms: u64,
+    
+    /// Enable AST validation
+    pub enable_ast_validation: bool,
 }
 
 impl Default for CompilerConfig {
@@ -39,6 +42,7 @@ impl Default for CompilerConfig {
             max_concurrent_files: 10,
             enable_metrics: false,
             operation_timeout_ms: 30000,
+            enable_ast_validation: true,
         }
     }
 }

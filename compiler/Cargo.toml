@@ -23,7 +23,8 @@ thiserror = "1.0"
 
 # Parsing utilities
 logos = "0.14"  # Fast lexer generator
-nom = "7.1"     # Parser combinators (optional, if needed)
+chumsky = "0.9"  # Parser combinator library with excellent error recovery
+ariadne = "0.4"  # Beautiful error reporting
 
 # Data structures
 indexmap = "2.0"
@@ -46,6 +47,9 @@ indoc = "2.0"
 tower-lsp = "0.20"
 lsp-types = "0.95"
 
+# Debug utilities
+chrono = "0.4"
+
 [dev-dependencies]
 insta = "1.34"  # Snapshot testing
 pretty_assertions = "1.4"
@@ -59,5 +63,12 @@ path = "src/main.rs"
 name = "luq-lsp"
 path = "src/lsp_main.rs"
 
+[[bin]]
+name = "luq-lsp-debug"
+path = "src/lsp_debug.rs"
+
 [profile.release]
 opt-level = 2
+
+[dependencies.env_logger]
+version = "0.10"

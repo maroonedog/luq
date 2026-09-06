@@ -1,0 +1,17 @@
+// Test file for LSP functionality
+
+interface User {
+    @required
+    name: string;
+    
+    @optional
+    age: number;
+    
+    @
+    
+    email: string;
+}
+
+export function validate(user: User): boolean {
+    return true;
+}

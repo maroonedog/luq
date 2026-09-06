@@ -1,0 +1,17 @@
+// Test file for @ completion after deletion
+
+// Type @validateUser() here, then delete it all and type @ again
+// It should not hang with "Loading..." 
+
+@validator
+function validateUser(data: { name: string }) {
+    if (!data.name) {
+        return "Name is required";
+    }
+    return true;
+}
+
+// Test here - type @ and see completions:
+
+
+// The completion should work multiple times without hanging

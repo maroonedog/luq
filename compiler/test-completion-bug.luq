@@ -1,0 +1,17 @@
+// Test file for completion bug reproduction
+// Bug: After multiple attempts, completion shows "読込中です..." and hangs
+
+export interface TestInterface {
+    // Type @ here and press Ctrl+Space
+    // 1st attempt: Shows all candidates (BUG - should show only decorators)
+    // 2nd attempt: Delete @ and type @ again, shows validateUser (CORRECT)
+    // 3rd attempt: Delete @ and type @ again, shows "読込中です..." forever (BUG)
+    @
+    testField: string;
+}
+
+// This validator should appear in completion after @
+@validator
+function validateTest(payload: string) {
+    return true;
+}

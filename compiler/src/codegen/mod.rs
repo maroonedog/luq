@@ -1,3 +1,0 @@
-mod generator;
-mod typescript;
-
