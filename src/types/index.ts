@@ -1,90 +1,114 @@
-/**
- * Minimal type definitions - only exports actually used in the codebase
- * Optimized for bundle size by removing unused complex type definitions
- */
+// ===========================================================================
+// L0  src/types/index.ts — the vocabulary layer. No imports, no mutable state.
+// ===========================================================================
+export type TypeName =
+  | "string"
+  | "number"
+  | "boolean"
+  | "date"
+  | "array"
+  | "tuple"
+  | "object"
+  | "union"
+  | "any";
 
-import { NestedKeyOf, TypeOfPath, ElementType } from "./util";
-import { Result, LuqValidationException } from "./result";
+/** The extra members a plugin contributes to its own message context. */
+export type MessageContextExtra = object;
 
-// Re-export core types that are actually used
-export { Result, LuqValidationException };
+export interface MessageContext {
+  readonly path: string;
+  readonly value: unknown;
+  readonly code: string;
+}
 
-/**
- * Validation result interface - used in builder/types.ts
- */
-export type ValidationResult<T> = {
-  valid: boolean;
-  value: T | null;
-  errors: ValidationError[];
-  originalValue?: T;
-};
-
-/**
- * Validation error interface - used in plugin-registry.ts
- */
-export type ValidationError = {
-  path: string;
-  message: string;
-  code: string;
-  paths(): string[];
-};
+export type MessageFactory<
+  C extends MessageContextExtra = MessageContextExtra,
+> = (context: MessageContext & C) => string;
 
 /**
- * Message factory type - used in reporter.ts and plugin/types.ts
- * Import from plugin/types for consistent definition
+ * User decision 8 keeps severity. The legacy three-level SEVERITY
+ * (INFO / WARN / ERROR) is carried over verbatim in meaning, spelled
+ * lower-case to match every other string vocabulary in L0.
  */
-import type { MessageFactory } from "../core/plugin/types";
-export type { MessageFactory };
+export type IssueSeverity = "error" | "warning" | "info";
 
-/**
- * Validation options - used in registry and plugin-types
- */
-export type ValidationOptions = {
-  /** Abort validation on first error (default: true) */
-  abortEarly?: boolean;
-  /** Abort validation on each field's first error (default: true) */
-  abortEarlyOnEachField?: boolean;
-  /** Custom message factory for error messages */
-  messageFactory?: MessageFactory;
-  /** Translation function for i18n support */
-  translate?: (key: string, params?: Record<string, any>) => string;
-  /** Context data passed to validators */
-  context?: Record<string, any>;
-};
+export interface RuleOptions<
+  C extends MessageContextExtra = MessageContextExtra,
+> {
+  readonly code?: string;
+  readonly messageFactory?: MessageFactory<C>;
+  /** Per-call override. Legacy ValidationOptions.severity, same meaning. */
+  readonly severity?: IssueSeverity;
+}
 
-/**
- * Parse options - used in registry and plugin-types
- */
-export type ParseOptions = {
-  /** Abort parsing on first error (default: true) */
-  abortEarly?: boolean;
-  /** Abort parsing on each field's first error (default: true) */
-  abortEarlyOnEachField?: boolean;
-  /** Custom message factory for error messages */
-  messageFactory?: MessageFactory;
-  /** Translation function for i18n support */
-  translate?: (key: string, params?: Record<string, any>) => string;
-  /** Context data passed to validators */
-  context?: Record<string, any>;
-  /** Custom transform functions for post-processing */
-  transforms?: Record<string, (value: any) => any>;
-};
+export interface ValidationIssue {
+  readonly path: string;
+  readonly code: string;
+  readonly message: string;
+  /** Never optional: the chain resolves it once at build time, so a reader
+   *  never has to re-implement the "absent means error" fallback. */
+  readonly severity: IssueSeverity;
+}
 
-// Re-export utility types - used in multiple places
-export { NestedKeyOf, TypeOfPath, ElementType };
+/** branch / index / causes let a composite failure explain itself. */
+export interface IssueDetail {
+  readonly expected?: unknown;
+  readonly actual?: unknown;
+  readonly branch?: string;
+  readonly index?: number;
+  readonly causes?: readonly ValidationIssue[];
+}
 
-/**
- * Union to intersection utility type - used in plugin/types.ts
- */
-export type UnionToIntersection<U> = (
-  U extends any ? (k: U) => void : never
-) extends (k: infer I) => void
-  ? I
-  : never;
+export type CheckOutcome =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly detail: IssueDetail };
 
-/**
- * Validator interface - simplified version for compatibility
- */
-export interface Validator<T> {
-  validate(value: unknown): ValidationResult<T>;
+export const PASS: CheckOutcome = { ok: true };
+
+export function fail(detail: IssueDetail): CheckOutcome {
+  return { ok: false, detail };
+}
+
+export interface ArrayItemContext {
+  readonly index: number;
+  readonly item: unknown;
+  readonly array: readonly unknown[];
+}
+
+export interface RuleContext {
+  readonly root: unknown;
+  readonly path: string;
+  readonly item?: ArrayItemContext;
+  /** The ONE channel a pre-resolved async context arrives on. */
+  readonly external?: Readonly<Record<string, unknown>>;
+}
+
+/** L0 keeps only the two presence flags. L3 extends it with guard coverage. */
+export interface PresenceState {
+  readonly undefinedAllowed: boolean;
+  readonly nullAllowed: boolean;
+}
+
+export type Present<T, S extends PresenceState> = Exclude<
+  T,
+  | (S["undefinedAllowed"] extends false ? undefined : never)
+  | (S["nullAllowed"] extends false ? null : never)
+>;
+
+export function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+export function isNumber(value: unknown): value is number {
+  return typeof value === "number";
+}
+export function isArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+export function isPlainObject(
+  value: unknown
+): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+export function isStringArray(value: unknown): value is readonly string[] {
+  return isArray(value) && value.every(isString);
 }
