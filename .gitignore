@@ -179,4 +179,4 @@ dist/validators/
 *.zip
 
 # Claude Code のローカル設定
-.claude/settings.local.json
+**/.claude/settings.local.json
