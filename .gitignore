@@ -193,3 +193,6 @@ src/plugins/index.generated.ts
 
 # Step 28 の dist テストが一時的に書く ESM プローブ
 .dist-esm-probe.mjs
+
+# openapi-ts-plugin のビルド成果物
+openapi-ts-plugin/dist/
