@@ -86,17 +86,33 @@ describe("readPerfBaseline", () => {
 describe("findRecordedFloor", () => {
   it("shape・operation・受理/拒否の3つが揃った行の床だけを返す", () => {
     const baseline = readPerfBaseline(PERF_BASELINE_PATH);
-    const accepted = findRecordedFloor(baseline, "singleField", {
+    const accepted = findRecordedFloor(baseline, "multiField", {
       operation: "validate",
       inputIsAccepted: true,
     });
-    const rejected = findRecordedFloor(baseline, "singleField", {
+    const rejected = findRecordedFloor(baseline, "multiField", {
       operation: "validate",
       inputIsAccepted: false,
     });
     expect(accepted).toBeGreaterThan(0);
     expect(rejected).toBeGreaterThan(0);
     expect(accepted).not.toBe(rejected);
+  });
+
+  // 除外そのものを固定する。singleField の床を戻すとここが落ちるので、
+  // 「なぜ外したか」を読まずに戻すことはできない。
+  it("singleField には床が無い（参照が測定下限を下回るため比率ゲートの対象外）", () => {
+    const baseline = readPerfBaseline(PERF_BASELINE_PATH);
+    for (const inputIsAccepted of [true, false]) {
+      for (const operation of ["validate", "parse"] as const) {
+        expect(
+          findRecordedFloor(baseline, "singleField", {
+            operation,
+            inputIsAccepted,
+          })
+        ).toBeUndefined();
+      }
+    }
   });
 
   it("記録の無い組み合わせには undefined を返す", () => {
