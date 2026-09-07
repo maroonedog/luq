@@ -6,13 +6,31 @@
 [![npm version](https://img.shields.io/npm/v/@maroonedog/luq.svg)](https://www.npmjs.com/package/@maroonedog/luq)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-**A TypeScript validation library that validates the types you already have.**
+**A TypeScript validation library where the wrong rule does not compile.**
 
 </div>
 
 Luq takes a type you wrote — not a schema you rewrote — and lets you declare
-rules against its field paths. Every rule you can call is a plugin you imported
-by name, so the bundle contains what you used and nothing else.
+rules against its field paths. What makes those declarations worth writing is
+that the compiler checks them against the type: a rule that does not apply to
+the field it is written on is a compile error, not a rule that quietly never
+fires.
+
+That matters most when the code calling this library is generated rather than
+typed by hand. A generator that picks the wrong rule, misspells a path or drops
+an array wildcard gets a red squiggle, not a validator that passes everything.
+
+| Mistake | Result |
+|---|---|
+| A slot unrelated to the field's type (`b.string` on a `number`) | compile error |
+| A missing `[*]` (`"items.name"`) | compile error |
+| Descending into a built-in (`"when.getTime"` on a `Date`) | compile error |
+| A method that does not exist inside an element sub-chain | compile error |
+| A JSON Schema keyword bound to a chain method that does not exist | compile error |
+| A documented example drifting from the API | fails CI |
+
+Every rule you can call is a plugin you imported by name, so the bundle contains
+what you used and nothing else.
 
 Every number on this page was measured on this repository. Where a measurement
 is worse than the 1.x release, it is written down as worse. The provenance of
@@ -21,7 +39,7 @@ each figure is named next to it.
 ## Install
 
 ```bash
-npm install @maroonedog/luq@alpha
+npm install @maroonedog/luq
 ```
 
 ## Quick start

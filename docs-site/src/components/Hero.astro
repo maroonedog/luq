@@ -33,7 +33,30 @@ const measured = [
   },
 ];
 
-const install = 'npm install @maroonedog/luq@alpha';
+const install = 'npm install @maroonedog/luq';
+
+// 1.x では通ってしまい、2.0 ではコンパイルエラーになるもの。
+// 「制約が機械で強制される」という主張を、具体例で見せるための表。
+// 出典はすべて test/type/ の否定 (@ts-expect-error) で、typecheck が通ること
+// 自体がこれらが今も落ちることの証明になっている。
+const refused = [
+  {
+    mistake: 'A slot unrelated to the field’s type',
+    example: 'b.string on a number field',
+  },
+  {
+    mistake: 'A missing array wildcard',
+    example: '"items.name" instead of "items[*].name"',
+  },
+  {
+    mistake: 'Descending into a built-in',
+    example: '"when.getTime" on a Date',
+  },
+  {
+    mistake: 'A method that does not exist',
+    example: 'inside an element sub-chain',
+  },
+];
 ---
 
 <section class="relative overflow-hidden bg-surface px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
@@ -47,24 +70,56 @@ const install = 'npm install @maroonedog/luq@alpha';
 
     <p class="mb-6">
       <span class="md-chip md-chip-static">
-        <span class="md-icon md-icon-sm" aria-hidden="true">science</span>
-        Alpha release
+        <span class="md-icon md-icon-sm" aria-hidden="true">verified</span>
+        v2.0.0
       </span>
     </p>
 
     <h1 class="mb-6 text-display-small text-on-surface sm:text-display-medium lg:text-display-large">
-      Validation for the types<br class="hidden sm:block" />
-      <span class="text-primary">you already have</span>
+      The wrong rule<br class="hidden sm:block" />
+      <span class="text-primary">does not compile</span>
     </h1>
 
     <p class="mx-auto mb-4 max-w-3xl text-body-large text-on-surface-variant sm:text-title-medium">
       Luq takes a type you wrote — not a schema you rewrote — and lets you declare
-      rules against its field paths. Every rule you can call is a plugin you
-      imported by name, so the bundle contains what you used and nothing else.
+      rules against its field paths. The compiler checks those declarations
+      against the type, so a rule that does not apply to the field it is written
+      on is an error rather than a rule that quietly never fires.
+    </p>
+
+    <p class="mx-auto mb-8 max-w-3xl text-body-medium text-on-surface-variant">
+      That matters most when the code calling this library is generated rather
+      than typed by hand. A generator that picks the wrong rule, misspells a path
+      or drops an array wildcard gets a red squiggle — not a validator that
+      passes everything.
     </p>
 
     <div class="mx-auto mb-12 max-w-xl">
       <CodeBlock code={install} language="bash" fileName="Install" showCopy={true} />
+    </div>
+
+    <div class="mx-auto mb-12 max-w-3xl text-left">
+      <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
+        Rejected at compile time
+      </p>
+      <ul class="divide-y divide-outline-variant border-y border-outline-variant">
+        {
+          refused.map((item) => (
+            <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
+              <span class="md-icon md-icon-sm text-error" aria-hidden="true">block</span>
+              <span class="text-body-medium text-on-surface">{item.mistake}</span>
+              <span class="font-mono text-label-medium text-on-surface-variant">
+                {item.example}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-3 text-body-small text-on-surface-variant">
+        Each of these is pinned by a <code class="font-mono">@ts-expect-error</code> in
+        <code class="font-mono">test/type/</code>. TypeScript reports an unused directive,
+        so a green typecheck is itself the proof that they still fail.
+      </p>
     </div>
 
     <div class="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
