@@ -7,13 +7,14 @@
     "dev": "astro dev",
     "dev:full": "npm run generate-all && astro dev",
     "start": "astro dev",
-    "build": "npm run generate-all && astro check && astro build",
+    "build": "npm run generate-all && astro check && astro build && npm run check-built-pages",
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "astro check",
-    "generate-docs": "node scripts/generate-plugin-docs.js && node scripts/generate-plugin-data.js",
-    "generate-plugin-docs-from-jsdoc": "node scripts/generate-plugin-docs-from-jsdoc.js",
-    "generate-all": "npm run generate-plugin-docs-from-jsdoc"
+    "generate-plugin-data": "node scripts/generate-plugin-data.mjs",
+    "verify-plugin-examples": "node scripts/verify-plugin-examples.mjs",
+    "check-built-pages": "node scripts/check-built-pages.mjs",
+    "generate-all": "npm run generate-plugin-data && npm run verify-plugin-examples"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",

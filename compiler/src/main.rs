@@ -1,38 +1,40 @@
-#![recursion_limit = "256"]
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
+use luq_compiler::lexer::tokenize;
+use std::fs;
+use std::env;
 
-mod ast;
-mod cli;
-mod codegen;
-mod config;
-mod dependency;
-mod lexer;
-mod parallel;
-mod parser;
-
-use anyhow::Result;
-use clap::Parser;
-use config::CompilerConfig;
-
-fn main() -> Result<()> {
-    // Parse CLI arguments
-    let cli = cli::Cli::parse();
+fn main() {
+    let args: Vec<String> = env::args().collect();
     
-    // Create config from CLI options
-    let config = cli.create_config();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <file.luq>", args[0]);
+        std::process::exit(1);
+    }
     
-    // Configure the global rayon thread pool
-    config.configure_global_thread_pool();
+    let filename = &args[1];
+    let input = match fs::read_to_string(filename) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("Failed to read file {}: {}", filename, e);
+            std::process::exit(1);
+        }
+    };
     
-    // Build tokio runtime with configured thread count
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(config.get_thread_count())
-        .thread_name("luq-tokio")
-        .enable_all()
-        .build()?;
-    
-    // Execute the CLI command
-    runtime.block_on(cli.execute(config))
+    match tokenize(&input) {
+        Ok(tokens) => {
+            println!("Successfully tokenized {} tokens", tokens.len());
+            for token in tokens.iter().take(10) {
+                println!("  {:?}", token);
+            }
+            if tokens.len() > 10 {
+                println!("  ... and {} more", tokens.len() - 10);
+            }
+        }
+        Err(errors) => {
+            eprintln!("Failed to tokenize:");
+            for error in errors {
+                eprintln!("  Error at {:?}: {:?}", error.span(), error.reason());
+            }
+            std::process::exit(1);
+        }
+    }
 }

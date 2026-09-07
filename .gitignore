@@ -29,6 +29,9 @@ lerna-debug.log*
 /build
 /dist
 **/dist
+# test/dist/ はビルド成果物ではなく、成果物を検査するテストのソース。
+!test/dist/
+!test/dist/**
 /out
 **/out
 /bin
@@ -177,3 +180,16 @@ dist/validators/
 *.rar
 *.tar
 *.zip
+
+# Claude Code のローカル設定
+**/.claude/settings.local.json
+
+# ========================================
+# Plugin catalog derivatives (untracked: regenerate with `npm run generate`)
+# config/plugin-catalog.lock.json and package.json#/exports are TRACKED.
+# ========================================
+src/plugins/manifest.generated.ts
+src/plugins/index.generated.ts
+
+# Step 28 の dist テストが一時的に書く ESM プローブ
+.dist-esm-probe.mjs

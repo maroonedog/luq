@@ -1,159 +1,169 @@
 ---
 import CodeBlock from './CodeBlock.astro';
 
-const existingCode = `// Keep your types as-is
-interface User {
+/**
+ * "How it works" — the same three steps the README opens with, then the two
+ * things a reader has to see before they trust the library: what adding Luq
+ * does to code that already exists, and what a failing path actually says.
+ *
+ * Every block here typechecks against src/ and was executed; the commented
+ * output lines are the real output, not an illustration.
+ */
+const steps = [
+  {
+    icon: 'data_object',
+    title: 'Keep your type',
+    body: 'The TypeScript type you already wrote is the schema. Nothing is generated, nothing is inferred back out of a schema object.',
+  },
+  {
+    icon: 'checklist',
+    title: 'Declare rules against its paths',
+    body: 'A path that does not exist on the type is a compile error. So is choosing a slot the field’s type cannot be.',
+  },
+  {
+    icon: 'rule',
+    title: 'Read a discriminated union',
+    body: 'validate() hands back { valid: true, data } or { valid: false, issues }. The branch you are on decides what exists.',
+  },
+];
+
+// luq-example: skip — Luq を1つも使わない「導入前」のコードで、api は読者の HTTP クライアントなので型が無い
+const beforeCode = `// Your type, unchanged.
+type User = {
   name: string;
   email: string;
   age: number;
-}
+};
 
-// Your existing function
-function saveUser(user: User) {
-  // No validation... 😬
-  return api.post('/users', user);
+// Your function, with nothing checking what arrives.
+async function saveUser(user: User) {
+  return api.post("/users", user);
 }`;
 
-const luqCode = `// Same interface, no changes needed
-interface User {
-  name: string;
-  email: string;
-  age: number;
-}
+const afterCode = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
 
-// Build validator from your type
-const validator = Builder()
+// Same type as above, and the same HTTP client of your own.
+type User = { name: string; email: string; age: number };
+declare const api: { post(path: string, body: unknown): Promise<unknown> };
+
+// Same type. No rewrite, no wrapper, no z.infer.
+const userValidator = Builder()
   .use(requiredPlugin)
   .use(stringEmailPlugin)
   .use(numberMinPlugin)
   .for<User>()
-  .v("name", b => b.string.required())
-  .v("email", b => b.string.required().email())
-  .v("age", b => b.number.required().min(13))
+  .v("name", (b) => b.string.required())
+  .v("email", (b) => b.string.required().email())
+  .v("age", (b) => b.number.required().min(13))
   .build();
 
-function saveUser(userData: unknown) {
-  const result = validator.validate(userData);
-  
-  if (result.isValid()) {
-    const user = result.unwrap(); // Type: User
-    return api.post('/users', user);
-  } else {
-    throw new Error(result.errors[0].message);
+async function saveUser(input: unknown) {
+  const result = userValidator.validate(input);
+  if (!result.valid) {
+    throw new Error(result.issues.map((issue) => issue.message).join("\\n"));
   }
+  // \`result.data\` is User here, narrowed by \`valid\`.
+  return api.post("/users", result.data);
 }`;
+
+const pathsCode = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { arrayMinLengthPlugin } from "@maroonedog/luq/plugins/arrayMinLength";
+
+type Order = {
+  customer: { name: string };
+  items: { productId: string; quantity: number }[];
+};
+
+const orderValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(numberMinPlugin)
+  .use(arrayMinLengthPlugin)
+  .for<Order>()
+  .v("customer.name", (b) => b.string.required().min(2))
+  .v("items", (b) => b.array.required().minLength(1))
+  .v("items[*].productId", (b) => b.string.required().min(5))
+  .v("items[*].quantity", (b) => b.number.required().min(1))
+  .build();
+
+const result = orderValidator.validate({
+  customer: { name: "Acme" },
+  items: [
+    { productId: "PROD-1", quantity: 1 },
+    { productId: "X", quantity: 1 },
+  ],
+});
+
+console.log(result.issues.map((issue) => issue.path));
+// -> ["items[1].productId"]  — the real index, never "items[*]"`;
 ---
 
-<section class="py-16 px-4 sm:px-6 lg:px-8">
+<section class="bg-surface-container px-4 py-20 sm:px-6 lg:px-8">
   <div class="container mx-auto max-w-6xl">
-    <div class="text-center mb-12">
-      <h2 class="text-3xl font-bold mb-4">
-        <span class="luq-gradient-text">How It Works</span>
-      </h2>
-      <p class="text-lg text-luq-neutral-600 dark:text-luq-neutral-400 max-w-2xl mx-auto">
-        Three simple steps to add validation to your existing TypeScript types
+    <div class="mb-14 text-center">
+      <h2 class="mb-3 text-headline-medium text-on-surface">How it works</h2>
+      <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
+        Three steps, and none of them ask you to restate a type you have already written.
       </p>
     </div>
-    
-    <div class="grid md:grid-cols-3 gap-8 mb-16">
-      <div class="text-center">
-        <div class="w-16 h-16 bg-gradient-to-r from-luq-purple-500 to-luq-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span class="text-2xl font-bold text-white">1</span>
-        </div>
-        <h3 class="text-xl font-semibold mb-3">Use Your Types</h3>
-        <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
-          Keep your existing TypeScript interfaces exactly as they are
-        </p>
+
+    <ol class="mb-16 grid gap-6 md:grid-cols-3">
+      {
+        steps.map((step, index) => (
+          <li class="md-card md-card-filled min-w-0 p-6">
+            <div class="mb-4 flex items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-shape-full bg-primary-container text-title-medium text-on-primary-container">
+                {index + 1}
+              </span>
+              <span class="md-icon text-primary" aria-hidden="true">
+                {step.icon}
+              </span>
+            </div>
+            <h3 class="mb-2 text-title-large text-on-surface">{step.title}</h3>
+            <p class="text-body-medium text-on-surface-variant">{step.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="mb-16 grid gap-6 lg:grid-cols-2">
+      <div class="min-w-0">
+        <h3 class="mb-3 flex items-center gap-2 text-title-medium text-on-surface-variant">
+          <span class="md-icon md-icon-sm" aria-hidden="true">history</span>
+          What you have now
+        </h3>
+        <CodeBlock code={beforeCode} language="typescript" fileName="save-user.ts" showCopy={false} />
       </div>
-      
-      <div class="text-center">
-        <div class="w-16 h-16 bg-gradient-to-r from-luq-purple-500 to-luq-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span class="text-2xl font-bold text-white">2</span>
-        </div>
-        <h3 class="text-xl font-semibold mb-3">Add Validation</h3>
-        <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
-          Build validators using the plugins you need
-        </p>
-      </div>
-      
-      <div class="text-center">
-        <div class="w-16 h-16 bg-gradient-to-r from-luq-teal-500 to-luq-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span class="text-2xl font-bold text-white">3</span>
-        </div>
-        <h3 class="text-xl font-semibold mb-3">Validate Data</h3>
-        <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
-          Get type-safe results with detailed error messages
-        </p>
+
+      <div class="min-w-0">
+        <h3 class="mb-3 flex items-center gap-2 text-title-medium text-primary">
+          <span class="md-icon md-icon-sm" aria-hidden="true">add_task</span>
+          What you add
+        </h3>
+        <CodeBlock code={afterCode} language="typescript" fileName="save-user.ts" showCopy={true} />
       </div>
     </div>
 
-    <!-- Before/After Example -->
-    <div class="bg-white dark:bg-luq-neutral-900 rounded-2xl shadow-xl overflow-hidden">
-      <div class="grid md:grid-cols-2">
-        <!-- Your Existing Code -->
-        <div class="p-8">
-          <h3 class="text-lg font-semibold mb-4 flex items-center">
-            <span class="w-6 h-6 bg-luq-neutral-200 dark:bg-luq-neutral-700 rounded mr-2 flex items-center justify-center">
-              <span class="text-xs">✓</span>
-            </span>
-            Your existing code
-          </h3>
-          <div class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-4">
-            <CodeBlock code={existingCode} language="typescript" showCopy={false} class="text-sm" />
-          </div>
-        </div>
-        
-        <!-- Add Luq -->
-        <div class="p-8 bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-neutral-800 dark:to-luq-neutral-900">
-          <h3 class="text-lg font-semibold mb-4 flex items-center">
-            <span class="w-6 h-6 bg-luq-gradient rounded mr-2 flex items-center justify-center">
-              <span class="text-xs text-white">+</span>
-            </span>
-            Add validation with Luq
-          </h3>
-          <div class="bg-luq-neutral-900 dark:bg-luq-neutral-950 rounded-lg p-4">
-            <CodeBlock code={luqCode} language="typescript" showCopy={false} class="text-sm" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Key Benefits -->
-    <div class="mt-16 grid md:grid-cols-3 gap-8">
-      <div class="bg-white dark:bg-luq-neutral-800 rounded-xl p-6 border border-luq-neutral-200 dark:border-luq-neutral-700">
-        <div class="w-12 h-12 bg-luq-purple-100 dark:bg-luq-purple-900 rounded-lg flex items-center justify-center mb-4">
-          <svg class="w-6 h-6 text-luq-purple-600 dark:text-luq-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
-        </div>
-        <h4 class="font-semibold mb-2">No Rewriting</h4>
-        <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-          Use your existing TypeScript interfaces. No need to convert to schemas or learn new syntax.
+    <div class="grid items-center gap-8 lg:grid-cols-5">
+      <div class="min-w-0 lg:col-span-2">
+        <h3 class="mb-3 text-headline-small text-on-surface">A path points at real data</h3>
+        <p class="mb-4 text-body-large text-on-surface-variant">
+          Nested fields use dots and array elements use <code class="font-mono">[*]</code>, but the
+          issue you get back names the element that actually failed. A form can bind an error to a
+          row without parsing the path back apart.
+        </p>
+        <p class="text-body-medium text-on-surface-variant">
+          The wildcard is a declaration, not a report.
         </p>
       </div>
-      
-      <div class="bg-white dark:bg-luq-neutral-800 rounded-xl p-6 border border-luq-neutral-200 dark:border-luq-neutral-700">
-        <div class="w-12 h-12 bg-luq-teal-100 dark:bg-luq-teal-900 rounded-lg flex items-center justify-center mb-4">
-          <svg class="w-6 h-6 text-luq-teal-600 dark:text-luq-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h4 class="font-semibold mb-2">Type Safe</h4>
-        <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-          Full TypeScript integration. IDE autocomplete works perfectly with your field names and types.
-        </p>
-      </div>
-      
-      <div class="bg-white dark:bg-luq-neutral-800 rounded-xl p-6 border border-luq-neutral-200 dark:border-luq-neutral-700">
-        <div class="w-12 h-12 bg-luq-purple-100 dark:bg-luq-purple-900 rounded-lg flex items-center justify-center mb-4">
-          <svg class="w-6 h-6 text-luq-purple-600 dark:text-luq-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
-        <h4 class="font-semibold mb-2">Small Bundle</h4>
-        <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-          Import only the validation rules you need. Tree-shaking ensures minimal bundle size.
-        </p>
+      <div class="min-w-0 lg:col-span-3">
+        <CodeBlock code={pathsCode} language="typescript" fileName="order.ts" showCopy={true} />
       </div>
     </div>
   </div>

@@ -1,8 +1,21 @@
 ---
+/**
+ * MD3 navigation drawer for the documentation tree.
+ *
+ * Standard (permanent) drawer from `lg` up; below that it is a modal drawer
+ * opened by the extended FAB this component also renders — the 1.x version
+ * expected a trigger with id `mobile-docs-menu-button` that no page ever
+ * rendered, so the drawer was unreachable on phones.
+ *
+ * Every href below must point at a page that exists. The "Porting from 1.x"
+ * entry deliberately points at a section rather than a page: the 1.x-to-now
+ * mapping lives on the Validator page, next to the API it maps onto, and there
+ * is no separate migration page to send readers to.
+ */
 export interface TableOfContentsItem {
   id: string;
   title: string;
-  level: number; // 2 for h2, 3 for h3, etc.
+  level: number;
 }
 
 export interface Props {
@@ -16,316 +29,215 @@ const sections = [
   {
     title: 'Getting Started',
     items: [
-      { label: 'Introduction', href: '/docs/getting-started' },
-      { label: 'Core Concepts', href: '/docs/core-concepts' },
-      { label: 'Examples & Patterns', href: '/docs/examples' },
-    ]
+      { label: 'Introduction', href: '/docs/getting-started', icon: 'rocket_launch' },
+      { label: 'Core Concepts', href: '/docs/core-concepts', icon: 'category' },
+      { label: 'Examples & Patterns', href: '/docs/examples', icon: 'lightbulb' },
+    ],
   },
   {
     title: 'Guides',
     items: [
-      { label: 'Custom Plugins', href: '/docs/custom-plugins' },
-      { label: 'Troubleshooting', href: '/docs/troubleshooting' },
-    ]
+      { label: 'Writing a plugin', href: '/docs/custom-plugins', icon: 'build' },
+      { label: 'Porting from 1.x', href: '/docs/api/validator#porting', icon: 'swap_horiz' },
+      { label: 'Troubleshooting', href: '/docs/troubleshooting', icon: 'help' },
+    ],
   },
   {
     title: 'API Reference',
     items: [
-      { label: 'Builder API', href: '/docs/api/builder' },
-      { label: 'Validator API', href: '/docs/api/validator' },
-      { label: 'Plugin Registry', href: '/docs/api/plugin-registry' },
-    ]
+      { label: 'Builder API', href: '/docs/api/builder', icon: 'construction' },
+      { label: 'Validator API', href: '/docs/api/validator', icon: 'checklist' },
+      {
+        label: 'Plugin registry & field rules',
+        href: '/docs/api/plugin-registry',
+        icon: 'inventory_2',
+      },
+    ],
   },
   {
-    title: 'Plugins',
+    title: 'Reference',
     items: [
-      { label: 'Builder Generator', href: '/generator' },
-    ]
+      { label: 'Plugin Catalog', href: '/plugins', icon: 'extension' },
+      { label: 'JSON Schema', href: '/json-schema', icon: 'schema' },
+      { label: 'Benchmarks', href: '/benchmarks', icon: 'speed' },
+    ],
   },
-  {
-    title: 'Tools',
-    items: [
-      { label: 'Builder Generator', href: '/generator' },
-    ]
-  },
-  {
-    title: 'Future',
-    items: [
-      { label: 'Roadmap', href: '/roadmap' },
-    ]
-  }
 ];
 ---
 
-<!-- Mobile backdrop -->
-<div 
-  id="mobile-docs-backdrop" 
-  class="lg:hidden fixed inset-0 bg-black/50 z-40 hidden"
-></div>
+<!-- Modal-drawer scrim (below lg only) -->
+<div id="docs-drawer-scrim" class="md-scrim z-40 hidden lg:hidden"></div>
 
-<!-- Sidebar -->
-<aside 
+<aside
   id="docs-sidebar"
-  class="
-    fixed lg:sticky
-    top-0 lg:top-16
-    left-0
-    w-80 lg:w-64
-    h-screen lg:h-[calc(100vh-4rem)]
-    bg-luq-neutral-50 dark:bg-luq-neutral-900
-    border-r border-luq-neutral-200 dark:border-luq-neutral-800
-    z-40 lg:z-auto
-    transform -translate-x-full lg:translate-x-0
-    transition-transform duration-300 ease-in-out
-    overflow-y-auto
-  "
+  class="md-nav-drawer md-nav-drawer-modal fixed left-0 top-0 z-40 h-screen w-80 -translate-x-full overflow-y-auto lg:sticky lg:top-16 lg:z-auto lg:h-[calc(100vh-4rem)] lg:w-72 lg:flex-shrink-0 lg:translate-x-0 lg:rounded-none lg:border-r lg:border-outline-variant lg:bg-surface lg:shadow-none"
+  aria-label="Documentation"
 >
-  <!-- Mobile header -->
-  <div class="lg:hidden flex justify-between items-center p-4 border-b border-luq-neutral-200 dark:border-luq-neutral-800">
-    <h2 class="text-lg font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Documentation</h2>
-    <button 
-      id="mobile-docs-close"
-      class="p-2 hover:bg-luq-neutral-200 dark:hover:bg-luq-neutral-700 rounded-lg transition-colors"
+  <!-- Modal-drawer header (below lg only) -->
+  <div class="flex items-center justify-between py-4 pl-6 pr-4 lg:hidden">
+    <span class="md-title-small text-on-surface-variant">Documentation</span>
+    <button
+      id="docs-drawer-close"
+      class="md-icon-button md-state-layer md-focus-ring"
       aria-label="Close documentation menu"
     >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
+      <span class="md-icon" aria-hidden="true">close</span>
     </button>
   </div>
 
-  <nav class="p-6">
-    <!-- Table of Contents (when available) -->
-    {tableOfContents && tableOfContents.length > 0 && (
-      <div class="mb-8">
-        <h3 class="font-semibold text-sm uppercase tracking-wider text-luq-neutral-500 dark:text-luq-neutral-400 mb-3">
-          On This Page
-        </h3>
-        <ul class="space-y-1" id="table-of-contents">
-          {tableOfContents.map((item) => (
-            <li class={`${item.level === 3 ? 'ml-3' : ''}`}>
-              <a
-                href={`#${item.id}`}
-                class="toc-link block px-2 py-1 rounded-md text-sm transition-colors text-luq-neutral-600 dark:text-luq-neutral-400 hover:bg-luq-neutral-100 dark:hover:bg-luq-neutral-800 hover:text-luq-neutral-900 dark:hover:text-luq-neutral-100"
-                data-target={item.id}
-              >
-                {item.title}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
-    
-    {sections.map((section) => (
-      <div class="mb-8">
-        <h3 class="font-semibold text-sm uppercase tracking-wider text-luq-neutral-500 dark:text-luq-neutral-400 mb-3">
-          {section.title}
-        </h3>
-        <ul class="space-y-2">
-          {section.items.map((item) => {
-            const isActive = currentPath === item.href;
-            return (
+  <nav class="px-3 pb-8 lg:pt-4">
+    {
+      tableOfContents && tableOfContents.length > 0 && (
+        <div class="mb-4 xl:hidden">
+          <h2 class="md-nav-drawer-headline">On this page</h2>
+          <ul>
+            {tableOfContents.map((item) => (
+              <li>
+                <a
+                  href={`#${item.id}`}
+                  data-target={item.id}
+                  class:list={[
+                    'toc-link md-nav-drawer-item md-nav-drawer-item-dense md-state-layer md-focus-ring',
+                    item.level >= 3 && 'ml-4',
+                  ]}
+                >
+                  {item.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <hr class="md-divider mt-4" />
+        </div>
+      )
+    }
+
+    {
+      sections.map((section) => (
+        <div class="mb-2">
+          <h2 class="md-nav-drawer-headline">{section.title}</h2>
+          <ul class="space-y-1">
+            {section.items.map((item) => (
               <li>
                 <a
                   href={item.href}
-                  class={`
-                    block px-3 py-2 rounded-lg text-sm transition-colors
-                    ${isActive
-                      ? 'bg-luq-purple-100 text-luq-purple-700 dark:bg-luq-purple-900/30 dark:text-luq-teal-400 font-medium'
-                      : 'text-luq-neutral-600 dark:text-luq-neutral-400 hover:bg-luq-neutral-100 dark:hover:bg-luq-neutral-800 hover:text-luq-neutral-900 dark:hover:text-luq-neutral-100'
-                    }
-                  `}
+                  aria-current={currentPath === item.href ? 'page' : undefined}
+                  class="md-nav-drawer-item md-nav-drawer-item-dense md-state-layer md-focus-ring"
                 >
-                  {item.label}
+                  <span class="md-icon md-icon-sm" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
                 </a>
               </li>
-            );
-          })}
-        </ul>
-      </div>
-    ))}
-    
-    <!-- Version selector -->
-    <div class="mt-8 pt-8 border-t border-luq-neutral-200 dark:border-luq-neutral-800">
-      <label class="text-xs font-semibold text-luq-neutral-500 dark:text-luq-neutral-400 uppercase tracking-wider">
-        Version
-      </label>
-      <select class="mt-2 w-full px-3 py-2 rounded-lg border border-luq-neutral-300 dark:border-luq-neutral-700 bg-white dark:bg-luq-neutral-800 text-sm">
-        <option>v0.1.0-alpha</option>
-      </select>
-    </div>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
   </nav>
 </aside>
 
+<!-- Extended FAB: the modal drawer's trigger below lg -->
+<button
+  id="docs-drawer-open"
+  type="button"
+  class="md-state-layer md-focus-ring fixed bottom-6 left-6 z-30 flex h-14 items-center gap-3 rounded-shape-lg bg-primary-container px-4 text-label-large text-on-primary-container shadow-elevation-3 lg:hidden"
+  aria-label="Open documentation menu"
+  aria-expanded="false"
+  aria-controls="docs-sidebar"
+>
+  <span class="md-icon md-icon-sm" aria-hidden="true">menu_book</span>
+  Contents
+</button>
+
 <style>
-  /* Custom scrollbar for sidebar */
-  aside::-webkit-scrollbar {
-    @apply w-1.5;
+  #docs-sidebar {
+    transition: transform var(--md-sys-motion-duration-medium-4)
+      var(--md-sys-motion-easing-emphasized-decelerate);
   }
-  
-  aside::-webkit-scrollbar-track {
-    @apply bg-transparent;
+
+  #docs-drawer-scrim {
+    transition: opacity var(--md-sys-motion-duration-medium-2)
+      var(--md-sys-motion-easing-emphasized);
   }
-  
-  aside::-webkit-scrollbar-thumb {
-    @apply bg-luq-neutral-300 dark:bg-luq-neutral-700 rounded-full;
-  }
-  
-  aside::-webkit-scrollbar-thumb:hover {
-    @apply bg-luq-neutral-400 dark:bg-luq-neutral-600;
-  }
-  
-  /* Active TOC link styles */
-  .toc-link.active {
-    @apply bg-luq-purple-100 text-luq-purple-700 dark:bg-luq-purple-900/30 dark:text-luq-teal-400 font-medium;
+
+  /* Active table-of-contents entry gets the same indicator as a nav item. */
+  .toc-link.is-active {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
   }
 </style>
 
 <script>
-  function initializeMobileDocsSidebar() {
-    const menuButton = document.getElementById('mobile-docs-menu-button');
-    const closeButton = document.getElementById('mobile-docs-close');
+  const DESKTOP_QUERY = '(min-width: 1024px)';
+
+  function bindDocsDrawer(): void {
     const sidebar = document.getElementById('docs-sidebar');
-    const backdrop = document.getElementById('mobile-docs-backdrop');
-    
-    function openSidebar() {
-      if (sidebar) {
-        sidebar.classList.remove('-translate-x-full');
-        sidebar.classList.add('translate-x-0');
-      }
-      if (backdrop) {
-        backdrop.classList.remove('hidden');
-      }
+    const scrim = document.getElementById('docs-drawer-scrim');
+    const openButton = document.getElementById('docs-drawer-open');
+    const closeButton = document.getElementById('docs-drawer-close');
+    if (!sidebar || !scrim || sidebar.dataset.drawerBound === 'true') return;
+    sidebar.dataset.drawerBound = 'true';
+
+    const open = () => {
+      sidebar.classList.remove('-translate-x-full');
+      scrim.classList.remove('hidden');
+      openButton?.setAttribute('aria-expanded', 'true');
       document.body.style.overflow = 'hidden';
-    }
-    
-    function closeSidebar() {
-      if (sidebar) {
-        sidebar.classList.add('-translate-x-full');
-        sidebar.classList.remove('translate-x-0');
-      }
-      if (backdrop) {
-        backdrop.classList.add('hidden');
-      }
+    };
+
+    const dismiss = () => {
+      if (window.matchMedia(DESKTOP_QUERY).matches) return;
+      sidebar.classList.add('-translate-x-full');
+      scrim.classList.add('hidden');
+      openButton?.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
-    }
-    
-    // Event listeners
-    menuButton?.addEventListener('click', openSidebar);
-    closeButton?.addEventListener('click', closeSidebar);
-    backdrop?.addEventListener('click', closeSidebar);
-    
-    // Close on escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeSidebar();
-      }
+    };
+
+    openButton?.addEventListener('click', open);
+    closeButton?.addEventListener('click', dismiss);
+    scrim.addEventListener('click', dismiss);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') dismiss();
     });
-    
-    // Close when clicking nav links on mobile
-    const navLinks = sidebar?.querySelectorAll('nav a');
-    navLinks?.forEach(link => {
-      link.addEventListener('click', () => {
-        if (window.innerWidth < 1024) {
-          closeSidebar();
-        }
-      });
+    sidebar.querySelectorAll('nav a').forEach((link) => {
+      link.addEventListener('click', dismiss);
     });
-    
-    // Handle resize
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 1024) {
-        closeSidebar();
-      }
-    });
+    window.addEventListener('resize', dismiss);
   }
 
-  function initializeTableOfContents() {
-    const tocLinks = document.querySelectorAll('.toc-link');
-    if (tocLinks.length === 0) return;
-    
-    const headings = Array.from(tocLinks).map(link => {
-      const targetId = link.getAttribute('data-target');
-      return targetId ? document.getElementById(targetId) : null;
-    }).filter((el): el is HTMLElement => el !== null);
-    
+  function bindSidebarTableOfContents(): void {
+    const links = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('#docs-sidebar .toc-link')
+    );
+    if (links.length === 0) return;
+
+    const headings = links
+      .map((link) => document.getElementById(link.dataset.target ?? ''))
+      .filter((element): element is HTMLElement => element !== null);
     if (headings.length === 0) return;
-    
-    const observer = new IntersectionObserver((entries) => {
-      let activeId = '';
-      let largestRatio = 0;
-      
-      entries.forEach(entry => {
-        if (entry.isIntersecting && entry.intersectionRatio > largestRatio) {
-          largestRatio = entry.intersectionRatio;
-          activeId = entry.target.id;
-        }
-      });
-      
-      if (!activeId) {
-        let closestHeading: HTMLElement | null = null;
-        let closestDistance = Infinity;
-        
-        headings.forEach(heading => {
-          if (!heading) return;
-          const rect = heading.getBoundingClientRect();
-          const distance = Math.abs(rect.top);
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            closestHeading = heading;
-          }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        links.forEach((link) => {
+          link.classList.toggle('is-active', link.dataset.target === visible.target.id);
         });
-        
-        if (closestHeading) {
-          activeId = (closestHeading as HTMLElement).id;
-        }
-      }
-      
-      tocLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('data-target') === activeId) {
-          link.classList.add('active');
-        }
-      });
-    }, {
-      rootMargin: '-20% 0% -60% 0%',
-      threshold: [0, 0.25, 0.5, 0.75, 1]
-    });
-    
-    headings.forEach(heading => {
-      if (heading) observer.observe(heading);
-    });
-    
-    tocLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const targetId = link.getAttribute('data-target');
-        const targetElement = targetId ? document.getElementById(targetId) : null;
-        
-        if (targetElement) {
-          targetElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-          
-          setTimeout(() => {
-            history.pushState(null, '', `#${targetId}`);
-          }, 100);
-        }
-      });
-    });
+      },
+      { rootMargin: '-20% 0% -60% 0%', threshold: [0, 0.5, 1] }
+    );
+
+    headings.forEach((heading) => observer.observe(heading));
   }
-  
-  // Initialize on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    initializeMobileDocsSidebar();
-    initializeTableOfContents();
-  });
-  
-  // Re-initialize on navigation
-  document.addEventListener('astro:page-load', () => {
-    initializeMobileDocsSidebar();
-    initializeTableOfContents();
-  });
+
+  function initialize(): void {
+    bindDocsDrawer();
+    bindSidebarTableOfContents();
+  }
+
+  initialize();
+  document.addEventListener('astro:page-load', initialize);
 </script>

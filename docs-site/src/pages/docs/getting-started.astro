@@ -6,365 +6,663 @@ import DocsSidebar from '../../components/DocsSidebar.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 
-// Code examples
+// Every TypeScript block on this page was typechecked against the built
+// package (dist/*.d.ts through package.json#exports) before it was pasted in.
+
 const tsconfigExample = `{
   "compilerOptions": {
     "strict": true,
-    "strictNullChecks": true,
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "target": "ES2015" // or higher
+    "target": "ES2020",
+    "moduleResolution": "bundler" // or "node16"
   }
 }`;
 
 const basicUsageExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
-import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
 import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
 
-// 1. Define your TypeScript type
+// The type you already have. Nothing is rewritten as a schema.
 type User = {
   name: string;
   email: string;
   age: number;
 };
 
-// 2. Create a validator with only the plugins you need
-const userValidator = Builder()
-  .use(requiredPlugin)
+const userValidator = Builder()   // 1. start — a function, not a constructor
+  .use(requiredPlugin)            // 2. put plugins in the bag
   .use(stringMinPlugin)
   .use(stringEmailPlugin)
   .use(numberMinPlugin)
-  .for<User>()
-  .v('name', b => b.string.required().min(2))
+  .for<User>()                    // 3. name the type being validated
+  .v('name', b => b.string.required().min(2))   // 4. declare each field
   .v('email', b => b.string.required().email())
   .v('age', b => b.number.required().min(18))
-  .build();
+  .build();                       // 5. compile once, keep the validator
 
-// 3. Validate your data
 const result = userValidator.validate({
   name: 'John Doe',
   email: 'john@example.com',
-  age: 25
+  age: 25,
 });
 
-if (result.isValid()) {
-  console.log('Valid user:', result.value);
+if (result.valid) {
+  // \`data\` exists only on this branch — no cast, no non-null assertion.
+  console.log(result.data.name);
 } else {
-  console.log('Validation errors:', result.getErrors());
+  for (const issue of result.issues) {
+    console.log(\`\${issue.path}: \${issue.message} (\${issue.code})\`);
+  }
 }`;
 
-const pluginArchitectureExample = `// Import only what you need
-import { requiredPlugin } from '@maroonedog/luq/plugins/required';
-import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
-import { numberRangePlugin } from '@maroonedog/luq/plugins/numberRange';
-
-// Each plugin is tree-shakeable
-// Only imported plugins are included in your bundle`;
-
-const schemaFirstExample = `// Define schema
-const UserSchema = z.object({
-  name: z.string(),
-  email: z.string().email()
-});
-
-// Extract type
-type User = z.infer<typeof UserSchema>;`;
-
-const typeFirstExample = `// Use existing type
-type User = {
-  name: string;
-  email: string;
-};
-
-// Build validator
-const validator = Builder()
-  .for<User>()
-  // ...`;
-
-const nestedObjectsExample = `type UserProfile = {
-  user: {
-    name: string;
-    email: string;
-  };
-  settings: {
-    notifications: boolean;
-    theme: 'light' | 'dark';
-  };
-};
-
-const validator = Builder()
-  .use(requiredPlugin)
-  .use(stringMinPlugin)
-  .use(stringEmailPlugin)
-  .use(objectPlugin)
-  .use(oneOfPlugin)
-  .for<UserProfile>()
-  .v('user', b => b.object.required())
-  .v('user.name', b => b.string.required().min(2))
-  .v('user.email', b => b.string.required().email())
-  .v('settings', b => b.object.required())
-  .v('settings.notifications', b => b.boolean.required())
-  .v('settings.theme', b => b.string.required().oneOf(['light', 'dark']))
-  .build();`;
-
-const arraysExample = `type Product = {
-  id: string;
-  name: string;
-  tags: string[];
-  prices: number[];
-};
-
-const validator = Builder()
-  .use(requiredPlugin)
-  .use(arrayMinLengthPlugin)
-  .use(arrayMaxLengthPlugin)
-  .use(arrayUniquePlugin)
-  .for<Product>()
-  .v('id', b => b.string.required())
-  .v('name', b => b.string.required())
-  .v('tags', b => b.array.required().minLength(1).maxLength(5).unique())
-  .v('prices', b => b.array.required().minLength(1))
-  .build();`;
-
-const conditionalValidationExample = `type Order = {
-  type: 'personal' | 'business';
-  companyName?: string;
-  taxId?: string;
-};
-
-const validator = Builder()
-  .use(requiredPlugin)
-  .use(requiredIfPlugin)
-  .use(optionalPlugin)
-  .use(stringMinPlugin)
-  .use(stringPatternPlugin)
-  .use(oneOfPlugin)
-  .for<Order>()
-  .v('type', b => b.string.required().oneOf(['personal', 'business']))
-  .v('companyName', b => 
-    b.string.requiredIf((data) => data?.type === 'business').min(2)
-  )
-  .v('taxId', b =>
-    b.string
-      .requiredIf((data) => data?.type === 'business')
-      .pattern(/^[0-9]{2}-[0-9]{7}$/)
-  )
-  .build();`;
-
-const errorHandlingExample = `const result = validator.validate(invalidData);
-
-if (!result.isValid()) {
-  // Get structured errors
-  const errors = result.getErrors();
-  
-  errors.forEach(error => {
-    console.log(\`Field: \${error.path}\`);
-    console.log(\`Message: \${error.message}\`);
-    console.log(\`Code: \${error.code}\`);
-  });
-  
-  // Example output:
-  // Field: user.email
-  // Message: Invalid email format
-  // Code: stringEmail
-  
-  // You can also get all error messages as an array
-  const messages = result.getErrorMessages();
-  // ['user.email: Invalid email format', 'age: Must be at least 18']
-}`;
-
-const importBestPracticesExample = `// ✅ Good - specific imports
+const buildReturnsExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
 
-// ❌ Avoid - importing everything (no longer supported)
-// import * as plugins from '@maroonedog/luq/plugins';`;
+type Profile = { name: string; bio: string };
+
+const profileValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Profile>()
+  .v('name', b => b.string.required().min(2))
+  .v('bio', b => b.string.required())
+  .build();
+
+// The whole object, original values.
+const whole = profileValidator.validate({ name: 'Jo', bio: 'b' });
+
+// The whole object, transforms applied.
+const parsed = profileValidator.parse({ name: 'Jo', bio: 'b' });
+
+// One declared field, on its own.
+const oneField = profileValidator.pick('name').validate('Jo');
+
+// Several fields, returned keyed by the path you asked for.
+const subset = profileValidator
+  .pickAll(['name', 'bio'])
+  .validate({ name: 'Jo', bio: 'b' });`;
+
+const resultExample = `import { Builder } from '@maroonedog/luq';
+import type { ValidationIssue } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type Note = { title: string; text: string };
+
+const noteValidator = Builder()
+  .use(requiredPlugin)
+  .for<Note>()
+  .v('title', b => b.string.required())
+  .v('text', b => b.string.required())
+  .build();
+
+const result = noteValidator.validate({ title: 'Hi', text: '' });
+
+export function describe(): string {
+  if (result.valid) {
+    // Reachable only here. \`data\` is typed as Note.
+    return result.data.title;
+  }
+  // Every issue is { path, code, message, severity }.
+  return result.issues
+    .map((issue: ValidationIssue) => \`\${issue.path} \${issue.code} \${issue.severity}\`)
+    .join(', ');
+}`;
+
+const parseExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { transformPlugin } from '@maroonedog/luq/plugins/transform';
+
+type Signup = { email: string };
+
+const signupValidator = Builder()
+  .use(requiredPlugin)
+  .use(transformPlugin)
+  .for<Signup>()
+  .v('email', b => b.string.required().transform(value => value.trim()))
+  .build();
+
+// -> "  a@b.com  " — validate() never changes your value.
+const kept = signupValidator.validate({ email: '  a@b.com  ' });
+
+// -> "a@b.com" — parse() applies transforms, and only to a field whose
+// checks all passed.
+const trimmed = signupValidator.parse({ email: '  a@b.com  ' });`;
+
+const optionsExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type NameForm = { first: string; last: string };
+
+const formValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<NameForm>()
+  .v('first', b => b.string.required().min(2))
+  .v('last', b => b.string.required().min(2))
+  .build();
+
+const bad = { first: 'a', last: 'b' };
+
+// Default: stop at the first field that fails -> 1 issue.
+const short = formValidator.validate(bad);
+
+// Every field, one representative issue each -> the form UX combination.
+const perField = formValidator.validate(bad, { abortEarly: false });
+
+// Every violation of every field.
+const everything = formValidator.validate(bad, {
+  abortEarly: false,
+  abortEarlyOnEachField: false,
+});`;
+
+const defaultsExample = `import { Builder } from '@maroonedog/luq';
+import { optionalPlugin } from '@maroonedog/luq/plugins/optional';
+
+type Settings = { language?: string };
+
+const settingsValidator = Builder()
+  .use(optionalPlugin)
+  .for<Settings>()
+  // The third argument of .v() is a field configuration, never a rule.
+  .v('language', b => b.string.optional(), { default: 'en' })
+  .build();
+
+// The default is substituted before any rule looks at the value, so validate()
+// and parse() judge the same thing — but only parse() writes it back.
+settingsValidator.parse({});     // { valid: true, data: { language: 'en' }, issues: [] }
+settingsValidator.validate({});  // { valid: true, data: {}, issues: [] }`;
+
+const nestedExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+import { arrayMinLengthPlugin } from '@maroonedog/luq/plugins/arrayMinLength';
+
+type Order = {
+  customer: { name: string; address: { country: string } };
+  lines: { sku: string; tags: string[] }[];
+};
+
+const orderValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(arrayMinLengthPlugin)
+  .for<Order>()
+  .v('customer.name', b => b.string.required().min(2))
+  .v('customer.address.country', b => b.string.required().min(2))
+  .v('lines', b => b.array.required().minLength(1))
+  .v('lines[*].sku', b => b.string.required().min(4))
+  .v('lines[*].tags[*]', b => b.string.required().min(1))
+  .build();
+
+const rejected = orderValidator.validate(
+  {
+    customer: { name: 'Acme', address: { country: 'JP' } },
+    lines: [{ sku: 'PROD', tags: ['a'] }, { sku: 'X', tags: ['b'] }],
+  },
+  { abortEarly: false }
+);
+
+// -> ["lines[1].sku"], never "lines[*].sku"
+const failedPaths = rejected.issues.map(issue => issue.path);`;
+
+const messagesExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type Account = { handle: string };
+
+const accountValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Account>()
+  .v('handle', b =>
+    b.string.required().min(3, {
+      code: 'handleTooShort',
+      severity: 'warning',
+      // The context carries this plugin's own members, typed.
+      messageFactory: context =>
+        \`\${context.path}: need \${String(context.min)}, got \${String(context.actual)}\`,
+    })
+  )
+  .build();
+
+accountValidator.validate({ handle: 'ab' });
+// {
+//   valid: true,
+//   data: { handle: 'ab' },
+//   issues: [{ path: 'handle', code: 'handleTooShort',
+//              message: 'handle: need 3, got 2', severity: 'warning' }]
+// }`;
+
+const importsExample = `// The supported route: one subpath per plugin.
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+// The barrel also resolves, and is measurably free when a bundler can
+// tree-shake: three plugins gzip to 7,986 B through it against 7,987 B
+// through three subpaths — a difference of 1 byte, 0.01%.
+import { stringEmailPlugin } from '@maroonedog/luq/plugins';`;
+
+const tableOfContents = [
+  { id: 'installation', title: 'Installation', level: 2 },
+  { id: 'typescript-configuration', title: 'TypeScript configuration', level: 3 },
+  { id: 'the-five-calls', title: 'The five calls', level: 2 },
+  { id: 'what-build-returns', title: 'What build() returns', level: 2 },
+  { id: 'reading-the-result', title: 'Reading the result', level: 2 },
+  { id: 'validate-vs-parse', title: 'validate() vs parse()', level: 2 },
+  { id: 'options', title: 'Options', level: 2 },
+  { id: 'defaults', title: 'Defaults', level: 2 },
+  { id: 'nested-fields-and-arrays', title: 'Nested fields and arrays', level: 2 },
+  { id: 'messages-codes-and-severity', title: 'Messages, codes and severity', level: 2 },
+  { id: 'importing-plugins', title: 'Importing plugins', level: 2 },
+  { id: 'next-steps', title: 'Next steps', level: 2 },
+];
 ---
 
-<BaseLayout title="Getting Started - Luq Documentation">
+<BaseLayout title="Getting started — Luq documentation">
   <Header />
-  
+
   <div class="flex min-h-screen">
-    <DocsSidebar currentPath="/docs/getting-started" />
-    
-    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8">Getting Started with Luq</h1>
-        
-        <div class="prose prose-lg dark:prose-invert max-w-none">
-          <p class="lead">
-            Luq is a lightweight, type-first validation library for TypeScript. Get started in minutes with your existing types.
-          </p>
-          
-          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 border border-luq-purple-200 dark:border-luq-purple-800 rounded-lg p-6 mb-8">
-            <div class="grid md:grid-cols-3 gap-4 text-center">
-              <div class="text-luq-purple-800 dark:text-luq-purple-200">
-                <div class="font-bold text-lg">Type-First</div>
-                <div class="text-sm">Use existing TypeScript types</div>
-              </div>
-              <div class="text-luq-purple-800 dark:text-luq-purple-200">
-                <div class="font-bold text-lg">Tree-Shakeable</div>
-                <div class="text-sm">Import only what you need</div>
-              </div>
-              <div class="text-luq-purple-800 dark:text-luq-purple-200">
-                <div class="font-bold text-lg">Type-Safe</div>
-                <div class="text-sm">Full TypeScript support</div>
-              </div>
-            </div>
+    <DocsSidebar currentPath="/docs/getting-started" tableOfContents={tableOfContents} />
+
+    <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
+      <article class="mx-auto max-w-4xl">
+        <h1 class="text-headline-large">Getting started</h1>
+
+        <p class="mt-4 text-body-large text-on-surface-variant">
+          Luq takes a type you already wrote and lets you declare rules against its field
+          paths. Every rule you can call is a plugin you imported by name.
+        </p>
+
+        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+          <div class="md-card md-card-filled p-4">
+            <h2 class="text-title-medium">Type-first</h2>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              <code>.for&lt;T&gt;()</code> names your own type. There is no second schema to
+              keep in step with it.
+            </p>
           </div>
-          
-          <h2 id="prerequisites">Prerequisites</h2>
-          
-          <p>Before installing Luq, ensure you have:</p>
-          
-          <ul>
-            <li>Node.js 14.0 or higher</li>
-            <li>TypeScript 4.1 or higher</li>
-            <li>Strict mode enabled in your <code>tsconfig.json</code> (recommended)</li>
-          </ul>
-          
-          <h2 id="installation">Installation</h2>
-          
-          <p>Install Luq using your preferred package manager:</p>
-          
-          <div class="not-prose">
-            <div class="tabs mb-8">
-              <div class="tab-list flex space-x-4 border-b border-luq-neutral-200 dark:border-luq-neutral-800 mb-4">
-                <button class="tab-button active px-4 py-2 font-medium" data-tab="npm">npm</button>
-                <button class="tab-button px-4 py-2 font-medium" data-tab="yarn">yarn</button>
-                <button class="tab-button px-4 py-2 font-medium" data-tab="pnpm">pnpm</button>
-              </div>
-              
-              <div class="tab-content" data-content="npm">
-                <CodeBlock code="npm install @maroonedog/luq" language="bash" showCopy={true} />
-              </div>
-              
-              <div class="tab-content hidden" data-content="yarn">
-                <CodeBlock code="yarn add @maroonedog/luq" language="bash" showCopy={true} />
-              </div>
-              
-              <div class="tab-content hidden" data-content="pnpm">
-                <CodeBlock code="pnpm add @maroonedog/luq" language="bash" showCopy={true} />
-              </div>
-            </div>
+          <div class="md-card md-card-filled p-4">
+            <h2 class="text-title-medium">Plugins are imports</h2>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              An unimported plugin's method does not typecheck. The builder alone gzips to
+              7,420&nbsp;B.
+            </p>
           </div>
-          
-          <h3 id="typescript-configuration">TypeScript Configuration</h3>
-          
-          <p>For the best development experience, ensure your <code>tsconfig.json</code> includes:</p>
-          
-          <CodeBlock code={tsconfigExample} language="json" showCopy={true} />
-          
-          <h2 id="basic-usage">Basic Usage</h2>
-          
-          <p>
-            Luq follows a type-first approach. Start with your existing TypeScript types and build validators using plugins:
-          </p>
-          
-          <CodeBlock code={basicUsageExample} language="typescript" showCopy={true} />
-          
-          <div class="not-prose bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-6 my-8">
-            <h3 class="text-lg font-semibold mb-3">Key Concepts</h3>
-            <div class="grid md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <h4 class="font-semibold mb-2">Plugin Architecture</h4>
-                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Each validation rule is a separate plugin. Import only what you need for optimal bundle size.
-                </p>
-              </div>
-              <div>
-                <h4 class="font-semibold mb-2">Type-First Design</h4>
-                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Use existing TypeScript types instead of defining schemas. No duplication needed.
-                </p>
-              </div>
-              <div>
-                <h4 class="font-semibold mb-2">Builder Pattern</h4>
-                <p class="text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Fluent API with full TypeScript support and intelligent autocomplete.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <h2 id="next-steps">Next Steps</h2>
-          
-          <div class="not-prose grid md:grid-cols-3 gap-4 mt-6">
-            <a href="/docs/core-concepts" class="luq-card p-4 hover:shadow-lg transition-shadow">
-              <h4 class="font-semibold mb-1">Core Concepts</h4>
-              <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                Deep dive into Luq's architecture
-              </p>
-            </a>
-            
-            <a href="/plugins" class="luq-card p-4 hover:shadow-lg transition-shadow">
-              <h4 class="font-semibold mb-1">Plugin Library</h4>
-              <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                Browse plugins & generate code
-              </p>
-            </a>
-            
-            <a href="/docs/examples" class="luq-card p-4 hover:shadow-lg transition-shadow">
-              <h4 class="font-semibold mb-1">Examples & Patterns</h4>
-              <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                Common validation patterns
-              </p>
-            </a>
+          <div class="md-card md-card-filled p-4">
+            <h2 class="text-title-medium">One result shape</h2>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              A discriminated union on <code>valid</code>. No result class, no
+              <code>unwrap()</code> on the value.
+            </p>
           </div>
         </div>
-      </div>
+
+        <h2 id="installation" class="mt-12 text-headline-small">Installation</h2>
+
+        <p class="mt-3 text-body-large">
+          This is an alpha release, so the tag is part of the install line.
+        </p>
+
+        <div class="mt-4">
+          <div
+            class="mb-4 flex gap-1 border-b border-outline-variant"
+            role="tablist"
+            aria-label="Package manager"
+          >
+            <button
+              type="button"
+              class="tab-button md-state-layer md-focus-ring is-active"
+              data-tab="npm"
+              role="tab"
+              aria-selected="true"
+            >
+              npm
+            </button>
+            <button
+              type="button"
+              class="tab-button md-state-layer md-focus-ring"
+              data-tab="yarn"
+              role="tab"
+              aria-selected="false"
+            >
+              yarn
+            </button>
+            <button
+              type="button"
+              class="tab-button md-state-layer md-focus-ring"
+              data-tab="pnpm"
+              role="tab"
+              aria-selected="false"
+            >
+              pnpm
+            </button>
+          </div>
+
+          <div class="tab-content" data-content="npm">
+            <CodeBlock code="npm install @maroonedog/luq@alpha" language="bash" />
+          </div>
+          <div class="tab-content" data-content="yarn" hidden>
+            <CodeBlock code="yarn add @maroonedog/luq@alpha" language="bash" />
+          </div>
+          <div class="tab-content" data-content="pnpm" hidden>
+            <CodeBlock code="pnpm add @maroonedog/luq@alpha" language="bash" />
+          </div>
+        </div>
+
+        <h3 id="typescript-configuration" class="mt-8 text-title-large">
+          TypeScript configuration
+        </h3>
+
+        <p class="mt-3 text-body-large">
+          The package is emitted to ES2020, and its published declarations are typechecked
+          under both <code>node16</code> and <code>bundler</code> module resolution, so
+          either works. <code>strict</code> is what the path and slot checks are written
+          against — without it the compile errors Luq relies on stop being errors.
+        </p>
+
+        <CodeBlock code={tsconfigExample} language="json" fileName="tsconfig.json" />
+
+        <h2 id="the-five-calls" class="mt-12 text-headline-small">The five calls</h2>
+
+        <p class="mt-3 text-body-large">
+          Every validator is the same five steps. <code>.use()</code> must come before
+          <code>.for()</code>. Order between <code>.v()</code> calls does not matter; order
+          <em>within</em> one chain does not matter either — <code>build()</code> sorts a
+          chain into presence, gates, checks and transforms.
+        </p>
+
+        <CodeBlock code={basicUsageExample} language="typescript" fileName="user.ts" />
+
+        <div class="md-card md-card-outlined mt-6 p-5">
+          <h3 class="text-title-medium">Build once, keep the validator</h3>
+          <p class="mt-2 text-body-medium text-on-surface-variant">
+            <code>build()</code> resolves every chain into a compiled plan. Measured on this
+            repository it costs 14–662&nbsp;µs depending on the shape, against
+            sub-microsecond <code>validate()</code> calls, so a validator rebuilt per request
+            pays that cost every time. Build it at module scope.
+          </p>
+        </div>
+
+        <h2 id="what-build-returns" class="mt-12 text-headline-small">
+          What <code>build()</code> returns
+        </h2>
+
+        <p class="mt-3 text-body-large">
+          An object with four members. It is <strong>not callable</strong> — Luq 1.x's
+          documentation called it as a function, and that is the single most common thing to
+          port.
+        </p>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline">
+                <th class="py-2 pr-4 text-left text-title-small">Member</th>
+                <th class="py-2 text-left text-title-small">What it gives back</th>
+              </tr>
+            </thead>
+            <tbody class="text-on-surface-variant">
+              <tr class="border-b border-outline-variant">
+                <td class="py-2 pr-4 font-mono text-body-small text-on-surface">
+                  validate(value, options?)
+                </td>
+                <td class="py-2"><code>ValidationResult&lt;T&gt;</code> holding the original value</td>
+              </tr>
+              <tr class="border-b border-outline-variant">
+                <td class="py-2 pr-4 font-mono text-body-small text-on-surface">
+                  parse(value, options?)
+                </td>
+                <td class="py-2">
+                  <code>ValidationResult&lt;TParsed&gt;</code> holding the value after transforms
+                </td>
+              </tr>
+              <tr class="border-b border-outline-variant">
+                <td class="py-2 pr-4 font-mono text-body-small text-on-surface">pick(path)</td>
+                <td class="py-2">a single-field validator for one declared path</td>
+              </tr>
+              <tr class="border-b border-outline-variant">
+                <td class="py-2 pr-4 font-mono text-body-small text-on-surface">pickAll(paths)</td>
+                <td class="py-2">
+                  a validator returning exactly those paths, keyed by the path string
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <CodeBlock code={buildReturnsExample} language="typescript" />
+
+        <h2 id="reading-the-result" class="mt-12 text-headline-small">Reading the result</h2>
+
+        <p class="mt-3 text-body-large">
+          <code>ValidationResult&lt;T&gt;</code> is a discriminated union on
+          <code>valid</code>:
+        </p>
+
+        <CodeBlock
+          code={`type ValidationResult<T> =
+  | { valid: true;  data: T; issues: readonly ValidationIssue[] }
+  | { valid: false;          issues: readonly ValidationIssue[] };
+
+type ValidationIssue = {
+  path: string;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+};`}
+          language="typescript"
+        />
+
+        <CodeBlock code={resultExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          <code>data</code> is reachable only on the success branch, so narrowing on
+          <code>valid</code> replaces every cast. <code>severity</code> is never absent, and
+          the default <code>code</code> is the <strong>plugin's own name</strong> —
+          <code>required</code>, <code>stringMin</code>, <code>stringEmail</code> — not a
+          generic constant.
+        </p>
+
+        <div class="md-card md-card-outlined mt-6 p-5">
+          <h3 class="text-title-medium">If you prefer exceptions</h3>
+          <p class="mt-2 text-body-medium text-on-surface-variant">
+            The <code>@maroonedog/luq/result</code> subpath exports <code>ok</code>,
+            <code>reject</code>, <code>isOk</code>, a free <code>unwrap()</code> function and
+            the <code>ValidationFailure</code> class it throws. <code>ValidationFailure</code>
+            carries <code>.issues</code>, so nothing is lost by going through it.
+          </p>
+        </div>
+
+        <h2 id="validate-vs-parse" class="mt-12 text-headline-small">
+          <code>validate()</code> vs <code>parse()</code>
+        </h2>
+
+        <p class="mt-3 text-body-large">
+          <code>validate()</code> never changes your value. <code>parse()</code> applies
+          <code>.transform()</code> rules, and only to a field whose checks all passed.
+          Transforms always run last, whatever position they hold in the chain.
+        </p>
+
+        <CodeBlock code={parseExample} language="typescript" />
+
+        <h2 id="options" class="mt-12 text-headline-small">Options</h2>
+
+        <p class="mt-3 text-body-large">
+          The second argument of <code>validate()</code> and <code>parse()</code> is
+          <code>ValidateOptions</code>: <code>abortEarly</code>,
+          <code>abortEarlyOnEachField</code> and <code>external</code>.
+        </p>
+
+        <CodeBlock code={optionsExample} language="typescript" />
+
+        <div class="md-card md-card-outlined mt-6 border-error p-5">
+          <h3 class="text-title-medium text-error">
+            <code>abortEarly</code> defaults to <code>true</code>
+          </h3>
+          <p class="mt-2 text-body-medium text-on-surface-variant">
+            Both flags default to <code>true</code>. Luq 1.x's documentation said
+            <code>abortEarly</code> defaulted to <code>false</code>; its implementation
+            defaulted to <code>true</code>, and the implementation is what carried over. Pass
+            <code>{'{ abortEarly: false }'}</code> for form UX.
+          </p>
+        </div>
+
+        <p class="mt-6 text-body-large">
+          <code>external</code> is a pre-resolved bag that
+          <code>@maroonedog/luq/plugins/fromContext</code> reads. That is the whole of the
+          async story: <code>@maroonedog/luq/async</code> resolves your promises and hands the
+          result in on this channel, so there is no second execution engine.
+        </p>
+
+        <h2 id="defaults" class="mt-12 text-headline-small">Defaults</h2>
+
+        <CodeBlock code={defaultsExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          <code>applyDefaultToNull</code> defaults to <code>true</code>. A bare value as the
+          third argument — 1.x's <code>.v('language', b =&gt; b.string.optional(), 'en')</code>
+          shorthand — is gone; pass <code>{'{ default: "en" }'}</code>.
+        </p>
+
+        <h2 id="nested-fields-and-arrays" class="mt-12 text-headline-small">
+          Nested fields and arrays
+        </h2>
+
+        <p class="mt-3 text-body-large">
+          Nested fields use dots and array elements use <code>[*]</code> — that is the whole
+          grammar. The path you <em>declare</em> holds <code>[*]</code>; the path you
+          <em>read back</em> holds the index the failure happened at.
+        </p>
+
+        <CodeBlock code={nestedExample} language="typescript" />
+
+        <h2 id="messages-codes-and-severity" class="mt-12 text-headline-small">
+          Messages, codes and severity
+        </h2>
+
+        <p class="mt-3 text-body-large">
+          Every plugin method takes the same trailing options object:
+          <code>{'{ code?, messageFactory?, severity? }'}</code>. There is no
+          <code>message: string</code> option anywhere — a constant message is
+          <code>{'{ messageFactory: () => "..." }'}</code>.
+        </p>
+
+        <CodeBlock code={messagesExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          A non-<code>error</code> severity is reported <em>without</em> failing the result,
+          so <code>issues</code> is worth reading on the success branch too.
+        </p>
+
+        <h2 id="importing-plugins" class="mt-12 text-headline-small">Importing plugins</h2>
+
+        <CodeBlock code={importsExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          77 plugin objects ship across 76 subpaths, plus one deprecated alias kept from 1.x.
+          The root <code>@maroonedog/luq</code> entry exports the builder and the types — it
+          deliberately exports no plugins at all, which is why the bare builder gzips to
+          7,420&nbsp;B and a plugin costs 129–224&nbsp;B to add.
+        </p>
+
+        <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <a
+            href="/docs/core-concepts"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">category</span>
+            <h3 class="mt-2 text-title-medium">Core concepts</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              Slots, presence, field paths, and the order rules run in
+            </p>
+          </a>
+
+          <a
+            href="/docs/custom-plugins"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">build</span>
+            <h3 class="mt-2 text-title-medium">Writing a plugin</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              <code>definePlugin</code>, the markers, and the <code>out</code> contract
+            </p>
+          </a>
+
+          <a
+            href="/plugins"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">extension</span>
+            <h3 class="mt-2 text-title-medium">Plugin catalog</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              Every subpath, chain method and slot
+            </p>
+          </a>
+
+          <a
+            href="/docs/api/validator"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">checklist</span>
+            <h3 class="mt-2 text-title-medium">Validator API</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              The four members of <code>build()</code>, and the 1.x
+              <code>Result</code> mapping
+            </p>
+          </a>
+        </div>
+      </article>
     </main>
-    
-    <OnThisPage tableOfContents={[
-      { id: 'prerequisites', title: 'Prerequisites', level: 2 },
-      { id: 'installation', title: 'Installation', level: 2 },
-      { id: 'typescript-configuration', title: 'TypeScript Configuration', level: 3 },
-      { id: 'basic-usage', title: 'Basic Usage', level: 2 },
-      { id: 'next-steps', title: 'Next Steps', level: 2 },
-    ]} />
+
+    <OnThisPage tableOfContents={tableOfContents} />
   </div>
-  
+
   <Footer />
 </BaseLayout>
 
 <style>
+  /* Inline code, on the MD3 container tone the design system reserves for it. */
+  article :not(pre) > code {
+    @apply rounded-shape-xs bg-surface-container-highest px-1.5 py-0.5 font-mono text-[0.875em] text-on-surface;
+  }
+
   .tab-button {
-    @apply relative text-luq-neutral-600 dark:text-luq-neutral-400 hover:text-luq-purple-600 dark:hover:text-luq-teal-400 transition-colors;
+    @apply relative rounded-t-shape-sm px-4 py-2 text-label-large text-on-surface-variant;
+    @apply transition-colors duration-short-4 ease-standard;
   }
-  
-  .tab-button.active {
-    @apply text-luq-purple-600 dark:text-luq-teal-400;
+
+  .tab-button.is-active {
+    @apply text-primary;
   }
-  
-  .tab-button.active::after {
+
+  .tab-button.is-active::after {
     content: '';
-    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-luq-purple-600 dark:bg-luq-teal-400;
+    @apply absolute inset-x-0 bottom-0 h-0.5 rounded-shape-full bg-primary;
   }
 </style>
 
 <script>
-  // Tab functionality
-  const tabButtons = document.querySelectorAll('.tab-button');
-  const tabContents = document.querySelectorAll('.tab-content');
-  
+  const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-button');
+  const tabContents = document.querySelectorAll<HTMLElement>('.tab-content');
+
   tabButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      const tab = (button as HTMLElement).dataset.tab;
-      
-      // Update active button
-      tabButtons.forEach((btn) => btn.classList.remove('active'));
-      button.classList.add('active');
-      
-      // Show corresponding content
+      const selected = button.dataset.tab;
+
+      tabButtons.forEach((one) => {
+        const isActive = one === button;
+        one.classList.toggle('is-active', isActive);
+        one.setAttribute('aria-selected', String(isActive));
+      });
+
       tabContents.forEach((content) => {
-        const contentTab = (content as HTMLElement).dataset.content;
-        if (contentTab === tab) {
-          content.classList.remove('hidden');
-        } else {
-          content.classList.add('hidden');
-        }
+        content.hidden = content.dataset.content !== selected;
       });
     });
   });

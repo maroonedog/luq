@@ -3,63 +3,95 @@ import LuqLogo from './LuqLogo.astro';
 import ThemeToggle from './ThemeToggle.astro';
 import MobileMenuButton from './MobileMenuButton.astro';
 
+/**
+ * MD3 small top app bar (64dp, `surface` at rest, lifting to
+ * `surface-container` + elevation 2 once content scrolls under it).
+ *
+ * `navItems` is the single source of truth for the site's primary navigation —
+ * MobileMenuOverlay renders the same list. Every entry must point at a page
+ * that exists; there is no build-time link check.
+ */
 export const navItems = [
-  { href: '/docs/getting-started', label: 'Docs' },
-  { href: '/plugins', label: 'Plugins' },
-  { href: '/benchmarks', label: 'Benchmarks' },
-  { href: '/json-schema', label: 'JSON Schema' },
-  { href: '/roadmap', label: 'Roadmap' },
+  { href: '/docs/getting-started', label: 'Docs', icon: 'menu_book' },
+  { href: '/plugins', label: 'Plugins', icon: 'extension' },
+  { href: '/json-schema', label: 'JSON Schema', icon: 'schema' },
+  { href: '/benchmarks', label: 'Benchmarks', icon: 'speed' },
+  { href: '/roadmap', label: 'Roadmap', icon: 'flag' },
 ];
 
 const currentPath = Astro.url.pathname;
+const isActive = (href: string) => currentPath === href || currentPath.startsWith(`${href}/`);
 ---
 
-<header class="sticky top-0 z-40 w-full luq-blur border-b border-luq-neutral-200 dark:border-luq-neutral-800">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex h-16 items-center justify-between">
-      <!-- Logo -->
-      <div class="flex items-center">
-        <a href="/" class="flex items-center group">
-          <LuqLogo class="w-16 h-auto transition-transform group-hover:scale-110" width="60" height="40" />
-        </a>
-      </div>
-      
-      <!-- Desktop Navigation -->
-      <nav class="hidden md:flex items-center space-x-8">
-        {navItems.map((item) => (
+<header id="top-app-bar" class="md-top-app-bar">
+  <div class="mx-auto flex w-full max-w-screen-2xl items-center gap-2 px-4 sm:px-6 lg:px-8">
+    <!-- Leading: brand -->
+    <a
+      href="/"
+      class="md-state-layer md-focus-ring flex items-center rounded-shape-sm px-2 py-1 text-on-surface"
+      aria-label="Luq home"
+    >
+      <LuqLogo class="h-8 w-auto" width="60" height="40" />
+    </a>
+
+    <div class="flex-1"></div>
+
+    <!-- Primary navigation (>= md) -->
+    <nav class="hidden items-center gap-1 md:flex" aria-label="Primary">
+      {
+        navItems.map((item) => (
           <a
             href={item.href}
-            class={`
-              text-sm font-medium transition-colors hover:text-luq-purple-600 dark:hover:text-luq-teal-400
-              ${currentPath.startsWith(item.href) ? 'luq-nav-active' : 'text-luq-neutral-600 dark:text-luq-neutral-400'}
-            `}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+            class:list={[
+              'md-state-layer md-focus-ring flex h-10 items-center rounded-shape-full px-4 text-label-large no-underline transition-colors duration-short-4 ease-standard',
+              isActive(item.href)
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'text-on-surface-variant hover:text-on-surface',
+            ]}
           >
             {item.label}
           </a>
-        ))}
-      </nav>
-      
-      <!-- Right side actions -->
-      <div class="flex items-center space-x-4">
-        <!-- GitHub link -->
-        <a
-          href="https://github.com/maroonedog/luq"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-luq-neutral-600 hover:text-luq-purple-600 dark:text-luq-neutral-400 dark:hover:text-luq-teal-400 transition-colors"
-          aria-label="GitHub"
-        >
-          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
-          </svg>
-        </a>
-        
-        <!-- Theme toggle -->
-        <ThemeToggle />
-        
-        <!-- Mobile menu button -->
-        <MobileMenuButton />
-      </div>
+        ))
+      }
+    </nav>
+
+    <!-- Trailing actions -->
+    <div class="flex items-center gap-1">
+      <a
+        href="https://github.com/maroonedog/luq"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="md-icon-button md-state-layer md-focus-ring"
+        aria-label="Luq on GitHub"
+      >
+        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill-rule="evenodd"
+            d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </a>
+
+      <ThemeToggle />
+      <MobileMenuButton />
     </div>
   </div>
 </header>
+
+<script>
+  // MD3: the top app bar changes colour and gains elevation once the page is
+  // scrolled, so it separates from the content passing beneath it.
+  function bindTopAppBarScroll(): void {
+    const bar = document.getElementById('top-app-bar');
+    if (!bar || bar.dataset.scrollBound === 'true') return;
+    bar.dataset.scrollBound = 'true';
+
+    const sync = () => bar.classList.toggle('is-scrolled', window.scrollY > 0);
+    sync();
+    window.addEventListener('scroll', sync, { passive: true });
+  }
+
+  bindTopAppBarScroll();
+  document.addEventListener('astro:page-load', bindTopAppBarScroll);
+</script>

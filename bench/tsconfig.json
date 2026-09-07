@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["./**/*.ts", "../scripts/run-bench.ts"],
+  "exclude": ["node_modules", "dist"]
+}

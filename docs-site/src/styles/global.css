@@ -1,322 +1,165 @@
+/*
+ * Entry stylesheet.
+ *
+ *   md3-tokens.css      generated colour / shape / elevation / motion / type tokens
+ *   md3-components.css  hand-written MD3 component classes built from those tokens
+ *   this file           font choice, base element styling, scrollbars
+ *
+ * The legacy `.luq-*` bridge that used to live here is gone. It existed to keep
+ * not-yet-migrated 1.x pages on the MD3 palette; every page is migrated, and the
+ * built output contains zero occurrences of `luq-` in its HTML or JS, so the 251
+ * lines of it were dead CSS shipped on every page. The `luq.*` Tailwind scales
+ * in tailwind.config.mjs are likewise unused and cost nothing, since Tailwind
+ * emits a utility only when a class name is found in the source.
+ *
+ * Authoring guidance lives in DESIGN.md at the site root.
+ */
+
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/jetbrains-mono';
+@import './md3-tokens.css';
+@import './md3-components.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Luq brand colors */
-    --color-luq-purple: 107 70 193; /* #6B46C1 */
-    --color-luq-teal: 20 184 166; /* #14B8A6 */
-    
-    /* Semantic colors - Light mode */
-    --accent: var(--color-luq-purple);
-    --accent-light: 139 92 246; /* #8B5CF6 */
-    --accent-dark: 85 60 154; /* #553C9A */
-    
-    /* Background gradients */
-    --gradient-angle: 135deg;
-    --gradient-primary: linear-gradient(var(--gradient-angle), rgb(var(--color-luq-purple)) 0%, rgb(var(--color-luq-teal)) 100%);
-    --gradient-subtle: linear-gradient(var(--gradient-angle), rgb(var(--color-luq-purple)) 0%, rgb(var(--accent-light)) 50%, rgb(var(--color-luq-teal)) 100%);
-    
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    
-    /* Luq-specific shadows with brand colors */
-    --shadow-luq: 0 4px 14px 0 rgba(107, 70, 193, 0.15);
-    --shadow-luq-hover: 0 8px 24px 0 rgba(107, 70, 193, 0.25);
+    /*
+     * MD3's default typeface is Roboto. This site stays on Inter, self-hosted
+     * via @fontsource-variable/inter, for three reasons: it is already bundled
+     * (switching would add a dependency and a second webfont payload), its
+     * x-height and default tracking are close enough to Roboto's that the MD3
+     * type-scale metrics above transfer unchanged, and its tabular-friendly
+     * digits and disambiguated l/I/1 read better in the API tables and inline
+     * code spans that make up most of this site. Roboto stays in the stack as a
+     * fallback. Code keeps JetBrains Mono.
+     */
+    --md-sys-typescale-font-family: 'Inter Variable', 'Inter', 'Roboto',
+      system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --md-sys-typescale-code-font-family: 'JetBrains Mono Variable',
+      'JetBrains Mono', ui-monospace, 'Consolas', 'Monaco', monospace;
   }
-  
-  .dark {
-    /* Semantic colors - Dark mode */
-    --accent: var(--color-luq-teal);
-    --accent-light: 45 212 191; /* #2DD4BF */
-    --accent-dark: 15 118 110; /* #0F766E */
-  }
-  
-  /* Base styles */
+
   html {
-    @apply scroll-smooth;
+    scroll-behavior: smooth;
+    /* Top app bar is 64dp; keep anchored headings clear of it. */
+    scroll-padding-top: 5rem;
   }
-  
+
   body {
-    @apply bg-white text-luq-neutral-800 dark:bg-luq-neutral-950 dark:text-luq-neutral-200;
-    @apply transition-colors duration-200;
+    background-color: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-font-family);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    letter-spacing: var(--md-sys-typescale-body-large-tracking);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color var(--md-sys-motion-duration-medium-1)
+        var(--md-sys-motion-easing-standard),
+      color var(--md-sys-motion-duration-medium-1)
+        var(--md-sys-motion-easing-standard);
   }
-  
-  /* Ensure headings have proper colors */
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-luq-neutral-900 dark:text-luq-neutral-100;
+
+  /* MD3 headline/title defaults for unstyled content. Tailwind text-* utilities
+     still win, so pages that size their own headings are unaffected. */
+  h1 {
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-headline-large-size);
+    line-height: var(--md-sys-typescale-headline-large-line-height);
+    font-weight: var(--md-sys-typescale-headline-large-weight);
+    letter-spacing: var(--md-sys-typescale-headline-large-tracking);
   }
-  
-  /* Selection colors */
+
+  h2 {
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-headline-medium-size);
+    line-height: var(--md-sys-typescale-headline-medium-line-height);
+    font-weight: var(--md-sys-typescale-headline-medium-weight);
+    letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+  }
+
+  h3 {
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-headline-small-size);
+    line-height: var(--md-sys-typescale-headline-small-line-height);
+    font-weight: var(--md-sys-typescale-headline-small-weight);
+    letter-spacing: var(--md-sys-typescale-headline-small-tracking);
+  }
+
+  h4,
+  h5,
+  h6 {
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
+    font-weight: var(--md-sys-typescale-title-large-weight);
+    letter-spacing: var(--md-sys-typescale-title-large-tracking);
+  }
+
+  /*
+   * Docs pages lay out as `<div class="flex"><aside/><main class="flex-1"/></div>`.
+   * A flex item's default `min-width: auto` lets its widest unbreakable child —
+   * a long line inside a horizontally scrolling code block — push the whole
+   * page wider than the viewport. Measured on a 375px viewport before this
+   * rule: document scrollWidth 519px. Utilities still override it.
+   */
+  main {
+    min-width: 0;
+  }
+
   ::selection {
-    @apply bg-luq-purple-200 text-luq-purple-900 dark:bg-luq-teal-800 dark:text-luq-teal-100;
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
   }
-  
-  /* Focus styles */
+
   *:focus {
-    @apply outline-none;
+    outline: none;
   }
-  
+
+  /* MD3 focus indicator: 3dp secondary ring, 2dp offset. */
   *:focus-visible {
-    @apply ring-2 ring-luq-purple-500 ring-offset-2 ring-offset-white dark:ring-luq-teal-400 dark:ring-offset-luq-neutral-900;
+    outline: 3px solid var(--md-sys-color-secondary);
+    outline-offset: 2px;
+    border-radius: var(--md-sys-shape-corner-extra-small);
   }
 }
 
-@layer components {
-  /* Luq-specific components */
-  .luq-gradient-text {
-    @apply bg-gradient-to-r from-luq-purple-600 to-luq-teal-500 bg-clip-text text-transparent;
-  }
-  
-  .luq-card {
-    @apply bg-white dark:bg-luq-neutral-900 rounded-xl shadow-md hover:shadow-luq-hover transition-all duration-300;
-    @apply border border-luq-neutral-200 dark:border-luq-neutral-800;
-  }
-  
-  .luq-button {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium;
-    @apply transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98];
-    @apply focus-visible:ring-2 focus-visible:ring-offset-2;
-  }
-  
-  .luq-button-primary {
-    @apply luq-button bg-luq-purple-600 text-white hover:bg-luq-purple-700;
-    @apply dark:bg-luq-purple-500 dark:hover:bg-luq-purple-600;
-    @apply focus-visible:ring-luq-purple-500;
-  }
-  
-  .luq-button-secondary {
-    @apply luq-button bg-luq-neutral-100 text-luq-neutral-900 hover:bg-luq-neutral-200;
-    @apply dark:bg-luq-neutral-800 dark:text-luq-neutral-100 dark:hover:bg-luq-neutral-700;
-  }
-  
-  .luq-button-gradient {
-    @apply luq-button bg-luq-gradient text-white;
-    background-size: 200% 200%;
-    animation: gradientShift 8s ease infinite;
-  }
-  
-  /* Code blocks with VSCode Dark+ Theme */
-  .luq-code {
-    @apply font-mono text-sm rounded-lg overflow-x-auto p-4;
-    background-color: #1E1E1E !important;
-    color: #D4D4D4 !important;
-    border: 1px solid #2D2D30 !important;
-    font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
-    line-height: 1.6;
-  }
-  
-  /* VSCode Dark+ Syntax Highlighting */
-  .luq-code .token.comment,
-  .luq-code .comment {
-    color: #6A9955 !important;
-  }
-  
-  .luq-code .token.string,
-  .luq-code .string {
-    color: #CE9178 !important;
-  }
-  
-  .luq-code .token.keyword,
-  .luq-code .keyword {
-    color: #569CD6 !important;
-  }
-  
-  .luq-code .token.function,
-  .luq-code .function {
-    color: #DCDCAA !important;
-  }
-  
-  .luq-code .token.class-name,
-  .luq-code .class-name {
-    color: #4EC9B0 !important;
-  }
-  
-  .luq-code .token.number,
-  .luq-code .number {
-    color: #B5CEA8 !important;
-  }
-  
-  .luq-code .token.boolean,
-  .luq-code .boolean {
-    color: #569CD6 !important;
-  }
-  
-  .luq-code .token.operator,
-  .luq-code .operator {
-    color: #D4D4D4 !important;
-  }
-  
-  .luq-code .token.punctuation,
-  .luq-code .punctuation {
-    color: #D4D4D4 !important;
-  }
-  
-  .luq-code .token.property,
-  .luq-code .property {
-    color: #9CDCFE !important;
-  }
-  
-  .luq-code .token.parameter,
-  .luq-code .parameter {
-    color: #9CDCFE !important;
-  }
-  
-  .luq-code .token.variable,
-  .luq-code .variable {
-    color: #9CDCFE !important;
-  }
-  
-  .luq-code .token.regex,
-  .luq-code .regex {
-    color: #D16969 !important;
-  }
-  
-  /* Interactive playground styles */
-  .luq-playground {
-    @apply rounded-xl overflow-hidden;
-    @apply bg-gradient-to-br from-luq-purple-50 to-luq-teal-50;
-    @apply dark:from-luq-neutral-900 dark:to-luq-neutral-800;
-    @apply p-1;
-  }
-  
-  .luq-playground-inner {
-    @apply bg-white dark:bg-luq-neutral-950 rounded-lg h-full;
-  }
-  
-  /* Navigation active indicator */
-  .luq-nav-active {
-    @apply relative text-luq-purple-700 dark:text-luq-teal-400;
-  }
-  
-  .luq-nav-active::after {
-    content: '';
-    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-luq-gradient;
-  }
-  
-  /* Feature cards with unique Luq styling */
-  .luq-feature-card {
-    @apply relative overflow-hidden rounded-xl p-6;
-    @apply bg-gradient-to-br from-white to-luq-purple-50/30;
-    @apply dark:from-luq-neutral-900 dark:to-luq-purple-900/20;
-    @apply border border-luq-neutral-200 dark:border-luq-neutral-800;
-    @apply hover:shadow-luq-hover transition-all duration-300;
-  }
-  
-  .luq-feature-card::before {
-    content: '';
-    @apply absolute top-0 right-0 w-32 h-32;
-    @apply bg-gradient-to-br from-luq-purple-200/20 to-luq-teal-200/20;
-    @apply dark:from-luq-purple-800/20 dark:to-luq-teal-800/20;
-    @apply rounded-full blur-3xl;
-  }
-  
-  /* Animated background pattern */
-  .luq-pattern {
-    background-image: 
-      radial-gradient(circle at 20% 50%, rgba(107, 70, 193, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(20, 184, 166, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 40% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-  }
-}
-
-@layer utilities {
-  /* Custom utilities for Luq */
-  .luq-glow {
-    box-shadow: 
-      0 0 20px rgba(107, 70, 193, 0.3),
-      0 0 40px rgba(107, 70, 193, 0.2),
-      0 0 60px rgba(107, 70, 193, 0.1);
-  }
-  
-  .luq-glow-teal {
-    box-shadow: 
-      0 0 20px rgba(20, 184, 166, 0.3),
-      0 0 40px rgba(20, 184, 166, 0.2),
-      0 0 60px rgba(20, 184, 166, 0.1);
-  }
-  
-  /* Animated underline */
-  .luq-underline {
-    @apply relative;
-  }
-  
-  .luq-underline::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-luq-gradient transition-all duration-300;
-  }
-  
-  .luq-underline:hover::after {
-    @apply w-full;
-  }
-  
-  /* Blur backdrop */
-  .luq-blur {
-    @apply backdrop-blur-md bg-white/80 dark:bg-luq-neutral-950/80;
-  }
-}
-
-/* Custom scrollbar */
+/* Scrollbars follow the scheme. */
 ::-webkit-scrollbar {
-  @apply w-2 h-2;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-luq-neutral-100 dark:bg-luq-neutral-900;
+  background-color: var(--md-sys-color-surface-container);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-luq-purple-400 dark:bg-luq-teal-600 rounded-full;
+  background-color: var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-luq-purple-500 dark:bg-luq-teal-500;
+  background-color: var(--md-sys-color-outline);
 }
 
-/* Code syntax highlighting overrides for Luq theme */
+* {
+  scrollbar-color: var(--md-sys-color-outline-variant)
+    var(--md-sys-color-surface-container);
+}
+
+/* Shiki blocks emitted by MDX share the code surface. */
 .astro-code {
-  @apply !bg-luq-neutral-900 dark:!bg-luq-neutral-950 !p-4 !rounded-lg;
-  @apply !border !border-luq-neutral-800 dark:!border-luq-neutral-800;
+  background-color: var(--md-code-surface) !important;
+  border: 1px solid var(--md-code-outline);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: 16px;
+  overflow-x: auto;
 }
 
 .astro-code code {
-  @apply !bg-transparent !p-0;
-}
-
-/* Animations */
-@keyframes luqFloat {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  33% {
-    transform: translateY(-10px) rotate(1deg);
-  }
-  66% {
-    transform: translateY(-5px) rotate(-1deg);
-  }
-}
-
-@keyframes luqPulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(0.98);
-  }
-}
-
-.luq-float {
-  animation: luqFloat 6s ease-in-out infinite;
-}
-
-.luq-pulse {
-  animation: luqPulse 2s ease-in-out infinite;
+  background-color: transparent;
+  padding: 0;
 }

@@ -3,6 +3,8 @@ node_modules/
 
 # Build outputs
 dist/
+# test/dist/ はビルド成果物ではなく、成果物を検査するテストのソース。
+!test/dist/
 dist-test/
 build/
 coverage/
@@ -29,3 +31,10 @@ vscode-extension/out/
 .git/
 *.min.js
 *.min.css
+
+# Generated catalog derivatives (regenerate with `npm run generate`)
+src/plugins/manifest.generated.ts
+src/plugins/index.generated.ts
+
+# JSON-Schema-Test-Suite (pinned git submodule; third-party sources)
+test/fixtures/json-schema-suite/
