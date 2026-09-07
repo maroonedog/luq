@@ -34,7 +34,7 @@ const corpus = [
 
 <BaseLayout
   title="luq-spec"
-  description="Extract constraints from a written specification with AI, expand them deterministically, and emit both a reviewable plan and Playwright tests."
+  description="Extract constraints from a written specification with AI and expand them deterministically into a reviewable verification plan and a machine-readable IR."
 >
   <Header />
   <MobileMenuOverlay navItems={navItems} />
@@ -46,7 +46,7 @@ const corpus = [
       luq-spec
     </h1>
     <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 mb-12 leading-relaxed">
-      Turn a written specification into a verification plan and E2E tests.
+      Turn a written specification into a verification plan and a machine-readable IR.
     </p>
 
     <section class="mb-14">
@@ -70,12 +70,11 @@ const corpus = [
       <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">Usage</h2>
       <CodeBlock
         language="bash"
-        code={`# Emit the plan a person reviews and approves
+        code={`# The plan a person reviews and approves
 npx luq-spec plan spec.md --ai --out plan.md
 
-# Fill in selectors, then emit runnable tests
-npx luq-spec bind spec.md --ai --out binding.json
-npx luq-spec emit spec.md --ai --binding binding.json --out tests/spec.spec.ts`}
+# The IR, for diffing against constraints derived from the implementation
+npx luq-spec ir spec.md --ai --out spec-ir.json`}
       />
       <p class="mt-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
         <code class="text-sm font-mono text-luq-purple-600 dark:text-luq-purple-400">--ai</code>
@@ -89,13 +88,24 @@ npx luq-spec emit spec.md --ai --binding binding.json --out tests/spec.spec.ts`}
 
     <section class="mb-14">
       <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
-        The plan and the code come from the same set
+        It stops at the IR — on purpose
       </h2>
       <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
-        A person approves the plan; the machine runs the code. If those drift, approval
-        means nothing. Both are generated from one set of viewpoints, and a test asserts
-        that the counts and the contents match. The plan carries no timestamp, so its
-        diff reads as exactly what changed: verification items added and removed.
+        An earlier version emitted Playwright tests. It was removed. Binding a field name
+        in a document to a selector on a screen is information the tool cannot derive, so
+        most of what it produced did not run — and shipping that damages trust in the
+        parts that do. What ships instead is a plan for a person and an IR for a machine.
+      </p>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        The IR is the interesting half. Derive the same shape from the implementation —
+        a DDL, framework validation declarations, or the observed behaviour of the running
+        system — and the two can be diffed. A constraint present in the spec but absent
+        from the implementation is a gap; the same constraint with different values is a
+        contradiction. Neither is visible today without reading both by hand.
+      </p>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        Neither output carries a timestamp, so an unchanged specification produces an
+        identical file and a diff reads as exactly what changed.
       </p>
       <CodeBlock
         language="markdown"
@@ -226,10 +236,10 @@ Spec: spec.md:14
           and appears in the report.
         </p>
         <p>
-          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">It does not hide what it could not generate.</strong>
-          Viewpoints without a binding or a settled expectation are emitted as
-          <code class="text-sm font-mono">test.fixme</code>. Removing them would leave the
-          impression that everything is covered.
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">It does not hide what it could not settle.</strong>
+          Viewpoints whose expected result is undetermined stay in the plan, marked as
+          needing a decision. Removing them would leave the impression that everything
+          is covered.
         </p>
       </div>
     </section>

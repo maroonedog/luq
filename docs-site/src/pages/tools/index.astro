@@ -8,9 +8,9 @@ const tools = [
   {
     name: 'luq-spec',
     href: '/tools/spec',
-    tagline: 'Turn a written specification into a verification plan and E2E tests.',
+    tagline: 'Turn a written specification into a verification plan and a machine-readable IR.',
     detail:
-      'A spec that says "at most 100 characters" implies exactly three tests: 99, 100, 101. That is not a judgement call — it follows mechanically from the constraint. luq-spec extracts constraints with AI, then expands them deterministically.',
+      'A spec that says "at most 100 characters" implies exactly three checks: 99, 100, 101. That is not a judgement call — it follows mechanically from the constraint. It stops at the IR; deriving the same shape from the implementation is what makes the two comparable.',
     status: 'Working',
   },
   {
@@ -68,9 +68,10 @@ const tools = [
           <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">shrinking what has to be checked at all</strong>.
         </p>
         <p>
-          Each tool stands alone and none depends on the others. Together they close a loop:
-          the spec says what to verify, the diff says which of those to run now, and the
-          runtime makes the result the same every time.
+          These are two separate efforts, not one pipeline. luq-spec works on the gap
+          between what a specification says and what an implementation does.
+          luq-impact and luq-still work on making screen checks cheap enough to run often.
+          Each tool stands alone and none depends on the others.
         </p>
       </div>
     </section>
