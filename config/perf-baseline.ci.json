@@ -1,0 +1,260 @@
+{
+  "note": [
+    "CI ランナー (ubuntu-latest) 用の床。npm run bench:gate は process.env.CI が",
+    "true のときこのファイルを読む。",
+    "",
+    "なぜ環境別に分けているか: ハーネスは当初『luq と手書き参照を同一プロセスで",
+    "測るのでランナーの速度は比率で相殺される』という前提で書かれていたが、",
+    "その前提は PR #14 の最初の CI 実行で反証された。array 形状の luq は手元の",
+    "16コア機に対して ubuntu-latest で 3.8倍遅くなったのに、参照は 1.3倍しか",
+    "遅くならず、比率が 0.0304 から 0.0099 に落ちた。luq は issue オブジェクトや",
+    "インデックススタックを確保しながら歩き、参照は割り当てゼロの密ループなので、",
+    "コア数・メモリ帯域・GC が変われば両者は同じようには落ちない。比率が相殺",
+    "するのは CPU クロックだけで、割り当ての差は相殺しない。",
+    "",
+    "この床は run 34127572110 の単一実行から起こしたもので、分散が分かっていない。",
+    "そのため床は記録比率の 0.60 倍 (手元は 0.75 倍) と広めに取ってある。",
+    "CI で複数回記録して分散が分かったら締め直すこと。"
+  ],
+  "recordedAt": "2026-09-07T13:31:10.000Z",
+  "recordedFrom": "GitHub Actions run 34127572110 / job 101759754662 / ubuntu-latest / 単一実行",
+  "floorFactor": 0.6,
+  "machine": {
+    "cpuModel": "GitHub Actions ubuntu-latest (機種は実行ごとに変わりうる)",
+    "logicalCores": 2,
+    "platform": "linux",
+    "arch": "x64",
+    "nodeVersion": "v23.11.0",
+    "totalMemoryGb": null
+  },
+  "conditions": {
+    "abortEarly": true,
+    "inputIsAccepted": true,
+    "inputRotation": "every subject rotates over a pool of at least four distinct values (bench/rotate-over-values.ts); one frozen value let V8 delete the singleField reference outright",
+    "arrayElementCount": 50,
+    "moduleUnderTest": "src/ transpiled by ts-node (CommonJS, ES2020) — not the bundled dist",
+    "sampleCount": 9,
+    "targetSampleMs": 120
+  },
+  "shapes": [
+    {
+      "name": "singleField",
+      "declares": "1 field, 1 presence rule, 1 check (string.required().min(3))"
+    },
+    {
+      "name": "multiField",
+      "declares": "3 fields, 6 plugins (required/stringMin/stringMax/stringEmail/numberMin/numberMax) — 1.x's 'simple' shape"
+    },
+    {
+      "name": "nested",
+      "declares": "4 fields at depth 2-3 (customer.name, customer.address.*)"
+    },
+    {
+      "name": "array",
+      "declares": "array of 50 elements, 3 rules per element plus 2 length rules"
+    },
+    {
+      "name": "jsonSchema",
+      "declares": "Draft-07 document (9 properties, $ref, nested object, array of objects) via fromJsonSchema"
+    }
+  ],
+  "throughput": [],
+  "referenceRatio": [
+    {
+      "shape": "singleField",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 2635369,
+      "referenceOpsPerSecond": 78772246,
+      "ratio": 0.0335,
+      "ratioFloor": 0.0201,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "singleField",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 2485769,
+      "referenceOpsPerSecond": 78798123,
+      "ratio": 0.0314,
+      "ratioFloor": 0.0188,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "singleField",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 1728269,
+      "referenceOpsPerSecond": 76912059,
+      "ratio": 0.0225,
+      "ratioFloor": 0.0135,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "multiField",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 944569,
+      "referenceOpsPerSecond": 10539924,
+      "ratio": 0.0895,
+      "ratioFloor": 0.0537,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "multiField",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 933214,
+      "referenceOpsPerSecond": 10520548,
+      "ratio": 0.0883,
+      "ratioFloor": 0.053,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "multiField",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 997389,
+      "referenceOpsPerSecond": 15468077,
+      "ratio": 0.0644,
+      "ratioFloor": 0.0386,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "nested",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 643924,
+      "referenceOpsPerSecond": 24168009,
+      "ratio": 0.0266,
+      "ratioFloor": 0.016,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "nested",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 631425,
+      "referenceOpsPerSecond": 20188282,
+      "ratio": 0.0313,
+      "ratioFloor": 0.0188,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "nested",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 744677,
+      "referenceOpsPerSecond": 26968749,
+      "ratio": 0.0276,
+      "ratioFloor": 0.0166,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 7778,
+      "referenceOpsPerSecond": 787471,
+      "ratio": 0.0099,
+      "ratioFloor": 0.0059,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "array",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 7768,
+      "referenceOpsPerSecond": 788234,
+      "ratio": 0.0098,
+      "ratioFloor": 0.0059,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 10145,
+      "referenceOpsPerSecond": 1052745,
+      "ratio": 0.0096,
+      "ratioFloor": 0.0058,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 85381,
+      "referenceOpsPerSecond": 979634,
+      "ratio": 0.0865,
+      "ratioFloor": 0.0519,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 85192,
+      "referenceOpsPerSecond": 978583,
+      "ratio": 0.0869,
+      "ratioFloor": 0.0521,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 219205,
+      "referenceOpsPerSecond": 1532961,
+      "ratio": 0.1425,
+      "ratioFloor": 0.0855,
+      "luqSpreadPercent": null,
+      "referenceSpreadPercent": null,
+      "ratioSpreadPercent": null,
+      "isQuiet": null
+    }
+  ],
+  "legacyComparison": []
+}

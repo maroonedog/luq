@@ -19,7 +19,7 @@
 // ===========================================================================
 import { writeFileSync } from "fs";
 import {
-  PERF_BASELINE_PATH,
+  baselinePathForEnvironment,
   gateThroughputRatio,
   recordPerfBaseline,
 } from "../bench/index";
@@ -31,7 +31,7 @@ function printRecorded(): void {
   );
   const baseline = recordPerfBaseline({ recalibrateFloors: recalibrate });
   writeFileSync(
-    PERF_BASELINE_PATH,
+    baselinePathForEnvironment(),
     `${JSON.stringify(baseline, null, 2)}\n`,
     "utf8"
   );
@@ -89,7 +89,7 @@ function printRecorded(): void {
         : `${record.legacyOpsPerSecond} -> ${record.currentOpsPerSecond} (x${record.speedup})`;
     process.stdout.write(`  ${record.shape.padEnd(12)} ${legacy}\n`);
   }
-  process.stdout.write(`\nwrote ${PERF_BASELINE_PATH}\n`);
+  process.stdout.write(`\nwrote ${baselinePathForEnvironment()}\n`);
 
   const noisy = [
     ...baseline.throughput.filter((record) => !record.isQuiet),

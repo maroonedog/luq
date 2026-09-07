@@ -39,7 +39,9 @@ export type { GateOutcome, GateReport } from "./gate-throughput-ratio";
 export { recordPerfBaseline } from "./record-perf-baseline";
 export type { RecordOptions } from "./record-perf-baseline";
 export {
+  CI_PERF_BASELINE_PATH,
   PERF_BASELINE_PATH,
+  baselinePathForEnvironment,
   PerfBaselineUnreadableError,
   findRecordedFloor,
   readPerfBaseline,

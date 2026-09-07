@@ -79,6 +79,17 @@ export function isCorpusPresent(pin: SuitePin): boolean {
   return fs.existsSync(directory) && fs.readdirSync(directory).length > 0;
 }
 
+/**
+ * サブモジュールは本体の .gitattributes の外にあるので、チェックアウトされる
+ * 改行コードはプラットフォーム依存になる (Windows の core.autocrlf=true なら
+ * CRLF、Linux CI なら LF)。生バイトを数えると同じコミットでも digest が変わり、
+ * pin 検査が「コーパスが動いた」と誤検出する。実際に PR #14 の CI がこれで落ちた。
+ * 内容の変化だけを見るために、ハッシュを取る前に改行を正規化する。
+ */
+function normalizeLineEndings(text: string): string {
+  return text.split("\r\n").join("\n");
+}
+
 export function readSuiteCorpus(pin: SuitePin): SuiteCorpus {
   const directory = corpusDirectory(pin);
   if (!isCorpusPresent(pin)) {
@@ -97,7 +108,9 @@ export function readSuiteCorpus(pin: SuitePin): SuiteCorpus {
   let groupCount = 0;
   let caseCount = 0;
   for (const name of names) {
-    const text = fs.readFileSync(path.join(directory, name), "utf8");
+    const text = normalizeLineEndings(
+      fs.readFileSync(path.join(directory, name), "utf8")
+    );
     digest.update(name);
     digest.update("\0");
     digest.update(text);

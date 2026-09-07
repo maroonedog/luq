@@ -8,8 +8,13 @@
 #
 # Two jobs, deliberately split:
 #   verify — everything deterministic. Fails on any difference, on any machine.
-#   bench  — the throughput RATIO gate. Measured luq / hand-written in ONE
-#            process, so the runner's speed cancels out. It is NOT part of
+#   bench  — the throughput RATIO gate. luq と手書き参照を同一プロセスで測る。
+#            当初は「だからランナーの速度は比率で相殺される」と書いていたが、
+#            その前提は PR #14 の最初の CI 実行で反証された。両者は性能プロ
+#            ファイルが違う (luq は割り当てを伴い、参照は割り当てゼロの密ループ)
+#            ので、コア数やメモリ帯域が変われば同じようには落ちない。比率が
+#            相殺するのは CPU クロックだけ。したがって床は環境別に持ち、CI では
+#            config/perf-baseline.ci.json を読む。It is NOT part of
 #            `npm run verify`: it costs about a minute per shape and verify is
 #            run interactively. It never gates on an absolute ops/sec figure —
 #            that flakes unconditionally on a shared runner

@@ -22,6 +22,38 @@ export const PERF_BASELINE_PATH = join(
   "perf-baseline.json"
 );
 
+/**
+ * CI ランナー用の床。
+ *
+ * このハーネスは当初「luq と手書き参照を同一プロセスで測るので、ランナーの
+ * 速度は比率で相殺される」という前提で書かれていた。**その前提は PR #14 の
+ * 最初の CI 実行で反証された。** ubuntu-latest (2コア) では array 形状の luq が
+ * 手元の 16コア機に対して 3.8倍遅くなったのに、参照は 1.3倍しか遅くならず、
+ * 比率が 0.0304 から 0.0099 に落ちた。
+ *
+ * 理由は明らかで、両者の性能プロファイルが違う。luq は issue オブジェクトや
+ * インデックススタックを確保しながら歩くが、参照は割り当てゼロの密ループ。
+ * コア数・メモリ帯域・GC の効き方が変われば、両者は同じようには落ちない。
+ * 比率が相殺するのは CPU クロックだけで、割り当ての差は相殺しない。
+ *
+ * したがって床は**ゲートが走る環境で測った値**でなければならない。
+ * CI では config/perf-baseline.ci.json を、手元では config/perf-baseline.json を
+ * 読む。どちらも同じ形式で、同じ 0.75 倍の規則で床を導く。
+ */
+export const CI_PERF_BASELINE_PATH = join(
+  __dirname,
+  "..",
+  "config",
+  "perf-baseline.ci.json"
+);
+
+/** ゲートが読むべき床のファイル。CI かどうかで切り替える。 */
+export function baselinePathForEnvironment(
+  isContinuousIntegration: boolean = process.env.CI === "true"
+): string {
+  return isContinuousIntegration ? CI_PERF_BASELINE_PATH : PERF_BASELINE_PATH;
+}
+
 const SHAPE_NAMES: readonly BenchShapeName[] = [
   "singleField",
   "multiField",
@@ -32,6 +64,10 @@ const SHAPE_NAMES: readonly BenchShapeName[] = [
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNumberOrNull(value: unknown): value is number | null {
+  return value === null || typeof value === "number";
 }
 
 function isReferenceRatio(value: unknown): value is ReferenceRatioRecord {
@@ -49,10 +85,12 @@ function isReferenceRatio(value: unknown): value is ReferenceRatioRecord {
     typeof value["ratioFloor"] === "number" &&
     Number.isFinite(value["ratioFloor"]) &&
     value["ratioFloor"] > 0 &&
-    typeof value["luqSpreadPercent"] === "number" &&
-    typeof value["referenceSpreadPercent"] === "number" &&
-    typeof value["ratioSpreadPercent"] === "number" &&
-    typeof value["isQuiet"] === "boolean"
+    // spread は null を許す = 「測っていない」。CI の床はログから起こしたもので
+    // spread が無い。0 を書くと「ばらつきが無かった」という嘘になる。
+    isNumberOrNull(value["luqSpreadPercent"]) &&
+    isNumberOrNull(value["referenceSpreadPercent"]) &&
+    isNumberOrNull(value["ratioSpreadPercent"]) &&
+    (typeof value["isQuiet"] === "boolean" || value["isQuiet"] === null)
   );
 }
 

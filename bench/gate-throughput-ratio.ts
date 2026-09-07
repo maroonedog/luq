@@ -20,7 +20,10 @@
 // executing at all.
 // ===========================================================================
 import { measureThroughputRatio } from "./measure-throughput-ratio";
-import { readPerfBaseline } from "./read-perf-baseline";
+import {
+  baselinePathForEnvironment,
+  readPerfBaseline,
+} from "./read-perf-baseline";
 import { RATIO_CASES, describeRatioCase } from "./ratio-case";
 import { BENCH_SHAPES } from "./shapes/index";
 import type { ThroughputOptions } from "./measure-throughput";
@@ -43,7 +46,9 @@ export interface GateReport {
 }
 
 export function gateThroughputRatio(options?: ThroughputOptions): GateReport {
-  const baseline = readPerfBaseline();
+  // 床はゲートが走る環境で測ったものを読む。比率はマシンを相殺しないため
+  // (read-perf-baseline.ts の CI_PERF_BASELINE_PATH のコメント参照)。
+  const baseline = readPerfBaseline(baselinePathForEnvironment());
   const floors = new Map(
     baseline.referenceRatio.map((entry) => [
       `${entry.shape}:${entry.operation}:${String(entry.inputIsAccepted)}`,

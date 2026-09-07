@@ -67,12 +67,20 @@ export interface ReferenceRatioRecord {
   readonly ratio: number;
   /** The CI gate fails below this. Calibrated from a recorded run. */
   readonly ratioFloor: number;
-  /** Run-to-run noise on each side, so the floor's margin can be judged. */
-  readonly luqSpreadPercent: number;
-  readonly referenceSpreadPercent: number;
+  /**
+   * Run-to-run noise on each side, so the floor's margin can be judged.
+   *
+   * null は「測っていない」の意味。CI 用の床 (config/perf-baseline.ci.json) は
+   * GitHub Actions のログに出た比率から起こしたもので、ログに spread が無い。
+   * 0 を書くと「ばらつきが無かった」という嘘になるので null にしてある。
+   * CI 上で record を回せるようになったら実測値が入る。
+   */
+  readonly luqSpreadPercent: number | null;
+  readonly referenceSpreadPercent: number | null;
   /** Spread of the interleaved per-pair ratios: what the floor answers to. */
-  readonly ratioSpreadPercent: number;
-  readonly isQuiet: boolean;
+  readonly ratioSpreadPercent: number | null;
+  /** null は spread が無いので静かかどうかを判定できないことを表す。 */
+  readonly isQuiet: boolean | null;
 }
 
 /**
