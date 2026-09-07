@@ -33,8 +33,12 @@ describe("stringMax", () => {
     expect(isAccepted(empty, "a")).toBe(false);
   });
 
-  it("counts UTF-16 code units", () => {
-    expect(isAccepted(atMostThree, "ab\u{1F600}")).toBe(false);
+  it("コードポイントで数えるので、絵文字1つは1文字", () => {
+    // 1.x は UTF-16 のコード単位で数えていた。docs/legacy-spec が
+    // 「暗黙の挙動で、明示的な決定にすべき」と記録しており、
+    // JSON Schema §6.3.1 に合わせてコードポイントに決めた。
+    expect(isAccepted(atMostThree, "ab\u{1F600}")).toBe(true);
+    expect(isAccepted(atMostThree, "abc\u{1F600}")).toBe(false);
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {

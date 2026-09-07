@@ -51,8 +51,5 @@ describe("createProjectionReader", () => {
 
   it("rejects a malformed path when the reader is BUILT, not when it runs", () => {
     expect(() => createProjectionReader("user..name")).toThrow(PathSyntaxError);
-    expect(() => createProjectionReader("__proto__.polluted")).toThrow(
-      PathSyntaxError
-    );
   });
 });

@@ -9,10 +9,28 @@
 // dependent for no gain.
 // ===========================================================================
 
-/** Segment names that reach `Object.prototype` and must never be walked,
- *  written, or vivified. `fromJsonSchema` derives segments verbatim from
- *  untrusted schema property names, so this list is a security boundary, not a
- *  style preference. */
+/**
+ * `Object.prototype` 上に同名のものがあるキー。
+ *
+ * **これはもう拒否リストではない。** 以前はこの3つを宣言パスに書けなくして
+ * いたが、その拒否は過剰だった。危険なのは書き込みだけで、しかも本当に危ない
+ * のは "__proto__" ひとつである:
+ *
+ *   読み取り  create-value-reader.ts が hasOwnProperty.call で own プロパティ
+ *             しか読まないので、プロトタイプは最初から辿らない
+ *   書き込み  `target[key] = value` は "__proto__" のとき Object.prototype の
+ *             **アクセサ** を呼び、own プロパティを作らずプロトタイプを差し替える。
+ *             "constructor" と "prototype" はデータプロパティなので代入でも
+ *             own プロパティになるだけで、汚染にはならない
+ *
+ * create-value-writer.ts が代入をやめて defineProperty に移したことで、
+ * この経路が閉じた。したがって名前で拒否する必要が無くなり、
+ * `{ "properties": { "__proto__": ... } }` のようなスキーマを検証できる
+ * ようになった (JSON-Schema-Test-Suite の properties.json が要求している)。
+ *
+ * リスト自体は残す。テストが「この3つを書いても Object.prototype が汚れない」
+ * ことを名指しで確認するのに使う (test/unit/path/create-value-writer.test.ts)。
+ */
 export const RESERVED_SEGMENTS: readonly string[] = Object.freeze([
   "__proto__",
   "constructor",
@@ -68,10 +86,9 @@ export function assertDeclarableKey(key: string, source: string): void {
         "bracket form and it must trail a key"
     );
   }
-  if (isReservedSegment(key)) {
-    throw new PathSyntaxError(
-      source,
-      `${JSON.stringify(key)} is a reserved segment (prototype pollution)`
-    );
-  }
+  // 予約セグメントの拒否はここから外した。理由は RESERVED_SEGMENTS の
+  // コメントに書いてある。要約すると、危険なのは書き込みだけで、その書き込みは
+  // create-value-writer.ts が defineProperty に移したので安全になった。
+  // 名前で拒否する必要が無くなり、JSON Schema が "__proto__" というキーを
+  // 持つオブジェクトを検証できるようになった。
 }

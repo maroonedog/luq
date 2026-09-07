@@ -41,9 +41,33 @@ function decodePointerToken(token: string): string {
   return token.replace(/~1/g, "/").replace(/~0/g, "~");
 }
 
+/**
+ * `$ref` は URI で、ポインタはそのフラグメント。RFC 6901 §6 は
+ * 「フラグメントの規則でパーセント符号化されている」と定めるので、
+ * **スラッシュで割る前にフラグメント全体を復号する**。
+ *
+ * 順序が意味を持つ。`#/definitions/percent%25field` は復号して
+ * `/definitions/percent%field` になり、そこで割ってトークンを得る。
+ * 先に割ってからトークンごとに復号すると `%25` は復号されるが、
+ * `%2F` が「区切りとしてのスラッシュ」に戻る仕様どおりの挙動にならない。
+ *
+ * 壊れたパーセント列 (`%zz`) は decodeURIComponent が投げるので、
+ * 復号できないポインタはそのまま扱う。ここで投げると、ポインタが1つ
+ * 壊れているだけで文書全体が読めなくなる。
+ */
+function decodeFragment(pointer: string): string {
+  try {
+    return decodeURIComponent(pointer);
+  } catch {
+    return pointer;
+  }
+}
+
 function toPointerTokens(ref: string): readonly string[] {
-  const pointer = ref.slice(1);
-  if (pointer === "" || pointer === "/") return [];
+  const pointer = decodeFragment(ref.slice(1));
+  if (pointer === "") return [];
+  // "/" は「ルート直下の空文字キー」であって空のトークン列ではない。
+  // ここを [] にすると `{"": ...}` を指すポインタがルートに化ける。
   return pointer.split("/").slice(1).map(decodePointerToken);
 }
 

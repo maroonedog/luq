@@ -11,7 +11,7 @@
 
 ## 1. 見出しの数字
 
-**828 / 929 = 89.13%**
+**852 / 929 = 91.71%**
 
 公式 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
 draft7、必須テストのみ（`tests/draft7/optional/` は含まない）。
@@ -23,9 +23,9 @@ draft7、必須テストのみ（`tests/draft7/optional/` は含まない）。
 | | 件数 |
 |---|---|
 | 総ケース数 | 929 |
-| 合格 | **828** |
-| 不合格 | 101 |
-| うち skip リストに載っているもの | 101 |
+| 合格 | **852** |
+| 不合格 | 77 |
+| うち skip リストに載っているもの | 77 |
 | skip リストに無い不合格 | **0** |
 
 ### 自明な下限との比較

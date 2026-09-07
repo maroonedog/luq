@@ -69,7 +69,17 @@ describe("local pointers resolve", () => {
 
   it("resolves the root pointer", () => {
     expect(resolveRef("#", withDefinitions)).toBe(withDefinitions);
-    expect(resolveRef("#/", withDefinitions)).toBe(withDefinitions);
+  });
+
+  it("#/ はルートではなく空文字キーのメンバーを指す (RFC 6901)", () => {
+    // 旧テストは #/ をルートとして固定していたが、それは誤り。
+    // "" というキーを持つ文書を指せなくなり、スイートの
+    // "empty tokens in $ref json-pointer" が通らなかった。
+    expect(() => resolveRef("#/", withDefinitions)).toThrow(RefResolutionError);
+    const withEmptyKey = JSON.parse(
+      String.raw`{"": {"type": "number"}}`
+    ) as Draft07Schema;
+    expect(resolveRef("#/", withEmptyKey)).toEqual({ type: "number" });
   });
 
   it("indexes into an array", () => {

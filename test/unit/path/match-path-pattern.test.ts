@@ -55,9 +55,10 @@ describe("matchPathPattern", () => {
   it("throws on a malformed pattern instead of quietly matching nothing", () => {
     expect(() => matchPathPattern("", "a")).toThrow(PathSyntaxError);
     expect(() => matchPathPattern("a..b", "a.b")).toThrow(PathSyntaxError);
-    expect(() => matchPathPattern("__proto__", "__proto__")).toThrow(
-      PathSyntaxError
-    );
+  });
+
+  it("__proto__ を含むパターンは受け付ける（名前での拒否はやめた）", () => {
+    expect(matchPathPattern("__proto__", "__proto__")).toBe(true);
   });
 
   it("treats a regex metacharacter in a key as a literal", () => {

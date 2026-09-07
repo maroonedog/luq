@@ -142,24 +142,6 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     expiresWith: "feature:tuple-items-and-additional-items",
   },
   {
-    file: "maxLength.json",
-    group: "maxLength validation",
-    test: "two graphemes is long enough",
-    cause: "code-point-string-length",
-    reason:
-      "stringMin/stringMax measure String.prototype.length, which counts UTF-16 code units; Draft-07 counts code points, so a surrogate pair counts twice.",
-    expiresWith: "feature:code-point-string-length",
-  },
-  {
-    file: "minLength.json",
-    group: "minLength validation",
-    test: "one grapheme is not long enough",
-    cause: "code-point-string-length",
-    reason:
-      "stringMin/stringMax measure String.prototype.length, which counts UTF-16 code units; Draft-07 counts code points, so a surrogate pair counts twice.",
-    expiresWith: "feature:code-point-string-length",
-  },
-  {
     file: "not.json",
     group: "forbid everything with empty schema",
     test: "null is invalid",
@@ -196,14 +178,6 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     expiresWith: "feature:additional-properties-with-patterns",
   },
   {
-    file: "properties.json",
-    group: "properties whose names are Javascript object property names",
-    cause: "reserved-path-segment",
-    reason:
-      'parse-field-path refuses "__proto__" as a declared segment (prototype pollution). The refusal is deliberate and the suite requires the key to be validatable.',
-    expiresWith: "decision:reserved-path-segments",
-  },
-  {
     file: "ref.json",
     group: "relative pointer ref to array",
     test: "mismatch array",
@@ -211,14 +185,6 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     reason:
       "the tuple form of `items` is converted as a composite rather than through tupleBuilder, and `additionalItems` is consumed without a rule, so per-position schemas and the extra-element bound are not enforced.",
     expiresWith: "feature:tuple-items-and-additional-items",
-  },
-  {
-    file: "ref.json",
-    group: "escaped pointer ref",
-    cause: "ref-pointer-escaping",
-    reason:
-      'readRefPointer splits `#/definitions/percent%25field` on "/" without %-decoding or ~-unescaping, so the segment is looked up under its encoded spelling.',
-    expiresWith: "feature:json-pointer-escaping",
   },
   {
     file: "ref.json",
@@ -260,14 +226,6 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     reason:
       "resolve-ref refuses `node`: it leaves the document, and Luq has no schema loader. The suite serves these over localhost:1234.",
     expiresWith: "feature:external-ref-loader",
-  },
-  {
-    file: "ref.json",
-    group: "refs with quote",
-    cause: "ref-pointer-escaping",
-    reason:
-      'readRefPointer splits `#/definitions/foo%22bar` on "/" without %-decoding or ~-unescaping, so the segment is looked up under its encoded spelling.',
-    expiresWith: "feature:json-pointer-escaping",
   },
   {
     file: "ref.json",
@@ -394,15 +352,6 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     expiresWith: "feature:ref-identifier-scope",
   },
   {
-    file: "ref.json",
-    group: "empty tokens in $ref json-pointer",
-    test: "non-number is invalid",
-    cause: "ref-pointer-escaping",
-    reason:
-      'the JSON pointer contains empty tokens ("#/definitions//definitions/"), which the segment walk collapses instead of treating as a real empty key.',
-    expiresWith: "feature:json-pointer-escaping",
-  },
-  {
     file: "refRemote.json",
     group: "remote ref",
     cause: "external-ref",
@@ -491,15 +440,6 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     expiresWith: "feature:external-ref-loader",
   },
   {
-    file: "required.json",
-    group:
-      "required properties whose names are Javascript object property names",
-    cause: "reserved-path-segment",
-    reason:
-      'parse-field-path refuses "__proto__" as a declared segment (prototype pollution). The refusal is deliberate and the suite requires the key to be validatable.',
-    expiresWith: "decision:reserved-path-segments",
-  },
-  {
     file: "uniqueItems.json",
     group: "uniqueItems with an array of items and additionalItems=false",
     test: "extra items are invalid even if unique",
@@ -516,6 +456,15 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     reason:
       "the tuple form of `items` is converted as a composite rather than through tupleBuilder, and `additionalItems` is consumed without a rule, so per-position schemas and the extra-element bound are not enforced.",
     expiresWith: "feature:tuple-items-and-additional-items",
+  },
+  {
+    file: "ref.json",
+    group: "empty tokens in $ref json-pointer",
+    test: "non-number is invalid",
+    cause: "ref-chain",
+    reason:
+      "the pointer itself now resolves (empty tokens and percent-decoding are handled). What is missing is downstream: the resolved sub-schema sits under a ROOT-level allOf and carries only `type`, and dropDistributedKeywords strips `type` from a root node, so no rule is produced for it.",
+    expiresWith: "feature:ref-chain-resolution",
   },
 ];
 
