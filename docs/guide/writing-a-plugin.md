@@ -136,6 +136,25 @@ checked structurally, not shallowly.
 compile. The type the chain carries afterwards and the runtime policy the field
 gets are therefore the same declaration; they cannot drift apart.
 
+**Two of the markers also REPLACE the chain method's signature**, so for those
+two your `args` no longer describes what the caller writes
+(`src/chain/chain-method.types.ts:28-38`):
+
+| `out` | what the caller actually passes |
+|---|---|
+| `TransformOut` | `<R>(map: (value) => R, options?)` — one mapping function, whatever `args` says |
+| `GuardOut` | `<X>(condition: (value) => value is X, define: b => chain, options?)` |
+
+Declaring `out: TransformOut` with `args: readonly [prefix: string]` therefore
+compiles as a plugin and then rejects every call site, because the marker has
+already decided the parameters. Write the `args` the marker implies.
+
+`GuardOut` additionally records the narrowed member in the chain's state
+(`CoverWith`), which is why `.build()` does not exist on a `.union.guard(...)`
+chain until every member of the union has been covered — the error you get is
+`Property 'build' does not exist on type 'UnionGuardCoverageError<…>'`, and it
+means a member is still uncovered rather than that `build` was misspelled.
+
 <!-- luq-example: must-fail out と build() の戻り値が食い違うと落ちることの証明 -->
 ```ts
 import { definePlugin, check, PASS } from "@maroonedog/luq/plugin-kit";

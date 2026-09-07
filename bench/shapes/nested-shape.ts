@@ -13,6 +13,7 @@ import { requiredPlugin } from "../../src/plugins/required";
 import { stringMinPlugin } from "../../src/plugins/string-min";
 import { stringMaxPlugin } from "../../src/plugins/string-max";
 import { stringPatternPlugin } from "../../src/plugins/string-pattern";
+import type { ValuePool } from "../rotate-over-values";
 import type { BenchShape } from "./bench-shape.types";
 
 export interface NestedSubject {
@@ -26,12 +27,40 @@ export interface NestedSubject {
   };
 }
 
-export const NESTED_VALUE: NestedSubject = {
-  customer: {
-    name: "Alexandra",
-    address: { country: "JP", zip: "150-0001", city: "Shibuya" },
-  },
-};
+function nestedValue(
+  name: string,
+  country: string,
+  zip: string,
+  city: string
+): NestedSubject {
+  return { customer: { name, address: { country, zip, city } } };
+}
+
+export const NESTED_VALUES: readonly [
+  NestedSubject,
+  NestedSubject,
+  NestedSubject,
+  NestedSubject,
+] = [
+  nestedValue("Alexandra", "JP", "150-0001", "Shibuya"),
+  nestedValue("Benedict", "GB", "SW1A1AA", "London"),
+  nestedValue("Chiyoko", "US", "94103", "San Francisco"),
+  nestedValue("Dimitrios", "GR", "10431", "Athens"),
+];
+
+export const NESTED_VALUE: NestedSubject = NESTED_VALUES[0];
+
+/**
+ * One failure per level: the leaf pattern, the leaf length bound, an absent
+ * leaf, and an absent intermediate object. The last one is the only member
+ * that fails before the plan reaches depth 3.
+ */
+export const NESTED_REJECTED: ValuePool = [
+  nestedValue("Alexandra", "jp", "150-0001", "Shibuya"),
+  nestedValue("Alexandra", "JP", "15", "Shibuya"),
+  { customer: { name: "Alexandra", address: { country: "JP", zip: "150" } } },
+  { customer: { name: "Alexandra" } },
+];
 
 export const nestedShape: BenchShape = {
   name: "nested",
@@ -53,4 +82,6 @@ export const nestedShape: BenchShape = {
       .v("customer.address.city", (field) => field.string.required().min(1))
       .build(),
   acceptedValue: NESTED_VALUE,
+  acceptedValues: NESTED_VALUES,
+  rejectedValues: NESTED_REJECTED,
 };

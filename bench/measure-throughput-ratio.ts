@@ -11,8 +11,17 @@
 // fails on a slow day; low enough never to fail, it catches nothing. Dividing
 // by a reference measured on the same machine takes the machine out.
 //
-// The pairing is by BenchShapeName on both sides, so it is not possible to
-// divide the array shape's Luq figure by the flat shape's reference figure.
+// The pairing is by BenchShapeName AND RatioCase on both sides, so it is not
+// possible to divide the array shape's Luq figure by the flat shape's
+// reference figure, nor the rejection path's by the accepted path's.
+//
+// Two checks run before any timing and both of them are new, because the only
+// thing this file used to assert was that both sides said yes to the value it
+// was about to hand them — which `() => true` also does:
+//   - the reference must agree with Luq on a pool of values that are rejected
+//     as well as on the pool that is accepted (assert-reference-agreement.ts);
+//   - the reference must be measurably slower than an empty loop and must cost
+//     twice as much when called twice (measure-reference-work.ts).
 // ===========================================================================
 import {
   DEFAULT_ATTEMPTS,
@@ -27,11 +36,24 @@ import {
   takeInterleavedSamples,
   type InterleavedSamples,
 } from "./take-interleaved-samples";
+import { assertReferenceAgreesWithLuq } from "./assert-reference-agreement";
+import {
+  assertReferenceIsNotEliminated,
+  measureReferenceWork,
+} from "./measure-reference-work";
+import {
+  buildLuqSubject,
+  buildReferenceSubject,
+  describeRatioCase,
+  type RatioCase,
+} from "./ratio-case";
 import { HAND_WRITTEN_CHECKS } from "./hand-written/index";
 import type { BenchShape, BenchShapeName } from "./shapes/bench-shape.types";
 
 export interface MeasuredRatio {
   readonly shape: BenchShapeName;
+  readonly operation: "validate" | "parse";
+  readonly inputIsAccepted: boolean;
   readonly luqOpsPerSecond: number;
   readonly referenceOpsPerSecond: number;
   /** Median of the per-pair ratios, NOT the ratio of the two medians. */
@@ -43,13 +65,15 @@ export interface MeasuredRatio {
   readonly isQuiet: boolean;
 }
 
-function assertEverythingWasAccepted(
+function assertEverythingBehavedAsExpected(
   shape: BenchShapeName,
+  ratioCase: RatioCase,
   samples: InterleavedSamples
 ): void {
+  const expectation = ratioCase.inputIsAccepted ? "accept" : "reject";
   if (samples.firstAccepted !== samples.firstIterations * samples.sampleCount) {
     throw new Error(
-      `${shape}: Luq rejected the accepted value; the ratio would compare a failure path`
+      `${shape} ${describeRatioCase(ratioCase)}: Luq stopped doing what the pool says it must (${expectation}); the ratio would compare two different code paths`
     );
   }
   if (
@@ -57,29 +81,29 @@ function assertEverythingWasAccepted(
     samples.secondIterations * samples.sampleCount
   ) {
     throw new Error(
-      `${shape}: the hand-written reference rejected the accepted value; it does not mirror the shape`
+      `${shape} ${describeRatioCase(ratioCase)}: the hand-written reference stopped doing what the pool says it must (${expectation}); it does not mirror the shape`
     );
   }
 }
 
 function measureRatioOnce(
   shape: BenchShape,
+  ratioCase: RatioCase,
   options: ThroughputOptions
 ): MeasuredRatio {
   const reference = HAND_WRITTEN_CHECKS[shape.name];
   const validator = shape.buildValidator();
-  const acceptedValue = shape.acceptedValue;
 
   const samples = takeInterleavedSamples(
-    () => validator.validate(acceptedValue).valid,
-    () => reference(acceptedValue),
+    buildLuqSubject(validator, shape, ratioCase),
+    buildReferenceSubject(reference, shape, ratioCase),
     {
       targetSampleMs: options.targetSampleMs ?? DEFAULT_TARGET_SAMPLE_MS,
       sampleCount: options.sampleCount ?? DEFAULT_SAMPLE_COUNT,
       warmupMs: options.warmupMs ?? DEFAULT_WARMUP_MS,
     }
   );
-  assertEverythingWasAccepted(shape.name, samples);
+  assertEverythingBehavedAsExpected(shape.name, ratioCase, samples);
 
   const ratio = median(samples.pairRatios);
   const ratioSpread = relativeSpreadPercent(samples.pairRatios, ratio);
@@ -87,6 +111,8 @@ function measureRatioOnce(
   const referenceOpsPerSecond = estimateRate(samples.secondRates);
   return {
     shape: shape.name,
+    operation: ratioCase.operation,
+    inputIsAccepted: ratioCase.inputIsAccepted,
     luqOpsPerSecond,
     referenceOpsPerSecond,
     ratio,
@@ -109,15 +135,23 @@ function measureRatioOnce(
  * attempt wins — the same rule measureThroughput applies to absolute figures.
  * A gate that fails because the machine hiccuped teaches people to re-run it
  * until it goes green, which is the same as having no gate.
+ *
+ * The agreement check and the elimination canary run ONCE per pairing, before
+ * the first attempt, because they answer questions about the code rather than
+ * about the machine and re-running them would only cost time.
  */
 export function measureThroughputRatio(
   shape: BenchShape,
+  ratioCase: RatioCase,
   options: ThroughputOptions = {}
 ): MeasuredRatio {
+  assertReferenceAgreesWithLuq(shape);
+  assertReferenceIsNotEliminated(measureReferenceWork(shape, ratioCase));
+
   const attemptLimit = Math.max(1, options.attempts ?? DEFAULT_ATTEMPTS);
-  let best = measureRatioOnce(shape, options);
+  let best = measureRatioOnce(shape, ratioCase, options);
   for (let attempt = 1; !best.isQuiet && attempt < attemptLimit; attempt += 1) {
-    const retried = measureRatioOnce(shape, options);
+    const retried = measureRatioOnce(shape, ratioCase, options);
     if (retried.ratioSpreadPercent < best.ratioSpreadPercent) best = retried;
   }
   return best;

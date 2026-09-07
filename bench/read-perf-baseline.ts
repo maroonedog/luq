@@ -12,6 +12,7 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import type { PerfBaseline, ReferenceRatioRecord } from "./perf-baseline.types";
+import type { RatioCase } from "./ratio-case";
 import type { BenchShapeName } from "./shapes/bench-shape.types";
 
 export const PERF_BASELINE_PATH = join(
@@ -36,9 +37,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isReferenceRatio(value: unknown): value is ReferenceRatioRecord {
   if (!isRecord(value)) return false;
   const shape = value["shape"];
+  const operation = value["operation"];
   return (
     typeof shape === "string" &&
     SHAPE_NAMES.includes(shape as BenchShapeName) &&
+    (operation === "validate" || operation === "parse") &&
+    typeof value["inputIsAccepted"] === "boolean" &&
     typeof value["luqOpsPerSecond"] === "number" &&
     typeof value["referenceOpsPerSecond"] === "number" &&
     typeof value["ratio"] === "number" &&
@@ -79,7 +83,7 @@ export function readPerfBaseline(
   // A BOM is stripped rather than tolerated by accident: a Windows editor or
   // `Set-Content -Encoding utf8` writes one, and JSON.parse then rejects a
   // file that is otherwise a perfectly good baseline.
-  const raw = readFileSync(path, "utf8").replace(/^﻿/, "");
+  const raw = readFileSync(path, "utf8").replace(/^\uFEFF/, "");
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -96,11 +100,21 @@ export function readPerfBaseline(
   return parsed;
 }
 
-/** The recorded floor for one shape, or undefined when it has none yet. */
+/**
+ * The recorded floor for one (shape, case) pairing, or undefined when it has
+ * none yet. Keyed by the case as well as the shape because the gate now covers
+ * parse and the rejection path: a floor recorded for validate/accepted must
+ * never be applied to a pairing that measures something else.
+ */
 export function findRecordedFloor(
   baseline: PerfBaseline,
-  shape: BenchShapeName
+  shape: BenchShapeName,
+  ratioCase: RatioCase
 ): number | undefined {
-  return baseline.referenceRatio.find((entry) => entry.shape === shape)
-    ?.ratioFloor;
+  return baseline.referenceRatio.find(
+    (entry) =>
+      entry.shape === shape &&
+      entry.operation === ratioCase.operation &&
+      entry.inputIsAccepted === ratioCase.inputIsAccepted
+  )?.ratioFloor;
 }

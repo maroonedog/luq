@@ -64,6 +64,22 @@ function printRecorded(): void {
     );
   }
   process.stdout.write(
+    "\nis each hand-written reference actually running? (net of the rotation)\n"
+  );
+  for (const record of baseline.referenceWork) {
+    process.stdout.write(
+      `  ${record.shape.padEnd(12)} ${(record.inputIsAccepted
+        ? "accepted"
+        : "rejected"
+      ).padEnd(9)} ${String(record.netNanosecondsPerCall).padStart(
+        8
+      )} ns/call, ${record.shareOfFloor} of an empty loop over the same pool\n`
+    );
+  }
+  process.stdout.write(
+    `\ngate resolution: sees a slowdown of ${baseline.gateSensitivity.caughtSlowdownPercent}%, misses ${baseline.gateSensitivity.missedSlowdownPercent}%\n`
+  );
+  process.stdout.write(
     "\nversus the 1.x sources (git archive of the legacy ref)\n"
   );
   for (const record of baseline.legacyComparison) {
@@ -94,7 +110,9 @@ function runGate(): number {
   );
   for (const outcome of report.outcomes) {
     process.stdout.write(
-      `  ${outcome.passed ? "PASS" : "FAIL"} ${outcome.shape.padEnd(12)} ratio ${outcome.ratio.toFixed(
+      `  ${outcome.passed ? "PASS" : "FAIL"} ${outcome.shape.padEnd(
+        12
+      )} ${outcome.ratioCase.padEnd(18)} ratio ${outcome.ratio.toFixed(
         4
       )} (floor ${outcome.ratioFloor.toFixed(4)})  luq ${Math.round(
         outcome.luqOpsPerSecond
@@ -103,12 +121,12 @@ function runGate(): number {
   }
   if (report.failures.length === 0) {
     process.stdout.write(
-      `\nall ${report.outcomes.length} shapes are within their recorded ratio floor\n`
+      `\nall ${report.outcomes.length} shape/case pairings are within their recorded ratio floor\n`
     );
     return 0;
   }
   process.stderr.write(
-    `\n${report.failures.length} shape(s) below floor. Luq got slower RELATIVE to a hand-written validator measured in the same process, so this is not runner noise.\n`
+    `\n${report.failures.length} pairing(s) below floor. Luq got slower RELATIVE to a hand-written validator measured in the same process, so this is not runner noise.\n`
   );
   return 1;
 }

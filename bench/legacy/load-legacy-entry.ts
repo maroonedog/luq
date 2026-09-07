@@ -74,6 +74,9 @@ export function loadLegacyEntry(sourceRoot: string): LegacyEntry {
     };
   }
 
+  // A path computed at run time from a git archive: an import statement cannot
+  // express it, and loading it is the whole purpose of this module.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const loaded: unknown = require(entryPath);
   if (!isModuleRecord(loaded) || !hasBuilder(loaded)) {
     return {
@@ -100,6 +103,7 @@ export function loadLegacyEntry(sourceRoot: string): LegacyEntry {
       if (!existsSync(pluginPath)) {
         throw new Error(`1.x plugin module missing: ${pluginPath}`);
       }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const pluginModule: unknown = require(pluginPath);
       if (!isModuleRecord(pluginModule)) {
         throw new Error(`1.x plugin module is not a module: ${pluginPath}`);

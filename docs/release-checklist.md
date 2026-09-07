@@ -140,9 +140,15 @@ npm publish --dry-run
 
 - **リポジトリ直下の 1.x 由来の残骸**: `core-entry.ts`, `exports-config.json`,
   `rollup.dts.config.js`, `build.sh`, `run-all-tests.sh`, `lib/`, `test-build/`,
-  `bundle-size-comparison/`, `jest.swc.config.js`, `scripts/benchmark-optimized.js`,
+  `jest.swc.config.js`, `scripts/benchmark-optimized.js`,
   `scripts/performance-profiler.js`。どれも `files: ["dist"]` の外なので**公開はされない**が、
   リポジトリを読む人には「生きている設定」に見える。消すなら別コミットで。
+  `bundle-size-comparison/` はこの一覧から外れた ── 削除済み。動かせば throw する
+  1.x の呼び出し側（`validator.parse(...).isValid()`）と、実行せずに束ねるだけで
+  新 dist と 1.x 呼び出し側が混ざった偽サイズを出す `build-all.js` を抱えていたため。
+  他に記録の無かった 18 行（zod / valibot / yup / joi / ajv のサイズと ops/sec）は
+  `docs/legacy-spec/bundle-size-comparison-results.json` に無編集で退避してある。
+  2025-08 時点の他ライブラリのバージョンでの値なので、現在の比較としては引用しないこと。
 - **言語が混在している**: README とガイドと `breaking-changes.md` は英語、
   `docs/migration/plugins.md` と設計文書とコードコメントは日本語。どちらかに寄せるかを決める。
 - **`test/type/contract/**` と `docs/plugin-author-contract.md` は存在しない**。

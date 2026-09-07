@@ -1,77 +1,71 @@
 ---
+/**
+ * MD3 standard icon button that switches the colour scheme.
+ *
+ * Writes an explicit choice to localStorage under `theme`; BaseLayout's inline
+ * script reads it before first paint. Icons are Material Symbols ligatures.
+ */
 ---
 
 <button
   id="theme-toggle"
   type="button"
-  class="relative p-2 rounded-lg bg-luq-neutral-100 dark:bg-luq-neutral-800 hover:bg-luq-neutral-200 dark:hover:bg-luq-neutral-700 transition-colors"
-  aria-label="Toggle theme"
+  class="md-icon-button md-state-layer md-focus-ring text-on-surface-variant"
+  aria-label="Switch colour scheme"
 >
-  <!-- Sun icon -->
-  <svg
-    class="sun-icon h-5 w-5 text-luq-purple-600 dark:text-luq-teal-400 transition-all"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-    />
-  </svg>
-  
-  <!-- Moon icon -->
-  <svg
-    class="moon-icon absolute inset-0 m-2 h-5 w-5 text-luq-purple-600 dark:text-luq-teal-400 transition-all scale-0 dark:scale-100"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-    />
-  </svg>
+  <span class="md-icon md-icon-sm theme-toggle-light" aria-hidden="true">light_mode</span>
+  <span class="md-icon md-icon-sm theme-toggle-dark" aria-hidden="true">dark_mode</span>
 </button>
 
 <style>
-  .sun-icon {
-    transform-origin: center;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+  #theme-toggle {
+    display: grid;
+    place-items: center;
   }
-  
-  .dark .sun-icon {
-    transform: scale(0) rotate(180deg);
+
+  /* Both glyphs occupy the same cell so the button never reflows. */
+  .theme-toggle-light,
+  .theme-toggle-dark {
+    grid-area: 1 / 1;
+    transition:
+      transform var(--md-sys-motion-duration-medium-2) var(--md-sys-motion-easing-emphasized),
+      opacity var(--md-sys-motion-duration-short-4) var(--md-sys-motion-easing-standard);
+  }
+
+  .theme-toggle-dark {
     opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
   }
-  
-  .moon-icon {
-    transform-origin: center;
+
+  :global(.dark) .theme-toggle-light {
     opacity: 0;
+    transform: rotate(90deg) scale(0.6);
   }
-  
-  .dark .moon-icon {
+
+  :global(.dark) .theme-toggle-dark {
     opacity: 1;
+    transform: none;
   }
 </style>
 
 <script>
-  const toggle = document.getElementById('theme-toggle');
-  const html = document.documentElement;
-  
-  toggle?.addEventListener('click', () => {
-    const isDark = html.classList.contains('dark');
-    
-    if (isDark) {
-      html.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    } else {
-      html.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-  });
+  function bindThemeToggle(): void {
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle || toggle.dataset.bound === 'true') return;
+    toggle.dataset.bound = 'true';
+
+    toggle.addEventListener('click', () => {
+      const root = document.documentElement;
+      const next = root.classList.contains('dark') ? 'light' : 'dark';
+      root.classList.toggle('dark', next === 'dark');
+      try {
+        localStorage.setItem('theme', next);
+      } catch {
+        // Private-mode storage refusal only costs persistence, not the switch.
+      }
+    });
+  }
+
+  bindThemeToggle();
+  document.addEventListener('astro:page-load', bindThemeToggle);
 </script>

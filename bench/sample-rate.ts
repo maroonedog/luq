@@ -100,6 +100,15 @@ export function estimateRate(rates: readonly number[]): number {
   return median(sorted.slice(Math.floor(sorted.length / 2)));
 }
 
+/**
+ * FULL range of the samples over the reported figure. Say it that way when
+ * quoting it: the two statistics are deliberately different and it is easy to
+ * read this as a confidence interval, which it is not. `estimateRate` reports
+ * the median of the fastest half — with nine samples, the seventh slowest,
+ * about the 72nd percentile — while this divides (max - min) across ALL nine by
+ * that value. It is therefore an upper bound on the disturbance and always
+ * larger than the scatter around the number it accompanies.
+ */
 export function relativeSpreadPercent(
   rates: readonly number[],
   reported: number

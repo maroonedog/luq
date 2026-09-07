@@ -10,6 +10,14 @@ export interface DocExample {
   readonly expectation: DocExampleExpectation;
   readonly reason: string;
   readonly code: string;
+  /**
+   * `code` の先頭に足された前置きの行数。docs-site の抜粋は、ページ上では
+   * 直前のブロックが宣言した validator を使うだけの短い形で見せたまま、
+   * 型検査には前置きを付けた完全な形を渡す（read-astro-examples.ts の
+   * `with` ディレクティブ）。診断の行番号をドキュメント上の行に戻すために
+   * この分を引く。Markdown のコード例では常に 0。
+   */
+  readonly preludeLineCount?: number;
 }
 
 /**

@@ -267,47 +267,72 @@ Two lines that are **not** wins:
 [config/perf-baseline.json](config/perf-baseline.json). Machine: AMD Ryzen 7
 5825U, 16 logical cores, Node v23.11.0, Windows. Subject is `src/` transpiled by
 ts-node, not the bundle. `abortEarly: true`, input accepted, so no rule is
-skipped. Each figure is the median of the fastest half of 9 samples; the spread
-on every one is 1.3–5.3%.
+skipped. Every subject rotates over a pool of at least four distinct values —
+one frozen input let V8 delete a subject outright, which is the artefact
+described below. Each figure is the median of the fastest half of 9 samples; the
+spread quoted alongside is the full range over that figure, and on these ten it
+is 2.9–8.6%.
 
 | Shape | `validate` ops/sec | `parse` ops/sec |
 |---|---:|---:|
-| 1 field, 1 check | 2,840,785 | 2,814,223 |
-| 3 fields, 6 plugins | 1,181,194 | 1,111,822 |
-| nested, depth 2–3 | 770,339 | 773,935 |
-| array of 50 elements | 31,270 | 31,454 |
-| JSON Schema document | 173,087 | 172,542 |
+| 1 field, 1 check | 2,801,628 | 2,617,522 |
+| 3 fields, 6 plugins | 1,073,925 | 1,078,706 |
+| nested, depth 2–3 | 707,734 | 700,829 |
+| array of 50 elements | 29,963 | 29,774 |
+| JSON Schema document | 159,643 | 159,966 |
 
 **This rewrite is slower than 1.x on flat and nested shapes.** Measured side by
-side, in one process on one machine, 1.x source against this source:
+side, in one process on one machine, 1.x source against this source, sample by
+sample interleaved so a drift in the machine hits both halves of every ratio:
 
 | Shape | 1.x | this | ratio |
 |---|---:|---:|---:|
-| 1 field | 30,888,169 | 2,921,516 | **×0.09** |
-| 3 fields | 3,493,614 | 1,174,197 | **×0.34** |
-| nested | 2,663,718 | 776,593 | **×0.29** |
-| array of 50 | 20,766 | 32,431 | ×1.56 |
-| JSON Schema | 152,213 | 174,758 | ×1.15 |
+| 1 field | 25,660,195 | 2,724,339 | **×0.11** |
+| 3 fields | 3,059,093 | 1,069,167 | **×0.35** |
+| nested | 2,215,768 | 708,461 | **×0.32** |
+| array of 50 | 18,941 | 29,629 | ×1.57 |
+| JSON Schema | 138,809 | 152,536 | ×1.09 |
 
 1.x carried a directory of specialised fast paths that this implementation has
-no equivalent of. The result was checked for measurement artefacts: rotating 16
-distinct inputs instead of one frozen object changed nothing, and 1.x
-demonstrably rejects bad values on all five shapes, so it is not doing less
-work. It is simply faster on the flat cases.
+no equivalent of. The comparison was checked for the ways it could be wrong: 1.x
+demonstrably rejects bad values on all five shapes, so it is not winning by
+doing less work, and both halves are asserted to accept the accepted pool and
+reject the rejected pool before either is timed.
 
 Also worth stating plainly: **neither figure 1.x's README published reproduces
 here.** It claimed 1.2M ops/sec simple and 43K complex; on this machine 1.x
-itself does 3.49M on the shape rebuilt from its own "simple" benchmark source,
+itself does 3.06M on the shape rebuilt from its own "simple" benchmark source,
 and "complex" has no reproducible definition to measure.
 
-`build()` costs 13–620 µs depending on shape, against sub-microsecond
-`validate()` calls — so one `build()` pays for itself after 36–103 `validate()`
+`build()` costs 14–662 µs depending on shape, against sub-microsecond
+`validate()` calls — so one `build()` pays for itself after 35–100 `validate()`
 calls on four of the five shapes, and after 2 calls on the 50-element array
-(where `validate()` itself costs ~32 µs).
+(where `validate()` itself costs ~33 µs).
 
 CI does not gate on any absolute number. It gates on the ratio between Luq and a
 hand-written validator measured in the same process, so the runner's speed
-cancels out.
+cancels out. Fifteen pairings are gated: five shapes × `validate` on accepted
+input, `parse` on accepted input, and `validate` on rejected input — the
+rejected path is a different program under `abortEarly` (early exit, issue
+construction, path strings) and was previously not measured at all.
+
+The gate's resolution is recorded rather than assumed. Slowing every shape's
+validator by a fixed factor and re-running (`gateSensitivity` in
+config/perf-baseline.json, one run per level): **+35% is caught** on 14 of the
+15 pairings, +25% on 3, and **+15% is missed** on all 15. So the gate sees
+roughly a third-slower regression and does not see a sixth-slower one.
+
+The reference implementations are held to two conditions of their own, both
+asserted before any timing. `bench/assert-reference-agreement.ts` requires the
+hand-written reference and Luq to agree on every value in both pools, which is
+what stops the denominator drifting into a cheaper check than the one Luq
+performs — the email, UUID and date-time references were rewritten to the
+plugins' own semantics after this was added, and the rejected pool carries one
+value per known difference so reverting any of them fails the assertion.
+`bench/measure-reference-work.ts` requires each reference to be slower than 0.95
+of an empty loop over the same pool, which is how the deleted-subject artefact
+is caught: when V8 removes the work the ratio sits at 1.00 or above, and the ten
+figures recorded here span 0.01–0.86.
 
 ### CSP-safe
 

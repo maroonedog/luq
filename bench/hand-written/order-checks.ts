@@ -6,15 +6,28 @@
 // authoring time; what the ratio shows is whether Luq's conversion pushed that
 // document into build() (a constant ratio, close to the nested shape's) or
 // left it being interpreted per call (a ratio far worse than the others).
+//
+// Every format below is the PLUGIN's reading of that format, not a convenient
+// approximation of it. Three of them used to differ:
+//   - `uuid` was any hex in the right groups; the plugin requires a version
+//     nibble of 1-8 and a variant nibble of 8/9/a/b.
+//   - `date-time` demanded a timezone and did no calendar arithmetic; see
+//     iso-datetime-check.ts.
+//   - `email` was the loose two-part pattern; it is now the plugin's.
+// And `sku` was `startsWith("SKU-")` where the schema says `pattern: "^SKU-"`,
+// which Luq compiles to a RegExp — so the reference was being handed a cheaper
+// instruction for the same rule. JSON_SCHEMA_REJECTED contains one value for
+// each of those four differences, so none of them can come back unnoticed.
 // ===========================================================================
-import { isRecord } from "./flat-checks";
+import { EMAIL_PATTERN, isRecord } from "./flat-checks";
+import { isIsoDateTime } from "./iso-datetime-check";
 
+/** Version nibble 1-8, variant nibble 8/9/a/b: src/plugins/uuid ANY_VERSION. */
 const UUID_PATTERN =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const DATE_TIME_PATTERN =
-  /^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$/;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const COUNTRY_PATTERN = /^[A-Z]{2}$/;
+/** The schema says `pattern: "^SKU-"`; Luq compiles exactly this. */
+const SKU_PREFIX_PATTERN = /^SKU-/;
 
 function checkAddress(address: unknown): boolean {
   if (!isRecord(address)) return false;
@@ -37,7 +50,7 @@ function checkLines(lines: unknown): boolean {
     const line: unknown = lines[index];
     if (!isRecord(line)) return false;
     const sku = line["sku"];
-    if (typeof sku !== "string" || !sku.startsWith("SKU-")) return false;
+    if (typeof sku !== "string" || !SKU_PREFIX_PATTERN.test(sku)) return false;
     const quantity = line["quantity"];
     if (typeof quantity !== "number") return false;
     if (!Number.isInteger(quantity) || quantity < 1) return false;
@@ -52,9 +65,7 @@ export function checkOrder(value: unknown): boolean {
   if (typeof id !== "string" || !UUID_PATTERN.test(id)) return false;
 
   const placedAt = value["placedAt"];
-  if (typeof placedAt !== "string" || !DATE_TIME_PATTERN.test(placedAt)) {
-    return false;
-  }
+  if (typeof placedAt !== "string" || !isIsoDateTime(placedAt)) return false;
 
   const customer = value["customer"];
   if (!isRecord(customer)) return false;

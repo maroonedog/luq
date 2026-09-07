@@ -11,9 +11,21 @@
 // unconditionally because the runner's speed is not ours to control; a ratio
 // measured back to back in the SAME process cancels the machine out, because a
 // runner that halves Luq's throughput halves the reference's too.
+//
+// "Fastest honest thing" is the operative word. A reference that checks LESS
+// than the shape declares is not a floor, it is a discount. The e-mail pattern
+// below used to be `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`, which cost 34 ns/call
+// against the plugin's 51, so a third of the multiField ratio was the two
+// sides validating different languages. It is now the plugin's own pattern,
+// copied verbatim; the values in MULTI_FIELD_REJECTED are the ones that tell
+// the two apart, so the agreement check fails if this copy ever drifts.
 // ===========================================================================
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Verbatim copy of DEFAULT_EMAIL in src/plugins/string-email/string-email.ts. */
+const EMAIL_PATTERN =
+  /^[a-zA-Z0-9]([a-zA-Z0-9._%+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+
+export { EMAIL_PATTERN };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

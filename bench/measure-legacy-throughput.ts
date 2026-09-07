@@ -19,6 +19,7 @@
 import { execFileSync } from "child_process";
 import { join } from "path";
 import { measureThroughput } from "./measure-throughput";
+import { rotateOverValues } from "./rotate-over-values";
 import { BENCH_SHAPES } from "./shapes/index";
 import { extractLegacySources } from "./legacy/extract-legacy-sources";
 import { COMPARISON_MARKER } from "./legacy/comparison-marker";
@@ -33,7 +34,10 @@ function measureCurrentOnly(reason: string): readonly LegacyComparisonRecord[] {
     const validator = shape.buildValidator();
     const current = measureThroughput(
       `${shape.name}:current`,
-      () => validator.validate(shape.acceptedValue).valid
+      rotateOverValues(
+        shape.acceptedValues,
+        (value) => validator.validate(value).valid
+      )
     );
     return {
       shape: shape.name,

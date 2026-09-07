@@ -29,6 +29,7 @@ import {
 } from "./measure-throughput";
 import { estimateRate, median, relativeSpreadPercent } from "./sample-rate";
 import { takeInterleavedSamples } from "./take-interleaved-samples";
+import { rotateOverValues } from "./rotate-over-values";
 import type { BenchShape } from "./shapes/bench-shape.types";
 import type { BuildCostRecord } from "./perf-baseline.types";
 
@@ -46,7 +47,10 @@ function measureBuildCostOnce(shape: BenchShape): BuildCostRecord {
 
   const samples = takeInterleavedSamples(
     () => typeof shape.buildValidator().validate === "function",
-    () => reusedValidator.validate(shape.acceptedValue).valid,
+    rotateOverValues(
+      shape.acceptedValues,
+      (value) => reusedValidator.validate(value).valid
+    ),
     {
       targetSampleMs: BUILD_TARGET_SAMPLE_MS,
       sampleCount: DEFAULT_SAMPLE_COUNT,

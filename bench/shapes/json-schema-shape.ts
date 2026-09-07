@@ -9,8 +9,17 @@
 // it once. If validate() on this shape is close to validate() on the
 // hand-declared nested shape, then conversion really is a build-time cost and
 // not a per-call one.
+//
+// The rejected pool is chosen to pin the hand-written reference to the SAME
+// format semantics the plugins implement: a UUID whose version nibble is 0, a
+// 29th of February in a non-leap year, and an e-mail whose local part starts
+// with a dot are each accepted by the loose regexes the reference used to
+// carry and rejected by src/plugins/{uuid,string-datetime,string-email}. With
+// them in the pool the two sides cannot drift apart without the agreement
+// check saying so.
 // ===========================================================================
 import { fromJsonSchema } from "../../src/json-schema/extensions/json-schema-full-feature/index";
+import type { ValuePool } from "../rotate-over-values";
 import type { BenchShape } from "./bench-shape.types";
 
 export interface JsonSchemaSubject {
@@ -68,18 +77,104 @@ export const ORDER_SCHEMA = {
   required: ["id", "placedAt", "customer", "lines"],
 };
 
-export const JSON_SCHEMA_VALUE: JsonSchemaSubject = {
-  id: "7f1d3b6e-2f6a-4e2b-9a2b-0f2a5c9e1d3b",
-  placedAt: "2024-05-01T10:00:00Z",
-  customer: {
-    email: "buyer@example.com",
-    address: { country: "JP", zip: "1500001" },
-  },
-  lines: [
-    { sku: "SKU-1", quantity: 2 },
-    { sku: "SKU-2", quantity: 7 },
-  ],
-};
+function orderValue(
+  id: string,
+  placedAt: string,
+  email: string,
+  country: string,
+  zip: string
+): JsonSchemaSubject {
+  return {
+    id,
+    placedAt,
+    customer: { email, address: { country, zip } },
+    lines: [
+      { sku: "SKU-1", quantity: 2 },
+      { sku: "SKU-2", quantity: 7 },
+    ],
+  };
+}
+
+export const JSON_SCHEMA_VALUES: readonly [
+  JsonSchemaSubject,
+  JsonSchemaSubject,
+  JsonSchemaSubject,
+  JsonSchemaSubject,
+] = [
+  orderValue(
+    "7f1d3b6e-2f6a-4e2b-9a2b-0f2a5c9e1d3b",
+    "2024-05-01T10:00:00Z",
+    "buyer@example.com",
+    "JP",
+    "1500001"
+  ),
+  orderValue(
+    "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "2024-02-29T23:59:59.500Z",
+    "second.buyer@example.co.uk",
+    "GB",
+    "SW1A1AA"
+  ),
+  orderValue(
+    "c0ffee00-dead-4bee-af00-123456789abc",
+    "2023-11-07T08:15:00+09:00",
+    "third-buyer@mail.example.jp",
+    "US",
+    "94103"
+  ),
+  orderValue(
+    "9e107d9d-372b-4174-b0fd-0d5f5cb1c8e1",
+    "2024-12-31T00:00:01Z",
+    "fourth_buyer@example.org",
+    "GR",
+    "10431"
+  ),
+];
+
+export const JSON_SCHEMA_VALUE: JsonSchemaSubject = JSON_SCHEMA_VALUES[0];
+
+function orderWithLastLineQuantity(quantity: number): unknown {
+  const source = JSON_SCHEMA_VALUES[3];
+  return {
+    ...source,
+    lines: [
+      { sku: "SKU-1", quantity: 2 },
+      { sku: "SKU-2", quantity },
+    ],
+  };
+}
+
+export const JSON_SCHEMA_REJECTED: ValuePool = [
+  orderValue(
+    "7f1d3b6e-2f6a-0e2b-9a2b-0f2a5c9e1d3b",
+    "2024-05-01T10:00:00Z",
+    "buyer@example.com",
+    "JP",
+    "1500001"
+  ),
+  orderValue(
+    "7f1d3b6e-2f6a-4e2b-9a2b-0f2a5c9e1d3b",
+    "2023-02-29T10:00:00Z",
+    "buyer@example.com",
+    "JP",
+    "1500001"
+  ),
+  orderValue(
+    "7f1d3b6e-2f6a-4e2b-9a2b-0f2a5c9e1d3b",
+    "2024-05-01T10:00:00Z",
+    ".buyer@example.com",
+    "JP",
+    "1500001"
+  ),
+  orderValue(
+    "7f1d3b6e-2f6a-4e2b-9a2b-0f2a5c9e1d3b",
+    "2024-05-01T10:00:00Z",
+    "buyer@example.com",
+    "jp",
+    "1500001"
+  ),
+  orderWithLastLineQuantity(0),
+];
 
 export const jsonSchemaShape: BenchShape = {
   name: "jsonSchema",
@@ -87,4 +182,6 @@ export const jsonSchemaShape: BenchShape = {
     "Draft-07 document (9 properties, $ref, nested object, array of objects) via fromJsonSchema",
   buildValidator: () => fromJsonSchema<JsonSchemaSubject>(ORDER_SCHEMA),
   acceptedValue: JSON_SCHEMA_VALUE,
+  acceptedValues: JSON_SCHEMA_VALUES,
+  rejectedValues: JSON_SCHEMA_REJECTED,
 };

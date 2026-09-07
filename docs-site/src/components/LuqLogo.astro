@@ -1,22 +1,37 @@
 ---
+/**
+ * The wordmark. Rendered as an inline SVG wrapping the bitmap so that a caller
+ * can size it with a utility class (`h-8 w-auto`) and keep the 614:409 ratio.
+ *
+ * `role="img"` is what makes `aria-label` announced — an `<svg>` without it is
+ * exposed as a graphic with no accessible name in several screen readers.
+ */
 export interface Props {
   class?: string;
   width?: string;
   height?: string;
+  label?: string;
 }
 
-const { class: className = '', width = '90', height = '60' } = Astro.props;
+const {
+  class: className = '',
+  width = '90',
+  height = '60',
+  label = 'Luq',
+} = Astro.props;
 ---
 
-<svg 
+<svg
   class={className}
-  width={width} 
-  height={height} 
-  viewBox="0 0 614 409" 
-  xmlns="http://www.w3.org/2000/svg" 
+  width={width}
+  height={height}
+  viewBox="0 0 614 409"
+  preserveAspectRatio="xMidYMid meet"
+  role="img"
+  focusable="false"
+  aria-label={label}
+  xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink"
-  aria-label="Luq"
 >
-  <image x="0" y="0" width="614" height="409" 
-         xlink:href="/img/library_image_cropped.png" />
+  <image x="0" y="0" width="614" height="409" xlink:href="/img/library_image_cropped.png" />
 </svg>

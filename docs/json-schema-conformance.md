@@ -62,7 +62,11 @@ Luq には JSON Schema からの入口が **2つ** あり、コーパスは**チ
   コーパスのスキーマはほぼ全部ドキュメント**ルート**に制約を置くので、
   ルートを「そのフィールド自身」として扱えるこの経路だけが全ケースを判定できる。
   インスタンスがスカラー（数値・文字列・null）のケースも判定できる。
-- `fromJsonSchema(bag, document)` — 関数の入口。`Validator<T extends object>` なので
+- `fromJsonSchema(document)` — 関数の入口。利用者が書く形は
+  `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";`
+  からの `fromJsonSchema<T>(schema, config?)` である
+  （bag を第1引数に取る3引数版は `src/json-schema/build-from-schema.ts` の
+  内部シグネチャで、公開されていない）。`Validator<T extends object>` を返すので
   **オブジェクトを検証する用途に限られる**。
 
 両者を同一部分集合で比べた実測値（インスタンスがプレーンオブジェクトの 289 ケース）:
@@ -70,7 +74,7 @@ Luq には JSON Schema からの入口が **2つ** あり、コーパスは**チ
 | 入口 | 合格 / 289 | 率 |
 |---|---|---|
 | `b.any.jsonSchemaFullFeature(document)` | 238 | 82.35% |
-| `fromJsonSchema(bag, document)` | 229 | 79.24% |
+| `fromJsonSchema(document)` | 229 | 79.24% |
 
 差の 9件は `fromJsonSchema` 側の build 時失敗 49件のうち、
 メソッド経路なら判定できるもの。関数経路は「ゼロに近い」状態ではない
@@ -182,7 +186,12 @@ Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build()
   この4つの追加が 804 → 828（86.54% → 89.13%）の全部である。
 - キーワード束縛が名指すプラグイン: 35。`jsonSchemaFullFeature` が同梱するプラグイン: 49。
 - プラグインカタログ: 76 ディレクトリ（isolated 74 / extension 2）、
-  `package.json#/exports` は 83 キー。
+  `package.json#/exports` は 84 キー
+  （固定 7 + `./plugins/` 配下 77 = カタログの 76 サブパス + 非推奨の別名1）。
+  「プラグインの数」は数え方が2つある: **ディレクトリ / サブパスは 76**、
+  **export されるプラグインオブジェクトは 77**（`objectAdditionalProperties` が
+  2つ export する）。バンドル予算の "all 76 plugins" は前者、
+  docs-site の「77 plugin objects across 76 subpaths」は両方を明示した形である。
   1.x が公開していた 58 サブパスは 1つも失われていない
   （`test/type/public-surface/json-schema.type-test.ts` が型で、
   `test/integration/public-subpath-resolution.test.ts` が実行時で表明する）。

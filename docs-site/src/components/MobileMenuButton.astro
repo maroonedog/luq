@@ -1,15 +1,17 @@
 ---
-// Mobile menu button only - to be placed in Header
+/**
+ * Trailing icon button in the top app bar that opens the modal navigation
+ * drawer. Rendered by Header.astro; the drawer itself is MobileMenuOverlay.
+ */
 ---
 
 <button
   id="mobile-menu-toggle"
   type="button"
-  class="md:hidden p-2 rounded-lg bg-luq-neutral-100 dark:bg-luq-neutral-800 hover:bg-luq-neutral-200 dark:hover:bg-luq-neutral-700 transition-colors"
-  aria-label="Toggle menu"
+  class="md-icon-button md-state-layer md-focus-ring md:hidden"
+  aria-label="Open navigation menu"
   aria-expanded="false"
+  aria-controls="mobile-menu"
 >
-  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-  </svg>
+  <span class="md-icon" aria-hidden="true">menu</span>
 </button>

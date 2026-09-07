@@ -58,6 +58,9 @@ export interface LegacyBuilder {
 }
 
 export interface LegacyEntryPoint {
+  // 1.x's exported factory is spelled `Builder`. Renaming it here would make
+  // this description not describe the thing it exists to describe.
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   Builder(): LegacyBuilder;
 }
 

@@ -23,6 +23,7 @@ import type {
   DocExampleViolation,
 } from "./doc-examples/doc-example.types";
 import { findBrokenLinks } from "./doc-examples/find-broken-links";
+import { readAllAstroExamples } from "./doc-examples/read-astro-examples";
 import { readAllDocExamples } from "./doc-examples/read-doc-examples";
 import {
   typecheckDocExamples,
@@ -35,6 +36,13 @@ export const CHECKED_DOC_ROOTS: readonly string[] = [
   "docs/guide",
   "docs/migration",
 ];
+
+/**
+ * ドキュメントサイトのコード例も同じ検査に掛ける。.astro のフロントマターに
+ * 置かれたテンプレート文字列が実体なので、Markdown とは読み取りだけが違う。
+ * ここを外していた間、サイトは 1.x の `result.isValid()` を載せたまま緑だった。
+ */
+export const CHECKED_ASTRO_ROOTS: readonly string[] = ["docs-site/src"];
 
 function groupByExample(
   diagnostics: readonly ExampleDiagnostic[]
@@ -52,11 +60,13 @@ function describeDiagnostics(
   example: DocExample,
   diagnostics: readonly ExampleDiagnostic[]
 ): string {
+  const preludeLineCount = example.preludeLineCount ?? 0;
   return diagnostics
     .map(
       (diagnostic) =>
-        `${example.file}:${String(example.startLine + diagnostic.line)}: ` +
-        diagnostic.message
+        `${example.file}:${String(
+          example.startLine + diagnostic.line - preludeLineCount
+        )}: ` + diagnostic.message
     )
     .join("\n      ");
 }
@@ -104,9 +114,15 @@ export interface DocExampleReport {
 /** 走査 → import 検査 → 型検査 → 突き合わせ。CLI もテストもここを通る。 */
 export function checkDocExamples(
   repositoryRoot: string,
-  docRoots: readonly string[] = CHECKED_DOC_ROOTS
+  docRoots: readonly string[] = CHECKED_DOC_ROOTS,
+  astroRoots: readonly string[] = CHECKED_ASTRO_ROOTS
 ): DocExampleReport {
-  const scan = readAllDocExamples(repositoryRoot, docRoots);
+  const markdown = readAllDocExamples(repositoryRoot, docRoots);
+  const astro = readAllAstroExamples(repositoryRoot, astroRoots);
+  const scan = {
+    examples: [...markdown.examples, ...astro.examples],
+    violations: [...markdown.violations, ...astro.violations],
+  };
   const importViolations: readonly DocExampleViolation[] =
     findDocImportViolations(repositoryRoot, docRoots).map((violation) => ({
       file: violation.file,

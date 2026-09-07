@@ -26,7 +26,10 @@ export interface MachineDescription {
 /** Everything that changes the meaning of a figure. */
 export interface BenchConditions {
   readonly abortEarly: boolean;
+  /** True of throughput[] and buildCost[]. referenceRatio[] says per record. */
   readonly inputIsAccepted: boolean;
+  /** How the subject gets its argument. Not decoration: see referenceWork[]. */
+  readonly inputRotation: string;
   readonly arrayElementCount: number;
   readonly moduleUnderTest: string;
   readonly sampleCount: number;
@@ -55,6 +58,10 @@ export interface BuildCostRecord {
 
 export interface ReferenceRatioRecord {
   readonly shape: BenchShapeName;
+  /** validate or parse. parse was recorded but never gated until now. */
+  readonly operation: "validate" | "parse";
+  /** false means the pool is rejectedValues: the abortEarly failure path. */
+  readonly inputIsAccepted: boolean;
   readonly luqOpsPerSecond: number;
   readonly referenceOpsPerSecond: number;
   readonly ratio: number;
@@ -66,6 +73,41 @@ export interface ReferenceRatioRecord {
   /** Spread of the interleaved per-pair ratios: what the floor answers to. */
   readonly ratioSpreadPercent: number;
   readonly isQuiet: boolean;
+}
+
+/**
+ * Evidence that the denominator of every ratio above is a program that runs.
+ * Recorded because the alternative is trusting it: the singleField reference
+ * was folded away by V8 for the whole life of the previous baseline, and the
+ * only way to see it in the file was that no figure in the file could show it.
+ */
+export interface ReferenceWorkRecord {
+  readonly shape: BenchShapeName;
+  /** Which pool: the accepted one or the abortEarly rejection one. */
+  readonly inputIsAccepted: boolean;
+  /** The identical rotation with the check replaced by `() => true`. */
+  readonly harnessFloorOpsPerSecond: number;
+  readonly referenceOpsPerSecond: number;
+  /** reference / floor. Anything near 1 means the reference is not running. */
+  readonly shareOfFloor: number;
+  /** Reference cost minus the rotation's own cost. Must be positive. */
+  readonly netNanosecondsPerCall: number;
+}
+
+/**
+ * What the gate actually detects, measured by mutation rather than asserted.
+ * Recorded so that nobody reads a passing gate as "no regression": a floor set
+ * at 75% of a recorded ratio cannot see a regression smaller than a quarter,
+ * and saying so in the file is cheaper than someone rediscovering it.
+ */
+export interface GateSensitivityRecord {
+  readonly method: string;
+  /** Slowdowns at or above this failed every gated pairing when measured. */
+  readonly caughtSlowdownPercent: number;
+  /** Slowdowns at or below this passed most pairings when measured. */
+  readonly missedSlowdownPercent: number;
+  readonly measuredAt: string;
+  readonly detail: readonly string[];
 }
 
 export interface LegacyComparisonRecord {
@@ -88,5 +130,7 @@ export interface PerfBaseline {
   readonly throughput: readonly ThroughputRecord[];
   readonly buildCost: readonly BuildCostRecord[];
   readonly referenceRatio: readonly ReferenceRatioRecord[];
+  readonly referenceWork: readonly ReferenceWorkRecord[];
+  readonly gateSensitivity: GateSensitivityRecord;
   readonly legacyComparison: readonly LegacyComparisonRecord[];
 }
