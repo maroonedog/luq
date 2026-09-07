@@ -1,0 +1,43 @@
+import { Builder } from "../../../../src/index";
+import { objectPropertyNamesPlugin } from "../../../../src/plugins/object-property-names";
+import { probeMinCharsPlugin } from "../../../support/probe-plugins";
+
+type Bag = { readonly metrics: Record<string, number> };
+
+const validator = Builder()
+  .use(objectPropertyNamesPlugin)
+  .use(probeMinCharsPlugin)
+  .for<Bag>()
+  .v("metrics", (b) => b.object.propertyNames((kb) => kb.string.minChars(3)))
+  .build();
+
+describe("objectPropertyNames", () => {
+  // The sub-chain's subject is the KEY, a string, even though the property
+  // VALUES here are numbers.
+  it("constrains the keys and not the values", () => {
+    expect(validator.validate({ metrics: { hits: 1, miss: 2 } }).valid).toBe(
+      true
+    );
+    expect(validator.validate({ metrics: { ok: 1 } }).valid).toBe(false);
+  });
+
+  it("accepts an object with no keys at all", () => {
+    expect(validator.validate({ metrics: {} }).valid).toBe(true);
+  });
+
+  it("names every invalid key under its own code", () => {
+    const result = validator.validate({ metrics: { a: 1, b: 2, long: 3 } });
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      "objectPropertyNames",
+    ]);
+    expect(result.issues.map((issue) => issue.message)).toEqual([
+      "Invalid property names: a,b",
+    ]);
+  });
+
+  // LEGACY BUG: legacy returned false for a non-object, alone among the
+  // object plugins.
+  it("passes a non-object through", () => {
+    expect(validator.validate({ metrics: 3 }).valid).toBe(true);
+  });
+});

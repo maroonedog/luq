@@ -1,10 +1,5 @@
-mod token;
-mod tokenizer;
+pub mod token;
+pub mod chumsky_lexer;
 
-#[cfg(test)]
-mod lexer_test;
-
-pub use token::{Token, TokenKind};
-#[allow(unused_imports)]
-pub use token::Span;
-pub use tokenizer::Lexer;
+pub use token::{Token, TokenKind, Span};
+pub use chumsky_lexer::tokenize;

@@ -1,0 +1,486 @@
+{
+  "recordedAt": "2026-09-07T10:59:45.999Z",
+  "machine": {
+    "cpuModel": "AMD Ryzen 7 5825U with Radeon Graphics",
+    "logicalCores": 16,
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v23.11.0",
+    "totalMemoryGb": 15.3
+  },
+  "conditions": {
+    "abortEarly": true,
+    "inputIsAccepted": true,
+    "inputRotation": "every subject rotates over a pool of at least four distinct values (bench/rotate-over-values.ts); one frozen value let V8 delete the singleField reference outright",
+    "arrayElementCount": 50,
+    "moduleUnderTest": "src/ transpiled by ts-node (CommonJS, ES2020) — not the bundled dist",
+    "sampleCount": 9,
+    "targetSampleMs": 120
+  },
+  "shapes": [
+    {
+      "name": "singleField",
+      "declares": "1 field, 1 presence rule, 1 check (string.required().min(3))"
+    },
+    {
+      "name": "multiField",
+      "declares": "3 fields, 6 plugins (required/stringMin/stringMax/stringEmail/numberMin/numberMax) — 1.x's 'simple' shape"
+    },
+    {
+      "name": "nested",
+      "declares": "4 fields at depth 2-3 (customer.name, customer.address.*)"
+    },
+    {
+      "name": "array",
+      "declares": "array of 50 elements, 3 rules per element plus 2 length rules"
+    },
+    {
+      "name": "jsonSchema",
+      "declares": "Draft-07 document (9 properties, $ref, nested object, array of objects) via fromJsonSchema"
+    }
+  ],
+  "throughput": [
+    {
+      "shape": "singleField",
+      "operation": "validate",
+      "opsPerSecond": 2801628,
+      "relativeSpreadPercent": 3.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "singleField",
+      "operation": "parse",
+      "opsPerSecond": 2617522,
+      "relativeSpreadPercent": 4.1,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "validate",
+      "opsPerSecond": 1073925,
+      "relativeSpreadPercent": 5.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "parse",
+      "opsPerSecond": 1078706,
+      "relativeSpreadPercent": 4.2,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "validate",
+      "opsPerSecond": 707734,
+      "relativeSpreadPercent": 5.4,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "parse",
+      "opsPerSecond": 700829,
+      "relativeSpreadPercent": 2.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "opsPerSecond": 29963,
+      "relativeSpreadPercent": 8.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "parse",
+      "opsPerSecond": 29774,
+      "relativeSpreadPercent": 6.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "validate",
+      "opsPerSecond": 159643,
+      "relativeSpreadPercent": 2.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "parse",
+      "opsPerSecond": 159966,
+      "relativeSpreadPercent": 4.5,
+      "isQuiet": true
+    }
+  ],
+  "buildCost": [
+    {
+      "shape": "singleField",
+      "buildsPerSecond": 70601,
+      "microsecondsPerBuild": 14.16,
+      "validateCallsPerBuild": 35,
+      "costRatioSpreadPercent": 15.4,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "buildsPerSecond": 21068,
+      "microsecondsPerBuild": 47.46,
+      "validateCallsPerBuild": 47,
+      "costRatioSpreadPercent": 13.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "buildsPerSecond": 14678,
+      "microsecondsPerBuild": 68.13,
+      "validateCallsPerBuild": 44,
+      "costRatioSpreadPercent": 11.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "buildsPerSecond": 14210,
+      "microsecondsPerBuild": 70.37,
+      "validateCallsPerBuild": 2,
+      "costRatioSpreadPercent": 14.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "buildsPerSecond": 1511,
+      "microsecondsPerBuild": 661.93,
+      "validateCallsPerBuild": 100,
+      "costRatioSpreadPercent": 5.9,
+      "isQuiet": true
+    }
+  ],
+  "referenceRatio": [
+    {
+      "shape": "singleField",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 2378182,
+      "referenceOpsPerSecond": 74949319,
+      "ratio": 0.0309,
+      "ratioFloor": 0.0231,
+      "luqSpreadPercent": 21.4,
+      "referenceSpreadPercent": 19.4,
+      "ratioSpreadPercent": 14.4,
+      "isQuiet": true
+    },
+    {
+      "shape": "singleField",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 2174649,
+      "referenceOpsPerSecond": 72631544,
+      "ratio": 0.029,
+      "ratioFloor": 0.0223,
+      "luqSpreadPercent": 10,
+      "referenceSpreadPercent": 16.2,
+      "ratioSpreadPercent": 11.2,
+      "isQuiet": true
+    },
+    {
+      "shape": "singleField",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 1526797,
+      "referenceOpsPerSecond": 67855545,
+      "ratio": 0.0224,
+      "ratioFloor": 0.0163,
+      "luqSpreadPercent": 7.7,
+      "referenceSpreadPercent": 12.2,
+      "ratioSpreadPercent": 10.8,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 914459,
+      "referenceOpsPerSecond": 13116198,
+      "ratio": 0.0701,
+      "ratioFloor": 0.0547,
+      "luqSpreadPercent": 6.9,
+      "referenceSpreadPercent": 8.5,
+      "ratioSpreadPercent": 5.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 852562,
+      "referenceOpsPerSecond": 12797382,
+      "ratio": 0.0682,
+      "ratioFloor": 0.0548,
+      "luqSpreadPercent": 11.7,
+      "referenceSpreadPercent": 14.8,
+      "ratioSpreadPercent": 11.5,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 919899,
+      "referenceOpsPerSecond": 16906118,
+      "ratio": 0.056,
+      "ratioFloor": 0.0434,
+      "luqSpreadPercent": 7.9,
+      "referenceSpreadPercent": 8.8,
+      "ratioSpreadPercent": 7.3,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 614403,
+      "referenceOpsPerSecond": 27906384,
+      "ratio": 0.0227,
+      "ratioFloor": 0.0169,
+      "luqSpreadPercent": 6.3,
+      "referenceSpreadPercent": 6.3,
+      "ratioSpreadPercent": 8.3,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 614098,
+      "referenceOpsPerSecond": 26773555,
+      "ratio": 0.0229,
+      "ratioFloor": 0.0174,
+      "luqSpreadPercent": 8,
+      "referenceSpreadPercent": 9.5,
+      "ratioSpreadPercent": 13.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 692162,
+      "referenceOpsPerSecond": 30371169,
+      "ratio": 0.0229,
+      "ratioFloor": 0.0168,
+      "luqSpreadPercent": 5.9,
+      "referenceSpreadPercent": 8.7,
+      "ratioSpreadPercent": 10,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 27322,
+      "referenceOpsPerSecond": 884678,
+      "ratio": 0.031,
+      "ratioFloor": 0.0227,
+      "luqSpreadPercent": 7.4,
+      "referenceSpreadPercent": 8.4,
+      "ratioSpreadPercent": 10.2,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 26867,
+      "referenceOpsPerSecond": 927747,
+      "ratio": 0.029,
+      "ratioFloor": 0.0226,
+      "luqSpreadPercent": 4.7,
+      "referenceSpreadPercent": 4,
+      "ratioSpreadPercent": 3.1,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 36339,
+      "referenceOpsPerSecond": 1190295,
+      "ratio": 0.0304,
+      "ratioFloor": 0.022,
+      "luqSpreadPercent": 7.4,
+      "referenceSpreadPercent": 12.9,
+      "ratioSpreadPercent": 18.3,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 143536,
+      "referenceOpsPerSecond": 908940,
+      "ratio": 0.1565,
+      "ratioFloor": 0.1194,
+      "luqSpreadPercent": 9.6,
+      "referenceSpreadPercent": 2.1,
+      "ratioSpreadPercent": 9.7,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 143943,
+      "referenceOpsPerSecond": 933092,
+      "ratio": 0.1555,
+      "ratioFloor": 0.1182,
+      "luqSpreadPercent": 10.6,
+      "referenceSpreadPercent": 4.7,
+      "ratioSpreadPercent": 11.1,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 290713,
+      "referenceOpsPerSecond": 1471956,
+      "ratio": 0.2004,
+      "ratioFloor": 0.1537,
+      "luqSpreadPercent": 7.6,
+      "referenceSpreadPercent": 12.5,
+      "ratioSpreadPercent": 12.3,
+      "isQuiet": true
+    }
+  ],
+  "referenceWork": [
+    {
+      "shape": "singleField",
+      "inputIsAccepted": true,
+      "harnessFloorOpsPerSecond": 92679806,
+      "referenceOpsPerSecond": 79859338,
+      "shareOfFloor": 0.862,
+      "netNanosecondsPerCall": 1.73
+    },
+    {
+      "shape": "singleField",
+      "inputIsAccepted": false,
+      "harnessFloorOpsPerSecond": 89456096,
+      "referenceOpsPerSecond": 68632887,
+      "shareOfFloor": 0.769,
+      "netNanosecondsPerCall": 3.39
+    },
+    {
+      "shape": "multiField",
+      "inputIsAccepted": true,
+      "harnessFloorOpsPerSecond": 92253743,
+      "referenceOpsPerSecond": 12628268,
+      "shareOfFloor": 0.138,
+      "netNanosecondsPerCall": 68.35
+    },
+    {
+      "shape": "multiField",
+      "inputIsAccepted": false,
+      "harnessFloorOpsPerSecond": 88980532,
+      "referenceOpsPerSecond": 15890222,
+      "shareOfFloor": 0.177,
+      "netNanosecondsPerCall": 51.69
+    },
+    {
+      "shape": "nested",
+      "inputIsAccepted": true,
+      "harnessFloorOpsPerSecond": 96911113,
+      "referenceOpsPerSecond": 27253489,
+      "shareOfFloor": 0.283,
+      "netNanosecondsPerCall": 26.37
+    },
+    {
+      "shape": "nested",
+      "inputIsAccepted": false,
+      "harnessFloorOpsPerSecond": 96779388,
+      "referenceOpsPerSecond": 31740069,
+      "shareOfFloor": 0.333,
+      "netNanosecondsPerCall": 21.17
+    },
+    {
+      "shape": "array",
+      "inputIsAccepted": true,
+      "harnessFloorOpsPerSecond": 94872575,
+      "referenceOpsPerSecond": 899341,
+      "shareOfFloor": 0.01,
+      "netNanosecondsPerCall": 1101.38
+    },
+    {
+      "shape": "array",
+      "inputIsAccepted": false,
+      "harnessFloorOpsPerSecond": 96877271,
+      "referenceOpsPerSecond": 1215785,
+      "shareOfFloor": 0.013,
+      "netNanosecondsPerCall": 812.19
+    },
+    {
+      "shape": "jsonSchema",
+      "inputIsAccepted": true,
+      "harnessFloorOpsPerSecond": 92997277,
+      "referenceOpsPerSecond": 896050,
+      "shareOfFloor": 0.01,
+      "netNanosecondsPerCall": 1105.26
+    },
+    {
+      "shape": "jsonSchema",
+      "inputIsAccepted": false,
+      "harnessFloorOpsPerSecond": 93081710,
+      "referenceOpsPerSecond": 1442655,
+      "shareOfFloor": 0.016,
+      "netNanosecondsPerCall": 682.42
+    }
+  ],
+  "gateSensitivity": {
+    "method": "each shape's validator wrapped so N of every 20 calls run twice and the two outcomes are compared; every gated pairing then measured against its recorded floor",
+    "caughtSlowdownPercent": 35,
+    "missedSlowdownPercent": 15,
+    "measuredAt": "2026-09-07 on the machine named in `machine`, one run per level",
+    "detail": [
+      "+100% slower: 15/15 pairings below floor",
+      "+60% slower: 15/15 below floor",
+      "+35% slower: 14/15 below floor (jsonSchema validate/accepted passed at 0.1202 against a floor of 0.1194)",
+      "+25% slower: 3/15 below floor — the build still goes red, but on three pairings out of fifteen",
+      "+15% slower: 0/15 below floor. A regression this size does not move any number in this file.",
+      "+0%: 0/15 below floor, so the levels above are the mutation and not the noise"
+    ]
+  },
+  "legacyComparison": [
+    {
+      "shape": "singleField",
+      "legacyOpsPerSecond": 25660195,
+      "currentOpsPerSecond": 2724339,
+      "speedup": 0.11,
+      "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
+    },
+    {
+      "shape": "multiField",
+      "legacyOpsPerSecond": 3059093,
+      "currentOpsPerSecond": 1069167,
+      "speedup": 0.35,
+      "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
+    },
+    {
+      "shape": "nested",
+      "legacyOpsPerSecond": 2215768,
+      "currentOpsPerSecond": 708461,
+      "speedup": 0.32,
+      "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
+    },
+    {
+      "shape": "array",
+      "legacyOpsPerSecond": 18941,
+      "currentOpsPerSecond": 29629,
+      "speedup": 1.57,
+      "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
+    },
+    {
+      "shape": "jsonSchema",
+      "legacyOpsPerSecond": 138809,
+      "currentOpsPerSecond": 152536,
+      "speedup": 1.09,
+      "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
+    }
+  ]
+}

@@ -3,320 +3,709 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import CodeBlock from '../components/CodeBlock.astro';
 
-// Benchmark data
-const bundleSizeData = [
-  { library: 'AJV Standalone', simple: 1.03, complex: 4.63, notes: 'Pre-compiled validation' },
-  { library: 'Valibot', simple: 1.31, complex: 2.49, notes: 'Modular design' },
-  { library: 'Yup', simple: 12.80, complex: 13.40, notes: 'Simple API' },
-  { library: 'Luq', simple: 19.10, complex: 22.48, notes: 'Tree-shakeable plugins', highlight: true },
-  { library: 'Luq (JsonSchema)', simple: 26.06, complex: 29.08, notes: 'JSON Schema with individual plugins' },
-  { library: 'Luq (JsonSchema Full)', simple: 31.75, complex: 32.31, notes: 'All JSON Schema features' },
-  { library: 'AJV', simple: 37.78, complex: 38.33, notes: 'Full JSON Schema' },
-  { library: 'Joi', simple: 44.44, complex: 45.00, notes: 'Server-focused' },
-  { library: 'Zod', simple: 47.45, complex: 48.12, notes: 'Feature-rich' }
+/**
+ * Every figure on this page is imported from the recorded measurement files, so
+ * a number here cannot drift from the number CI reads:
+ *
+ *   config/perf-baseline.json   written by `npm run bench:record`
+ *   config/size-budget.json     re-measured by `npm run check:size`
+ *
+ * Nothing is typed in by hand except the arithmetic derived below, and the
+ * conformance figures, which come from docs/json-schema-conformance.md.
+ *
+ * There are no competitor numbers on this page. This repository does not
+ * measure AJV, Zod, Valibot, Yup or Joi, so publishing a table of them would be
+ * publishing figures nobody here re-ran. The comparators that ARE measured are
+ * a hand-written validator in the same process, and Luq 1.x's own source.
+ */
+import perfBaseline from '../../../config/perf-baseline.json';
+import sizeBudget from '../../../config/size-budget.json';
+
+const machine = perfBaseline.machine;
+const conditions = perfBaseline.conditions;
+
+const shapeLabels: Record<string, string> = {
+  singleField: '1 field, 1 check',
+  multiField: '3 fields, 6 plugins',
+  nested: 'nested, depth 2–3',
+  array: 'array of 50 elements',
+  jsonSchema: 'JSON Schema document',
+};
+
+const shapeOrder = ['singleField', 'multiField', 'nested', 'array', 'jsonSchema'] as const;
+
+const throughputByShape = shapeOrder.map((shape) => {
+  const declares = perfBaseline.shapes.find((entry) => entry.name === shape)?.declares ?? '';
+  const find = (operation: string) =>
+    perfBaseline.throughput.find(
+      (entry) => entry.shape === shape && entry.operation === operation
+    );
+  return {
+    shape,
+    label: shapeLabels[shape],
+    declares,
+    validate: find('validate'),
+    parse: find('parse'),
+  };
+});
+
+const fastestValidate = Math.max(
+  ...throughputByShape.map((row) => row.validate?.opsPerSecond ?? 0)
+);
+
+const legacyRows = shapeOrder.map((shape) => {
+  const entry = perfBaseline.legacyComparison.find((row) => row.shape === shape);
+  return { shape, label: shapeLabels[shape], entry };
+});
+
+const buildCostRows = shapeOrder.map((shape) => {
+  const entry = perfBaseline.buildCost.find((row) => row.shape === shape);
+  return { shape, label: shapeLabels[shape], entry };
+});
+
+const gatedRows = perfBaseline.referenceRatio.filter((row) => row.inputIsAccepted);
+
+/**
+ * The measured bytes, the ceilings and the ids all come from the JSON. Only the
+ * prose is written here, because `size-budget.json` describes each entry in
+ * Japanese and this site is in English. No figure is retyped.
+ */
+const budgetDescriptions: Record<string, string> = {
+  'core-only': 'Builder alone. The floor a reader pays before importing a single plugin.',
+  'one-plugin': 'Builder + required. The point that shows what one plugin costs.',
+  'three-plugin':
+    'Builder + required / stringMin / numberMin. The same set the barrel-equivalence check uses.',
+  'six-plugin':
+    "Builder + the six plugins of 1.x's own “simple” comparison. The direct comparison for the 19–23 KB claim.",
+  'full-feature':
+    'Builder + every plugin in the catalogue, including the two JSON Schema extensions. The ceiling of everything.',
+};
+
+const budgets = sizeBudget.budgets;
+const budgetById = (id: string) => budgets.find((entry) => entry.id === id);
+const coreOnly = budgetById('core-only');
+const sixPlugin = budgetById('six-plugin');
+const fullFeature = budgetById('full-feature');
+
+const coreBytes = coreOnly?.recordedGzipBytes ?? 0;
+const sixBytes = sixPlugin?.recordedGzipBytes ?? 0;
+const fullBytes = fullFeature?.recordedGzipBytes ?? 0;
+
+// Derived arithmetic, from the imported figures only.
+const coreShareOfFullPercent = ((coreBytes / fullBytes) * 100).toFixed(1);
+const sixPluginDeltaBytes = sixBytes - coreBytes;
+const averageBytesPerPlugin = Math.round(sixPluginDeltaBytes / 6);
+const coreVersusLegacy = ((sizeBudget.legacyBaseline.coreOnlyGzipBytes / coreBytes)).toFixed(1);
+
+/**
+ * The three JSON Schema entry points are not budget rows — they are measured
+ * with the same esbuild + gzip method and recorded in docs/guide/json-schema.md
+ * and the README's size table.
+ */
+const jsonSchemaEntries = [
+  {
+    entry: 'Builder + jsonSchemaPlugin, no bag',
+    gzipBytes: 18992,
+    note: 'Not a configuration you can validate with — .jsonSchema() needs a bag.',
+  },
+  {
+    entry: 'Builder + jsonSchemaPlugin + a working 49-plugin bag',
+    gzipBytes: 21371,
+    note: 'The smallest usable JSON Schema build.',
+  },
+  {
+    entry: 'Builder + jsonSchemaFullFeaturePlugin',
+    gzipBytes: 21383,
+    note: 'One import. 12 B — 0.06% — larger than the row above.',
+  },
 ];
 
-const simplePerformanceData = [
-  { library: 'AJV Standalone', ops: 3176536, relative: 457.3, csp: true, dynamic: false },
-  { library: 'AJV', ops: 2640781, relative: 380.1, csp: false, dynamic: true },
-  { library: 'Luq (JsonSchema)', ops: 1498347, relative: 215.7, csp: true, dynamic: true },
-  { library: 'Luq (JsonSchema Full)', ops: 1403639, relative: 202.1, csp: true, dynamic: true },
-  { library: 'Valibot', ops: 1016119, relative: 146.3, csp: true, dynamic: true },
-  { library: 'Luq', ops: 694692, relative: 100.0, csp: true, dynamic: true, highlight: true },
-  { library: 'Zod', ops: 623385, relative: 89.7, csp: true, dynamic: true },
-  { library: 'Joi', ops: 171594, relative: 24.7, csp: true, dynamic: true },
-  { library: 'Yup', ops: 135276, relative: 19.5, csp: true, dynamic: true }
-];
+const bytes = (value: number) => `${value.toLocaleString('en-US')} B`;
+const ops = (value: number) => value.toLocaleString('en-US');
+const barWidth = (value: number, max: number) => Math.max(1.5, (value / max) * 100);
 
-const complexPerformanceData = [
-  { library: 'AJV', ops: 215535, relative: 599.6, csp: false, dynamic: true },
-  { library: 'AJV Standalone', ops: 192183, relative: 534.6, csp: true, dynamic: false },
-  { library: 'Valibot', ops: 170637, relative: 474.7, csp: true, dynamic: true },
-  { library: 'Zod', ops: 66448, relative: 184.9, csp: true, dynamic: true },
-  { library: 'Luq', ops: 35946, relative: 100.0, csp: true, dynamic: true, highlight: true },
-  { library: 'Luq (JsonSchema Full)', ops: 25605, relative: 71.2, csp: true, dynamic: true },
-  { library: 'Luq (JsonSchema)', ops: 24119, relative: 67.1, csp: true, dynamic: true },
-  { library: 'Joi', ops: 23324, relative: 64.9, csp: true, dynamic: true },
-  { library: 'Yup', ops: 6419, relative: 17.9, csp: true, dynamic: true }
-];
+const reproduceCommands = `# Speed — rewrites config/perf-baseline.json
+npm run bench:record
 
-function formatNumber(num: number): string {
-  return num.toLocaleString('en-US');
-}
+# Bundle size — fails the build if any entry exceeds its ceiling
+npm run check:size
 
-function getBarWidth(value: number, max: number): number {
-  return Math.max(5, (value / max) * 100);
-}
+# CSP — greps every emitted .js/.mjs for eval and new Function
+npm run check:no-dynamic-code`;
+
 ---
 
-<BaseLayout title="Benchmarks - Luq">
+<BaseLayout
+  title="Benchmarks"
+  description="Measured bundle size and throughput for Luq, taken from config/perf-baseline.json and config/size-budget.json — including the shapes where this release is slower than 1.x."
+>
   <Header />
   <MobileMenuOverlay navItems={navItems} />
-  <main class="container mx-auto px-4 py-16 max-w-7xl">
-    <!-- Hero Section -->
-    <div class="text-center mb-16">
-      <h1 class="text-5xl font-bold mb-6 bg-gradient-to-r from-luq-purple-600 to-luq-teal-500 bg-clip-text text-transparent">
-        Performance Benchmarks
-      </h1>
-      <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 max-w-3xl mx-auto">
-        Real-world performance metrics and bundle size comparisons for TypeScript validation libraries
+
+  <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+    <!-- ================= Hero ================= -->
+    <header class="mb-12">
+      <p class="mb-2 text-label-large text-primary">Measured, not claimed</p>
+      <h1 class="mb-4 text-display-small text-on-surface">Benchmarks</h1>
+      <p class="max-w-3xl text-body-large text-on-surface-variant">
+        Every number below was produced by a script in this repository and is read back by CI.
+        Where a measurement is worse than the 1.x release, it is on this page as worse. There are
+        no third-party comparisons here, because this repository does not measure other libraries.
       </p>
-      <div class="mt-8 flex flex-wrap justify-center gap-4">
-        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
-          <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Bundle Size</span>
-          <p class="text-2xl font-bold text-luq-purple-600 dark:text-luq-purple-400">19-23KB</p>
+
+      <dl class="mt-8 grid gap-4 sm:grid-cols-3">
+        <div class="md-card md-card-filled p-5">
+          <dt class="text-label-medium text-on-surface-variant">Bundle floor, gzipped</dt>
+          <dd class="mt-1 text-headline-small text-on-surface">{bytes(coreBytes)}</dd>
+          <dd class="mt-1 text-body-small text-on-surface-variant">
+            <code>Builder</code> with zero plugins
+          </dd>
         </div>
-        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
-          <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">Speed (Simple)</span>
-          <p class="text-2xl font-bold text-luq-purple-600 dark:text-luq-purple-400">695K ops/sec</p>
+        <div class="md-card md-card-filled p-5">
+          <dt class="text-label-medium text-on-surface-variant">3 fields, 6 plugins</dt>
+          <dd class="mt-1 text-headline-small text-on-surface">
+            {ops(throughputByShape[1].validate?.opsPerSecond ?? 0)}
+          </dd>
+          <dd class="mt-1 text-body-small text-on-surface-variant">
+            <code>validate</code> ops/sec on the machine below
+          </dd>
         </div>
-        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 px-6 py-3 rounded-lg">
-          <span class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">CSP Safe</span>
-          <p class="text-2xl font-bold text-green-600 dark:text-green-400">✓ Always</p>
+        <div class="md-card md-card-filled p-5">
+          <dt class="text-label-medium text-on-surface-variant">Dynamic code</dt>
+          <dd class="mt-1 text-headline-small text-on-surface">0 occurrences</dd>
+          <dd class="mt-1 text-body-small text-on-surface-variant">
+            across 762 emitted <code>.js</code> / <code>.mjs</code> files
+          </dd>
         </div>
+      </dl>
+    </header>
+
+    <!-- ================= Honesty ================= -->
+    <section id="honesty" class="mb-16 scroll-mt-24">
+      <div class="md-card md-card-outlined p-6">
+        <h2 class="mb-3 flex items-center gap-2 text-title-large text-on-surface">
+          <span class="md-icon text-primary" aria-hidden="true">priority_high</span>
+          Read this first
+        </h2>
+        <ul class="space-y-3 text-body-medium text-on-surface-variant">
+          <li>
+            <strong class="text-on-surface">This release is slower than 1.x on flat and nested
+            shapes.</strong> Measured side by side in one process:
+            ×{legacyRows[0].entry?.speedup} on one field, ×{legacyRows[1].entry?.speedup} on three,
+            ×{legacyRows[2].entry?.speedup} nested. The two wins are arrays
+            (×{legacyRows[3].entry?.speedup}) and JSON Schema (×{legacyRows[4].entry?.speedup}).
+            <a class="text-primary underline underline-offset-2" href="#against-1x">The table is below.</a>
+          </li>
+          <li>
+            <strong class="text-on-surface">Neither speed figure 1.x published reproduces here.</strong>
+            Its README claimed 1.2M ops/sec simple and 43K complex. On this machine 1.x itself does
+            {ops(legacyRows[1].entry?.legacyOpsPerSecond ?? 0)} on the shape rebuilt from its own
+            &ldquo;simple&rdquo; benchmark source, and &ldquo;complex&rdquo; has no reproducible
+            definition left to measure. Both old claims are gone from this site rather than carried
+            forward.
+          </li>
+          <li>
+            <strong class="text-on-surface">No competitor tables.</strong> The 1.x version of this
+            page ranked Luq against AJV, Zod, Valibot, Yup and Joi. Those were third-party figures
+            this repository never re-ran, so they are not republished. What is measured instead: a
+            hand-written validator in the same process, and 1.x's own source.
+          </li>
+          <li>
+            <strong class="text-on-surface">The subject is <code>src/</code>, not the bundle.</strong>
+            Speed is measured on {conditions.moduleUnderTest}.
+          </li>
+        </ul>
       </div>
-    </div>
+    </section>
 
-    <!-- Key Insights -->
-    <div class="mb-16 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
-      <h2 class="text-lg font-semibold text-amber-800 dark:text-amber-300 mb-3">Key Insights</h2>
-      <ul class="space-y-2 text-amber-700 dark:text-amber-400">
-        <li class="flex items-start gap-2">
-          <span class="text-amber-600 dark:text-amber-500 mt-1">•</span>
-          <span><strong>AJV's speed comes at a cost:</strong> Uses <code>new Function()</code> which fails in CSP-restricted environments</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-amber-600 dark:text-amber-500 mt-1">•</span>
-          <span><strong>AJV Standalone limitations:</strong> Requires build-time compilation, can't adapt to dynamic schemas</span>
-        </li>
-        <li class="flex items-start gap-2">
-          <span class="text-amber-600 dark:text-amber-500 mt-1">•</span>
-          <span><strong>Luq's balance:</strong> Works everywhere, reasonable performance, dynamic validation support</span>
-        </li>
-      </ul>
-    </div>
+    <!-- ================= Bundle size ================= -->
+    <section id="bundle-size" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Bundle size</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        {sizeBudget.method.bundler}, <code>bundle + minify + esm + es2020 + platform:neutral +
+        treeShaking</code>, then <code>zlib.gzipSync</code> — the same options 1.x's own
+        <code>bundle-size-comparison</code> used, so the two columns are comparable. Recorded
+        {sizeBudget.recorded.date} on Node {sizeBudget.recorded.node}. The ceiling is the gate;
+        the recorded figure is the evidence behind it.
+      </p>
 
-    <!-- Bundle Size Comparison -->
-    <section class="mb-16">
-      <h2 class="text-3xl font-bold mb-8">Bundle Size Comparison (gzipped)</h2>
-      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
+      <div class="md-card md-card-outlined overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full">
+          <table class="w-full min-w-[46rem] border-collapse text-body-medium">
             <thead>
-              <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                <th class="text-left py-3 px-4">Library</th>
-                <th class="text-right py-3 px-4">Simple Schema</th>
-                <th class="text-right py-3 px-4">Complex Schema</th>
-                <th class="text-left py-3 px-4">Notes</th>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Entry</th>
+                <th class="px-4 py-3 text-right font-medium">gzip</th>
+                <th class="px-4 py-3 text-right font-medium">CI ceiling</th>
+                <th class="px-4 py-3 text-right font-medium">1.x, same method</th>
               </tr>
             </thead>
             <tbody>
-              {bundleSizeData.map((item) => (
-                <tr class={`border-b border-luq-neutral-100 dark:border-luq-neutral-700 ${item.highlight ? 'bg-luq-purple-50 dark:bg-luq-purple-900/20' : ''}`}>
-                  <td class="py-3 px-4 font-medium">{item.library}</td>
-                  <td class="text-right py-3 px-4">
-                    <span class="font-mono">{item.simple.toFixed(2)} KB</span>
-                  </td>
-                  <td class="text-right py-3 px-4">
-                    <span class="font-mono">{item.complex.toFixed(2)} KB</span>
-                  </td>
-                  <td class="py-3 px-4 text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                    {item.notes}
-                  </td>
-                </tr>
-              ))}
+              {
+                budgets.map((budget) => (
+                  <tr class="border-b border-outline-variant/60 last:border-0">
+                    <td class="px-4 py-3 align-top">
+                      <span class="text-on-surface">{budget.id}</span>
+                      <span class="mt-0.5 block text-body-small text-on-surface-variant">
+                        {budgetDescriptions[budget.id]}
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface">
+                      {bytes(budget.recordedGzipBytes)}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface-variant">
+                      {bytes(budget.gzipCeilingBytes)}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface-variant">
+                      {budget.legacyGzipBytes ? bytes(budget.legacyGzipBytes) : '—'}
+                    </td>
+                  </tr>
+                ))
+              }
             </tbody>
           </table>
         </div>
       </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <div class="md-card md-card-filled p-5">
+          <p class="text-title-medium text-on-surface">{coreShareOfFullPercent}%</p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            of the all-plugins build is the core. 1.x's core was {coreVersusLegacy}× heavier than
+            this one in absolute bytes, and 89.1% of its own &ldquo;simple&rdquo; figure.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-5">
+          <p class="text-title-medium text-on-surface">~{bytes(averageBytesPerPlugin)}</p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            per plugin on average across the first six ({bytes(sixPluginDeltaBytes)} for all six).
+            You pay for what you import.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-5">
+          <p class="text-title-medium text-on-surface">
+            {bytes(sizeBudget.crossCheckAgainstDist.coreOnlyGzipBytes)}
+          </p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            the same core measured from the built <code>dist/</code> instead of
+            <code>src/</code> — 8 B apart, which is why measuring the source is fair.
+          </p>
+        </div>
+      </div>
+
+      <p class="mt-6 max-w-3xl text-body-medium text-on-surface-variant">
+        One row is <strong class="text-on-surface">not</strong> a win: all 76 plugins at
+        {bytes(fullBytes)} is larger than the {bytes(sizeBudget.legacyBaseline.complexGzipBytes)}
+        1.x published for its <code>complex</code> case. The two are not comparable — 1.x's figure
+        was one schema's plugin set, not its whole catalogue — so it is not counted either way.
+      </p>
     </section>
 
-    <!-- Performance Comparison - Simple Schema -->
-    <section class="mb-16">
-      <h2 class="text-3xl font-bold mb-8">Performance - Simple Schema</h2>
-      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
-        <div class="space-y-4">
-          {simplePerformanceData.map((item) => (
-            <div class={`${item.highlight ? 'ring-2 ring-luq-purple-500 rounded-lg p-2' : ''}`}>
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-4">
-                  <span class="font-medium min-w-[180px]">{item.library}</span>
-                  <div class="flex gap-2">
-                    {item.csp ? (
-                      <span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded">CSP ✓</span>
-                    ) : (
-                      <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded">CSP ✗</span>
-                    )}
-                    {item.dynamic ? (
-                      <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded">Dynamic ✓</span>
-                    ) : (
-                      <span class="px-2 py-1 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400 text-xs rounded">Static only</span>
-                    )}
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="font-mono text-sm">{formatNumber(item.ops)} ops/sec</span>
-                  <span class="text-xs text-luq-neutral-500 ml-2">({item.relative}x)</span>
-                </div>
-              </div>
-              <div class="w-full bg-luq-neutral-200 dark:bg-luq-neutral-700 rounded-full h-2">
-                <div 
-                  class={`h-2 rounded-full transition-all ${
-                    item.highlight 
-                      ? 'bg-gradient-to-r from-luq-purple-500 to-luq-teal-500' 
-                      : 'bg-luq-neutral-400'
-                  }`}
-                  style={`width: ${getBarWidth(item.ops, 3176536)}%`}
-                ></div>
-              </div>
-            </div>
-          ))}
+    <!-- ================= JSON Schema size ================= -->
+    <section id="json-schema-size" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">JSON Schema entry points</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        Same esbuild and gzip method. <code>@maroonedog/luq/plugins/jsonSchema</code> is billed as
+        the tree-shakeable half of the JSON Schema story. Measured, it is not.
+      </p>
+
+      <div class="md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[42rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Entry</th>
+                <th class="px-4 py-3 text-right font-medium">gzip</th>
+                <th class="px-4 py-3 text-left font-medium">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                jsonSchemaEntries.map((row) => (
+                  <tr class="border-b border-outline-variant/60 last:border-0">
+                    <td class="px-4 py-3 font-mono text-body-small text-on-surface">{row.entry}</td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface">
+                      {bytes(row.gzipBytes)}
+                    </td>
+                    <td class="px-4 py-3 text-on-surface-variant">{row.note}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
         </div>
+      </div>
+
+      <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
+        Use <code>jsonSchemaFullFeature</code>. Reach for
+        <code>./plugins/jsonSchema</code> when you want the per-field chain method — not to save
+        bytes. <a class="text-primary underline underline-offset-2" href="/json-schema">Both doors
+        are explained on the JSON Schema page.</a>
+      </p>
+    </section>
+
+    <!-- ================= Throughput ================= -->
+    <section id="throughput" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Throughput</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        Recorded {perfBaseline.recordedAt.slice(0, 10)}. Each figure is the median of the fastest
+        half of {conditions.sampleCount} samples;
+        <code>abortEarly: {String(conditions.abortEarly)}</code> with input the validator accepts,
+        so no rule is skipped. The relative spread on every figure is in the last column — treat
+        differences smaller than that as noise.
+      </p>
+
+      <div class="md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[48rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Shape</th>
+                <th class="px-4 py-3 text-right font-medium">validate ops/sec</th>
+                <th class="px-4 py-3 text-right font-medium">parse ops/sec</th>
+                <th class="px-4 py-3 text-right font-medium">spread</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                throughputByShape.map((row) => (
+                  <tr class="border-b border-outline-variant/60 last:border-0">
+                    <td class="px-4 py-3 align-top">
+                      <span class="text-on-surface">{row.label}</span>
+                      <span class="mt-0.5 block text-body-small text-on-surface-variant">
+                        {row.declares}
+                      </span>
+                      <span class="mt-2 block h-1.5 w-full overflow-hidden rounded-shape-full bg-outline-variant">
+                        <span
+                          class="block h-full rounded-shape-full bg-primary"
+                          style={`width: ${barWidth(row.validate?.opsPerSecond ?? 0, fastestValidate)}%`}
+                        />
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right align-top font-mono text-on-surface">
+                      {ops(row.validate?.opsPerSecond ?? 0)}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right align-top font-mono text-on-surface">
+                      {ops(row.parse?.opsPerSecond ?? 0)}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right align-top font-mono text-on-surface-variant">
+                      ±{row.validate?.relativeSpreadPercent}%
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
+        <code>parse</code> and <code>validate</code> land within each other's spread on every
+        shape: transforms run last and only in <code>parse</code>, and these shapes declare none.
+      </p>
+    </section>
+
+    <!-- ================= Against 1.x ================= -->
+    <section id="against-1x" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Against 1.x</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        1.x's source and this source, both transpiled the same way, interleaved sample by sample in
+        one process on one machine. 1.x carried a directory of specialised fast paths that this
+        implementation has no equivalent of, and on flat shapes that is what the numbers show.
+      </p>
+
+      <div class="md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[42rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Shape</th>
+                <th class="px-4 py-3 text-right font-medium">1.x</th>
+                <th class="px-4 py-3 text-right font-medium">this release</th>
+                <th class="px-4 py-3 text-right font-medium">ratio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                legacyRows.map((row) => {
+                  const isRegression = (row.entry?.speedup ?? 1) < 1;
+                  return (
+                    <tr class="border-b border-outline-variant/60 last:border-0">
+                      <td class="px-4 py-3 text-on-surface">{row.label}</td>
+                      <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface-variant">
+                        {ops(row.entry?.legacyOpsPerSecond ?? 0)}
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface">
+                        {ops(row.entry?.currentOpsPerSecond ?? 0)}
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-3 text-right">
+                        <span
+                          class:list={[
+                            'inline-flex h-7 items-center rounded-shape-full px-3 text-label-large font-mono',
+                            isRegression
+                              ? 'bg-error-container text-on-error-container'
+                              : 'bg-tertiary-container text-on-tertiary-container',
+                          ]}
+                        >
+                          ×{row.entry?.speedup}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
+        The result was checked for measurement artefacts before it was published: rotating distinct
+        inputs instead of one frozen object changed nothing, and 1.x demonstrably rejects bad values
+        on all five shapes, so it is not doing less work. It is simply faster on the flat cases.
+      </p>
+    </section>
+
+    <!-- ================= Build cost ================= -->
+    <section id="build-cost" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">What <code>build()</code> costs</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        <code>build()</code> compiles the plan once; <code>validate()</code> walks it. Build a
+        validator at module scope and reuse it — the last column is how many <code>validate()</code>
+        calls it takes for one <code>build()</code> to have paid for itself.
+      </p>
+
+      <div class="md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[42rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Shape</th>
+                <th class="px-4 py-3 text-right font-medium">µs per build()</th>
+                <th class="px-4 py-3 text-right font-medium">builds/sec</th>
+                <th class="px-4 py-3 text-right font-medium">breaks even after</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                buildCostRows.map((row) => (
+                  <tr class="border-b border-outline-variant/60 last:border-0">
+                    <td class="px-4 py-3 text-on-surface">{row.label}</td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface">
+                      {row.entry?.microsecondsPerBuild}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface-variant">
+                      {ops(row.entry?.buildsPerSecond ?? 0)}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface">
+                      {row.entry?.validateCallsPerBuild} calls
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
+        The 50-element array breaks even after 2 calls only because <code>validate()</code> itself
+        costs about 33&nbsp;µs there. The JSON Schema document is the expensive build:
+        {buildCostRows[4].entry?.microsecondsPerBuild}&nbsp;µs, because converting a document is
+        real work — done once.
+      </p>
+    </section>
+
+    <!-- ================= The gate ================= -->
+    <section id="the-gate" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">What CI actually gates on</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        Not an absolute ops/sec — a CI runner's speed varies too much for that to mean anything.
+        The gate is the <strong class="text-on-surface">ratio</strong> between Luq and a
+        hand-written validator measured in the same process on the same inputs, so the runner's
+        speed cancels out. If the ratio drops below the recorded floor, the build goes red.
+      </p>
+
+      <div class="md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[44rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Shape</th>
+                <th class="px-4 py-3 text-left font-medium">Operation</th>
+                <th class="px-4 py-3 text-right font-medium">ratio to hand-written</th>
+                <th class="px-4 py-3 text-right font-medium">floor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                gatedRows.map((row) => (
+                  <tr class="border-b border-outline-variant/60 last:border-0">
+                    <td class="px-4 py-3 text-on-surface">{shapeLabels[row.shape]}</td>
+                    <td class="px-4 py-3 font-mono text-body-small text-on-surface-variant">
+                      {row.operation}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface">
+                      {row.ratio}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-on-surface-variant">
+                      {row.ratioFloor}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-6 md-card md-card-filled p-6">
+        <h3 class="mb-2 text-title-medium text-on-surface">How sensitive is that gate?</h3>
+        <p class="mb-3 text-body-medium text-on-surface-variant">
+          Measured by deliberately slowing every shape down and watching what the gate does
+          ({perfBaseline.gateSensitivity.method}):
+        </p>
+        <ul class="space-y-1.5 text-body-medium text-on-surface-variant">
+          {
+            perfBaseline.gateSensitivity.detail.map((line) => (
+              <li class="flex gap-2">
+                <span class="mt-1.5 h-1 w-1 flex-shrink-0 rounded-shape-full bg-outline" />
+                <span>{line}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="mt-4 text-body-medium text-on-surface">
+          So: a slowdown of {perfBaseline.gateSensitivity.caughtSlowdownPercent}% is caught, and one
+          of {perfBaseline.gateSensitivity.missedSlowdownPercent}% is not. That is the honest
+          resolution of this gate, and it is written down rather than assumed.
+        </p>
       </div>
     </section>
 
-    <!-- Performance Comparison - Complex Schema -->
-    <section class="mb-16">
-      <h2 class="text-3xl font-bold mb-8">Performance - Complex Schema</h2>
-      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
-        <div class="space-y-4">
-          {complexPerformanceData.map((item) => (
-            <div class={`${item.highlight ? 'ring-2 ring-luq-purple-500 rounded-lg p-2' : ''}`}>
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-4">
-                  <span class="font-medium min-w-[180px]">{item.library}</span>
-                  <div class="flex gap-2">
-                    {item.csp ? (
-                      <span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded">CSP ✓</span>
-                    ) : (
-                      <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded">CSP ✗</span>
-                    )}
-                    {item.dynamic ? (
-                      <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded">Dynamic ✓</span>
-                    ) : (
-                      <span class="px-2 py-1 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400 text-xs rounded">Static only</span>
-                    )}
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="font-mono text-sm">{formatNumber(item.ops)} ops/sec</span>
-                  <span class="text-xs text-luq-neutral-500 ml-2">({item.relative}x)</span>
-                </div>
-              </div>
-              <div class="w-full bg-luq-neutral-200 dark:bg-luq-neutral-700 rounded-full h-2">
-                <div 
-                  class={`h-2 rounded-full transition-all ${
-                    item.highlight 
-                      ? 'bg-gradient-to-r from-luq-purple-500 to-luq-teal-500' 
-                      : 'bg-luq-neutral-400'
-                  }`}
-                  style={`width: ${getBarWidth(item.ops, 215535)}%`}
-                ></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <!-- ================= Method ================= -->
+    <section id="method" class="mb-16 scroll-mt-24">
+      <h2 class="mb-6 text-headline-medium text-on-surface">Method</h2>
 
-    <!-- Use Case Recommendations -->
-    <section class="mb-16">
-      <h2 class="text-3xl font-bold mb-8">Which Library Should You Choose?</h2>
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="bg-gradient-to-br from-luq-purple-50 to-luq-teal-50 dark:from-luq-purple-900/20 dark:to-luq-teal-900/20 rounded-lg p-6">
-          <h3 class="text-xl font-bold mb-4 text-luq-purple-600 dark:text-luq-purple-400">Choose Luq if you need:</h3>
-          <ul class="space-y-2">
-            <li class="flex items-start gap-2">
-              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
-              <span>CSP-restricted environments (no eval/Function)</span>
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="md-card md-card-outlined p-6">
+          <h3 class="mb-3 text-title-medium text-on-surface">Machine</h3>
+          <dl class="space-y-2 text-body-medium">
+            <div class="flex justify-between gap-4">
+              <dt class="text-on-surface-variant">CPU</dt>
+              <dd class="text-right text-on-surface">{machine.cpuModel}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-on-surface-variant">Logical cores</dt>
+              <dd class="text-on-surface">{machine.logicalCores}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-on-surface-variant">Memory</dt>
+              <dd class="text-on-surface">{machine.totalMemoryGb} GB</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-on-surface-variant">Node</dt>
+              <dd class="font-mono text-on-surface">{machine.nodeVersion}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-on-surface-variant">Platform</dt>
+              <dd class="font-mono text-on-surface">{machine.platform} / {machine.arch}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-on-surface-variant">Recorded</dt>
+              <dd class="font-mono text-on-surface">{perfBaseline.recordedAt.slice(0, 10)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="md-card md-card-outlined p-6">
+          <h3 class="mb-3 text-title-medium text-on-surface">Conditions</h3>
+          <ul class="space-y-2 text-body-medium text-on-surface-variant">
+            <li>
+              <span class="text-on-surface">Subject:</span> {conditions.moduleUnderTest}
             </li>
-            <li class="flex items-start gap-2">
-              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
-              <span>Dynamic schema loading from API/CMS</span>
+            <li>
+              <span class="text-on-surface">Samples:</span> {conditions.sampleCount}, each targeting
+              {' '}{conditions.targetSampleMs} ms; the reported figure is the median of the fastest half
             </li>
-            <li class="flex items-start gap-2">
-              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
-              <span>Existing TypeScript types (no rewriting)</span>
+            <li>
+              <span class="text-on-surface">Options:</span>
+              <code>abortEarly: {String(conditions.abortEarly)}</code>, input accepted, so every rule runs
             </li>
-            <li class="flex items-start gap-2">
-              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
-              <span>Custom business rules as plugins</span>
+            <li>
+              <span class="text-on-surface">Inputs:</span> {conditions.inputRotation}
             </li>
-            <li class="flex items-start gap-2">
-              <span class="text-green-600 dark:text-green-400 mt-1">✓</span>
-              <span>JSON Schema migration path</span>
+            <li>
+              <span class="text-on-surface">Array shape:</span>
+              {conditions.arrayElementCount} elements
             </li>
           </ul>
         </div>
+      </div>
 
-        <div class="bg-white dark:bg-luq-neutral-800 rounded-lg p-6">
-          <h3 class="text-xl font-bold mb-4">Consider alternatives if:</h3>
-          <ul class="space-y-3">
-            <li>
-              <strong>Minimal bundle critical:</strong>
-              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> Valibot (1-2KB)</span>
-            </li>
-            <li>
-              <strong>Pre-compiled validation only:</strong>
-              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> AJV Standalone</span>
-            </li>
-            <li>
-              <strong>Maximum raw speed, no CSP:</strong>
-              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> AJV</span>
-            </li>
-            <li>
-              <strong>Rich ecosystem needed:</strong>
-              <span class="text-luq-neutral-600 dark:text-luq-neutral-400"> Zod</span>
-            </li>
-          </ul>
-        </div>
+      <div class="mt-6 md-card md-card-outlined p-6">
+        <h3 class="mb-3 text-title-medium text-on-surface">Bundle size method</h3>
+        <ul class="space-y-2 text-body-medium text-on-surface-variant">
+          <li><span class="text-on-surface">Bundler:</span> {sizeBudget.method.bundler}</li>
+          <li>
+            <span class="text-on-surface">Options:</span>
+            <code>bundle</code>, <code>minify</code>, <code>format: esm</code>,
+            <code>target: es2020</code>, <code>platform: neutral</code>,
+            <code>treeShaking</code>, no legal comments
+          </li>
+          <li>
+            <span class="text-on-surface">Compression:</span> <code>node:zlib</code>
+            <code>gzipSync</code> at its default level
+          </li>
+          <li>
+            <span class="text-on-surface">Measured from:</span> the TypeScript in
+            <code>src/</code>, not <code>dist/</code> — the package ships unbundled ESM, so the
+            tree a reader's bundler walks is the same tree esbuild walks here
+          </li>
+          <li>
+            <span class="text-on-surface">Entry shape:</span> a synthetic module that re-exports
+            only the named symbols, so only code reachable from those names survives
+          </li>
+          <li>
+            <span class="text-on-surface">Comparability:</span> these are the options 1.x's own
+            <code>bundle-size-comparison</code> used. Without that, the 1.x column would not be a
+            comparison at all
+          </li>
+          <li>
+            <span class="text-on-surface">Node:</span> <code>{sizeBudget.recorded.node}</code>,
+            recorded {sizeBudget.recorded.date}, over
+            {' '}{sizeBudget.recorded.catalogPluginCount} catalogue plugins
+          </li>
+        </ul>
       </div>
     </section>
 
-    <!-- Test Environment -->
-    <section class="mb-16">
-      <h2 class="text-3xl font-bold mb-8">Test Methodology</h2>
-      <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow-lg p-6">
-        <dl class="grid md:grid-cols-2 gap-6">
-          <div>
-            <dt class="font-semibold text-luq-neutral-700 dark:text-luq-neutral-300 mb-2">Test Environment</dt>
-            <dd class="text-luq-neutral-600 dark:text-luq-neutral-400">
-              <ul class="space-y-1">
-                <li>• AMD Ryzen 7 5825U</li>
-                <li>• 5.8GB RAM</li>
-                <li>• Node.js v22.12.0</li>
-                <li>• Measured: 2025-08-14</li>
-              </ul>
-            </dd>
-          </div>
-          <div>
-            <dt class="font-semibold text-luq-neutral-700 dark:text-luq-neutral-300 mb-2">Test Data</dt>
-            <dd class="text-luq-neutral-600 dark:text-luq-neutral-400">
-              <ul class="space-y-1">
-                <li>• Simple: 3 fields (name, age, email)</li>
-                <li>• Complex: Nested objects, arrays, conditionals</li>
-                <li>• Iterations: 1,000,000 operations per benchmark</li>
-                <li>• Source: <code class="text-sm">bundle-size-comparison/</code></li>
-              </ul>
-            </dd>
-          </div>
-        </dl>
-      </div>
+    <!-- ================= Reproduce ================= -->
+    <section id="reproduce" class="mb-12 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Reproduce it</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        Clone the repository and run these. <code>bench:record</code> overwrites
+        <code>config/perf-baseline.json</code>, which is the file this page reads — so the numbers
+        above are exactly what the last recorded run produced, on the machine named above and not
+        on yours.
+      </p>
+      <CodeBlock code={reproduceCommands} language="bash" fileName="repository root" />
     </section>
 
-    <!-- CTA -->
-    <div class="text-center">
-      <a 
-        href="/docs/getting-started" 
-        class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-luq-purple-600 to-luq-teal-500 text-white rounded-lg font-semibold hover:from-luq-purple-700 hover:to-luq-teal-600 transition-all transform hover:scale-105"
-      >
-        Get Started with Luq
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-        </svg>
+    <nav class="flex flex-wrap gap-3" aria-label="Related pages">
+      <a class="md-button md-button-filled md-state-layer" href="/docs/getting-started">
+        Get started
       </a>
-    </div>
+      <a class="md-button md-button-tonal md-state-layer" href="/json-schema">
+        JSON Schema conformance
+      </a>
+      <a class="md-button md-button-outlined md-state-layer" href="/plugins">
+        Browse plugins
+      </a>
+    </nav>
   </main>
+
   <Footer />
 </BaseLayout>

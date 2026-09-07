@@ -3,7 +3,7 @@
 import { ServiceA } from "./circular-a.luq";
 
 export interface ServiceB {
-    @
+    @required
     id: string;
     
     @required

@@ -1,116 +1,115 @@
 ---
 import CodeBlock from './CodeBlock.astro';
 
-const traditionalCode = `// Define schema (types are generated)
-const UserSchema = z.object({
-  name: z.string().min(3),
-  email: z.string().email(),
-  age: z.number().min(18),
-  role: z.enum(['admin', 'user']),
-  settings: z.object({
-    notifications: z.boolean(),
-    theme: z.enum(['light', 'dark'])
-  })
-});
+/**
+ * The whole public surface on one screen: declare rules against a type you
+ * already own, then read a discriminated union back.
+ *
+ * Both blocks are the verified API. `build()` returns an OBJECT — the 1.x site
+ * called its return value as a function and read `isValid()` / `errors` off a
+ * `Result` class that does not exist in this release.
+ */
+const declareCode = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { oneOfPlugin } from "@maroonedog/luq/plugins/oneOf";
 
-// Extract type from schema
-type User = z.infer<typeof UserSchema>;
-
-// Custom business logic
-const schema = UserSchema.refine(
-  (data) => {
-    // Inline custom validation
-    if (data.role === 'admin' && data.age < 21) {
-      return false;
-    }
-    return true;
-  },
-  { message: 'Admins must be 21 or older' }
-);
-
-// Validate
-const result = schema.safeParse(userData);`;
-
-const luqCode = `// Use existing TypeScript types
+// The type is yours. Luq neither generates it nor replaces it.
 type User = {
   name: string;
   email: string;
   age: number;
-  role: 'admin' | 'user';
-  settings: {
-    notifications: boolean;
-    theme: 'light' | 'dark';
-  };
+  role: "admin" | "user";
 };
 
-// Create reusable business logic plugin
-const adminAgePlugin = plugin({
-  name: 'adminAge',
-  methodName: 'adminAge',
-  allowedTypes: ['number'] as const,
-  category: 'standard',
-  impl: (options?: ValidationOptions) => ({
-    check: (value: any, context: any) => {
-      const parent = context?.parent;
-      return parent?.role !== 'admin' || value >= 21;
-    },
-    code: 'admin_age',
-    getErrorMessage: () => 'Admins must be 21 or older',
-    params: []
-  })
-});
-
-// Build validator with plugins
-const validator = Builder()
+const userValidator = Builder()
   .use(requiredPlugin)
   .use(stringMinPlugin)
   .use(stringEmailPlugin)
   .use(numberMinPlugin)
-  .use(adminAgePlugin)
+  .use(oneOfPlugin)
   .for<User>()
-  .v('name', b => b.string.required().min(3))
-  .v('email', b => b.string.required().email())
-  .v('age', b => b.number.required().min(18).adminAge())
-  .v('role', b => b.required())
-  .build();
+  .v("name", (b) => b.string.required().min(3))
+  .v("email", (b) => b.string.required().email())
+  .v("age", (b) => b.number.required().min(18))
+  .v("role", (b) => b.string.required().oneOf(["admin", "user"]))
+  .build();`;
 
-// Validate with full type safety
-const result = validator.validate(userData);`;
+// luq-example: with declareCode — 左のブロックで組み立てた userValidator を読むところなので、宣言は繰り返さずに検査だけ前置きする
+const readCode = `// build() returns an object, not a function.
+const result = userValidator.validate({
+  name: "Jo",
+  email: "jo@example.com",
+  age: 25,
+  role: "user",
+});
+
+// \`valid\` is the discriminant. \`data\` exists only on the success
+// branch, so there is no cast and no non-null assertion.
+if (result.valid) {
+  console.log(result.data.name);
+} else {
+  for (const issue of result.issues) {
+    console.error(\`\${issue.path}: \${issue.message} (\${issue.code})\`);
+  }
+}
+
+// name: String must have at least 3 characters, but got 2 (stringMin)`;
+
+const members = [
+  {
+    signature: 'validate(value, options?)',
+    detail: 'A ValidationResult<T> holding the original value.',
+  },
+  {
+    signature: 'parse(value, options?)',
+    detail: 'A ValidationResult<TParsed> holding the value after transforms.',
+  },
+  {
+    signature: 'pick(path)',
+    detail: 'A single-field validator for one declared path.',
+  },
+  {
+    signature: 'pickAll(paths)',
+    detail: 'A validator returning exactly those paths, keyed by the path string.',
+  },
+];
 ---
 
-<div class="grid lg:grid-cols-2 gap-8">
-  <!-- Traditional Approach -->
-  <div class="luq-card overflow-hidden">
-    <div class="bg-luq-neutral-100 dark:bg-luq-neutral-800 px-6 py-4 border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-      <h3 class="font-semibold">Traditional Schema-Based Approach</h3>
-    </div>
-    <div class="p-6">
-      <CodeBlock code={traditionalCode} language="typescript" showCopy={true} class="" />
-    </div>
+<div class="grid gap-6 lg:grid-cols-2">
+  <div class="min-w-0">
+    <h3 class="mb-3 text-title-medium text-on-surface">Declare the rules</h3>
+    <CodeBlock code={declareCode} language="typescript" fileName="user.ts" showCopy={true} />
   </div>
-  
-  <!-- Luq Approach -->
-  <div class="luq-card overflow-hidden border-2 border-luq-purple-200 dark:border-luq-purple-800">
-    <div class="bg-gradient-to-r from-luq-purple-100 to-luq-teal-100 dark:from-luq-purple-900/30 dark:to-luq-teal-900/30 px-6 py-4 border-b border-luq-purple-200 dark:border-luq-purple-800">
-      <h3 class="font-semibold">Luq Type-First Approach</h3>
-    </div>
-    <div class="p-6">
-      <CodeBlock code={luqCode} language="typescript" showCopy={true} class="" />
-    </div>
+
+  <div class="min-w-0">
+    <h3 class="mb-3 text-title-medium text-on-surface">Read the result</h3>
+    <CodeBlock code={readCode} language="typescript" fileName="save-user.ts" showCopy={true} />
   </div>
 </div>
 
-<div class="mt-8 text-center">
-  <div class="inline-flex items-center space-x-6 text-sm">
-    <div class="flex items-center">
-      <div class="w-4 h-4 bg-luq-purple-200 dark:bg-luq-purple-800 rounded mr-2"></div>
-      <span class="text-luq-neutral-600 dark:text-luq-neutral-400">Luq advantages highlighted</span>
-    </div>
-    <div class="flex items-center">
-      <svg class="w-5 h-5 text-luq-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-      </svg>
-      <span class="text-luq-neutral-600 dark:text-luq-neutral-400">Business logic as reusable plugins</span>
-    </div>
+<div class="md-card md-card-outlined mt-8 overflow-hidden">
+  <div class="px-6 py-4">
+    <h3 class="text-title-medium text-on-surface">What <code class="font-mono">build()</code> gives you</h3>
+    <p class="mt-1 text-body-medium text-on-surface-variant">
+      Four members. A <code class="font-mono">ValidationResult&lt;T&gt;</code> is a discriminated
+      union on <code class="font-mono">valid</code>: the success branch carries
+      <code class="font-mono">data</code>, both branches carry
+      <code class="font-mono">issues</code>, and every issue is
+      <code class="font-mono">{'{ path, code, message, severity }'}</code>.
+    </p>
   </div>
+  <div class="md-divider"></div>
+  <ul class="divide-y divide-outline-variant">
+    {
+      members.map((member) => (
+        <li class="flex flex-col gap-1 px-6 py-4 sm:flex-row sm:items-baseline sm:gap-6">
+          <code class="shrink-0 font-mono text-body-medium text-primary sm:w-64">{member.signature}</code>
+          <span class="text-body-medium text-on-surface-variant">{member.detail}</span>
+        </li>
+      ))
+    }
+  </ul>
 </div>

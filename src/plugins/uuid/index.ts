@@ -1,0 +1,1 @@
+export { uuidPlugin } from "./uuid";

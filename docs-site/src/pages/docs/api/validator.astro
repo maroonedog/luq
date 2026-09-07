@@ -6,667 +6,772 @@ import DocsSidebar from '../../../components/DocsSidebar.astro';
 import CodeBlock from '../../../components/CodeBlock.astro';
 import OnThisPage from '../../../components/OnThisPage.astro';
 
-// Table of contents
 const tableOfContents = [
   { id: 'overview', title: 'Overview', level: 2 },
-  { id: 'creating-validator', title: 'Creating a Validator', level: 2 },
-  { id: 'validation-methods', title: 'Validation Methods', level: 2 },
-  { id: 'validate-method', title: 'validate() Method', level: 3 },
-  { id: 'parse-method', title: 'parse() Method', level: 3 },
-  { id: 'pick-method', title: 'pick() Method', level: 3 },
-  { id: 'result-object', title: 'Result Object', level: 2 },
-  { id: 'result-methods', title: 'Result Methods', level: 3 },
-  { id: 'error-handling', title: 'Error Handling', level: 3 },
-  { id: 'functional-methods', title: 'Functional Methods', level: 3 },
-  { id: 'validation-options', title: 'Validation Options', level: 2 },
-  { id: 'complete-examples', title: 'Complete Examples', level: 2 },
+  { id: 'validation-result', title: 'ValidationResult', level: 2 },
+  { id: 'validation-issue', title: 'ValidationIssue', level: 3 },
+  { id: 'severity', title: 'severity, and valid results with issues', level: 3 },
+  { id: 'validate', title: 'validate(value, options?)', level: 2 },
+  { id: 'parse', title: 'parse(value, options?)', level: 2 },
+  { id: 'options', title: 'ValidateOptions', level: 2 },
+  { id: 'pick', title: 'pick(path)', level: 2 },
+  { id: 'pick-all', title: 'pickAll(paths)', level: 2 },
+  { id: 'result-subpath', title: 'The ./result subpath', level: 2 },
+  { id: 'http-boundary', title: 'At an HTTP boundary', level: 2 },
+  { id: 'porting', title: 'Porting from the 1.x Result', level: 2 },
 ];
 
-// Code examples
-const creatingValidatorExample = `import { Builder } from '@maroonedog/luq/core';
-import { 
-  requiredPlugin, 
-  stringMinPlugin,
-  numberMinPlugin,
-  transformPlugin 
-} from '@maroonedog/luq/plugin';
+const resultShapeExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
 
-// Define your type
-type UserData = {
-  name: string;
-  age: number;
-  email: string;
-};
+type User = { name: string; age: number };
 
-// Create validator using Builder
-const validator = Builder()
-  .use(requiredPlugin)
-  .use(stringMinPlugin)
-  .use(numberMinPlugin)
-  .for<UserData>()
-  .v('name', b => b.string.required().min(2))
-  .v('age', b => b.number.required().min(18))
-  .v('email', b => b.string.required())
-  .build(); // Returns a Validator instance`;
-
-const validateMethodExample = `// validate() returns original values (no transformations applied)
-const result = validator.validate({
-  name: 'John Doe',
-  age: 25,
-  email: 'john@example.com'
-});
-
-// Check if validation passed
-if (result.isValid()) {
-  const data = result.unwrap();
-  console.log('Valid data:', data);
-  // data type is UserData with original values
-} else {
-  console.log('Validation errors:', result.errors);
-}
-
-// Using the 'valid' property (backward compatibility)
-if (result.valid) {
-  console.log('Valid!');
-}`;
-
-const parseMethodExample = `// Define a validator with transformations
-const transformValidator = Builder()
-  .use(requiredPlugin)
-  .use(transformPlugin)
-  .for<{ email: string; age: string }>()
-  .v('email', b => b.string.required()
-    .transform(email => email.toLowerCase().trim()))
-  .v('age', b => b.string.required()
-    .transform(age => parseInt(age, 10)))
-  .build();
-
-// parse() applies transformations and returns transformed values
-const result = transformValidator.parse({
-  email: '  JOHN@EXAMPLE.COM  ',
-  age: '25'
-});
-
-if (result.isValid()) {
-  const data = result.unwrap();
-  // data.email is 'john@example.com' (lowercased and trimmed)
-  // data.age is 25 (number, not string)
-}`;
-
-const resultMethodsExample = `const result = validator.validate(inputData);
-
-// Check validity
-if (result.isValid()) {
-  // Successfully validated
-}
-
-if (result.isError()) {
-  // Validation failed
-}
-
-// Get data with different strategies
-const data1 = result.unwrap();           // Throws if invalid
-const data2 = result.unwrapOr(defaultData); // Returns default if invalid
-const data3 = result.unwrapOrElse(
-  errors => computeDefault(errors)       // Lazy default computation
-);
-
-// Direct access (use with caution)
-const maybeData = result.data();         // T | undefined
-const errors = result.errors;            // ValidationError[]`;
-
-const errorHandlingExample = `// ValidationError structure
-interface ValidationError {
-  path: string;    // Field path like 'user.email'
-  message: string; // Human-readable error message
-  code: string;    // Error code like 'required' or 'min_length'
-}
-
-// Handling validation errors
-const result = validator.validate(invalidData);
-
-if (!result.isValid()) {
-  // Access all errors
-  result.errors.forEach(error => {
-    console.log(\`\${error.path}: \${error.message} (\${error.code})\`);
-  });
-  
-  // Use tapError for side effects
-  result.tapError(errors => {
-    logValidationErrors(errors);
-  });
-  
-  // Or throw exception
-  try {
-    result.unwrap(); // Throws LuqValidationException
-  } catch (e) {
-    if (e.name === 'LuqValidationException') {
-      console.log('Validation failed:', e.message);
-      console.log('Errors:', e.errors);
-    }
-  }
-}`;
-
-const functionalMethodsExample = `// Transform valid data
-const transformed = result
-  .map(data => ({
-    ...data,
-    timestamp: Date.now()
-  }))
-  .map(data => normalizeData(data));
-
-// Chain validations
-const finalResult = validator1.validate(data)
-  .flatMap(validData => validator2.validate(validData))
-  .flatMap(validData => validator3.validate(validData));
-
-// Side effects without changing the result
-const result = validator.validate(data)
-  .tap(validData => {
-    console.log('Valid:', validData);
-    saveToDatabase(validData);
-  })
-  .tapError(errors => {
-    console.error('Invalid:', errors);
-    logErrors(errors);
-  });
-
-// Convert to plain object (for JSON serialization)
-const plain = result.toPlainObject();
-// { valid: boolean, data?: T, errors: ValidationError[] }`;
-
-const pickMethodExample = `// Extract single field validator from a built validator
 const userValidator = Builder()
   .use(requiredPlugin)
-  .use(stringEmailPlugin)
   .use(stringMinPlugin)
-  .use(numberMinPlugin)
-  .for<UserProfile>()
-  .v('email', b => b.string.required().email())
-  .v('username', b => b.string.required().min(3))
-  .v('age', b => b.number.required().min(18))
-  .v('profile.bio', b => b.string.optional().max(500))
+  .for<User>()
+  .v('name', b => b.string.required().min(3))
   .build();
 
-// Use pick() to extract a single field validator
-const emailValidator = userValidator.pick('email');
-const ageValidator = userValidator.pick('age');
-const bioValidator = userValidator.pick('profile.bio'); // Nested fields supported
+const result = userValidator.validate({ name: 'Jo', age: 36 });
 
-// Validate individual fields
-const emailResult = emailValidator.validate('test@example.com');
-if (emailResult.valid) {
-  console.log('Valid email:', emailResult.value);
-}
-
-const ageResult = ageValidator.validate(25);
-if (ageResult.valid) {
-  console.log('Valid age:', ageResult.value);
-}
-
-// Picked validators are type-safe
-// emailValidator is FieldValidator<UserProfile, string>
-// ageValidator is FieldValidator<UserProfile, number>
-// bioValidator is FieldValidator<UserProfile, string | undefined>
-
-// Can provide context (other field values) for field dependencies
-const bioResult = bioValidator.validate('My bio text', {
-  username: 'john_doe',
-  age: 25
-});`;
-
-const validationOptionsExample = `// ValidationOptions interface
-interface ValidationOptions {
-  abortEarly?: boolean;  // Stop at first error (default: false)
-  context?: any;         // Additional context for validation
-}
-
-// Using validation options
-const result = validator.validate(data, {
-  abortEarly: true,  // Stop at first error
-  context: {
-    user: currentUser,
-    timestamp: Date.now()
+if (result.valid) {
+  // \`data\` exists only on this branch. No cast, no non-null assertion.
+  console.log(result.data.name);
+} else {
+  for (const issue of result.issues) {
+    console.error(issue.path + ': ' + issue.message + ' (' + issue.code + ')');
   }
-});
+}`;
 
-// Options are passed to all field validators
-// Useful for conditional validation based on context`;
+const issueExample = `import { Builder } from '@maroonedog/luq';
+import type { ValidationIssue } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
 
-const completeExample1 = `// Form validation example
-import { Builder } from '@maroonedog/luq/core';
-import { 
-  requiredPlugin,
-  stringMinPlugin,
-  stringEmailPlugin,
-  transformPlugin,
-  compareFieldPlugin
-} from '@maroonedog/luq/plugin';
+type Form = { name: string; nickname: string };
 
-type RegistrationForm = {
-  username: string;
+const formValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Form>()
+  .v('name', b => b.string.required().min(3))
+  .v('nickname', b => b.string.required().min(3))
+  .build();
+
+/** Path -> first message, the shape a form layer usually wants. */
+function toFieldErrors(issues: readonly ValidationIssue[]): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const issue of issues) {
+    if (issue.severity !== 'error') continue;
+    if (errors[issue.path] === undefined) errors[issue.path] = issue.message;
+  }
+  return errors;
+}
+
+export const fieldErrors = toFieldErrors(
+  formValidator.validate({ name: 'Jo', nickname: 'Al' }, { abortEarly: false }).issues
+);`;
+
+const severityExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type Draft = { title: string; summary: string };
+
+const draftValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Draft>()
+  .v('title', b => b.string.required())
+  .v('summary', b => b.string.required().min(40, { severity: 'warning' }))
+  .build();
+
+const result = draftValidator.validate({ title: 'Ship it', summary: 'Short.' });
+
+// true — a warning does not fail the result.
+export const stillValid = result.valid;
+
+// One issue, severity 'warning', code 'stringMin'.
+export const advisories = result.issues.filter(issue => issue.severity !== 'error');`;
+
+const validateParseExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { transformPlugin } from '@maroonedog/luq/plugins/transform';
+
+type SignupForm = {
   email: string;
-  password: string;
-  confirmPassword: string;
-  age: string; // From form input
+  age: string;   // an <input> only ever gives you a string
+};
+
+const signupValidator = Builder()
+  .use(requiredPlugin)
+  .use(transformPlugin)
+  .for<SignupForm>()
+  .v('email', b => b.string.required().transform(email => email.toLowerCase()))
+  .v('age', b => b.string.required().transform(age => Number.parseInt(age, 10)))
+  .build();
+
+const input = { email: 'ADA@EXAMPLE.COM', age: '36' };
+
+// { email: 'ADA@EXAMPLE.COM', age: '36' } — untouched.
+const checked = signupValidator.validate(input);
+
+// { email: 'ada@example.com', age: 36 } — transforms applied.
+const parsed = signupValidator.parse(input);
+
+export const both = [checked.valid, parsed.valid];`;
+
+const optionsExample = `import { Builder } from '@maroonedog/luq';
+import type { ValidateOptions } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+
+type Form = { name: string; email: string };
+
+const formValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .for<Form>()
+  .v('name', b => b.string.required().min(5))
+  .v('email', b => b.string.required().min(5).email())
+  .build();
+
+const input = { name: 'Jo', email: 'a@b' };
+
+const everything: ValidateOptions = {
+  abortEarly: false,
+  abortEarlyOnEachField: false,
+};
+
+// ['name']                                     — both options left at their defaults
+export const defaults = formValidator.validate(input).issues.map(i => i.path);
+
+// ['name', 'email']                            — { abortEarly: false }
+export const perField = formValidator
+  .validate(input, { abortEarly: false })
+  .issues.map(i => i.path);
+
+// ['name', 'email', 'email']                   — both false
+export const perRule = formValidator.validate(input, everything).issues.map(i => i.path);`;
+
+const pickExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { compareFieldPlugin } from '@maroonedog/luq/plugins/compareField';
+
+type Signup = { password: string; confirmPassword: string };
+
+const signupValidator = Builder()
+  .use(requiredPlugin)
+  .use(compareFieldPlugin)
+  .for<Signup>()
+  .v('password', b => b.string.required())
+  .v('confirmPassword', b => b.string.required().compareField('password'))
+  .build();
+
+const confirmField = signupValidator.pick('confirmPassword');
+
+// A rule that reads another field needs the siblings passed in.
+export const matches = confirmField.validate('hunter2', { password: 'hunter2' }).valid;
+
+// The picked validator remembers where it came from.
+export const where = confirmField.path;   // 'confirmPassword'`;
+
+const pickAllExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type Registration = {
+  email: string;
+  displayName: string;
+  billing: { postcode: string };
 };
 
 const registrationValidator = Builder()
   .use(requiredPlugin)
-  .use(stringMinPlugin)
   .use(stringEmailPlugin)
-  .use(transformPlugin)
-  .use(compareFieldPlugin)
-  .for<RegistrationForm>()
-  .v('username', b => b.string.required().min(3))
+  .use(stringMinPlugin)
+  .for<Registration>()
   .v('email', b => b.string.required().email())
-  .v('password', b => b.string.required().min(8))
-  .v('confirmPassword', b => b.string.required().compareField('password'))
-  .v('age', b => b.string.required().transform(v => parseInt(v, 10)))
+  .v('displayName', b => b.string.required().min(2))
+  .v('billing.postcode', b => b.string.required().min(4))
   .build();
 
-// Handle form submission
-function handleSubmit(formData: RegistrationForm) {
-  const result = registrationValidator.parse(formData);
-  
-  return result
-    .map(data => {
-      // age is now a number
-      return createUser(data);
-    })
-    .tap(user => {
-      console.log('User created:', user.id);
-    })
-    .tapError(errors => {
-      displayFormErrors(errors);
-    });
-}`;
+const stepOne = registrationValidator.pickAll(['email', 'displayName']);
 
-const completeExample2 = `// API validation with error response
-import { Result } from '@maroonedog/luq';
+const outcome = stepOne.validate({
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  billing: { postcode: '' },   // not in the picked set, so not checked
+});
 
-async function updateUserEndpoint(req: Request): Promise<Response> {
-  const body = await req.json();
-  
-  const result = userUpdateValidator.validate(body);
-  
-  // Early return for validation errors
-  if (!result.isValid()) {
-    return new Response(JSON.stringify({
-      success: false,
-      errors: result.errors.map(e => ({
-        field: e.path,
-        message: e.message,
-        code: e.code
-      }))
-    }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    });
+if (outcome.valid) {
+  // Keyed by the path string exactly as asked for, flat.
+  console.log(outcome.data.email, outcome.data.displayName);
+}
+
+export const declared = stepOne.paths;   // ['email', 'displayName']`;
+
+const resultSubpathExample = `import { Builder } from '@maroonedog/luq';
+import { unwrap, isOk, ValidationFailure } from '@maroonedog/luq/result';
+import type { ValidationResult } from '@maroonedog/luq/result';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type Row = { id: string };
+
+const rowValidator = Builder()
+  .use(requiredPlugin)
+  .for<Row>()
+  .v('id', b => b.string.required())
+  .build();
+
+/** unwrap is a FREE FUNCTION. It throws ValidationFailure, which carries issues. */
+export function parseRow(input: unknown): Row {
+  try {
+    return unwrap(rowValidator.validate(input));
+  } catch (thrown) {
+    if (thrown instanceof ValidationFailure) {
+      throw new Error(thrown.issues.map(issue => issue.path).join(', '));
+    }
+    throw thrown;
   }
-  
-  // Process valid data
-  const userData = result.unwrap();
-  const updated = await updateUser(userData);
-  
-  return new Response(JSON.stringify({
-    success: true,
-    data: updated
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+}
+
+/** isOk is the same test as \`result.valid\`, as a function you can pass around. */
+export function keepValid(results: readonly ValidationResult<Row>[]): Row[] {
+  return results.filter(isOk).map(result => result.data);
 }`;
 
-const completeExample3 = `// Composing multiple validators
-const addressValidator = Builder()
+const httpExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type UpdateUser = { email: string; displayName: string };
+
+// Build once, at module scope. build() is the expensive half.
+const updateUserValidator = Builder()
   .use(requiredPlugin)
-  .for<Address>()
-  .v('street', b => b.string.required())
-  .v('city', b => b.string.required())
-  .v('zipCode', b => b.string.required())
+  .use(stringEmailPlugin)
+  .use(stringMinPlugin)
+  .for<UpdateUser>()
+  .v('email', b => b.string.required().email())
+  .v('displayName', b => b.string.required().min(2))
   .build();
 
-const userValidator = Builder()
-  .use(requiredPlugin)
-  .for<User>()
-  .v('name', b => b.string.required())
-  .v('email', b => b.string.required())
-  .build();
+declare function persist(user: UpdateUser): Promise<UpdateUser>;
 
-// Compose validators
-function validateComplete(data: any): Result<CompleteData> {
-  const userResult = userValidator.validate(data.user);
-  const addressResult = addressValidator.validate(data.address);
-  
-  if (!userResult.isValid()) return userResult;
-  if (!addressResult.isValid()) return addressResult;
-  
-  return Result.ok({
-    user: userResult.unwrap(),
-    address: addressResult.unwrap()
-  });
+export async function handleUpdate(request: Request): Promise<Response> {
+  const body: unknown = await request.json();
+
+  // A form wants every field's complaint, not just the first.
+  const result = updateUserValidator.parse(body, { abortEarly: false });
+
+  if (!result.valid) {
+    return Response.json(
+      {
+        errors: result.issues.map(issue => ({
+          field: issue.path,
+          code: issue.code,
+          message: issue.message,
+        })),
+      },
+      { status: 400 }
+    );
+  }
+
+  return Response.json({ data: await persist(result.data) });
 }`;
 ---
 
 <BaseLayout title="Validator API - Luq Documentation">
   <Header />
-  
+
   <div class="flex min-h-screen">
     <DocsSidebar currentPath="/docs/api/validator" />
-    
-    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
-      <article class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8">Validator API</h1>
-        
-        <div class="prose prose-lg dark:prose-invert max-w-none">
-          <p class="lead">
-            The Validator is the runtime validation engine created by the Builder. It provides methods to validate data and handle results using a functional Result pattern.
-          </p>
-          
+
+    <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
+      <article class="mx-auto max-w-4xl">
+        <p class="md-label-large mb-2 text-primary">API reference</p>
+        <h1 class="md-headline-large mb-4">Validator</h1>
+        <p class="md-body-large mb-10 text-on-surface-variant">
+          What <code>build()</code> hands back: an object with four members, returning a
+          plain discriminated union. There is no <code>Result</code> class, no
+          <code>isValid()</code>, and nothing to unwrap before you can read your data.
+        </p>
+
+        <div class="prose max-w-none">
           <h2 id="overview">Overview</h2>
-          
-          <p>
-            A Validator instance is created by calling <code>.build()</code> on a configured Builder. The validator provides two main methods:
-          </p>
-          
-          <ul>
-            <li><strong>validate()</strong> - Validates data and returns original values</li>
-            <li><strong>parse()</strong> - Validates data and returns transformed values</li>
-          </ul>
-          
-          <p>
-            Both methods return a <code>Result&lt;T&gt;</code> object that provides safe, functional error handling.
-          </p>
-          
-          <h2 id="creating-validator">Creating a Validator</h2>
-          
-          <CodeBlock code={creatingValidatorExample} language="typescript" showCopy={true} />
-          
-          <h2 id="validation-methods">Validation Methods</h2>
-          
-          <h3 id="validate-method">validate() Method</h3>
-          
-          <p>
-            The <code>validate()</code> method checks if data conforms to the schema and returns the original values without applying any transformations:
-          </p>
-          
-          <CodeBlock code={validateMethodExample} language="typescript" showCopy={true} />
-          
-          <div class="not-prose bg-luq-blue-50 dark:bg-luq-blue-900/20 rounded-lg p-6 my-6">
-            <h4 class="font-semibold mb-3">💡 When to use validate()</h4>
-            <ul class="space-y-2 text-sm">
-              <li>• When you only need to check if data is valid</li>
-              <li>• When you want to preserve original values</li>
-              <li>• When transformations are not needed</li>
-              <li>• For validation-only scenarios</li>
-            </ul>
+
+          <div class="not-prose my-8 overflow-x-auto">
+            <table class="w-full min-w-[40rem] text-left">
+              <thead>
+                <tr class="border-b border-outline">
+                  <th class="md-title-small py-2 pr-4">Member</th>
+                  <th class="md-title-small py-2">Returns</th>
+                </tr>
+              </thead>
+              <tbody class="md-body-medium text-on-surface-variant">
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>validate(value, options?)</code></td>
+                  <td class="py-2">
+                    <code>ValidationResult&lt;T&gt;</code> — the <strong>original</strong> value.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>parse(value, options?)</code></td>
+                  <td class="py-2">
+                    <code>ValidationResult&lt;T&gt;</code> — the value <strong>after
+                    transforms</strong>.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>pick(path)</code></td>
+                  <td class="py-2">
+                    <code>FieldValidator&lt;T, ValueAtPath&lt;T, K&gt;&gt;</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4"><code>pickAll(paths)</code></td>
+                  <td class="py-2"><code>SubsetValidator&lt;T, P&gt;</code></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          
-          <h3 id="parse-method">parse() Method</h3>
-          
+
+          <h2 id="validation-result">ValidationResult</h2>
+
           <p>
-            The <code>parse()</code> method validates data AND applies all transformations, returning the transformed values:
+            A discriminated union on <code>valid</code>. The success branch carries
+            <code>data</code>; both branches carry <code>issues</code>. That discriminant is
+            the whole point — narrowing on it is what removes the cast 1.x's
+            <code>unwrap()</code> existed to hide.
           </p>
-          
-          <CodeBlock code={parseMethodExample} language="typescript" showCopy={true} />
-          
-          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 rounded-lg p-6 my-6">
-            <h4 class="font-semibold mb-3">📝 When to use parse()</h4>
-            <ul class="space-y-2 text-sm">
-              <li>• When you have transform plugins in your validator</li>
-              <li>• When you need normalized/sanitized data</li>
-              <li>• When converting types (e.g., string to number)</li>
-              <li>• For data processing pipelines</li>
-            </ul>
+
+          <CodeBlock code={resultShapeExample} language="typescript" />
+
+          <CodeBlock
+            code={`import type { ValidationIssue } from '@maroonedog/luq';
+
+type ValidationResult<T> =
+  | { readonly valid: true; readonly data: T; readonly issues: readonly ValidationIssue[] }
+  | { readonly valid: false; readonly issues: readonly ValidationIssue[] };`}
+            language="typescript"
+            fileName="the union, in full"
+            showCopy={false}
+          />
+
+          <h3 id="validation-issue">ValidationIssue</h3>
+
+          <div class="not-prose my-8 overflow-x-auto">
+            <table class="w-full min-w-[40rem] text-left">
+              <thead>
+                <tr class="border-b border-outline">
+                  <th class="md-title-small py-2 pr-4">Field</th>
+                  <th class="md-title-small py-2 pr-4">Type</th>
+                  <th class="md-title-small py-2">Notes</th>
+                </tr>
+              </thead>
+              <tbody class="md-body-medium text-on-surface-variant">
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>path</code></td>
+                  <td class="py-2 pr-4"><code>string</code></td>
+                  <td class="py-2">
+                    The concrete path, with real array indices:
+                    <code>items[1].productId</code>.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>code</code></td>
+                  <td class="py-2 pr-4"><code>string</code></td>
+                  <td class="py-2">
+                    Defaults to the <strong>plugin's name</strong> — <code>required</code>,
+                    <code>stringMin</code> — and is overridden per rule with
+                    <code>&#123; code &#125;</code>.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>message</code></td>
+                  <td class="py-2 pr-4"><code>string</code></td>
+                  <td class="py-2">
+                    Already rendered. Override with <code>&#123; messageFactory &#125;</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4"><code>severity</code></td>
+                  <td class="py-2 pr-4">
+                    <code>'error' | 'warning' | 'info'</code>
+                  </td>
+                  <td class="py-2">
+                    <strong>Never optional.</strong> Resolved once, at build time.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          
-          <h3 id="pick-method">pick() Method</h3>
-          
+
+          <CodeBlock code={issueExample} language="typescript" />
+
+          <h3 id="severity">severity, and valid results with issues</h3>
+
           <p>
-            The <code>pick()</code> method extracts a single field validator from a built validator, enabling individual field validation:
+            A non-<code>error</code> issue is reported <em>without</em> failing the result.
+            So <code>issues</code> is worth reading on both branches, and a UI can show
+            advisories on data it is about to accept.
           </p>
-          
-          <CodeBlock code={pickMethodExample} language="typescript" showCopy={true} />
-          
-          <div class="not-prose bg-green-50 dark:bg-green-900/20 rounded-lg p-6 my-6">
-            <h4 class="font-semibold mb-3">🎯 When to use pick()</h4>
-            <ul class="space-y-2 text-sm">
-              <li>• When you need to validate individual fields in isolation</li>
-              <li>• For real-time field validation in forms</li>
-              <li>• When testing specific field validation logic</li>
-              <li>• As an alternative to Plugin Registry for single field validation</li>
-            </ul>
-            
-            <div class="bg-green-100 dark:bg-green-800/30 rounded p-3 mt-4">
-              <p class="text-xs font-semibold">💡 Tip: If you already have a validator, use <code>pick()</code> instead of creating a separate Plugin Registry for single field validation.</p>
-            </div>
+
+          <CodeBlock code={severityExample} language="typescript" />
+
+          <h2 id="validate">validate(value, options?)</h2>
+
+          <p>
+            Checks the value and gives it back unchanged. Transforms are not applied and the
+            input object is never mutated.
+          </p>
+
+          <h2 id="parse">parse(value, options?)</h2>
+
+          <p>
+            Runs the same checks, then applies every transform and every substituted default,
+            and gives back the resulting object. Transforms run <strong>last</strong> — after
+            defaults, presence, gates and checks — and they run only here.
+          </p>
+
+          <CodeBlock code={validateParseExample} language="typescript" />
+
+          <div class="not-prose md-card md-card-filled my-8 p-6">
+            <h3 class="md-title-small mb-3 flex items-center gap-2">
+              <span class="md-icon md-icon-sm" aria-hidden="true">rule</span>
+              The one execution order
+            </h3>
+            <p class="md-body-medium mb-3 text-on-surface-variant">
+              <code
+                >default &rarr; presence &rarr; gates &rarr; checks &rarr; transforms &rarr;
+                recursion</code
+              >
+            </p>
+            <p class="md-body-medium text-on-surface-variant">
+              Chain position does not change it. <code>.min(3).transform(f)</code> and
+              <code>.transform(f).min(3)</code> are the same declaration: <code>min</code>
+              sees the value before <code>f</code> in both. 1.x had a second order on one
+              fallback path in which transforms ran first; there is only one now.
+            </p>
           </div>
-          
-          <h2 id="result-object">Result Object</h2>
-          
-          <p>
-            Both validation methods return a <code>Result&lt;T&gt;</code> object that encapsulates the validation outcome. This provides a type-safe, functional approach to error handling.
-          </p>
-          
-          <h3 id="result-methods">Result Methods</h3>
-          
-          <CodeBlock code={resultMethodsExample} language="typescript" showCopy={true} />
-          
-          <h3 id="error-handling">Error Handling</h3>
-          
-          <p>
-            When validation fails, the Result object provides access to detailed error information:
-          </p>
-          
-          <CodeBlock code={errorHandlingExample} language="typescript" showCopy={true} />
-          
-          <h3 id="functional-methods">Functional Methods</h3>
-          
-          <p>
-            The Result object supports functional programming patterns for composing and transforming results:
-          </p>
-          
-          <CodeBlock code={functionalMethodsExample} language="typescript" showCopy={true} />
-          
-          <h2 id="validation-options">Validation Options</h2>
-          
-          <p>
-            Both <code>validate()</code> and <code>parse()</code> accept an optional second parameter for configuration:
-          </p>
-          
-          <CodeBlock code={validationOptionsExample} language="typescript" showCopy={true} />
-          
-          <h2 id="complete-examples">Complete Examples</h2>
-          
-          <h3>Form Validation with Transformations</h3>
-          
-          <CodeBlock code={completeExample1} language="typescript" showCopy={true} />
-          
-          <h3>API Endpoint Validation</h3>
-          
-          <CodeBlock code={completeExample2} language="typescript" showCopy={true} />
-          
-          <h3>Composing Multiple Validators</h3>
-          
-          <CodeBlock code={completeExample3} language="typescript" showCopy={true} />
-          
-          <div class="not-prose mt-12">
-            <h3 class="text-2xl font-bold mb-6">API Reference</h3>
-            <div class="bg-luq-neutral-50 dark:bg-luq-neutral-800 rounded-lg p-6">
-              <h4 class="font-semibold mb-4">Validator Methods</h4>
-              <table class="w-full mb-8">
-                <thead>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <th class="text-left py-2">Method</th>
-                    <th class="text-left py-2">Returns</th>
-                    <th class="text-left py-2">Description</th>
-                  </tr>
-                </thead>
-                <tbody class="text-sm">
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>validate(value, options?)</code></td>
-                    <td class="py-2">Result&lt;T&gt;</td>
-                    <td class="py-2">Validates and returns original values</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>parse(value, options?)</code></td>
-                    <td class="py-2">Result&lt;T&gt;</td>
-                    <td class="py-2">Validates and returns transformed values</td>
-                  </tr>
-                  <tr>
-                    <td class="py-2"><code>pick(fieldName)</code></td>
-                    <td class="py-2">FieldValidator&lt;T, F&gt;</td>
-                    <td class="py-2">Extracts single field validator</td>
-                  </tr>
-                </tbody>
-              </table>
-              
-              <h4 class="font-semibold mb-4">Result Methods</h4>
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <th class="text-left py-2">Method</th>
-                    <th class="text-left py-2">Returns</th>
-                    <th class="text-left py-2">Description</th>
-                  </tr>
-                </thead>
-                <tbody class="text-sm">
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>isValid()</code></td>
-                    <td class="py-2">boolean</td>
-                    <td class="py-2">Check if validation passed</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>isError()</code></td>
-                    <td class="py-2">boolean</td>
-                    <td class="py-2">Check if validation failed</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>unwrap()</code></td>
-                    <td class="py-2">T</td>
-                    <td class="py-2">Get data or throw exception</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>unwrapOr(default)</code></td>
-                    <td class="py-2">T</td>
-                    <td class="py-2">Get data or return default</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>unwrapOrElse(fn)</code></td>
-                    <td class="py-2">T</td>
-                    <td class="py-2">Get data or compute default</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>map(fn)</code></td>
-                    <td class="py-2">Result&lt;U&gt;</td>
-                    <td class="py-2">Transform valid data</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>flatMap(fn)</code></td>
-                    <td class="py-2">Result&lt;U&gt;</td>
-                    <td class="py-2">Chain result-returning functions</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>tap(fn)</code></td>
-                    <td class="py-2">Result&lt;T&gt;</td>
-                    <td class="py-2">Side effect for valid data</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>tapError(fn)</code></td>
-                    <td class="py-2">Result&lt;T&gt;</td>
-                    <td class="py-2">Side effect for errors</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>data()</code></td>
-                    <td class="py-2">T | undefined</td>
-                    <td class="py-2">Get data or undefined</td>
-                  </tr>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>errors</code></td>
-                    <td class="py-2">ValidationError[]</td>
-                    <td class="py-2">Get validation errors</td>
-                  </tr>
-                  <tr>
-                    <td class="py-2"><code>toPlainObject()</code></td>
-                    <td class="py-2">object</td>
-                    <td class="py-2">Convert to plain object</td>
-                  </tr>
-                </tbody>
-              </table>
-              
-              <h4 class="font-semibold mb-4 mt-8">FieldValidator Methods (from pick())</h4>
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <th class="text-left py-2">Method</th>
-                    <th class="text-left py-2">Returns</th>
-                    <th class="text-left py-2">Description</th>
-                  </tr>
-                </thead>
-                <tbody class="text-sm">
-                  <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-                    <td class="py-2"><code>validate(value, allValues?, options?)</code></td>
-                    <td class="py-2">ValidationResult</td>
-                    <td class="py-2">Validates single field value</td>
-                  </tr>
-                  <tr>
-                    <td class="py-2">• <code>value</code></td>
-                    <td class="py-2">Field type</td>
-                    <td class="py-2">The field value to validate</td>
-                  </tr>
-                  <tr>
-                    <td class="py-2">• <code>allValues</code></td>
-                    <td class="py-2">Partial&lt;T&gt;</td>
-                    <td class="py-2">Context with other field values</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+
+          <div class="not-prose md-card md-card-filled my-8 p-6">
+            <h3 class="md-title-small mb-3 flex items-center gap-2">
+              <span class="md-icon md-icon-sm" aria-hidden="true">functions</span>
+              parse() is typed <code>ValidationResult&lt;T&gt;</code>
+            </h3>
+            <p class="md-body-medium text-on-surface-variant">
+              The <em>runtime</em> value is transformed, as above. The static type is still
+              <code>T</code>, because <code>build()</code> returns
+              <code>Validator&lt;T&gt;</code> and a transform's output type is not threaded
+              back into the object type. If a transform changes a field's type, narrow it
+              yourself at the boundary rather than trusting the declaration.
+            </p>
           </div>
-          
-          <div class="not-prose mt-12">
-            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
-            <div class="grid md:grid-cols-2 gap-6">
-              <a href="/docs/api/plugin-registry" class="luq-card p-6 hover:shadow-lg transition-shadow">
-                <h4 class="text-lg font-semibold mb-2">Plugin Registry API</h4>
-                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Learn about the plugin registry system
-                </p>
-              </a>
-              
-              <a href="/docs/core-concepts" class="luq-card p-6 hover:shadow-lg transition-shadow">
-                <h4 class="text-lg font-semibold mb-2">Core Concepts</h4>
-                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Understand Luq's validation architecture
-                </p>
-              </a>
-            </div>
+
+          <h2 id="options">ValidateOptions</h2>
+
+          <p>
+            Three keys, and the two abort flags <strong>both default to
+            <code>true</code></strong>. 1.x's documentation said <code>abortEarly</code>
+            defaulted to <code>false</code>; its implementation tested
+            <code>options?.abortEarly !== false</code>, which makes the default
+            <code>true</code>. If you read those docs and never passed the option, your
+            validators were short-circuiting all along.
+          </p>
+
+          <div class="not-prose my-8 overflow-x-auto">
+            <table class="w-full min-w-[40rem] text-left">
+              <thead>
+                <tr class="border-b border-outline">
+                  <th class="md-title-small py-2 pr-4">Key</th>
+                  <th class="md-title-small py-2 pr-4">Default</th>
+                  <th class="md-title-small py-2">Effect</th>
+                </tr>
+              </thead>
+              <tbody class="md-body-medium text-on-surface-variant">
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>abortEarly</code></td>
+                  <td class="py-2 pr-4"><code>true</code></td>
+                  <td class="py-2">
+                    Stop the whole plan after the first <strong>field</strong> that produced
+                    an issue.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>abortEarlyOnEachField</code></td>
+                  <td class="py-2 pr-4"><code>true</code></td>
+                  <td class="py-2">
+                    Stop <strong>one field</strong> after its first failing rule.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4"><code>external</code></td>
+                  <td class="py-2 pr-4">—</td>
+                  <td class="py-2">
+                    A pre-resolved bag of outside data, read by the
+                    <code>fromContext</code> plugin. 1.x called this
+                    <code>context</code>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            The two flags are orthogonal. Measured on one input with two failing fields, one
+            of which breaks two rules:
+          </p>
+
+          <CodeBlock code={optionsExample} language="typescript" />
+
+          <p>
+            Inside an array element every field is validated to completion regardless of what
+            the caller asked for, so one bad element does not hide its siblings' problems.
+          </p>
+
+          <h2 id="pick">pick(path)</h2>
+
+          <p>
+            Lifts one declared path out of the built validator, running the very same compiled
+            rules. Use it for per-keystroke field validation without maintaining a second
+            declaration.
+          </p>
+
+          <CodeBlock code={pickExample} language="typescript" />
+
+          <div class="not-prose my-8 overflow-x-auto">
+            <table class="w-full min-w-[40rem] text-left">
+              <thead>
+                <tr class="border-b border-outline">
+                  <th class="md-title-small py-2 pr-4">Member</th>
+                  <th class="md-title-small py-2">Notes</th>
+                </tr>
+              </thead>
+              <tbody class="md-body-medium text-on-surface-variant">
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>path</code></td>
+                  <td class="py-2">The path this validator was picked from.</td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4">
+                    <code>validate(value, siblings?, options?)</code>
+                  </td>
+                  <td class="py-2">
+                    <code>siblings</code> is a <code>Partial&lt;T&gt;</code>: rules such as
+                    <code>compareField</code>, <code>requiredIf</code> and
+                    <code>stitch</code> read the root through it.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            Array-element paths need no cast. 1.x's <code>NestedKeyOf</code> broke on them, so
+            <code>pick('employees[*].name' as any)</code> was the documented workaround; the
+            path types resolve them now, and the cast is gone.
+          </p>
+
+          <h2 id="pick-all">pickAll(paths)</h2>
+
+          <p>
+            New in 2.x. It returns a validator over exactly the named paths and hands back an
+            object keyed by <strong>the path strings as written</strong> — flat, so
+            <code>'billing.postcode'</code> comes back as the literal key
+            <code>'billing.postcode'</code>, not as a nested object. That is what a wizard
+            step or a partial <code>PATCH</code> actually wants.
+          </p>
+
+          <CodeBlock code={pickAllExample} language="typescript" />
+
+          <h2 id="result-subpath">The ./result subpath</h2>
+
+          <p>
+            <code>@maroonedog/luq/result</code> is the vocabulary for reading a result without
+            depending on the builder, the compiler or the runtime — so a form layer or an HTTP
+            boundary that only passes results around imports it and pulls in nothing else.
+          </p>
+
+          <div class="not-prose my-8 overflow-x-auto">
+            <table class="w-full min-w-[40rem] text-left">
+              <thead>
+                <tr class="border-b border-outline">
+                  <th class="md-title-small py-2 pr-4">Export</th>
+                  <th class="md-title-small py-2">What it is</th>
+                </tr>
+              </thead>
+              <tbody class="md-body-medium text-on-surface-variant">
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>unwrap(result)</code></td>
+                  <td class="py-2">
+                    The data, or a thrown <code>ValidationFailure</code>. A free function, not
+                    a method.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>ValidationFailure</code></td>
+                  <td class="py-2">
+                    An <code>Error</code> that <em>carries</em> <code>.issues</code> instead
+                    of flattening them into a string. 1.x called it
+                    <code>LuqValidationException</code>.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>isOk(result)</code></td>
+                  <td class="py-2">
+                    A type guard equivalent to <code>result.valid</code>, for use as a
+                    predicate.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>ok(value, issues?)</code>, <code>reject(issues)</code></td>
+                  <td class="py-2">
+                    Constructors, for code that produces results of its own.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4"><code>EMPTY_ISSUES</code></td>
+                  <td class="py-2">
+                    The frozen array every issue-free result shares, so success allocates none.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <CodeBlock code={resultSubpathExample} language="typescript" />
+
+          <h2 id="http-boundary">At an HTTP boundary</h2>
+
+          <CodeBlock code={httpExample} language="typescript" fileName="update-user.ts" />
+
+          <h2 id="porting">Porting from the 1.x Result</h2>
+
+          <div
+            class="not-prose my-8 rounded-shape-md bg-error-container p-6 text-on-error-container"
+          >
+            <h3 class="md-title-small mb-3 flex items-center gap-2">
+              <span class="md-icon md-icon-sm" aria-hidden="true">block</span>
+              None of these exist any more
+            </h3>
+            <p class="md-body-medium">
+              <code>isValid()</code>, <code>isError()</code>, <code>unwrapOr()</code>,
+              <code>unwrapOrElse()</code>, <code>map()</code>, <code>flatMap()</code>,
+              <code>tap()</code>, <code>tapError()</code>, <code>data()</code>,
+              <code>toPlainObject()</code>, <code>Result.ok()</code>,
+              <code>LuqValidationException</code>. There is no <code>Result</code> class to
+              import from <code>@maroonedog/luq</code>.
+            </p>
+          </div>
+
+          <div class="not-prose my-8 overflow-x-auto">
+            <table class="w-full min-w-[40rem] text-left">
+              <thead>
+                <tr class="border-b border-outline">
+                  <th class="md-title-small py-2 pr-4">1.x</th>
+                  <th class="md-title-small py-2">Now</th>
+                </tr>
+              </thead>
+              <tbody class="md-body-medium text-on-surface-variant">
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.isValid()</code></td>
+                  <td class="py-2"><code>result.valid</code></td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.isError()</code></td>
+                  <td class="py-2"><code>!result.valid</code></td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.errors</code></td>
+                  <td class="py-2"><code>result.issues</code></td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.data()</code></td>
+                  <td class="py-2">
+                    <code>result.data</code>, on the success branch only
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.unwrap()</code></td>
+                  <td class="py-2">
+                    <code>unwrap(result)</code> from <code>@maroonedog/luq/result</code>
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.unwrapOr(fallback)</code></td>
+                  <td class="py-2"><code>result.valid ? result.data : fallback</code></td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.map(fn)</code></td>
+                  <td class="py-2"><code>result.valid ? fn(result.data) : result</code></td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>result.toPlainObject()</code></td>
+                  <td class="py-2">The result already is one</td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>ValidationError</code></td>
+                  <td class="py-2">
+                    <code>ValidationIssue</code>, with a non-optional <code>severity</code>
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>ValidationOptions</code></td>
+                  <td class="py-2"><code>ValidateOptions</code></td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4"><code>&#123; context &#125;</code></td>
+                  <td class="py-2"><code>&#123; external &#125;</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="not-prose mt-12 grid gap-6 md:grid-cols-2">
+            <a
+              href="/docs/api/builder"
+              class="md-card md-card-outlined md-state-layer md-focus-ring block p-6"
+            >
+              <h3 class="md-title-medium mb-2">Builder</h3>
+              <p class="md-body-medium text-on-surface-variant">
+                How the object on this page is declared and compiled.
+              </p>
+            </a>
+
+            <a
+              href="/docs/examples"
+              class="md-card md-card-outlined md-state-layer md-focus-ring block p-6"
+            >
+              <h3 class="md-title-medium mb-2">Examples &amp; patterns</h3>
+              <p class="md-body-medium text-on-surface-variant">
+                Nested objects, arrays, conditionals and error handling end to end.
+              </p>
+            </a>
           </div>
         </div>
       </article>
     </main>
-    
+
     <OnThisPage tableOfContents={tableOfContents} />
   </div>
-  
+
   <Footer />
 </BaseLayout>
 
 <style>
   .prose h2 {
-    @apply mt-12 mb-6;
+    @apply mb-6 mt-12;
   }
-  
+
   .prose h3 {
-    @apply mt-8 mb-4;
-  }
-  
-  table {
-    @apply text-luq-neutral-700 dark:text-luq-neutral-300;
-  }
-  
-  td code, th {
-    @apply font-mono text-xs;
+    @apply mb-4 mt-8;
   }
 </style>

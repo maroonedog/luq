@@ -1,0 +1,704 @@
+/*
+ * Material Design 3 component layer.
+ *
+ * Plain CSS on purpose — no `@apply`. These rules are imported ahead of
+ * `@tailwind utilities`, so any Tailwind utility an author adds to an element
+ * still wins over the component default. Every value here comes from a token in
+ * md3-tokens.css; no literal colours, radii or durations below.
+ *
+ * See DESIGN.md for which class to reach for.
+ */
+
+/* ===========================================================================
+ * Type scale
+ * ======================================================================== */
+
+.md-display-large,
+.md-display-medium,
+.md-display-small,
+.md-headline-large,
+.md-headline-medium,
+.md-headline-small,
+.md-title-large,
+.md-title-medium,
+.md-title-small,
+.md-body-large,
+.md-body-medium,
+.md-body-small,
+.md-label-large,
+.md-label-medium,
+.md-label-small {
+  font-family: var(--md-sys-typescale-font-family);
+}
+
+.md-display-large {
+  font-size: var(--md-sys-typescale-display-large-size);
+  line-height: var(--md-sys-typescale-display-large-line-height);
+  font-weight: var(--md-sys-typescale-display-large-weight);
+  letter-spacing: var(--md-sys-typescale-display-large-tracking);
+}
+
+.md-display-medium {
+  font-size: var(--md-sys-typescale-display-medium-size);
+  line-height: var(--md-sys-typescale-display-medium-line-height);
+  font-weight: var(--md-sys-typescale-display-medium-weight);
+  letter-spacing: var(--md-sys-typescale-display-medium-tracking);
+}
+
+.md-display-small {
+  font-size: var(--md-sys-typescale-display-small-size);
+  line-height: var(--md-sys-typescale-display-small-line-height);
+  font-weight: var(--md-sys-typescale-display-small-weight);
+  letter-spacing: var(--md-sys-typescale-display-small-tracking);
+}
+
+.md-headline-large {
+  font-size: var(--md-sys-typescale-headline-large-size);
+  line-height: var(--md-sys-typescale-headline-large-line-height);
+  font-weight: var(--md-sys-typescale-headline-large-weight);
+  letter-spacing: var(--md-sys-typescale-headline-large-tracking);
+}
+
+.md-headline-medium {
+  font-size: var(--md-sys-typescale-headline-medium-size);
+  line-height: var(--md-sys-typescale-headline-medium-line-height);
+  font-weight: var(--md-sys-typescale-headline-medium-weight);
+  letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+}
+
+.md-headline-small {
+  font-size: var(--md-sys-typescale-headline-small-size);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+  letter-spacing: var(--md-sys-typescale-headline-small-tracking);
+}
+
+.md-title-large {
+  font-size: var(--md-sys-typescale-title-large-size);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+}
+
+.md-title-medium {
+  font-size: var(--md-sys-typescale-title-medium-size);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+}
+
+.md-title-small {
+  font-size: var(--md-sys-typescale-title-small-size);
+  line-height: var(--md-sys-typescale-title-small-line-height);
+  font-weight: var(--md-sys-typescale-title-small-weight);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
+}
+
+.md-body-large {
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  font-weight: var(--md-sys-typescale-body-large-weight);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+}
+
+.md-body-medium {
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+}
+
+.md-body-small {
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  font-weight: var(--md-sys-typescale-body-small-weight);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+}
+
+.md-label-large {
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
+
+.md-label-medium {
+  font-size: var(--md-sys-typescale-label-medium-size);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+}
+
+.md-label-small {
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  font-weight: var(--md-sys-typescale-label-small-weight);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
+}
+
+/* ===========================================================================
+ * Elevation — MD3 expresses height with a shadow AND a surface tint
+ * ======================================================================== */
+
+.md-elevation-0 {
+  box-shadow: var(--md-sys-elevation-level0);
+}
+
+.md-elevation-1 {
+  box-shadow: var(--md-sys-elevation-level1);
+  background-image: linear-gradient(
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.05),
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.05)
+  );
+}
+
+.md-elevation-2 {
+  box-shadow: var(--md-sys-elevation-level2);
+  background-image: linear-gradient(
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.08),
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.08)
+  );
+}
+
+.md-elevation-3 {
+  box-shadow: var(--md-sys-elevation-level3);
+  background-image: linear-gradient(
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.11),
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.11)
+  );
+}
+
+.md-elevation-4 {
+  box-shadow: var(--md-sys-elevation-level4);
+  background-image: linear-gradient(
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.12),
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.12)
+  );
+}
+
+.md-elevation-5 {
+  box-shadow: var(--md-sys-elevation-level5);
+  background-image: linear-gradient(
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.14),
+    rgb(var(--md-sys-color-surface-tint-rgb) / 0.14)
+  );
+}
+
+/* ===========================================================================
+ * State layer — an on-colour wash over an interactive element
+ * ======================================================================== */
+
+.md-state-layer {
+  position: relative;
+}
+
+.md-state-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short-4)
+    var(--md-sys-motion-easing-standard);
+}
+
+.md-state-layer:hover::after {
+  opacity: var(--md-sys-state-hover-opacity);
+}
+
+.md-state-layer:focus-visible::after {
+  opacity: var(--md-sys-state-focus-opacity);
+}
+
+.md-state-layer:active::after {
+  opacity: var(--md-sys-state-pressed-opacity);
+}
+
+.md-state-layer[aria-disabled='true']::after,
+.md-state-layer:disabled::after {
+  opacity: 0;
+}
+
+/* ===========================================================================
+ * Focus indicator
+ * ======================================================================== */
+
+.md-focus-ring:focus-visible {
+  outline: 3px solid var(--md-sys-color-secondary);
+  outline-offset: 2px;
+}
+
+/* ===========================================================================
+ * Buttons — 40dp tall, full-round, label-large
+ * ======================================================================== */
+
+.md-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 24px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-duration-short-4)
+      var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-short-4)
+      var(--md-sys-motion-easing-standard);
+}
+
+.md-button:disabled,
+.md-button[aria-disabled='true'] {
+  cursor: not-allowed;
+  box-shadow: none;
+  background-color: rgb(var(--md-sys-color-on-surface-rgb) / 0.12);
+  color: rgb(var(--md-sys-color-on-surface-rgb) / 0.38);
+  border-color: rgb(var(--md-sys-color-on-surface-rgb) / 0.12);
+}
+
+.md-button-filled {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.md-button-filled:hover {
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md-button-tonal {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.md-button-tonal:hover {
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md-button-elevated {
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-primary);
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md-button-elevated:hover {
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+.md-button-outlined {
+  background-color: transparent;
+  color: var(--md-sys-color-primary);
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+.md-button-text {
+  padding: 0 12px;
+  background-color: transparent;
+  color: var(--md-sys-color-primary);
+}
+
+/* Icon button — 40dp target, 24dp glyph */
+.md-icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background-color: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+
+.md-icon-button-filled {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.md-icon-button-tonal {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.md-icon-button-outlined {
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+/* ===========================================================================
+ * Cards — medium (12dp) corners in all three flavours
+ * ======================================================================== */
+
+.md-card {
+  position: relative;
+  display: block;
+  border-radius: var(--md-sys-shape-corner-medium);
+  color: var(--md-sys-color-on-surface);
+  transition: box-shadow var(--md-sys-motion-duration-medium-1)
+    var(--md-sys-motion-easing-emphasized-decelerate);
+}
+
+.md-card-elevated {
+  background-color: var(--md-sys-color-surface-container-low);
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md-card-elevated.md-state-layer:hover {
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+.md-card-filled {
+  background-color: var(--md-sys-color-surface-container-highest);
+}
+
+.md-card-outlined {
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.md-card-outlined.md-state-layer:hover {
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+/* ===========================================================================
+ * Chips — 32dp tall, small (8dp) corners
+ * ======================================================================== */
+
+.md-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--md-sys-shape-corner-small);
+  border: 1px solid var(--md-sys-color-outline);
+  background-color: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-duration-short-4)
+      var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short-4)
+      var(--md-sys-motion-easing-standard);
+}
+
+.md-chip[aria-selected='true'],
+.md-chip[aria-pressed='true'],
+.md-chip.is-selected {
+  border-color: transparent;
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+/* Non-interactive label, e.g. a plugin's slot list */
+.md-chip-static {
+  cursor: default;
+  border-color: transparent;
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ===========================================================================
+ * Top app bar — small variant, 64dp
+ * ======================================================================== */
+
+.md-top-app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 64px;
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  transition: background-color var(--md-sys-motion-duration-short-4)
+      var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-short-4)
+      var(--md-sys-motion-easing-standard);
+}
+
+/* MD3: the bar lifts to surface-container + level 2 once content scrolls under it */
+.md-top-app-bar.is-scrolled {
+  background-color: var(--md-sys-color-surface-container);
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+.md-top-app-bar-headline {
+  font-size: var(--md-sys-typescale-title-large-size);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+}
+
+/* ===========================================================================
+ * Navigation drawer
+ * ======================================================================== */
+
+.md-nav-drawer {
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* Modal (mobile) drawer: surface-container-low, level 1, 16dp trailing corner */
+.md-nav-drawer-modal {
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-level1);
+  border-start-end-radius: var(--md-sys-shape-corner-large);
+  border-end-end-radius: var(--md-sys-shape-corner-large);
+}
+
+.md-nav-drawer-headline {
+  padding: 18px 16px 16px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-title-small-size);
+  line-height: var(--md-sys-typescale-title-small-line-height);
+  font-weight: var(--md-sys-typescale-title-small-weight);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
+}
+
+.md-nav-drawer-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 24px 0 16px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  text-decoration: none;
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  transition: background-color var(--md-sys-motion-duration-short-4)
+    var(--md-sys-motion-easing-standard);
+}
+
+.md-nav-drawer-item.is-active,
+.md-nav-drawer-item[aria-current='page'] {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+/* Denser variant for long documentation trees */
+.md-nav-drawer-item-dense {
+  min-height: 40px;
+  padding: 0 16px;
+}
+
+/* ===========================================================================
+ * Scrim (modal backdrop)
+ * ======================================================================== */
+
+.md-scrim {
+  position: fixed;
+  inset: 0;
+  background-color: rgb(var(--md-sys-color-scrim-rgb) / 0.32);
+  transition: opacity var(--md-sys-motion-duration-medium-2)
+    var(--md-sys-motion-easing-emphasized);
+}
+
+/* ===========================================================================
+ * List
+ * ======================================================================== */
+
+.md-list-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 8px 16px;
+  color: var(--md-sys-color-on-surface);
+  text-decoration: none;
+}
+
+.md-list-item-headline {
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  font-weight: var(--md-sys-typescale-body-large-weight);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+}
+
+.md-list-item-supporting {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+}
+
+/* ===========================================================================
+ * Divider
+ * ======================================================================== */
+
+.md-divider {
+  border: 0;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.md-divider-inset {
+  margin-inline-start: 16px;
+}
+
+.md-divider-vertical {
+  border: 0;
+  border-left: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* ===========================================================================
+ * Material Symbols
+ * ======================================================================== */
+
+.md-icon {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  flex: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.md-icon-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.md-icon-sm {
+  font-size: 20px;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+/* ===========================================================================
+ * Code surface
+ *
+ * Code blocks keep a dark surface in both schemes. The colours are MD3 tones
+ * measured against that surface by scripts/generate-md3-tokens.mjs — the lowest
+ * ratio in the set is printed in md3-tokens.css.
+ * ======================================================================== */
+
+.md-code-surface {
+  /*
+   * A long code line must never widen the page. `overflow-x: auto` on the <pre>
+   * lets the line scroll, but the block still reports that line as its
+   * min-content width, so a grid or flex ancestor with the default
+   * `min-width: auto` grows to fit it. `contain: inline-size` makes this box
+   * size as if it were empty in the inline axis, cutting that path.
+   * Measured on the home page at a 375px viewport: document scrollWidth 648px
+   * without this line, 375px with it.
+   */
+  contain: inline-size;
+  background-color: var(--md-code-surface);
+  color: var(--md-code-on-surface);
+  border: 1px solid var(--md-code-outline);
+  border-radius: var(--md-sys-shape-corner-medium);
+  font-family: var(--md-sys-typescale-code-font-family);
+  font-size: 13px;
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+.md-code-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 16px;
+  background-color: var(--md-code-surface-container);
+  color: var(--md-code-on-surface-variant);
+  border-bottom: 1px solid var(--md-code-outline);
+}
+
+.md-code-surface .token.comment,
+.md-code-surface .token.prolog,
+.md-code-surface .token.cdata {
+  color: var(--md-code-comment);
+}
+
+.md-code-surface .token.keyword,
+.md-code-surface .token.boolean,
+.md-code-surface .token.constant,
+.md-code-surface .token.builtin {
+  color: var(--md-code-keyword);
+}
+
+.md-code-surface .token.string,
+.md-code-surface .token.char,
+.md-code-surface .token.attr-value {
+  color: var(--md-code-string);
+}
+
+.md-code-surface .token.number {
+  color: var(--md-code-number);
+}
+
+.md-code-surface .token.function,
+.md-code-surface .token.method {
+  color: var(--md-code-function);
+}
+
+.md-code-surface .token.class-name,
+.md-code-surface .token.tag,
+.md-code-surface .token.selector {
+  color: var(--md-code-type);
+}
+
+.md-code-surface .token.property,
+.md-code-surface .token.attr-name,
+.md-code-surface .token.parameter,
+.md-code-surface .token.variable {
+  color: var(--md-code-property);
+}
+
+.md-code-surface .token.operator,
+.md-code-surface .token.punctuation,
+.md-code-surface .token.entity {
+  color: var(--md-code-operator);
+}
+
+.md-code-surface .token.regex,
+.md-code-surface .token.important,
+.md-code-surface .token.deleted {
+  color: var(--md-code-regex);
+}
+
+/* ===========================================================================
+ * Motion — honour the reader's setting
+ * ======================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

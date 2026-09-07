@@ -1,110 +1,160 @@
 ---
 import CodeBlock from './CodeBlock.astro';
 
+/**
+ * The five claims worth making, each with the code that backs it.
+ *
+ * Where a claim carries a number, the number is measured on this repository and
+ * the file it came from is named in the block. The 1.x version of this file
+ * ended its bundle example with "// Final bundle: ~19KB gzipped", a figure that
+ * belonged to a core bundle 2.3x this one's size.
+ */
 const features = [
   {
-    title: 'Works With Your Existing Types',
-    description: 'No need to rewrite your interfaces or convert to schemas. Luq works with the TypeScript types you already have.',
-    icon: 'types',
-    example: `// Your existing interface
-interface User {
+    icon: 'data_object',
+    title: 'Your type is the schema',
+    description:
+      'No interface gets rewritten and no type gets inferred back out of a schema object. A path that does not exist on the type is a compile error, and so is choosing a slot the field’s type cannot be.',
+    fileName: 'user.ts',
+    example: `type User = {
   name: string;
   email: string;
   age: number;
-}
-
-// Just add validation
-.for<User>() // Full type safety`
-  },
-  {
-    title: 'Type-Safe Builder Pattern',
-    description: 'IntelliSense shows only the methods available for each field type. String fields get string methods, numbers get number methods.',
-    icon: 'builder',
-    example: `// IDE autocomplete works perfectly
-.v("name", b => b.string.required().min(2))
-.v("age", b => b.number.required().min(13))
-.v("email", b => b.string.required().email())`
-  },
-  {
-    title: 'Small Bundle Size',
-    description: 'Import only the validation plugins you need. Unused plugins are automatically tree-shaken from your bundle.',
-    icon: 'bundle',
-    example: `// Only import what you use
-import { requiredPlugin } from '@maroonedog/luq/plugins/required';
-import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
-
-// Final bundle: ~19KB gzipped`
-  },
-  {
-    title: 'Cross-Field Validation',
-    description: 'Validate fields that depend on other fields. Compare passwords, check conditional requirements, and more.',
-    icon: 'crossfield',
-    example: `// Password confirmation
-.v("confirmPassword", b => 
-  b.string.required().compareField("password")
-)
-
-// Conditional validation
-.v("phone", b => 
-  b.string.requiredIf((data) => data.contactMethod === "phone")
-)`
-  }
-];
-
-const getIcon = (type: string) => {
-  const icons: Record<string, string> = {
-    types: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
-    builder: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-    bundle: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
-    crossfield: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'
-  };
-  return icons[type] || '';
 };
+
+Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<User>()
+  .v("name", (b) => b.string.required().min(3))
+  // .v("nmae", ...)      -> compile error: no such path
+  // .v("age", b => b.string...) -> compile error: wrong slot
+  .build();`,
+  },
+  {
+    icon: 'extension',
+    title: 'A plugin you did not import has no method',
+    description:
+      'There is no registry to populate and no barrel you have to pay for. .use() puts a plugin in the builder’s bag, and the bag decides which methods exist on which slots — so an unimported rule is not merely absent at runtime, it does not typecheck.',
+    fileName: 'draft.ts',
+    example: `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+type Draft = { title: string };
+
+const draftValidator = Builder()
+  .use(requiredPlugin)
+  .for<Draft>()
+  // \`.min(3)\` is not offered here: stringMinPlugin
+  // was never \`use\`d, so the method does not exist.
+  .v("title", (b) => b.string.required())
+  .build();`,
+  },
+  {
+    icon: 'deployed_code',
+    title: 'You pay for what you import',
+    description:
+      'Measured with esbuild and gzip, the same options 1.x’s own comparison used. The core is 30.9% of the all-plugins build — the floor you pay before using anything is small, which is the part a bundle-size claim usually hides.',
+    fileName: 'imports.ts',
+    example: `// Six plugins, six imports.
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { stringMaxPlugin } from "@maroonedog/luq/plugins/stringMax";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { numberMaxPlugin } from "@maroonedog/luq/plugins/numberMax";
+
+// Measured gzip — config/size-budget.json:
+//   Builder alone .............  7,420 B
+//   Builder + these six .......  8,373 B
+//   Builder + all 76 plugins .. 24,040 B`,
+  },
+  {
+    icon: 'compare_arrows',
+    title: 'Rules that read other fields',
+    description:
+      'compareField resolves the other field’s path once, at build time. requiredIf is a presence rule rather than a check, so it decides the field’s gate instead of only rejecting an empty string that already got through.',
+    fileName: 'signup.ts',
+    example: `type Signup = {
+  password: string;
+  confirmPassword: string;
+  contactMethod: "email" | "phone";
+  phone?: string;
+};
+
+Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(compareFieldPlugin)
+  .use(requiredIfPlugin)
+  .for<Signup>()
+  .v("password", (b) => b.string.required().min(12))
+  .v("confirmPassword", (b) =>
+    b.string.required().compareField("password")
+  )
+  .v("phone", (b) =>
+    b.string.requiredIf((data) => data.contactMethod === "phone")
+  )
+  .build();`,
+  },
+  {
+    icon: 'schema',
+    title: 'JSON Schema, with the score written down',
+    description:
+      '828 of 929 cases on the official Draft-07 suite — required tests only, skipped cases counted as failures. Read it against the trivial floor: a validator that returned true unconditionally scores 551 / 929 = 59.31% on the same corpus.',
+    fileName: 'account.ts',
+    example: `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
+
+type Account = { email: string; age?: number };
+
+const accountValidator = fromJsonSchema<Account>({
+  type: "object",
+  properties: {
+    email: { type: "string", format: "email" },
+    age: { type: "number", minimum: 18 },
+  },
+  required: ["email"],
+});
+
+// 828 / 929 = 89.13% — docs/json-schema-conformance.md`,
+  },
+];
 ---
 
-<section class="py-20 px-4 sm:px-6 lg:px-8 bg-luq-neutral-50 dark:bg-luq-neutral-900">
-  <div class="container mx-auto max-w-7xl">
-    <div class="text-center mb-16">
-      <h2 class="text-4xl font-bold mb-4">
-        Why Choose <span class="luq-gradient-text">Luq</span>?
-      </h2>
-      <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 max-w-2xl mx-auto">
-        Built for teams who want validation without the complexity
+<section class="bg-surface px-4 py-20 sm:px-6 lg:px-8">
+  <div class="container mx-auto max-w-6xl">
+    <div class="mb-16 text-center">
+      <h2 class="mb-3 text-headline-medium text-on-surface">What Luq actually does</h2>
+      <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
+        Five claims, each with the code that backs it and the file the number came from.
       </p>
     </div>
-    
-    <div class="space-y-20">
-      {features.map((feature, index) => (
-        <div class="grid lg:grid-cols-2 gap-12 items-center">
-          <div class:list={[index % 2 === 1 && 'lg:order-2']}>
-            <div class="flex items-start mb-6">
-              <div class="w-14 h-14 bg-gradient-to-r from-luq-purple-500 to-luq-teal-500 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d={getIcon(feature.icon)} />
-                </svg>
+
+    <div class="space-y-16">
+      {
+        features.map((feature, index) => (
+          <div class="grid items-center gap-8 lg:grid-cols-2">
+            <div class:list={['min-w-0', index % 2 === 1 && 'lg:order-2']}>
+              <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-shape-md bg-primary-container">
+                <span class="md-icon text-on-primary-container" aria-hidden="true">
+                  {feature.icon}
+                </span>
               </div>
-              <div>
-                <h3 class="text-2xl font-bold mb-4">{feature.title}</h3>
-                <p class="text-lg text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
+              <h3 class="mb-3 text-headline-small text-on-surface">{feature.title}</h3>
+              <p class="text-body-large text-on-surface-variant">{feature.description}</p>
+            </div>
+
+            <div class:list={['min-w-0', index % 2 === 1 && 'lg:order-1']}>
+              <CodeBlock
+                code={feature.example}
+                language="typescript"
+                fileName={feature.fileName}
+                showCopy={false}
+              />
             </div>
           </div>
-          
-          <div class:list={[index % 2 === 1 && 'lg:order-1']}>
-            <CodeBlock 
-              code={feature.example} 
-              language="typescript"
-              fileName="example.ts"
-              showWindowControls={true}
-              showCopy={false}
-              class="shadow-2xl"
-            />
-          </div>
-        </div>
-      ))}
+        ))
+      }
     </div>
-
   </div>
 </section>

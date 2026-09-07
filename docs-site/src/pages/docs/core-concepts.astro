@@ -6,162 +6,475 @@ import DocsSidebar from '../../components/DocsSidebar.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 
-// Simplified code examples
-const typeFirstExample = `// Define your TypeScript type as usual
+// Every TypeScript block on this page was typechecked against the built
+// package. The blocks marked "does not compile" were checked the other way:
+// they are required to be rejected, and they are.
+
+const typeFirstExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
+
+// The type is written once, as ordinary TypeScript.
 type User = {
   name: string;
   age: number;
 };
 
-// Build a validator from the existing type
-const validator = Builder()
+const userValidator = Builder()
   .use(requiredPlugin)
-  .use(stringMinPlugin)
-  .for<User>()  // Reference your existing type
+  .use(numberMinPlugin)
+  .for<User>()          // the type IS the schema
   .v('name', b => b.string.required())
-  .v('age', b => b.number.required())
+  .v('age', b => b.number.required().min(0))
   .build();`;
 
-const pluginExample = `import { Builder } from '@maroonedog/luq';
+// luq-example: skip — キャレットで一行を指すだけの断片で、単体では文にならない
+const slotExample = `.v('title', b => b.number.required().min(3))
+//              ^^^^^^^^
+// \`title\` is a string. Choosing b.number does not compile.`;
+
+const bagExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
 import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
 
-// Only import what you need - tree-shaking friendly
+type UserProfile = { name: string; age: number };
+
 const validator = Builder()
-  .use(requiredPlugin)      // Adds .required() method
-  .use(stringMinPlugin)     // Adds .min() for strings
-  .use(numberMinPlugin)     // Adds .min() for numbers
+  .use(requiredPlugin)    // adds .required() to every slot
+  .use(stringMinPlugin)   // adds .min() to b.string
+  .use(numberMinPlugin)   // adds .min() to b.number
   .for<UserProfile>()
   .v('name', b => b.string.required().min(2))
   .v('age', b => b.number.required().min(18))
   .build();`;
 
-const validationExample = `const result = validator.validate({
-  name: 'John',
-  age: 25
-});
+// luq-example: must-fail — .min() を bag に入れていないことを示す例なので、通ったらページの主張が嘘になる
+const unimportedExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 
-if (result.isValid()) {
-  const data = result.unwrap();
-  // data is fully typed as UserProfile
-} else {
-  result.errors.forEach(error => {
-    console.log(\`\${error.path}: \${error.message}\`);
-  });
-}`;
----
+type Draft = { title: string };
 
-<BaseLayout title="Core Concepts - Luq Documentation">
-  <Header />
-  
-  <div class="flex min-h-screen">
-    <DocsSidebar currentPath="/docs/core-concepts" />
-    
-    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8">Core Concepts</h1>
-        
-        <div class="prose prose-lg dark:prose-invert max-w-none">
-          <p class="lead">
-            Luq's design centers around three key principles: type-first validation, plugin architecture, and runtime safety.
-          </p>
-          
-          <h2 id="type-first-design">Type-First Design</h2>
-          
-          <p>
-            Luq builds validators from your existing TypeScript types. Your types remain the single source of truth.
-          </p>
-          
-          <CodeBlock code={typeFirstExample} language="typescript" showCopy={true} />
-          
-          <h2 id="plugin-architecture">Plugin Architecture</h2>
-          
-          <p>
-            Validation methods come from plugins. Import only what you need for optimal bundle size.
-          </p>
-          
-          <CodeBlock code={pluginExample} language="typescript" showCopy={true} />
-          
-          <h2 id="validation-results">Validation & Results</h2>
-          
-          <p>
-            Validators return Result objects for safe error handling.
-          </p>
-          
-          <CodeBlock code={validationExample} language="typescript" showCopy={true} />
-          
-          <div class="not-prose bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 my-6 border border-amber-300 dark:border-amber-700">
-            <h3 class="font-semibold mb-3 text-amber-800 dark:text-amber-300">validate() vs parse()</h3>
-            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-400">
-              <li>• <code>validate()</code> - Returns original values, validates structure</li>
-              <li>• <code>parse()</code> - Returns transformed values (when using transform plugins)</li>
-            </ul>
-          </div>
-          
-          <h2 id="field-path-system">Field Path System</h2>
-          
-          <p>
-            Access nested fields using dot notation. TypeScript provides autocomplete for valid paths.
-          </p>
-          
-          <CodeBlock code={`type UserProfile = {
+const draftValidator = Builder()
+  .use(requiredPlugin)
+  .for<Draft>()
+  // stringMinPlugin was never \`use\`d, so \`.min\` does not exist here.
+  .v('title', b => b.string.required().min(3))
+  .build();`;
+
+const pathExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type UserProfile = {
   name: string;
-  address: {
-    street: string;
-    city: string;
-  };
+  address: { street: string; city: string };
   tags: string[];
 };
 
 const validator = Builder()
   .use(requiredPlugin)
+  .use(stringMinPlugin)
   .for<UserProfile>()
   .v('name', b => b.string.required())
-  .v('address.street', b => b.string.required())  // Nested access
+  .v('address.street', b => b.string.required())   // dot = nested property
   .v('address.city', b => b.string.required())
-  .v('tags', b => b.array.required())
-  .build();`} language="typescript" showCopy={true} />
-          
-          <div class="not-prose mt-12">
-            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
-            <div class="grid md:grid-cols-2 gap-6">
-              <a href="/docs/api/builder" class="luq-card p-6 hover:shadow-lg transition-shadow">
-                <h4 class="text-lg font-semibold mb-2">Builder API</h4>
-                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Complete API reference for building validators
-                </p>
-              </a>
-              
-              <a href="/plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
-                <h4 class="text-lg font-semibold mb-2">Plugin Library</h4>
-                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Browse all available validation plugins
-                </p>
-              </a>
-            </div>
-          </div>
+  .v('tags', b => b.array.required())              // the array itself
+  .v('tags[*]', b => b.string.required().min(1))   // every element
+  .build();
+
+const rejected = validator.validate({
+  name: 'Jo',
+  address: { street: 'Main', city: 'Tokyo' },
+  tags: ['ok', ''],
+});
+
+// -> ["tags[1]"] — the REAL index, never "tags[*]"
+const failedPaths = rejected.issues.map(issue => issue.path);`;
+
+const presenceExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { optionalPlugin } from '@maroonedog/luq/plugins/optional';
+import { nullablePlugin } from '@maroonedog/luq/plugins/nullable';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type Member = {
+  id: string;
+  nickname?: string;
+  deletedAt: string | null;
+  closedAt: string | null;
+};
+
+const memberValidator = Builder()
+  .use(requiredPlugin)
+  .use(optionalPlugin)
+  .use(nullablePlugin)
+  .use(stringMinPlugin)
+  .for<Member>()
+  .v('id', b => b.string.required().min(1))
+  .v('nickname', b => b.string.optional().min(2))
+  .v('deletedAt', b => b.string.nullable())
+  // .required() narrows out null as well as undefined, so "present or
+  // explicitly null, but never missing" is the two rules chained.
+  .v('closedAt', b => b.string.required().nullable())
+  .build();`;
+
+// luq-example: with bagExample — 直前のブロックで組み立てた validator をそのまま読むところなので、宣言を繰り返さずに検査だけ前置きする
+const resultExample = `const result = validator.validate({ name: 'John', age: 25 });
+
+if (result.valid) {
+  // \`data\` is fully typed as UserProfile, and exists only on this branch.
+  console.log(result.data.name);
+} else {
+  for (const issue of result.issues) {
+    console.log(\`\${issue.path}: \${issue.message} [\${issue.code}] \${issue.severity}\`);
+  }
+}`;
+
+const parseExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { transformPlugin } from '@maroonedog/luq/plugins/transform';
+
+type Signup = { email: string };
+
+const signupValidator = Builder()
+  .use(requiredPlugin)
+  .use(transformPlugin)
+  .for<Signup>()
+  .v('email', b => b.string.required().transform(value => value.trim()))
+  .build();
+
+// -> "  a@b.com  " — validate() never changes your value.
+const kept = signupValidator.validate({ email: '  a@b.com  ' });
+
+// -> "a@b.com" — parse() applies transforms, and only to a field whose
+// checks all passed.
+const trimmed = signupValidator.parse({ email: '  a@b.com  ' });`;
+
+const pathGrammar = [
+  { form: '"name"', means: 'a property of the root' },
+  { form: '"customer.name"', means: 'a nested property' },
+  { form: '"items[*]"', means: 'every element of items, as a whole value' },
+  { form: '"items[*].sku"', means: 'sku of every element' },
+  { form: '"matrix[*][*]"', means: 'every element of every sub-array' },
+];
+
+const presenceRows = [
+  { declared: '.required()', undef: 'rejected', nul: 'rejected', empty: 'rejected', present: 'checks run' },
+  { declared: '.optional()', undef: 'accepted, field ends', nul: 'rejected', empty: 'checks run', present: 'checks run' },
+  { declared: '.nullable()', undef: 'rejected', nul: 'accepted, field ends', empty: 'checks run', present: 'checks run' },
+  { declared: 'nothing', undef: 'accepted, field ends', nul: 'accepted, field ends', empty: 'checks run', present: 'checks run' },
+];
+
+const tableOfContents = [
+  { id: 'type-first-design', title: 'Type-first design', level: 2 },
+  { id: 'slots', title: 'Slots', level: 2 },
+  { id: 'plugins-are-the-vocabulary', title: 'Plugins are the vocabulary', level: 2 },
+  { id: 'field-paths', title: 'Field paths', level: 2 },
+  { id: 'presence', title: 'Presence', level: 2 },
+  { id: 'the-order-rules-run-in', title: 'The order rules run in', level: 2 },
+  { id: 'results', title: 'Results', level: 2 },
+  { id: 'validate-vs-parse', title: 'validate() vs parse()', level: 2 },
+  { id: 'next-steps', title: 'Next steps', level: 2 },
+];
+---
+
+<BaseLayout title="Core concepts — Luq documentation">
+  <Header />
+
+  <div class="flex min-h-screen">
+    <DocsSidebar currentPath="/docs/core-concepts" tableOfContents={tableOfContents} />
+
+    <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
+      <article class="mx-auto max-w-4xl">
+        <h1 class="text-headline-large">Core concepts</h1>
+
+        <p class="mt-4 text-body-large text-on-surface-variant">
+          Six ideas carry the whole library: your type is the schema, a slot decides which
+          methods exist, a plugin bag decides which of those you imported, a path is a
+          checked string literal, presence is decided once before any check, and the result
+          is a discriminated union.
+        </p>
+
+        <h2 id="type-first-design" class="mt-12 text-headline-small">Type-first design</h2>
+
+        <p class="mt-3 text-body-large">
+          Luq builds a validator from a type you already have. There is no inferred schema
+          type to keep in step with your own, because there is no second declaration.
+        </p>
+
+        <CodeBlock code={typeFirstExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          A path that does not exist on the type is a compile error, not a silent no-op.
+        </p>
+
+        <h2 id="slots" class="mt-12 text-headline-small">Slots</h2>
+
+        <p class="mt-3 text-body-large">
+          Inside a <code>.v()</code> callback you first pick a <strong>slot</strong> —
+          <code>b.string</code>, <code>b.number</code>, <code>b.boolean</code>,
+          <code>b.date</code>, <code>b.array</code>, <code>b.tuple</code>,
+          <code>b.object</code>, <code>b.union</code>, <code>b.any</code>. The slot is what
+          decides which methods the chain offers: <code>stringMin</code> puts
+          <code>.min()</code> on <code>b.string</code> and <code>numberMin</code> puts a
+          different <code>.min()</code> on <code>b.number</code>, and the two never collide
+          because their slots do not overlap.
+        </p>
+
+        <p class="mt-4 text-body-large">
+          Choosing a slot the field's type cannot be is a <strong>compile</strong> error.
+        </p>
+
+        <div class="mt-4 rounded-shape-md border border-error p-1">
+          <p class="px-3 py-2 text-label-large text-error">
+            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>
+            This does not compile
+          </p>
+          <CodeBlock code={slotExample} language="typescript" showCopy={false} />
         </div>
-      </div>
+
+        <h2 id="plugins-are-the-vocabulary" class="mt-12 text-headline-small">
+          Plugins are the vocabulary
+        </h2>
+
+        <p class="mt-3 text-body-large">
+          <code>.use()</code> puts a plugin in the builder's <strong>bag</strong>, and the bag
+          decides which methods exist on which slots. There is no registry to populate and no
+          global state; the bag is a type the builder carries.
+        </p>
+
+        <CodeBlock code={bagExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          Because the bag is a type, an unimported plugin is not merely absent at run time —
+          its method does not typecheck. That is the whole tree-shaking story: the bundle
+          contains what you imported, and nothing you did not.
+        </p>
+
+        <div class="mt-4 rounded-shape-md border border-error p-1">
+          <p class="px-3 py-2 text-label-large text-error">
+            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>
+            This does not compile
+          </p>
+          <CodeBlock code={unimportedExample} language="typescript" showCopy={false} />
+        </div>
+
+        <h2 id="field-paths" class="mt-12 text-headline-small">Field paths</h2>
+
+        <p class="mt-3 text-body-large">
+          A path is a string literal TypeScript resolves against your type. Nested fields use
+          dots; array elements use <code>[*]</code>. That is the entire grammar.
+        </p>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline">
+                <th class="py-2 pr-4 text-left text-title-small">Form</th>
+                <th class="py-2 text-left text-title-small">Means</th>
+              </tr>
+            </thead>
+            <tbody class="text-on-surface-variant">
+              {
+                pathGrammar.map((row) => (
+                  <tr class="border-b border-outline-variant">
+                    <td class="py-2 pr-4 font-mono text-body-small text-on-surface">{row.form}</td>
+                    <td class="py-2">{row.means}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <CodeBlock code={pathExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          The path you <em>declare</em> holds <code>[*]</code>; the path you <em>read back</em>
+          holds the index the failure happened at. A fixed index in a declaration
+          (<code>items[0].name</code>), a bare <code>items.name</code>, the legacy
+          <code>items.*.name</code>, and reaching into an array's own members
+          (<code>tags.length</code>) are all compile errors — as is reaching inside a
+          <code>Date</code>, <code>RegExp</code>, <code>Map</code>, <code>Set</code> or any
+          other built-in, which a path treats as opaque.
+        </p>
+
+        <h2 id="presence" class="mt-12 text-headline-small">Presence</h2>
+
+        <p class="mt-3 text-body-large">
+          Whether a value is <em>absent</em> is decided once, by the field's presence policy,
+          before any check sees it. A check therefore never re-decides whether
+          <code>null</code> is acceptable — which is why <code>stringMin</code> lets a
+          non-string through instead of failing it under the wrong code.
+        </p>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline">
+                <th class="py-2 pr-4 text-left text-title-small">Declared</th>
+                <th class="py-2 pr-4 text-left text-title-small"><code>undefined</code></th>
+                <th class="py-2 pr-4 text-left text-title-small"><code>null</code></th>
+                <th class="py-2 pr-4 text-left text-title-small"><code>""</code></th>
+                <th class="py-2 text-left text-title-small">present</th>
+              </tr>
+            </thead>
+            <tbody class="text-on-surface-variant">
+              {
+                presenceRows.map((row) => (
+                  <tr class="border-b border-outline-variant">
+                    <td class="py-2 pr-4 font-mono text-body-small text-on-surface">
+                      {row.declared}
+                    </td>
+                    <td class="py-2 pr-4">{row.undef}</td>
+                    <td class="py-2 pr-4">{row.nul}</td>
+                    <td class="py-2 pr-4">{row.empty}</td>
+                    <td class="py-2">{row.present}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="md-card md-card-outlined mt-6 p-5">
+          <h3 class="text-title-medium">A field with no presence rule is not required</h3>
+          <p class="mt-2 text-body-medium text-on-surface-variant">
+            That is the last row, and it is one uniform answer replacing 1.x's split, where
+            adding an array elsewhere in the schema switched implicit-required on for
+            unrelated fields. <code>.required()</code> treating <code>""</code> as absent is
+            1.x behaviour kept deliberately — <code>0</code>, <code>false</code>,
+            <code>[]</code> and <code>{'{}'}</code> all count as present.
+          </p>
+        </div>
+
+        <CodeBlock code={presenceExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          <code>requiredIf</code> and <code>optionalIf</code> are presence rules too, not
+          checks: a field that fails one produces exactly one issue, under the presence
+          rule's own code, and no check on that field runs.
+        </p>
+
+        <h2 id="the-order-rules-run-in" class="mt-12 text-headline-small">
+          The order rules run in
+        </h2>
+
+        <p class="mt-3 text-body-large">
+          For every field, always, whatever order you wrote the chain in:
+        </p>
+
+        <CodeBlock
+          code={'default  ->  presence  ->  gates  ->  checks  ->  transforms  ->  recursion'}
+          language="text"
+          showCopy={false}
+        />
+
+        <p class="mt-4 text-body-large">
+          <code>build()</code> sorts the chain into those buckets, so
+          <code>.min(3).validateIf(c)</code> and <code>.validateIf(c).min(3)</code> mean the
+          same thing. In 1.x the answer depended on where in the chain the call sat. Three
+          consequences worth stating: a closed gate silences the whole field rather than the
+          rules after it; a rejected presence rule ends the field with exactly one issue; and
+          transforms run in <code>parse()</code> only, and only when every check passed.
+        </p>
+
+        <h2 id="results" class="mt-12 text-headline-small">Results</h2>
+
+        <p class="mt-3 text-body-large">
+          <code>validate()</code> and <code>parse()</code> return a
+          <code>ValidationResult&lt;T&gt;</code> — a discriminated union on <code>valid</code>.
+          There is no result class, no <code>unwrap()</code> method on the value, and no
+          <code>errors</code> member.
+        </p>
+
+        <CodeBlock
+          code={`type ValidationResult<T> =
+  | { valid: true;  data: T; issues: readonly ValidationIssue[] }
+  | { valid: false;          issues: readonly ValidationIssue[] };
+
+type ValidationIssue = {
+  path: string;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+};`}
+          language="typescript"
+        />
+
+        <CodeBlock code={resultExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          The default <code>code</code> is the plugin's own name. <code>severity</code> is
+          never absent, and an issue whose severity is not <code>error</code> is reported
+          without failing the result — so <code>issues</code> is worth reading on the success
+          branch too.
+        </p>
+
+        <h2 id="validate-vs-parse" class="mt-12 text-headline-small">
+          <code>validate()</code> vs <code>parse()</code>
+        </h2>
+
+        <CodeBlock code={parseExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          <code>.transform()</code> also changes the chain's <em>type</em>, so a transform to
+          another type is reflected in what <code>parse()</code> hands back. Use
+          <code>validate()</code> when you want to judge a value and keep it; use
+          <code>parse()</code> when you want the value the rules produced.
+        </p>
+
+        <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-3">
+          <a
+            href="/docs/custom-plugins"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">build</span>
+            <h3 class="mt-2 text-title-medium">Writing a plugin</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              <code>definePlugin</code>, the markers, and the <code>out</code> contract
+            </p>
+          </a>
+
+          <a href="/plugins" class="md-card md-card-outlined md-state-layer md-focus-ring block p-5">
+            <span class="md-icon text-primary" aria-hidden="true">extension</span>
+            <h3 class="mt-2 text-title-medium">Plugin catalog</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              Every subpath, chain method and slot
+            </p>
+          </a>
+
+          <a
+            href="/docs/api/validator#porting"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">swap_horiz</span>
+            <h3 class="mt-2 text-title-medium">Porting from 1.x</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              What <code>isValid()</code>, <code>errors</code> and the
+              <code>Result</code> monad became
+            </p>
+          </a>
+        </div>
+      </article>
     </main>
-    
-    <OnThisPage tableOfContents={[
-      { id: 'type-first-design', title: 'Type-First Design', level: 2 },
-      { id: 'plugin-architecture', title: 'Plugin Architecture', level: 2 },
-      { id: 'validation-results', title: 'Validation & Results', level: 2 },
-      { id: 'field-path-system', title: 'Field Path System', level: 2 },
-    ]} />
+
+    <OnThisPage tableOfContents={tableOfContents} />
   </div>
-  
+
   <Footer />
 </BaseLayout>
 
 <style>
-  .prose h2 {
-    @apply mt-12 mb-6;
+  /* Inline code, on the MD3 container tone the design system reserves for it. */
+  article :not(pre) > code {
+    @apply rounded-shape-xs bg-surface-container-highest px-1.5 py-0.5 font-mono text-[0.875em] text-on-surface;
   }
-  
-  .prose h3 {
-    @apply mt-8 mb-4;
+
+  article th > code {
+    @apply bg-transparent p-0;
   }
 </style>

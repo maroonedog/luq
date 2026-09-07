@@ -50,13 +50,17 @@
   ],
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.2"
   },
   "optionalDependencies": {
-    "@maroonedog/luq-compiler-darwin-x64": "0.1.0-alpha",
     "@maroonedog/luq-compiler-darwin-arm64": "0.1.0-alpha",
-    "@maroonedog/luq-compiler-linux-x64": "0.1.0-alpha",
+    "@maroonedog/luq-compiler-darwin-x64": "0.1.0-alpha",
     "@maroonedog/luq-compiler-linux-arm64": "0.1.0-alpha",
+    "@maroonedog/luq-compiler-linux-x64": "0.1.0-alpha",
     "@maroonedog/luq-compiler-win32-x64": "0.1.0-alpha"
+  },
+  "dependencies": {
+    "@types/vscode": "^1.104.0",
+    "vscode-languageclient": "^9.0.1"
   }
 }

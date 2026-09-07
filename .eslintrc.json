@@ -1,0 +1,202 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "env": {
+    "es2022": true,
+    "node": true
+  },
+  "rules": {
+    "max-lines": [
+      "error",
+      {
+        "max": 200,
+        "skipBlankLines": false,
+        "skipComments": false
+      }
+    ],
+    "max-classes-per-file": [
+      "error",
+      1
+    ],
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-function-type": "off",
+    "@typescript-eslint/ban-types": [
+      "error",
+      {
+        "types": {
+          "Function": "具体的な関数シグネチャを書く: (value: unknown) => boolean のように。",
+          "Object": "具体的な型か Record<string, unknown> を使う。",
+          "{}": "unknown か具体的なオブジェクト型を使う。"
+        },
+        "extendDefaults": true
+      }
+    ],
+    "@typescript-eslint/no-non-null-assertion": "error",
+    "@typescript-eslint/consistent-type-assertions": [
+      "error",
+      {
+        "assertionStyle": "as",
+        "objectLiteralTypeAssertions": "never"
+      }
+    ],
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "TSAsExpression > TSAnyKeyword",
+        "message": "`as any` は禁止。unknown + 型ガード、判別可能ユニオン、または具体型への as を使う。どうしても必要なら理由コメント + eslint-disable-next-line を書く。"
+      },
+      {
+        "selector": "TSTypeAssertion > TSAnyKeyword",
+        "message": "`<any>` キャストは禁止。`as any` と同じ理由。"
+      },
+      {
+        "selector": "TSTypeReference > TSQualifiedName[left.name='globalThis']",
+        "message": "globalThis 経由の型参照は禁止。明示的に import する。"
+      }
+    ],
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": "default",
+        "format": [
+          "camelCase"
+        ],
+        "leadingUnderscore": "allow"
+      },
+      {
+        "selector": "variable",
+        "format": [
+          "camelCase",
+          "UPPER_CASE",
+          "PascalCase"
+        ]
+      },
+      {
+        "selector": "parameter",
+        "format": [
+          "camelCase"
+        ],
+        "leadingUnderscore": "allow"
+      },
+      {
+        "selector": "typeLike",
+        "format": [
+          "PascalCase"
+        ]
+      },
+      {
+        "selector": "typeParameter",
+        "format": [
+          "PascalCase"
+        ]
+      },
+      {
+        "selector": "enumMember",
+        "format": [
+          "PascalCase",
+          "UPPER_CASE"
+        ]
+      },
+      {
+        "selector": [
+          "objectLiteralProperty",
+          "typeProperty"
+        ],
+        "format": null
+      },
+      {
+        "selector": "interface",
+        "format": [
+          "PascalCase"
+        ],
+        "custom": {
+          "regex": "^I[A-Z]",
+          "match": false
+        }
+      },
+      {
+        "selector": [
+          "variable",
+          "function",
+          "parameter",
+          "classProperty",
+          "classMethod",
+          "typeLike"
+        ],
+        "format": null,
+        "custom": {
+          "regex": "^(utils|Utils|util|Util|helpers|Helpers|helper|Helper|manager|Manager|handler|Handler|processor|Processor|service|Service|common|Common|misc|Misc|stuff|Stuff|data|Data|info|Info|item|Item|temp|Temp|tmp|Tmp|obj|Obj|val|Val|res|Res|ret|Ret|foo|Foo|bar|Bar|baz|Baz|thing|Thing)$",
+          "match": false
+        },
+        "filter": {
+          "regex": "^(_|args|props|children)$",
+          "match": false
+        }
+      },
+      {
+        "selector": [
+          "class",
+          "interface",
+          "typeAlias",
+          "function",
+          "classMethod"
+        ],
+        "format": null,
+        "custom": {
+          "regex": "(Utils|Util|Helpers|Helper|Manager|Handler|Processor|Service|Common|Misc|Stuff|Info)$",
+          "match": false
+        }
+      }
+    ],
+    "no-console": [
+      "error",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ],
+    "eqeqeq": [
+      "error",
+      "smart"
+    ],
+    "no-var": "error",
+    "prefer-const": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/__tests__/**/*.ts",
+        "test/**/*.ts"
+      ],
+      "rules": {
+        "max-lines": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "no-restricted-syntax": "off",
+        "@typescript-eslint/naming-convention": "off",
+        "@typescript-eslint/no-non-null-assertion": "off"
+      }
+    }
+  ]
+}

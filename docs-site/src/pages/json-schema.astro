@@ -1,288 +1,1121 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
+import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 
-const mappingData = [
-  { category: 'Core Types', items: [
-    { feature: 'type: "string"', plugin: 'Built-in', description: 'String type validation' },
-    { feature: 'type: "number"', plugin: 'Built-in', description: 'Number type validation' },
-    { feature: 'type: "integer"', plugin: 'numberIntegerPlugin', description: 'Integer validation' },
-    { feature: 'type: "boolean"', plugin: 'Built-in', description: 'Boolean type validation' },
-    { feature: 'type: "null"', plugin: 'nullablePlugin', description: 'Null type validation' },
-    { feature: 'type: "array"', plugin: 'Built-in', description: 'Array type validation' },
-    { feature: 'type: "object"', plugin: 'Built-in', description: 'Object type validation' },
-  ]},
-  { category: 'String Constraints', items: [
-    { feature: 'minLength', plugin: 'stringMinPlugin', description: 'Minimum string length' },
-    { feature: 'maxLength', plugin: 'stringMaxPlugin', description: 'Maximum string length' },
-    { feature: 'pattern', plugin: 'stringPatternPlugin', description: 'Regex pattern matching' },
-  ]},
-  { category: 'String Formats', items: [
-    { feature: 'format: "email"', plugin: 'stringEmailPlugin', description: 'Email validation' },
-    { feature: 'format: "url"/"uri"', plugin: 'stringUrlPlugin', description: 'URL/URI validation' },
-    { feature: 'format: "uuid"', plugin: 'uuidPlugin', description: 'UUID validation' },
-    { feature: 'format: "ipv4"', plugin: 'stringIpv4Plugin', description: 'IPv4 address validation' },
-    { feature: 'format: "ipv6"', plugin: 'stringIpv6Plugin', description: 'IPv6 address validation' },
-    { feature: 'format: "hostname"', plugin: 'stringHostnamePlugin', description: 'Hostname validation' },
-    { feature: 'format: "date-time"', plugin: 'stringDatetimePlugin', description: 'ISO 8601 date-time with timezone support' },
-    { feature: 'format: "date"', plugin: 'stringDatePlugin', description: 'ISO 8601 date (YYYY-MM-DD)' },
-    { feature: 'format: "time"', plugin: 'stringTimePlugin', description: 'Time format (HH:MM:SS)' },
-    { feature: 'format: "duration"', plugin: 'stringDurationPlugin', description: 'ISO 8601 duration' },
-    { feature: 'format: "json-pointer"', plugin: 'stringJsonPointerPlugin', description: 'JSON Pointer (RFC 6901)' },
-    { feature: 'format: "relative-json-pointer"', plugin: 'stringRelativeJsonPointerPlugin', description: 'Relative JSON Pointer' },
-    { feature: 'format: "iri"', plugin: 'stringIriPlugin', description: 'IRI (RFC 3987)' },
-    { feature: 'format: "iri-reference"', plugin: 'stringIriReferencePlugin', description: 'IRI reference' },
-    { feature: 'format: "uri-template"', plugin: 'stringUriTemplatePlugin', description: 'URI Template (RFC 6570)' },
-  ]},
-  { category: 'Number Constraints', items: [
-    { feature: 'minimum', plugin: 'numberMinPlugin', description: 'Minimum value (inclusive)' },
-    { feature: 'maximum', plugin: 'numberMaxPlugin', description: 'Maximum value (inclusive)' },
-    { feature: 'exclusiveMinimum', plugin: 'numberMinPlugin', description: 'Minimum value (exclusive)' },
-    { feature: 'exclusiveMaximum', plugin: 'numberMaxPlugin', description: 'Maximum value (exclusive)' },
-    { feature: 'multipleOf', plugin: 'numberMultipleOfPlugin', description: 'Multiple of a number' },
-  ]},
-  { category: 'Array Constraints', items: [
-    { feature: 'minItems', plugin: 'arrayMinLengthPlugin', description: 'Minimum array length' },
-    { feature: 'maxItems', plugin: 'arrayMaxLengthPlugin', description: 'Maximum array length' },
-    { feature: 'uniqueItems', plugin: 'arrayUniquePlugin', description: 'Unique array items' },
-    { feature: 'contains', plugin: 'arrayContainsPlugin', description: 'Array contains schema' },
-    { feature: 'items (tuple)', plugin: 'tupleBuilderPlugin', description: 'Tuple validation' },
-  ]},
-  { category: 'Object Constraints', items: [
-    { feature: 'minProperties', plugin: 'objectMinPropertiesPlugin', description: 'Minimum properties count' },
-    { feature: 'maxProperties', plugin: 'objectMaxPropertiesPlugin', description: 'Maximum properties count' },
-    { feature: 'required', plugin: 'requiredPlugin', description: 'Required properties' },
-    { feature: 'additionalProperties', plugin: 'objectAdditionalPropertiesPlugin', description: 'Additional properties validation' },
-    { feature: 'properties', plugin: 'Built-in', description: 'Object properties definition' },
-    { feature: 'patternProperties', plugin: 'objectPatternPropertiesPlugin', description: 'Pattern-based properties' },
-    { feature: 'propertyNames', plugin: 'objectPropertyNamesPlugin', description: 'Property name validation' },
-    { feature: 'dependentRequired', plugin: 'objectDependentRequiredPlugin', description: 'Conditional required fields' },
-    { feature: 'dependentSchemas', plugin: 'objectDependentSchemasPlugin', description: 'Conditional schemas' },
-  ]},
-  { category: 'Value Constraints', items: [
-    { feature: 'enum', plugin: 'oneOfPlugin', description: 'Enumeration values' },
-    { feature: 'const', plugin: 'literalPlugin', description: 'Constant value' },
-  ]},
-  { category: 'Schema Composition', items: [
-    { feature: 'allOf', plugin: 'customPlugin', description: 'All schemas must match' },
-    { feature: 'anyOf', plugin: 'customPlugin', description: 'Any schema must match' },
-    { feature: 'oneOf', plugin: 'oneOfPlugin + customPlugin', description: 'Exactly one schema must match' },
-    { feature: 'not', plugin: 'customPlugin', description: 'Schema must not match' },
-  ]},
-  { category: 'Conditional Validation', items: [
-    { feature: 'if/then/else', plugin: 'requiredIfPlugin + customPlugin', description: 'Conditional validation' },
-  ]},
-  { category: 'References', items: [
-    { feature: '$ref', plugin: 'Built-in (jsonSchemaPlugin)', description: 'Schema references' },
-    { feature: 'definitions/$defs', plugin: 'Built-in (jsonSchemaPlugin)', description: 'Schema definitions' },
-  ]},
-  { category: 'Content Validation', items: [
-    { feature: 'contentEncoding', plugin: 'stringContentEncodingPlugin', description: 'Content encoding validation' },
-    { feature: 'contentMediaType', plugin: 'stringContentMediaTypePlugin', description: 'Media type validation' },
-  ]},
-  { category: 'Access Control', items: [
-    { feature: 'readOnly', plugin: 'readOnlyWriteOnlyPlugin', description: 'Read-only field validation' },
-    { feature: 'writeOnly', plugin: 'readOnlyWriteOnlyPlugin', description: 'Write-only field validation' },
-  ]},
+/**
+ * Sources for every figure and every name on this page:
+ *
+ *   docs/json-schema-conformance.md        conformance, corpus pin, failures
+ *   docs/guide/json-schema.md              the two front doors, the size table
+ *   src/json-schema/keyword-map-*.ts       keyword -> bind / structural / unsupported
+ *   src/json-schema/format-map.ts          the twenty format names
+ *   config/plugin-catalog.lock.json        the plugin subpath names
+ *
+ * Every code block below was executed against src/ before it was written here.
+ */
+
+const conformance = {
+  passed: 828,
+  total: 929,
+  percent: '89.13',
+  trivialPassed: 551,
+  trivialPercent: '59.31',
+  validCases: 551,
+  invalidCases: 378,
+  validPassed: 508,
+  validPercent: '92.19',
+  invalidPassed: 320,
+  invalidPercent: '84.66',
+  legacyPassed: 536,
+  legacyPercent: '57.70',
+  legacyInvalidPassed: 24,
+  legacyInvalidPercent: '6.35',
+  withoutExternalRefPassed: 828,
+  withoutExternalRefTotal: 872,
+  withoutExternalRefPercent: '94.95',
+  measuredOn: '2026-09-07',
+};
+
+const corpus = {
+  submodule: 'test/fixtures/json-schema-suite',
+  commit: 'f6fd52a0a95472e079cbfc6ef7f089702b80e045',
+  directory: 'tests/draft7 (optional/ excluded)',
+  files: 37,
+  groups: 258,
+  cases: 929,
+  sha256: '9b13470f746d823ec1644d4ece291973d27f52a09bc4c06580a1037bb2d82d47',
+};
+
+const fullFeatureExample = `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
+
+type Account = { email: string; age?: number };
+
+const accountValidator = fromJsonSchema<Account>({
+  type: "object",
+  properties: {
+    email: { type: "string", format: "email" },
+    age: { type: "number", minimum: 18 },
+  },
+  required: ["email"],
+});
+
+const result = accountValidator.validate({ email: "not-an-email" });
+
+if (result.valid) {
+  // \`data\` exists only on this branch — no cast, no non-null assertion.
+  console.log(result.data.email);
+} else {
+  for (const issue of result.issues) {
+    // -> "email: stringEmail"
+    console.log(\`\${issue.path}: \${issue.code}\`);
+  }
+}`;
+
+const chainMethodExample = `import { Builder } from "@maroonedog/luq";
+import { jsonSchemaPlugin } from "@maroonedog/luq/plugins/jsonSchema";
+import { jsonSchemaBag } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+type Envelope = { id: string; payload: Record<string, unknown> };
+
+const PAYLOAD_SCHEMA = {
+  type: "object",
+  properties: { kind: { type: "string", minLength: 1 } },
+  required: ["kind"],
+  additionalProperties: false,
+};
+
+const envelopeValidator = Builder()
+  .use(requiredPlugin)
+  .use(jsonSchemaPlugin)
+  .for<Envelope>()
+  .v("id", (b) => b.string.required())
+  .v("payload", (b) => b.object.required().jsonSchema(PAYLOAD_SCHEMA, jsonSchemaBag))
+  .build();
+
+// false — payload.kind is empty
+envelopeValidator.validate({ id: "e1", payload: { kind: "" } }).valid;`;
+
+const bundledChainExample = `import { Builder } from "@maroonedog/luq";
+import { jsonSchemaFullFeaturePlugin } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
+
+type Reading = { sample: number };
+
+// Same conversion, but the bag is already inside the plugin, so there is no
+// second argument. The method NAME differs on purpose: one builder may hold
+// both plugins, and two plugins may not claim one method on one slot.
+const readingValidator = Builder()
+  .use(jsonSchemaFullFeaturePlugin)
+  .for<Reading>()
+  .v("sample", (b) => b.number.jsonSchemaFullFeature({ type: "number", minimum: 0 }))
+  .build();
+
+readingValidator.validate({ sample: -1 }).valid; // false`;
+
+const runtimeSchemaExample = `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
+
+// Rules loaded at run time, with no type to name. \`T\` defaults to
+// Record<string, unknown> — never \`any\` — and no declared path is checked.
+export async function loadValidator() {
+  const response = await fetch("/api/validation-rules");
+  const schema: unknown = await response.json();
+  return fromJsonSchema(schema);
+}`;
+
+// luq-example: skip — .v() 呼び出し1行だけの断片で、単体では文にならない
+const nullPresenceExample = `// A converted { "type": "string" } cannot itself reject null: absence is
+// settled before any rule runs, so nullability is the field's PRESENCE policy.
+// The converter writes .optional() for every non-required property; a
+// hand-written chain says it the same way.
+.v("nickname", (b) => b.string.optional().min(2))`;
+
+const reproduceCommands = `git submodule update --init --recursive
+npm ci
+npx jest test/integration/json-schema-suite.test.ts`;
+
+type KeywordRow = {
+  keyword: string;
+  handling: 'bind' | 'structural' | 'annotation';
+  target: string;
+  note: string;
+};
+
+const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }> = [
+  {
+    title: 'Document plumbing and any-instance keywords',
+    blurb:
+      'The keywords that belong to no single field type. Each is one of three written decisions; there is no fall-through.',
+    rows: [
+      {
+        keyword: '$ref',
+        handling: 'structural',
+        target: 'resolve-ref',
+        note: 'Resolved before any keyword is read. Local pointers only.',
+      },
+      {
+        keyword: 'definitions',
+        handling: 'structural',
+        target: '—',
+        note: 'A container of schemas, never a constraint itself.',
+      },
+      {
+        keyword: 'type',
+        handling: 'structural',
+        target: 'the slot itself',
+        note: 'Chooses b.string / b.number / …; "integer" adds .integer(); a type array becomes nullable or a union.',
+      },
+      {
+        keyword: 'enum',
+        handling: 'structural',
+        target: 'oneOf — .oneOf()',
+        note: 'The allowed-value list is typed against the field, so the converter resolves it and calls the method itself.',
+      },
+      {
+        keyword: 'const',
+        handling: 'bind',
+        target: 'literal — .literal(value)',
+        note: 'Reaches every slot; comparison is structural, not reference equality.',
+      },
+      {
+        keyword: 'allOf',
+        handling: 'structural',
+        target: '—',
+        note: 'Every sub-schema becomes a sub-chain the composite runs.',
+      },
+      {
+        keyword: 'anyOf',
+        handling: 'structural',
+        target: '—',
+        note: 'Sub-chains combined existentially.',
+      },
+      {
+        keyword: 'oneOf',
+        handling: 'structural',
+        target: '—',
+        note: 'Sub-chains counted; exactly one must pass. Not the same thing as the .oneOf() method, which the enum keyword drives.',
+      },
+      {
+        keyword: 'not',
+        handling: 'structural',
+        target: '—',
+        note: 'One negated sub-chain.',
+      },
+      {
+        keyword: 'if / then / else',
+        handling: 'structural',
+        target: 'conditionalSchema',
+        note: 'The three sub-chains of one conditional rule.',
+      },
+      {
+        keyword: '$schema',
+        handling: 'annotation',
+        target: '—',
+        note: 'Read and discarded: Luq targets Draft-07 and does not switch dialect.',
+      },
+      {
+        keyword: '$id',
+        handling: 'annotation',
+        target: '—',
+        note: 'No base-URI resolution. This is one of the causes of the failures listed below.',
+      },
+      {
+        keyword: '$comment, title, description, examples',
+        handling: 'annotation',
+        target: '—',
+        note: 'Annotations with no validation effect in Draft-07.',
+      },
+      {
+        keyword: 'default',
+        handling: 'annotation',
+        target: '—',
+        note: 'Luq never mutates the input it validates, so a schema default has nowhere to land.',
+      },
+      {
+        keyword: 'readOnly / writeOnly',
+        handling: 'annotation',
+        target: 'readOnly, writeOnly (chain only)',
+        note: 'Draft-07 gives them no assertion behaviour, so the converter ignores them. The two plugins exist for hand-written chains.',
+      },
+    ],
+  },
+  {
+    title: 'String',
+    blurb: 'Five bind directly. `format` is structural because its VALUE selects the plugin.',
+    rows: [
+      {
+        keyword: 'minLength',
+        handling: 'bind',
+        target: 'stringMin — .min(n)',
+        note: 'Counts UTF-16 code units, not code points. Two suite cases fail on that.',
+      },
+      {
+        keyword: 'maxLength',
+        handling: 'bind',
+        target: 'stringMax — .max(n)',
+        note: 'Same counting caveat.',
+      },
+      {
+        keyword: 'pattern',
+        handling: 'bind',
+        target: 'stringPattern — .pattern(re)',
+        note: 'The schema’s ECMA-262 source string is compiled to a RegExp once, here. The plugin itself takes a RegExp and only a RegExp.',
+      },
+      {
+        keyword: 'format',
+        handling: 'structural',
+        target: 'one of twenty format plugins',
+        note: 'See the format table below. A name not in that table is an annotation and passes, which is what Draft-07 §7.2 requires.',
+      },
+      {
+        keyword: 'contentEncoding',
+        handling: 'bind',
+        target: 'stringContentEncoding — .contentEncoding(name)',
+        note: 'An encoding the plugin does not know is refused at build time, not accepted silently.',
+      },
+      {
+        keyword: 'contentMediaType',
+        handling: 'bind',
+        target: 'stringContentMediaType — .contentMediaType(type)',
+        note: '',
+      },
+    ],
+  },
+  {
+    title: 'Number',
+    blurb:
+      'All five bind. Draft-07 spells the strict bounds as separate keywords; the plugins spell them as a second argument.',
+    rows: [
+      { keyword: 'minimum', handling: 'bind', target: 'numberMin — .min(v)', note: '' },
+      { keyword: 'maximum', handling: 'bind', target: 'numberMax — .max(v)', note: '' },
+      {
+        keyword: 'exclusiveMinimum',
+        handling: 'bind',
+        target: 'numberMin — .min(v, true)',
+        note: 'Draft-07 §6.2.5: the bound itself is excluded.',
+      },
+      {
+        keyword: 'exclusiveMaximum',
+        handling: 'bind',
+        target: 'numberMax — .max(v, true)',
+        note: '',
+      },
+      {
+        keyword: 'multipleOf',
+        handling: 'bind',
+        target: 'numberMultipleOf — .multipleOf(v)',
+        note: 'Compares scaled integers, so multipleOf: 0.1 accepts 0.3. The float-modulo answer 1.x gave here was wrong.',
+      },
+    ],
+  },
+  {
+    title: 'Array',
+    blurb:
+      'Note the renames: the Draft-07 keyword is minItems, the chain method is minLength. 1.x guessed the method name and the constraint silently evaporated.',
+    rows: [
+      {
+        keyword: 'items',
+        handling: 'structural',
+        target: 'arrayEach — .each() / tupleBuilder — .builder()',
+        note: 'A single sub-schema becomes one sub-chain through .each(); the tuple form drives .builder().',
+      },
+      {
+        keyword: 'additionalItems',
+        handling: 'structural',
+        target: 'tupleBuilder — .builder()',
+        note: 'The rest sub-chain; meaningful only beside a tuple items. Six suite cases still fail on this pairing.',
+      },
+      {
+        keyword: 'minItems',
+        handling: 'bind',
+        target: 'arrayMinLength — .minLength(n)',
+        note: '',
+      },
+      {
+        keyword: 'maxItems',
+        handling: 'bind',
+        target: 'arrayMaxLength — .maxLength(n)',
+        note: '',
+      },
+      {
+        keyword: 'uniqueItems',
+        handling: 'bind',
+        target: 'arrayUnique — .unique()',
+        note: 'Applied only for true. Draft-07 §6.4.3 says false imposes no constraint, and the value type makes the no-op unwritable.',
+      },
+      {
+        keyword: 'contains',
+        handling: 'structural',
+        target: 'arrayContains',
+        note: 'A sub-chain applied existentially.',
+      },
+    ],
+  },
+  {
+    title: 'Object',
+    blurb:
+      'Two entries carry a normalisation the compiler enforces: required is an array on the parent, and additionalProperties has a boolean form and a schema form that reach different plugins.',
+    rows: [
+      {
+        keyword: 'properties',
+        handling: 'structural',
+        target: 'one .v() per path',
+        note: 'This is the whole idea: a schema produces the same declarations you would have written by hand.',
+      },
+      {
+        keyword: 'required',
+        handling: 'bind',
+        target: 'required — .required()',
+        note: 'The parent’s string array is resolved into one flag per named child before it reaches the binding.',
+      },
+      {
+        keyword: 'additionalProperties (boolean)',
+        handling: 'bind',
+        target: 'objectAdditionalProperties — .additionalProperties(allowed)',
+        note: 'The allowed set defaults to the declared sibling keys, so false no longer rejects every property the way 1.x did.',
+      },
+      {
+        keyword: 'additionalProperties (schema)',
+        handling: 'structural',
+        target: 'objectAdditionalProperties — .additionalPropertiesSchema()',
+        note: 'A sub-schema is a sub-chain, and no binding can take one.',
+      },
+      {
+        keyword: 'patternProperties',
+        handling: 'structural',
+        target: 'objectPatternProperties',
+        note: 'One sub-chain per key pattern, and EVERY matching pattern applies — 1.x broke after the first.',
+      },
+      {
+        keyword: 'propertyNames',
+        handling: 'structural',
+        target: 'objectPropertyNames',
+        note: 'A sub-chain over property names, not values.',
+      },
+      {
+        keyword: 'dependencies',
+        handling: 'structural',
+        target: 'objectDependentRequired / objectDependentSchemas',
+        note: 'One keyword, two chain methods: a key list drives the first, a sub-schema the second.',
+      },
+      {
+        keyword: 'minProperties',
+        handling: 'bind',
+        target: 'objectMinProperties — .minProperties(n)',
+        note: '',
+      },
+      {
+        keyword: 'maxProperties',
+        handling: 'bind',
+        target: 'objectMaxProperties — .maxProperties(n)',
+        note: '',
+      },
+    ],
+  },
 ];
+
+const keywordTotals = {
+  total: 46,
+  bind: 18,
+  structural: 19,
+  annotation: 9,
+};
+
+const formatRows: Array<{ format: string; plugin: string; method: string; note: string }> = [
+  { format: 'date-time', plugin: 'stringDatetime', method: '.datetime()', note: '' },
+  { format: 'date', plugin: 'stringDate', method: '.date()', note: '' },
+  { format: 'time', plugin: 'stringTime', method: '.time()', note: '' },
+  { format: 'duration', plugin: 'stringDuration', method: '.duration()', note: 'Not in §7.3; 1.x published it.' },
+  { format: 'email', plugin: 'stringEmail', method: '.email()', note: '' },
+  { format: 'idn-email', plugin: 'stringIdnEmail', method: '.idnEmail()', note: '' },
+  { format: 'hostname', plugin: 'stringHostname', method: '.hostname()', note: '' },
+  {
+    format: 'idn-hostname',
+    plugin: 'stringIdnHostname',
+    method: '.idnHostname()',
+    note: 'Does not check the IDNA2008 derived-property table or the Bidi rules; the plugin header says so.',
+  },
+  { format: 'ipv4', plugin: 'stringIpv4', method: '.ipv4()', note: '' },
+  { format: 'ipv6', plugin: 'stringIpv6', method: '.ipv6()', note: '' },
+  { format: 'uri', plugin: 'stringUrl', method: '.url()', note: 'Parsed with the platform URL constructor, not a second grammar.' },
+  { format: 'url', plugin: 'stringUrl', method: '.url()', note: 'The same plugin, on purpose. Not in §7.3; 1.x published it.' },
+  {
+    format: 'uri-reference',
+    plugin: 'stringUriReference',
+    method: '.uriReference()',
+    note: 'Deliberately not stringIriReference — an IRI-reference is a strict superset.',
+  },
+  { format: 'iri', plugin: 'stringIri', method: '.iri()', note: '' },
+  { format: 'iri-reference', plugin: 'stringIriReference', method: '.iriReference()', note: '' },
+  { format: 'uri-template', plugin: 'stringUriTemplate', method: '.uriTemplate()', note: '' },
+  { format: 'json-pointer', plugin: 'stringJsonPointer', method: '.jsonPointer()', note: '' },
+  {
+    format: 'relative-json-pointer',
+    plugin: 'stringRelativeJsonPointer',
+    method: '.relativeJsonPointer()',
+    note: '',
+  },
+  { format: 'regex', plugin: 'stringRegex', method: '.regex()', note: '' },
+  { format: 'uuid', plugin: 'uuid', method: '.uuid()', note: 'Not in §7.3; 1.x published it.' },
+];
+
+const failureCauses = [
+  {
+    cause: 'external-ref',
+    count: 57,
+    what: 'External and remote $ref — the suite serves schemas from http://localhost:1234 and expects them to be fetched.',
+    resolvedBy: 'feature:external-ref-loader',
+  },
+  {
+    cause: 'reserved-path-segment',
+    count: 14,
+    what: '__proto__ cannot be a segment of a declared path. A deliberate refusal, to keep prototype pollution unreachable.',
+    resolvedBy: 'decision:reserved-path-segments',
+  },
+  {
+    cause: 'ref-pointer-escaping',
+    count: 9,
+    what: 'JSON pointers containing ~0, ~1, %25, or an empty token.',
+    resolvedBy: 'feature:json-pointer-escaping',
+  },
+  {
+    cause: 'tuple-items',
+    count: 6,
+    what: 'The array form of items combined with additionalItems.',
+    resolvedBy: 'feature:tuple-items-and-additional-items',
+  },
+  {
+    cause: 'null-not-observable',
+    count: 5,
+    what: 'null never reaches a rule, because presence is settled first.',
+    resolvedBy: 'feature:document-driven-presence',
+  },
+  {
+    cause: 'sibling-keyword-interaction',
+    count: 3,
+    what: 'additionalProperties does not see patternProperties, so it over-rejects.',
+    resolvedBy: 'feature:additional-properties-with-patterns',
+  },
+  {
+    cause: 'ref-identifier-scope',
+    count: 3,
+    what: 'Base URIs established by $id, and #anchor.',
+    resolvedBy: 'feature:ref-identifier-scope',
+  },
+  {
+    cause: 'code-point-string-length',
+    count: 2,
+    what: 'minLength / maxLength counted in code points rather than code units.',
+    resolvedBy: 'feature:code-point-string-length',
+  },
+  {
+    cause: 'ref-chain',
+    count: 1,
+    what: 'The rules behind a second-hop $ref are not collected.',
+    resolvedBy: 'feature:ref-chain-resolution',
+  },
+  {
+    cause: 'boolean-sub-schema',
+    count: 1,
+    what: 'true / false used as a sub-schema in its own right.',
+    resolvedBy: 'feature:boolean-sub-schema',
+  },
+];
+
+const failureModes = [
+  { mode: 'Building the validator throws, so no verdict is reached', count: 79 },
+  { mode: 'Built, but the verdict is wrong', count: 22 },
+  { mode: 'validate() threw at run time', count: 0 },
+];
+
+const handlingStyles: Record<KeywordRow['handling'], string> = {
+  bind: 'bg-tertiary-container text-on-tertiary-container',
+  structural: 'bg-secondary-container text-on-secondary-container',
+  annotation: 'bg-surface-container-highest text-on-surface-variant',
+};
+
+const handlingLabels: Record<KeywordRow['handling'], string> = {
+  bind: 'bind',
+  structural: 'structural',
+  annotation: 'annotation only',
+};
 ---
 
-<BaseLayout title="JSON Schema Support - Luq">
+<BaseLayout
+  title="JSON Schema"
+  description="Measured Draft-07 conformance (828/929 = 89.13%), the two front doors into Luq from a schema, the full keyword mapping, and every keyword that is not supported."
+>
   <Header />
-  
-  <main>
-    <!-- Header -->
-    <section class="luq-gradient-section text-white py-16">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-        <div class="animate-fade-in">
-          <h1 class="text-4xl font-bold mb-4">JSON Schema Support</h1>
-          <p class="text-xl opacity-90">
-            Complete mapping of JSON Schema Draft-07 features to Luq plugins
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+    <!-- ================= Hero ================= -->
+    <header class="mb-12">
+      <p class="mb-2 text-label-large text-primary">Draft-07</p>
+      <h1 class="mb-4 text-display-small text-on-surface">JSON Schema</h1>
+      <p class="max-w-3xl text-body-large text-on-surface-variant">
+        Luq validates a Draft-07 document by <strong class="text-on-surface">converting</strong> it
+        into the same field declarations you would have written by hand. There is no second engine:
+        the plan a schema produces is the plan <code>.v()</code> produces, so a converted document
+        composes with everything else in the library.
+      </p>
+    </header>
+
+    <!-- ================= Conformance ================= -->
+    <section id="conformance" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Conformance, measured</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        Against the official JSON-Schema-Test-Suite draft7 corpus, required tests only. Skipped
+        cases are counted as <strong class="text-on-surface">failures</strong>, and the skip list is
+        asserted to be exactly the failing set in both directions — so a case cannot be hidden to
+        raise the number, and a skipped case that starts passing fails the build too.
+      </p>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="md-card md-card-filled p-6">
+          <p class="text-label-medium text-on-surface-variant">This release</p>
+          <p class="mt-1 text-display-small text-primary">{conformance.percent}%</p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            {conformance.passed} of {conformance.total} cases
+          </p>
+        </div>
+        <div class="md-card md-card-outlined p-6">
+          <p class="text-label-medium text-on-surface-variant">A validator that always says yes</p>
+          <p class="mt-1 text-display-small text-on-surface-variant">
+            {conformance.trivialPercent}%
+          </p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            {conformance.trivialPassed} of {conformance.total} — the floor the number above should
+            be read against
+          </p>
+        </div>
+        <div class="md-card md-card-outlined p-6">
+          <p class="text-label-medium text-on-surface-variant">Luq 1.x, same corpus</p>
+          <p class="mt-1 text-display-small text-on-surface-variant">
+            {conformance.legacyPercent}%
+          </p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            {conformance.legacyPassed} of {conformance.total} — below the always-yes floor
           </p>
         </div>
       </div>
-    </section>
 
-    <!-- Quick Setup -->
-    <section class="py-12 bg-white dark:bg-luq-neutral-900">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-        <h2 class="text-2xl font-bold mb-6 text-luq-neutral-900 dark:text-white">Quick Setup</h2>
-        
-        <div class="grid md:grid-cols-2 gap-6">
-          <div class="luq-card overflow-hidden">
-            <div class="bg-luq-neutral-100 dark:bg-luq-neutral-800 px-6 py-4 border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-              <h3 class="font-semibold">Full Feature Import</h3>
-            </div>
-            <div class="p-6">
-              <CodeBlock 
-                code={`import { Builder } from "@maroonedog/luq";
-import { jsonSchemaFullFeaturePlugin } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
-
-const validator = Builder()
-  .use(jsonSchemaFullFeaturePlugin)
-  .fromJsonSchema(schema)
-  .build();`} 
-                language="typescript" 
-                showCopy={true} 
-                class="" 
-              />
-            </div>
-          </div>
-
-          <div class="luq-card overflow-hidden">
-            <div class="bg-luq-neutral-100 dark:bg-luq-neutral-800 px-6 py-4 border-b border-luq-neutral-200 dark:border-luq-neutral-700">
-              <h3 class="font-semibold">Selective Import</h3>
-            </div>
-            <div class="p-6">
-              <CodeBlock 
-                code={`import { Builder } from "@maroonedog/luq";
-import { jsonSchemaPlugin } from "@maroonedog/luq/plugins/jsonSchema";
-import { requiredPlugin } from "@maroonedog/luq/plugins/required";
-import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
-import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
-
-const validator = Builder()
-  .use(jsonSchemaPlugin)
-  .use(requiredPlugin)
-  .use(stringMinPlugin)
-  .use(stringEmailPlugin)
-  .fromJsonSchema(schema)
-  .build();`} 
-                language="typescript" 
-                showCopy={true} 
-                class="" 
-              />
-            </div>
-          </div>
+      <div class="mt-6 md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[40rem] border-collapse text-body-medium">
+            <caption class="px-4 pt-4 text-left text-title-small text-on-surface">
+              Where the score comes from
+            </caption>
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium"></th>
+                <th class="px-4 py-3 text-right font-medium">
+                  should be accepted ({conformance.validCases})
+                </th>
+                <th class="px-4 py-3 text-right font-medium">
+                  should be rejected ({conformance.invalidCases})
+                </th>
+                <th class="px-4 py-3 text-right font-medium">total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-outline-variant/60">
+                <td class="px-4 py-3 text-on-surface-variant">Always says yes</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">551 (100%)</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">0 (0%)</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">
+                  {conformance.trivialPassed} ({conformance.trivialPercent}%)
+                </td>
+              </tr>
+              <tr class="border-b border-outline-variant/60">
+                <td class="px-4 py-3 text-on-surface-variant">Luq 1.x</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">512 (92.92%)</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">
+                  {conformance.legacyInvalidPassed} ({conformance.legacyInvalidPercent}%)
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">
+                  {conformance.legacyPassed} ({conformance.legacyPercent}%)
+                </td>
+              </tr>
+              <tr class="bg-primary/[0.06]">
+                <td class="px-4 py-3 text-on-surface">This release</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface">
+                  {conformance.validPassed} ({conformance.validPercent}%)
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface">
+                  {conformance.invalidPassed} ({conformance.invalidPercent}%)
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface">
+                  {conformance.passed} ({conformance.percent}%)
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+        <p class="border-t border-outline-variant px-4 py-3 text-body-small text-on-surface-variant">
+          The column that moved is the second one. 1.x rejected 24 of the 378 documents it was
+          supposed to reject; “JSON Schema support” was, on this corpus, letting almost everything
+          through. This release loses 4 cases on the accepted side, because it refuses an external
+          <code>$ref</code> at build time instead of quietly passing it.
+        </p>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-2">
+        <div class="md-card md-card-filled p-6">
+          <h3 class="mb-2 text-title-medium text-on-surface">Excluding external <code>$ref</code></h3>
+          <p class="text-body-medium text-on-surface-variant">
+            57 of the 101 failures are cases where the suite serves a schema over HTTP and expects
+            the validator to fetch it. Luq ships no network loader. Against the remaining
+            {conformance.withoutExternalRefTotal} cases the score is
+            <strong class="text-on-surface"
+              >{conformance.withoutExternalRefPassed} / {conformance.withoutExternalRefTotal} = {
+                conformance.withoutExternalRefPercent
+              }%.</strong
+            > Both numbers are true; the headline figure is the stricter one.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-6">
+          <h3 class="mb-2 text-title-medium text-on-surface">Which door was measured</h3>
+          <p class="text-body-medium text-on-surface-variant">
+            The corpus was run through the <strong class="text-on-surface">chain method</strong>,
+            because its schemas put constraints on the document root and only that route can treat
+            the root as the field itself. On the 289 cases whose instance is a plain object, the two
+            doors score 238 (82.35%) for <code>.jsonSchemaFullFeature()</code> and 229 (79.24%) for
+            <code>fromJsonSchema</code>, which is a <code>Validator&lt;T extends object&gt;</code>
+            and so only validates objects.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 md-card md-card-outlined p-6">
+        <h3 class="mb-3 text-title-medium text-on-surface">The corpus is pinned</h3>
+        <dl class="grid gap-x-8 gap-y-2 text-body-medium sm:grid-cols-2">
+          <div class="flex justify-between gap-4">
+            <dt class="text-on-surface-variant">Submodule</dt>
+            <dd class="font-mono text-on-surface">{corpus.submodule}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-on-surface-variant">Commit</dt>
+            <dd class="font-mono text-on-surface">{corpus.commit.slice(0, 10)}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-on-surface-variant">Directory</dt>
+            <dd class="font-mono text-on-surface">{corpus.directory}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-on-surface-variant">Files / groups / cases</dt>
+            <dd class="font-mono text-on-surface">
+              {corpus.files} / {corpus.groups} / {corpus.cases}
+            </dd>
+          </div>
+          <div class="flex justify-between gap-4 sm:col-span-2">
+            <dt class="text-on-surface-variant">Corpus sha256</dt>
+            <dd class="break-all text-right font-mono text-body-small text-on-surface">
+              {corpus.sha256}
+            </dd>
+          </div>
+        </dl>
+        <p class="mt-4 text-body-small text-on-surface-variant">
+          Move the submodule and the hash changes, and the build fails until the score is
+          re-measured. A change in conformance is therefore always a reviewable commit. If the
+          corpus is not checked out, the suite does not go green — one test fails saying so, so a
+          number can never appear without a measurement behind it.
+        </p>
       </div>
     </section>
 
-    <!-- Mapping Table -->
-    <section class="py-12">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-        <h2 class="text-3xl font-bold mb-8 text-luq-neutral-900 dark:text-white">
-          Complete Feature Mapping
-        </h2>
+    <!-- ================= Two front doors ================= -->
+    <section id="two-doors" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Two front doors</h2>
+      <p class="mb-8 max-w-3xl text-body-medium text-on-surface-variant">
+        There is no <code>.fromJsonSchema()</code> builder method — the rewrite has no
+        builder-extension mechanism at all. What exists is a <strong class="text-on-surface">function</strong>
+        that converts a whole document, and a <strong class="text-on-surface">chain method</strong>
+        that constrains one declared field by a document.
+      </p>
 
-        {mappingData.map((category) => (
-          <div class="mb-8 animate-fade-in-up">
-            <h3 class="text-xl font-semibold mb-4 text-luq-neutral-800 dark:text-luq-neutral-200">
-              {category.category}
-            </h3>
-            <div class="bg-white dark:bg-luq-neutral-800 rounded-lg shadow overflow-hidden">
-              <table class="min-w-full divide-y divide-luq-neutral-200 dark:divide-luq-neutral-700">
-                <thead class="bg-luq-neutral-50 dark:bg-luq-neutral-700">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-luq-neutral-500 dark:text-luq-neutral-300 uppercase tracking-wider">
-                      JSON Schema Feature
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-luq-neutral-500 dark:text-luq-neutral-300 uppercase tracking-wider">
-                      Luq Plugin
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-luq-neutral-500 dark:text-luq-neutral-300 uppercase tracking-wider">
-                      Description
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-luq-neutral-800 divide-y divide-luq-neutral-200 dark:divide-luq-neutral-700">
-                  {category.items.map((item) => (
-                    <tr class="hover:bg-luq-neutral-50 dark:hover:bg-luq-neutral-700 transition-colors">
-                      <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-luq-neutral-900 dark:text-luq-neutral-100">
-                        {item.feature}
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <code class="bg-luq-purple-100 dark:bg-luq-purple-900 text-luq-purple-800 dark:text-luq-purple-200 px-2 py-1 rounded">
-                          {item.plugin}
-                        </code>
-                      </td>
-                      <td class="px-6 py-4 text-sm text-luq-neutral-500 dark:text-luq-neutral-400">
-                        {item.description}
-                      </td>
+      <div class="mb-8">
+        <div class="mb-3 flex flex-wrap items-baseline gap-3">
+          <h3 class="text-title-large text-on-surface">1. <code>fromJsonSchema</code> — a whole document</h3>
+          <span class="inline-flex h-7 items-center rounded-shape-full bg-tertiary-container px-3 text-label-medium text-on-tertiary-container">
+            start here
+          </span>
+        </div>
+        <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
+          One import. Returns the same <code>Validator&lt;T&gt;</code> the builder returns:
+          <code>validate</code>, <code>parse</code>, <code>pick</code>, <code>pickAll</code>,
+          results shaped the same way, issue paths in the same <code>lines[0].sku</code> grammar.
+        </p>
+        <CodeBlock code={fullFeatureExample} fileName="account-validator.ts" />
+      </div>
+
+      <div class="mb-8">
+        <h3 class="mb-3 text-title-large text-on-surface">
+          2. <code>.jsonSchema()</code> — one declared field
+        </h3>
+        <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
+          <code>@maroonedog/luq/plugins/jsonSchema</code> adds a chain method, and it takes the
+          plugin bag explicitly. This method also reaches keywords the document
+          <strong class="text-on-surface"> root</strong> cannot otherwise use: root-level
+          <code>additionalProperties</code>, <code>anyOf</code>, <code>not</code>,
+          <code>if</code>/<code>then</code>/<code>else</code>, <code>minProperties</code> and
+          <code>propertyNames</code> are reachable this way and no other, because
+          <code>fromJsonSchema</code> declares rules per field and the empty path is not a field.
+        </p>
+        <CodeBlock code={chainMethodExample} fileName="envelope-validator.ts" />
+      </div>
+
+      <div class="mb-8">
+        <h3 class="mb-3 text-title-large text-on-surface">
+          The bundled plugin has its own method name
+        </h3>
+        <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
+          <code>jsonSchemaFullFeaturePlugin</code> is the same implementation with the 49-plugin bag
+          already inside it, so its chain method takes no bag — and it is called
+          <code>.jsonSchemaFullFeature()</code>, not <code>.jsonSchema()</code>. Two plugins may not
+          claim one method on one slot; 1.x let both bundles claim <code>.fromJsonSchema</code> and
+          picked a winner by registration order.
+        </p>
+        <CodeBlock code={bundledChainExample} fileName="reading-validator.ts" />
+      </div>
+
+      <div>
+        <h3 class="mb-3 text-title-large text-on-surface">A document you only know at run time</h3>
+        <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
+          This works under a Content-Security-Policy that forbids <code>unsafe-eval</code>: the
+          conversion builds closures, never source text. There is no <code>eval</code> and no
+          <code>new Function</code> anywhere in the 762 emitted modules, and that is checked
+          mechanically rather than asserted.
+        </p>
+        <CodeBlock code={runtimeSchemaExample} fileName="load-validator.ts" />
+      </div>
+    </section>
+
+    <!-- ================= Which one ================= -->
+    <section id="which-door" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Which one to use</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        <code>./plugins/jsonSchema</code> is billed as the tree-shakeable half. Measured with the
+        same esbuild and gzip method as the rest of the size table, it is not — supplying a working
+        bag costs 12 bytes <em>less</em> than importing the bundle, which is 0.06%.
+      </p>
+
+      <div class="md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[38rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Entry</th>
+                <th class="px-4 py-3 text-right font-medium">gzip</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-outline-variant/60">
+                <td class="px-4 py-3 font-mono text-body-small text-on-surface-variant">
+                  Builder + jsonSchemaPlugin, no bag
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">18,992 B</td>
+              </tr>
+              <tr class="border-b border-outline-variant/60">
+                <td class="px-4 py-3 font-mono text-body-small text-on-surface">
+                  Builder + jsonSchemaPlugin + a working 49-plugin bag
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface">21,371 B</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-mono text-body-small text-on-surface">
+                  Builder + jsonSchemaFullFeaturePlugin
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface">21,383 B</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
+        The first row is not a usable configuration: <code>.jsonSchema()</code> needs a bag. So use
+        <code>jsonSchemaFullFeature</code>, and reach for <code>./plugins/jsonSchema</code> when you
+        want the per-field chain method — not to save bytes.
+        <a class="text-primary underline underline-offset-2" href="/benchmarks#json-schema-size">
+          The method behind these figures is on the benchmarks page.
+        </a>
+      </p>
+    </section>
+
+    <!-- ================= Keyword mapping ================= -->
+    <section id="keywords" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Every Draft-07 keyword</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        All {keywordTotals.total} of them — the count is checked against the draft-07 metaschema's
+        own <code>properties</code> keys by a test. Each is one of three decisions, written down,
+        with no fall-through: 1.x stored eleven keywords it then never read again.
+      </p>
+
+      <div class="mb-8 grid gap-4 sm:grid-cols-3">
+        <div class="md-card md-card-filled p-5">
+          <p class="text-headline-small text-on-surface">{keywordTotals.bind}</p>
+          <p class="mt-1 text-label-large text-on-surface">bind</p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            Straight to a chain method, with the method name checked by the compiler.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-5">
+          <p class="text-headline-small text-on-surface">{keywordTotals.structural}</p>
+          <p class="mt-1 text-label-large text-on-surface">structural</p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            The converter expands it — it recurses, or it picks the slot. A sub-schema becomes a
+            sub-chain, which no binding can carry.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-5">
+          <p class="text-headline-small text-on-surface">{keywordTotals.annotation}</p>
+          <p class="mt-1 text-label-large text-on-surface">annotation only</p>
+          <p class="mt-1 text-body-small text-on-surface-variant">
+            No validation effect in Draft-07, so nothing is generated. Each one says why in the
+            source.
+          </p>
+        </div>
+      </div>
+
+      {
+        keywordGroups.map((group) => (
+          <div class="mb-8">
+            <h3 class="mb-1 text-title-large text-on-surface">{group.title}</h3>
+            <p class="mb-3 max-w-3xl text-body-medium text-on-surface-variant">{group.blurb}</p>
+            <div class="md-card md-card-outlined overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[48rem] border-collapse text-body-medium">
+                  <thead>
+                    <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                      <th class="px-4 py-3 text-left font-medium">Keyword</th>
+                      <th class="px-4 py-3 text-left font-medium">Handling</th>
+                      <th class="px-4 py-3 text-left font-medium">Plugin and method</th>
+                      <th class="px-4 py-3 text-left font-medium">Note</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {group.rows.map((row) => (
+                      <tr class="border-b border-outline-variant/60 last:border-0">
+                        <td class="whitespace-nowrap px-4 py-3 align-top font-mono text-body-small text-on-surface">
+                          {row.keyword}
+                        </td>
+                        <td class="px-4 py-3 align-top">
+                          <span
+                            class:list={[
+                              'inline-flex h-7 items-center whitespace-nowrap rounded-shape-full px-3 text-label-medium',
+                              handlingStyles[row.handling],
+                            ]}
+                          >
+                            {handlingLabels[row.handling]}
+                          </span>
+                        </td>
+                        <td class="px-4 py-3 align-top font-mono text-body-small text-on-surface-variant">
+                          {row.target}
+                        </td>
+                        <td class="px-4 py-3 align-top text-body-small text-on-surface-variant">
+                          {row.note}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
+        ))
+      }
     </section>
 
-    <!-- Usage Example -->
-    <section class="py-12 bg-luq-neutral-100 dark:bg-luq-neutral-800">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-        <h2 class="text-2xl font-bold mb-6 text-luq-neutral-900 dark:text-white">
-          Complete Example
-        </h2>
-        <div class="luq-card overflow-hidden">
-          <div class="bg-gradient-to-r from-luq-purple-100 to-luq-teal-100 dark:from-luq-purple-900/30 dark:to-luq-teal-900/30 px-6 py-4 border-b border-luq-purple-200 dark:border-luq-purple-800">
-            <h3 class="font-semibold">JSON Schema to Luq Conversion</h3>
-          </div>
-          <div class="p-6">
-            <CodeBlock 
-              code={`// JSON Schema Definition
-const userSchema = {
-  type: "object",
-  properties: {
-    name: {
-      type: "string",
-      minLength: 3,
-      maxLength: 50
-    },
-    email: {
-      type: "string",
-      format: "email"
-    },
-    age: {
-      type: "number",
-      minimum: 18,
-      maximum: 120
-    },
-    roles: {
-      type: "array",
-      items: {
-        type: "string",
-        enum: ["admin", "user", "guest"]
-      },
-      minItems: 1,
-      uniqueItems: true
-    }
-  },
-  required: ["name", "email"],
-  additionalProperties: false
-};
+    <!-- ================= Formats ================= -->
+    <section id="formats" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">All twenty <code>format</code> names</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        The seventeen names of Draft-07 §7.3, plus the three 1.x also published
+        (<code>url</code>, <code>uuid</code>, <code>duration</code>). None is out of scope: the
+        “unsupported” column of this table is empty. There is exactly one format table in the
+        library and every entry points at the plugin that owns the grammar, so there is one regex
+        per format and nothing to drift from it — 1.x shipped three tables and they disagreed with
+        each other about <code>email</code>, <code>uuid</code> and <code>date-time</code>.
+      </p>
 
-// Luq Validator
-const validator = Builder()
-  .use(jsonSchemaFullFeaturePlugin)
-  .fromJsonSchema(userSchema)
-  .build();
-
-// Validation
-const result = validator.validate({
-  name: "John Doe",
-  email: "john@example.com",
-  age: 25,
-  roles: ["admin"]
-});
-
-if (result.isValid()) {
-  console.log("Valid data:", result.unwrap());
-} else {
-  console.log("Validation errors:", result.errors);
-}`} 
-              language="typescript" 
-              showCopy={true} 
-              class="" 
-            />
-          </div>
+      <div class="md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[44rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">format</th>
+                <th class="px-4 py-3 text-left font-medium">Plugin subpath</th>
+                <th class="px-4 py-3 text-left font-medium">Method</th>
+                <th class="px-4 py-3 text-left font-medium">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                formatRows.map((row) => (
+                  <tr class="border-b border-outline-variant/60 last:border-0">
+                    <td class="whitespace-nowrap px-4 py-3 font-mono text-body-small text-on-surface">
+                      {row.format}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 font-mono text-body-small text-on-surface-variant">
+                      {row.plugin}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 font-mono text-body-small text-on-surface-variant">
+                      {row.method}
+                    </td>
+                    <td class="px-4 py-3 text-body-small text-on-surface-variant">{row.note}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
         </div>
       </div>
+
+      <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
+        A format name that is <em>not</em> in this table is an annotation and passes, which is what
+        Draft-07 §7.2 requires. It is not an error. Adding the last four names
+        (<code>idn-email</code>, <code>idn-hostname</code>, <code>uri-reference</code>,
+        <code>regex</code>) is the entire difference between 86.54% and the current
+        {conformance.percent}%: before them, a schema naming one threw at build time and produced no
+        validator at all.
+      </p>
     </section>
+
+    <!-- ================= Not supported ================= -->
+    <section id="not-supported" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">What does not work</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        The 101 failing cases, by cause. Every one is an entry in a typed skip list whose
+        <code>cause</code> and <code>expiresWith</code> are closed string unions, so a failure
+        cannot be recorded without naming what would fix it.
+      </p>
+
+      <div class="mb-6 md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[46rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Cause</th>
+                <th class="px-4 py-3 text-right font-medium">Cases</th>
+                <th class="px-4 py-3 text-left font-medium">What it is</th>
+                <th class="px-4 py-3 text-left font-medium">Resolved by</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                failureCauses.map((row) => (
+                  <tr class="border-b border-outline-variant/60">
+                    <td class="whitespace-nowrap px-4 py-3 align-top font-mono text-body-small text-on-surface">
+                      {row.cause}
+                    </td>
+                    <td class="px-4 py-3 text-right align-top font-mono text-on-surface">
+                      {row.count}
+                    </td>
+                    <td class="px-4 py-3 align-top text-body-small text-on-surface-variant">
+                      {row.what}
+                    </td>
+                    <td class="px-4 py-3 align-top font-mono text-body-small text-on-surface-variant">
+                      {row.resolvedBy}
+                    </td>
+                  </tr>
+                ))
+              }
+              <tr>
+                <td class="px-4 py-3 text-title-small text-on-surface">Total</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface">101</td>
+                <td class="px-4 py-3" colspan="2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="md-card md-card-outlined p-6">
+          <h3 class="mb-3 text-title-medium text-on-surface">How they fail</h3>
+          <ul class="space-y-2 text-body-medium">
+            {
+              failureModes.map((row) => (
+                <li class="flex items-baseline justify-between gap-4 border-b border-outline-variant/60 pb-2 last:border-0">
+                  <span class="text-on-surface-variant">{row.mode}</span>
+                  <span class="font-mono text-on-surface">{row.count}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="mt-3 text-body-small text-on-surface-variant">
+            An unsupported keyword is refused when the validator is built, not when it runs. A
+            document Luq cannot honour never becomes a validator that quietly says yes.
+          </p>
+        </div>
+
+        <div class="md-card md-card-outlined p-6">
+          <h3 class="mb-3 text-title-medium text-on-surface">
+            The one you are most likely to meet
+          </h3>
+          <p class="mb-3 text-body-medium text-on-surface-variant">
+            <code>null</code> at a field the document forbids it on. Absence is settled before any
+            rule runs, so nullability is a presence policy rather than a rule. The converter writes
+            <code>.optional()</code> for every non-required property, and a hand-written chain says
+            it the same way.
+          </p>
+          <CodeBlock code={nullPresenceExample} showCopy={false} />
+        </div>
+      </div>
+
+      <div class="mt-6 md-card md-card-filled p-6">
+        <h3 class="mb-3 text-title-medium text-on-surface">Limits worth knowing before you start</h3>
+        <ul class="space-y-2 text-body-medium text-on-surface-variant">
+          <li>
+            <strong class="text-on-surface">No external or remote <code>$ref</code>.</strong>
+            A loader that touches the network is not a default feature of a validation library.
+          </li>
+          <li>
+            <strong class="text-on-surface"><code>__proto__</code> is refused as a path segment.</strong>
+            A deliberate decision, recorded as one, so that prototype pollution is unreachable.
+          </li>
+          <li>
+            <strong class="text-on-surface"><code>additionalProperties</code> does not consult
+            <code>patternProperties</code>.</strong> It over-rejects in that combination.
+          </li>
+          <li>
+            <strong class="text-on-surface">A recursive <code>$ref</code> stops after the first
+            iteration.</strong> No required suite case covers this, but a depth like
+            <code>tree.child.name</code> is not validated.
+          </li>
+          <li>
+            <strong class="text-on-surface"><code>minLength</code> / <code>maxLength</code> count
+            code units.</strong> A string of astral characters counts double.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= Reproduce ================= -->
+    <section id="reproduce" class="mb-12 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Reproduce it</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        Last measured {conformance.measuredOn}. The suite asserts the recorded score in both
+        directions: a regression fails the build, and so does an unrecorded improvement.
+      </p>
+      <CodeBlock code={reproduceCommands} language="bash" fileName="repository root" />
+    </section>
+
+    <nav class="flex flex-wrap gap-3" aria-label="Related pages">
+      <a class="md-button md-button-filled md-state-layer" href="/docs/getting-started">
+        Get started
+      </a>
+      <a class="md-button md-button-tonal md-state-layer" href="/plugins">
+        Browse plugins
+      </a>
+      <a class="md-button md-button-outlined md-state-layer" href="/benchmarks">
+        Benchmarks
+      </a>
+    </nav>
   </main>
-  
+
   <Footer />
 </BaseLayout>

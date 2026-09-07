@@ -1,0 +1,3 @@
+[submodule "test/fixtures/json-schema-suite"]
+	path = test/fixtures/json-schema-suite
+	url = https://github.com/json-schema-org/JSON-Schema-Test-Suite.git

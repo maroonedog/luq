@@ -6,753 +6,948 @@ import DocsSidebar from '../../components/DocsSidebar.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 
-const pluginImportExample = `// ❌ This will cause TypeScript errors
-const validator = Builder()
-  .for<User>()
-  .v('email', b => b.string.required().email()) // Error: 'email' method not available
-  .build();
+const tableOfContents = [
+  { id: 'imports', title: 'Import errors', level: 2 },
+  { id: 'compile-errors', title: 'Compile errors', level: 2 },
+  { id: 'unexpected-results', title: 'Unexpected results', level: 2 },
+  { id: 'messages', title: 'Messages and codes', level: 2 },
+  { id: 'async', title: 'Async checks', level: 2 },
+  { id: 'bundle-size', title: 'Bundle size', level: 2 },
+  { id: 'performance', title: 'Performance', level: 2 },
+  { id: 'getting-help', title: 'Getting help', level: 2 },
+];
 
-// ✅ Import and use the plugin first
-import { stringEmailPlugin } from '@maroonedog/luq/plugin';
-
-const validator = Builder()
-  .use(stringEmailPlugin) // Add plugin before using
-  .for<User>()
-  .v('email', b => b.string.required().email()) // Now works
-  .build();`;
-
-const importBestPracticesExample = `// ✅ Good - specific imports
+// luq-example: must-fail — 1.x の import 指定子は exports マップに無いので、解決できてはならない
+const badImportsExample = `// Does not compile. None of these specifiers exist in the exports map.
+import { Builder } from '@maroonedog/luq/core';
 import { requiredPlugin } from '@maroonedog/luq/plugin';
-import { stringMinPlugin } from '@maroonedog/luq/plugin';
+import { createPluginRegistry } from '@maroonedog/luq/core/registry';
+import { createAsyncContext } from '@maroonedog/luq/async.experimental';
 
-// ❌ Avoid - importing everything
-import * as plugins from 'luq/plugins';`;
+export const used = [Builder, requiredPlugin, createPluginRegistry, createAsyncContext];`;
 
-const fieldNotFoundExample = `// ❌ Wrong - trying to validate non-existent field
-type User = {
-  profile: {
-    name: string;
-  };
-};
+const goodImportsExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { createPluginRegistry } from '@maroonedog/luq/field-rule';
+import { createAsyncContext } from '@maroonedog/luq/async';
+import { unwrap } from '@maroonedog/luq/result';
+import { definePlugin } from '@maroonedog/luq/plugin-kit';
 
-const validator = Builder()
-  .for<User>()
-  .v('name', b => b.string.required()) // Error: 'name' doesn't exist on User
-  .build();
+export const used = [
+  Builder,
+  requiredPlugin,
+  createPluginRegistry,
+  createAsyncContext,
+  unwrap,
+  definePlugin,
+];`;
 
-// ✅ Correct - use dot notation for nested fields
-const validator = Builder()
-  .for<User>()
-  .v('profile.name', b => b.string.required()) // Correct path
-  .build();`;
+// luq-example: must-fail — ルート subpath はプラグインを1つも export しないので、通ってはならない
+const rootPluginsExample = `// Does not compile. The root subpath exports NO plugins, deliberately.
+import { Builder, requiredPlugin } from '@maroonedog/luq';
 
-const typeInferenceExample = `// ❌ Problem - TypeScript can't infer the type
-const validator = Builder()
-  .use(requiredPlugin)
-  // Missing .for<Type>() specification
-  .v('email', b => b.string.required()) // Type error
-  .build();
+export const used = [Builder, requiredPlugin];`;
 
-// ✅ Solution - Always specify the type
-const validator = Builder()
-  .use(requiredPlugin)
-  .for<User>() // Specify type here
-  .v('email', b => b.string.required()) // Now TypeScript knows the structure
-  .build();`;
+// luq-example: must-fail — bag に入れていない .email() が生えていないことの証明なので、通ってはならない
+const missingPluginExample = `// Does not compile: .email() is not on the chain, because the plugin
+// that contributes it was never put in the bag.
+import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 
-const arrayValidationExample = `// ❌ Common mistake - trying to validate array items with index notation
-type UserList = {
-  users: Array<{
-    name: string;
-    email: string;
-  }>;
-  tags: string[];  // Primitive array
-  scores: number[]; // Another primitive array
-};
+type User = { email: string };
 
-const wrongValidator = Builder()
-  .use(arrayMinLengthPlugin)
-  .use(requiredPlugin)
-  .for<UserList>()
-  .v('users[0].name', b => b.string.required()) // Wrong! Specific index doesn't work
-  .v('tags[0]', b => b.string.required())       // Wrong! Can't validate specific index
-  .build();
-
-// ✅ Correct - Luq uses [*] notation to validate ALL items in an array
-const validator = Builder()
-  .use(arrayMinLengthPlugin)
-  .use(requiredPlugin)
-  .use(stringMinPlugin)
-  .use(stringEmailPlugin)
-  .use(numberMinPlugin)
-  .use(numberMaxPlugin)
-  .for<UserList>()
-  // Array of objects - validate the array and its object properties
-  .v('users', b => b.array.required().minLength(1))     // Validate array itself
-  .v('users[*].name', b => b.string.required().min(2))  // Validates name of ALL users
-  .v('users[*].email', b => b.string.required().email()) // Validates email of ALL users
-  
-  // Primitive array (string[]) - validate array and its elements
-  .v('tags', b => b.array.required().minLength(1).maxLength(10)) // Array validation
-  .v('tags[*]', b => b.string.required().min(2).max(20))         // Each string element
-  
-  // Primitive array (number[]) - validate array and its elements  
-  .v('scores', b => b.array.required())               // Array validation
-  .v('scores[*]', b => b.number.required().min(0).max(100)) // Each number element
-  .build();
-
-// The [*] notation works for both object arrays and primitive arrays
-// For primitive arrays: use 'fieldName[*]' to validate each element`;
-
-const nestedArrayExample = `// Complex case: Array of arrays
-type Matrix = {
-  name: string;
-  data: number[][];
-  metadata: {
-    rows: number;
-    cols: number;
-  };
-};
-
-// ❌ Wrong approach - specific index notation doesn't work
-const badValidator = Builder()
-  .for<Matrix>()
-  .v('data[0][0]', b => b.number.required()) // Wrong! Specific indices don't work
-  .build();
-
-// ✅ Correct approach - Luq's [*] notation for nested arrays
-const matrixValidator = Builder()
-  .use(requiredPlugin)
-  .use(arrayMinLengthPlugin)
-  .use(numberMinPlugin)
-  .for<Matrix>()
-  .v('name', b => b.string.required())
-  .v('data', b => b.array.required().minLength(1)) // Validate outer array
-  .v('data[*]', b => b.array.required()) // Each item must be an array
-  .v('data[*][*]', b => b.number.required().min(0)) // Each number in nested arrays
-  .v('metadata.rows', b => b.number.required().min(1))
-  .v('metadata.cols', b => b.number.required().min(1))
-  .build();
-
-// The [*] notation can be chained for nested arrays: data[*][*]
-// This validates ALL elements at each level of nesting`;
-
-const primitiveArrayExample = `// Validating primitive arrays (string[], number[], boolean[], etc.)
-type AppData = {
-  keywords: string[];
-  ratings: number[];
-  categories: string[];
-  flags: boolean[];
-};
-
-// ✅ Correct pattern for primitive arrays
-const validator = Builder()
-  .use(requiredPlugin)
-  .use(arrayMinLengthPlugin)
-  .use(arrayMaxLengthPlugin)
-  .use(arrayUniquePlugin)
-  .use(stringMinPlugin)
-  .use(stringMaxPlugin)
-  .use(stringPatternPlugin)
-  .use(numberMinPlugin)
-  .use(numberMaxPlugin)
-  .use(booleanTruthyPlugin)
-  .for<AppData>()
-  
-  // String array - validate both array and each string element
-  .v('keywords', b => b.array.required().minLength(1).maxLength(10).unique()) // Array properties
-  .v('keywords[*]', b => b.string.required().min(3).max(30).pattern(/^[a-z]+$/)) // Each string
-  
-  // Number array - validate both array and each number element
-  .v('ratings', b => b.array.required().minLength(1))    // Array properties
-  .v('ratings[*]', b => b.number.required().min(1).max(5)) // Each number must be 1-5
-  
-  // Another string array with different rules
-  .v('categories', b => b.array.required().unique())      // No duplicates
-  .v('categories[*]', b => b.string.required().min(2))    // Each category name
-  
-  // Boolean array
-  .v('flags', b => b.array.required())                    // Array validation
-  .v('flags[*]', b => b.boolean.required().truthy())      // Each flag must be true
-  .build();
-
-// Example usage:
-const result = validator.validate({
-  keywords: ['react', 'typescript', 'nodejs'],  // ✅ Valid
-  ratings: [5, 4, 3, 5, 4],                     // ✅ Valid
-  categories: ['frontend', 'backend'],          // ✅ Valid
-  flags: [true, true, false]                    // ❌ Invalid - one is false
-});`;
-
-const arrayOfObjectsExample = `// Most common case: Array of objects with nested structures
-type Order = {
-  orderId: string;
-  items: Array<{
-    productId: string;
-    name: string;
-    quantity: number;
-    price: number;
-    attributes: {
-      color?: string;
-      size?: string;
-    };
-  }>;
-  customer: {
-    name: string;
-    addresses: Array<{
-      type: 'billing' | 'shipping';
-      street: string;
-      city: string;
-    }>;
-  };
-};
-
-// ✅ Luq's elegant approach - use [*] notation for array items, dot notation for nested objects
-const orderValidator = Builder()
-  .use(requiredPlugin)
-  .use(arrayMinLengthPlugin)
-  .use(stringMinPlugin)
-  .use(numberMinPlugin)
-  .use(stringPatternPlugin)
-  .use(optionalPlugin)
-  .use(oneOfPlugin)
-  .for<Order>()
-  // Validate root fields
-  .v('orderId', b => b.string.required().pattern(/^ORD-\d{6}$/))
-  
-  // Validate array and its items
-  .v('items', b => b.array.required().minLength(1))
-  .v('items[*].productId', b => b.string.required().pattern(/^PROD-\d{4}$/))
-  .v('items[*].name', b => b.string.required().min(1))
-  .v('items[*].quantity', b => b.number.required().min(1))
-  .v('items[*].price', b => b.number.required().min(0))
-  
-  // Validate nested objects within array items
-  .v('items[*].attributes.color', b => 
-    b.string.optional().oneOf(['blue', 'red', 'green', 'black', 'white']))
-  .v('items[*].attributes.size', b => 
-    b.string.optional().oneOf(['S', 'M', 'L', 'XL']))
-  
-  // Validate nested object
-  .v('customer.name', b => b.string.required().min(2))
-  
-  // Validate nested array within object
-  .v('customer.addresses', b => b.array.required().minLength(1))
-  .v('customer.addresses[*].type', b => b.string.required().oneOf(['billing', 'shipping']))
-  .v('customer.addresses[*].street', b => b.string.required().min(5))
-  .v('customer.addresses[*].city', b => b.string.required().min(2))
-  .build();
-
-// Everything in ONE validator using [*] notation for arrays and dot notation for objects
-// No need to split validators or iterate manually!`;
-
-const performanceDebuggingExample = `// Debug slow validation
-const start = performance.now();
-const result = validator.validate(largeData);
-const end = performance.now();
-
-console.log(\`Validation took \${end - start} milliseconds\`);
-
-// Check for heavy transformations
-const validator = Builder()
-  .for<Data>()
-  .v('content', b => 
-    b.string
-      .required()
-      .transform(content => {
-        console.time('transform'); // Debug transform time
-        const result = heavyProcessing(content);
-        console.timeEnd('transform');
-        return result;
-      })
-  )
-  .build();`;
-
-const memoryLeakExample = `// ❌ Memory leak - creating validators repeatedly
-function validateData(data: User) {
-  const validator = Builder() // New validator every call!
-    .use(requiredPlugin)
-    .for<User>()
-    .v('email', b => b.string.required().email())
-    .build();
-    
-  return validator.validate(data);
-}
-
-// ✅ Fix - Create validator once
-const USER_VALIDATOR = Builder()
+export const userValidator = Builder()
   .use(requiredPlugin)
   .for<User>()
   .v('email', b => b.string.required().email())
+  .build();`;
+
+const missingPluginFixExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+
+type User = { email: string };
+
+export const userValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)   // one plugin per use(); there is no variadic form
+  .for<User>()
+  .v('email', b => b.string.required().email())
+  .build();`;
+
+// luq-example: must-fail — number のフィールドに b.string を選べないことの証明なので、通ってはならない
+const wrongSlotExample = `// Does not compile: 'age' is a number, so b.string is not offered.
+import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type Person = { age: number };
+
+export const personValidator = Builder()
+  .use(requiredPlugin)
+  .for<Person>()
+  .v('age', b => b.string.required())
+  .build();`;
+
+// luq-example: must-fail — 1.x が受けた4つのパス形が型で弾かれることの証明なので、通ってはならない
+const badPathsExample = `// Does not compile. Four path forms 1.x accepted, and why each is gone.
+import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type Model = { items: { name: string }[]; tags: string[]; when: Date };
+
+export const modelValidator = Builder()
+  .use(requiredPlugin)
+  .for<Model>()
+  .v('items.name', b => b.string.required())     // returned the raw array in 1.x
+  .v('items.*.name', b => b.string.required())   // never generated by the type layer
+  .v('items[0].name', b => b.string.required())  // a fixed index was never supported
+  .v('tags.length', b => b.number.required())    // that is the array's own property
+  .v('when.getTime', b => b.any.required())      // no path enters a Date
+  .build();`;
+
+const goodPathsExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { arrayMinLengthPlugin } from '@maroonedog/luq/plugins/arrayMinLength';
+
+type Model = { items: { name: string }[]; tags: string[]; when: Date };
+
+export const modelValidator = Builder()
+  .use(requiredPlugin)
+  .use(arrayMinLengthPlugin)
+  .for<Model>()
+  .v('items[*].name', b => b.string.required())
+  .v('tags', b => b.array.required().minLength(1))
+  .v('when', b => b.date.required())
+  .build();`;
+
+// luq-example: must-fail — required() に allowNull オプションが無いことの証明なので、通ってはならない
+const allowNullExample = `// Does not compile: required() takes no options beyond the uniform RuleOptions.
+import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type Row = { closedAt: string | null };
+
+export const rowValidator = Builder()
+  .use(requiredPlugin)
+  .for<Row>()
+  .v('closedAt', b => b.string.required({ allowNull: true }))
+  .build();`;
+
+const nullableFixExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { nullablePlugin } from '@maroonedog/luq/plugins/nullable';
+
+type Row = { closedAt: string | null };
+
+export const rowValidator = Builder()
+  .use(requiredPlugin)
+  .use(nullablePlugin)
+  .for<Row>()
+  .v('closedAt', b => b.string.required().nullable())
+  .build();`;
+
+// luq-example: must-fail — build() の戻り値が関数でないことの証明なので、通ってはならない
+const buildCallableExample = `// Does not compile: build() returns an object, not a function.
+import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type User = { name: string };
+
+const validateUser = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v('name', b => b.string.required())
   .build();
 
-function validateData(data: User) {
-  return USER_VALIDATOR.validate(data); // Reuse validator
+export const broken = validateUser({ name: 'Jo' });`;
+
+// luq-example: must-fail — RuleOptions に message キーが無いことの証明なので、通ってはならない
+const messageOptionExample = `// Does not compile: RuleOptions has no \`message\` key.
+import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type User = { email: string };
+
+export const userValidator = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v('email', b => b.string.required({ message: 'Email is required' }))
+  .build();`;
+
+const messageFactoryExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type User = { email: string; password: string };
+
+export const userValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<User>()
+  // A constant message is a factory that ignores its context.
+  .v('email', b => b.string.required({ messageFactory: () => 'Email is required.' }))
+  // The context carries path, value and code; a plugin may add more.
+  .v('password', b =>
+    b.string.required().min(8, {
+      code: 'passwordTooShort',
+      severity: 'error',
+      messageFactory: context => context.path + ' needs at least 8 characters.',
+    })
+  )
+  .build();`;
+
+const abortEarlyExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type Form = { name: string; email: string };
+
+const formValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .for<Form>()
+  .v('name', b => b.string.required().min(5))
+  .v('email', b => b.string.required().min(5).email())
+  .build();
+
+const input = { name: 'Jo', email: 'a@b' };
+
+// ['name']                    — the defaults: both abort flags are TRUE
+export const one = formValidator.validate(input).issues.map(i => i.path);
+
+// ['name', 'email']           — one issue per failing field
+export const perField = formValidator
+  .validate(input, { abortEarly: false })
+  .issues.map(i => i.path);
+
+// ['name', 'email', 'email']  — every failing rule
+export const everything = formValidator
+  .validate(input, { abortEarly: false, abortEarlyOnEachField: false })
+  .issues.map(i => i.path);`;
+
+const implicitRequiredExample = `import { Builder } from '@maroonedog/luq';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type Draft = { title: string };
+
+const draftValidator = Builder()
+  .use(stringMinPlugin)
+  .for<Draft>()
+  // No presence rule, so a MISSING title passes in silence.
+  .v('title', b => b.string.min(3))
+  .build();
+
+export const missingIsAccepted = draftValidator.validate({}).valid;   // true`;
+
+const gateOrderExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { validateIfPlugin } from '@maroonedog/luq/plugins/validateIf';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+
+type Ticket = { escalated: boolean; note: string };
+
+const ticketValidator = Builder()
+  .use(requiredPlugin)
+  .use(validateIfPlugin)
+  .use(stringMinPlugin)
+  .for<Ticket>()
+  // Every gate on a field is asked BEFORE any check runs, so these two
+  // spellings are the same declaration.
+  .v('note', b => b.string.required().min(20).validateIf(root => root.escalated))
+  .build();
+
+export const skipped = ticketValidator.validate({ escalated: false, note: 'x' }).valid;`;
+
+const asyncExample = `import { Builder } from '@maroonedog/luq';
+import { addAsyncSupport, createAsyncContext } from '@maroonedog/luq/async';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+import { fromContextPlugin } from '@maroonedog/luq/plugins/fromContext';
+import type { ExternalContext } from '@maroonedog/luq/plugins/fromContext';
+
+type Signup = { email: string };
+
+declare function isEmailTaken(email: string): Promise<boolean>;
+
+// The context arrives untyped, so prove its shape with a guard.
+function hasEmailTaken(
+  context: ExternalContext
+): context is { readonly emailTaken: boolean } {
+  return typeof context.emailTaken === 'boolean';
+}
+
+// 1. An ordinary SYNCHRONOUS validator, decorated.
+const signupValidator = addAsyncSupport(
+  Builder()
+    .use(requiredPlugin)
+    .use(stringEmailPlugin)
+    .use(fromContextPlugin)
+    .for<Signup>()
+    .v('email', b =>
+      b.string
+        .required()
+        .email()
+        .fromContext({
+          required: true,
+          check: (_value, context) => ({
+            valid: hasEmailTaken(context) && !context.emailTaken,
+            message: 'That address is already registered.',
+          }),
+        })
+    )
+    .build()
+);
+
+export async function checkSignup(input: Signup) {
+  // 2. Resolve everything outside, in parallel. This is the ONE await.
+  const context = await createAsyncContext()
+    .withOptions({ timeout: 2000 })
+    .set('emailTaken', isEmailTaken(input.email))
+    .build();
+
+  // 3. Validation itself is still synchronous under the promise.
+  return signupValidator.withAsyncContext(context).validate(input);
 }`;
 
-const errorMessageCustomizationExample = `// Default error messages might not be user-friendly
-const result = validator.validate({ email: 'invalid-email' });
-// Error: "stringEmail validation failed"
+const asyncFailureExample = `import { createAsyncContext } from '@maroonedog/luq/async';
 
-// ✅ Customize error messages for better UX
-const validator = Builder()
-  .use(stringEmailPlugin)
-  .for<User>()
-  .v('email', b => 
-    b.string
-      .required({ message: 'Email is required' })
-      .email({ message: 'Please enter a valid email address' })
-  )
-  .build();`;
+declare function loadQuota(): Promise<number>;
 
-const asyncValidationExample = `// Luq's async validation pattern - separate async layer approach
-import { createAsyncContext, addAsyncSupport } from '@maroonedog/luq/async.experimental';
+export async function buildContext() {
+  const context = await createAsyncContext()
+    .withOptions({
+      timeout: 2000,
+      continueOnError: true,          // a failed entry still yields a ready context
+      defaultValues: { quota: 0 },    // ...substituting this
+    })
+    .set('quota', loadQuota())
+    .build();
 
-// Define async context type
-interface ValidationContext {
-  emailExists: boolean;
-  domainValid: boolean;
-  quotaAvailable: { canCreate: boolean; limit: number };
-}
-
-// ✅ Correct pattern - Luq's async layer separation
-// Step 1: Create normal synchronous validator
-const syncValidator = Builder()
-  .use(requiredPlugin)
-  .use(stringEmailPlugin)
-  .use(fromContextPlugin) // Plugin that can access async context
-  .for<User>()
-  .v('email', b => b.string.required().email())
-  .build();
-
-// Step 2: Add async support to the validator
-const validator = addAsyncSupport(syncValidator);
-
-// Step 3: Create and resolve async context BEFORE validation
-const asyncContext = await createAsyncContext<ValidationContext>()
-  .set('emailExists', checkEmailExists(data.email))        // Parallel
-  .set('domainValid', validateDomain(data.email))          // Parallel
-  .set('quotaAvailable', checkUserQuota(data.userId))      // Parallel
-  .build(); // All async operations run in parallel
-
-// Step 4: Validate with pre-resolved async context
-const result = await validator
-  .withAsyncContext<ValidationContext>(asyncContext)
-  .validate(data);
-
-// The async data is available in plugins via getAsyncContext
-const emailExistsPlugin = {
-  name: 'emailExists',
-  validate: (value: string, context: any) => {
-    // Get pre-resolved async data (no await needed here!)
-    const asyncData = getAsyncContext<ValidationContext>(context);
-    
-    if (asyncData?.emailExists) {
-      return { valid: false, message: 'Email already exists' };
+  if (context.hasErrors) {
+    for (const failure of context.failures) {
+      console.warn(failure.key, failure.reason);
     }
-    
-    return { valid: true };
   }
-};
 
-// Key benefits:
-// 1. All async operations run in parallel (not sequential)
-// 2. Async is resolved ONCE before validation
-// 3. Validation itself remains synchronous and fast
-// 4. Full type safety with TypeScript generics`;
+  // When isReady is false, validate() rejects with one issue per failed entry,
+  // code 'asyncContextUnavailable'.
+  return context.isReady;
+}`;
+
+const importCostExample = `// Per-plugin subpaths: the supported route.
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
+
+// The barrel resolves too, and measured against the three lines above it costs
+// 7,986 B gzipped versus 7,987 B — a 0.01% difference.
+export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 ---
 
 <BaseLayout title="Troubleshooting - Luq Documentation">
   <Header />
-  
+
   <div class="flex min-h-screen">
     <DocsSidebar currentPath="/docs/troubleshooting" />
-    
-    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
-      <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8">Troubleshooting</h1>
-        
-        <div class="prose prose-lg dark:prose-invert max-w-none">
-          <p class="lead">
-            Common issues and solutions when working with Luq. Find quick fixes for the most frequent problems.
-          </p>
-          
-          <h2 id="typescript-errors">TypeScript Errors</h2>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6" open>
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Plugin methods not available / TypeScript compilation errors</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Symptom:</strong> TypeScript complains that validation methods like <code>.email()</code> or <code>.min()</code> don't exist.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Cause:</strong> The plugin providing the method hasn't been imported and registered with <code>.use()</code>.
-              </p>
-              
-              <p class="text-sm font-semibold">Solution:</p>
-              <CodeBlock code={pluginImportExample} language="typescript" showCopy={true} />
-            </div>
-          </details>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Field not found / Path errors</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Symptom:</strong> TypeScript errors about fields not existing on your type.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Cause:</strong> Incorrect field paths or forgetting to use dot notation for nested properties.
-              </p>
-              
-              <p class="text-sm font-semibold">Solution:</p>
-              <CodeBlock code={fieldNotFoundExample} language="typescript" showCopy={true} />
-            </div>
-          </details>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Type inference issues</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Symptom:</strong> TypeScript can't determine field types or shows generic errors.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Cause:</strong> Missing <code>.for&lt;YourType&gt;()</code> call in the builder chain.
-              </p>
-              
-              <p class="text-sm font-semibold">Solution:</p>
-              <CodeBlock code={typeInferenceExample} language="typescript" showCopy={true} />
-            </div>
-          </details>
-          
-          <h2 id="array-validation-issues">Array Validation Issues</h2>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6" open>
-            <summary class="cursor-pointer font-semibold text-lg mb-4">How to validate arrays and array items</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Key concept:</strong> Luq uses <code>[*]</code> notation to validate array items. When you write <code>items[*].name</code>, it automatically validates the <code>name</code> field of ALL items in the array.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Common mistake:</strong> Trying to use specific index notation like <code>items[0].name</code> or trying to split into multiple validators - neither approach is correct in Luq.
-              </p>
-              
-              <p class="text-sm font-semibold">The correct Luq pattern - everything in ONE validator:</p>
-              <CodeBlock code={arrayValidationExample} language="typescript" showCopy={true} />
-            </div>
-          </details>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Primitive arrays (string[], number[], boolean[])</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Common need:</strong> Validating arrays of primitive types like tags, scores, IDs, flags, etc.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Key pattern:</strong> Use <code>fieldName[*]</code> to validate each primitive element in the array. Validate both the array itself (length, uniqueness) AND each element (min/max, pattern, etc.).
-              </p>
-              
-              <CodeBlock code={primitiveArrayExample} language="typescript" showCopy={true} />
-              
-              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-4 mt-4">
-                <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Remember:</p>
-                <ul class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                  <li>• <code>.v('tags', ...)</code> validates the array itself (length, uniqueness)</li>
-                  <li>• <code>.v('tags[*]', ...)</code> validates EACH element in the array</li>
-                  <li>• Both validations work together in ONE validator</li>
-                </ul>
-              </div>
-            </div>
-          </details>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Complex nested structures (arrays and objects)</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Real-world scenario:</strong> Validating complex data with arrays of objects, nested objects, and arrays within objects.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Luq's powerful pattern:</strong> Combine <code>[*]</code> notation for arrays with dot notation for objects. Everything stays in ONE validator!
-              </p>
-              
-              <CodeBlock code={arrayOfObjectsExample} language="typescript" showCopy={true} />
-            </div>
-          </details>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Nested arrays (Array of arrays)</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Multi-dimensional arrays:</strong> Validating matrices, 2D/3D arrays, or other nested array structures.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Luq's solution:</strong> Chain <code>[*]</code> notation for each level of nesting. <code>data[*][*]</code> validates all elements in a 2D array.
-              </p>
-              
-              <CodeBlock code={nestedArrayExample} language="typescript" showCopy={true} />
-              
-              <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-4 mt-4">
-                <p class="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">Luq Array Validation Patterns:</p>
-                <ul class="text-xs text-amber-800 dark:text-amber-200 space-y-1">
-                  <li>• <code>tags[*]</code> - Validates each string in a string[] array</li>
-                  <li>• <code>scores[*]</code> - Validates each number in a number[] array</li>
-                  <li>• <code>items[*].name</code> - Validates the name field of ALL items in an object array</li>
-                  <li>• <code>items[*].subitems[*].value</code> - Nested arrays within objects</li>
-                  <li>• <code>matrix[*][*]</code> - 2D arrays (matrix)</li>
-                  <li>• <code>cube[*][*][*]</code> - 3D arrays</li>
-                  <li>• <code>items[*].tags[*]</code> - Primitive array within object array</li>
-                  <li>• <code>items[*].address.city</code> - Combine [*] with dot notation for nested objects</li>
-                  <li>• Everything in ONE validator - no splitting or manual iteration!</li>
-                </ul>
-              </div>
-            </div>
-          </details>
-          
-          <h2 id="bundle-size-issues">Bundle Size Issues</h2>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Bundle size larger than expected</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Symptom:</strong> Your bundle includes more Luq code than you expected.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Causes:</strong> Importing from barrel exports or using wildcard imports.
-              </p>
-              
-              <p class="text-sm font-semibold">Solution:</p>
-              <CodeBlock code={importBestPracticesExample} language="typescript" showCopy={true} />
-              
-              <div class="bg-luq-teal-50 dark:bg-luq-teal-900/20 border border-luq-teal-200 dark:border-luq-teal-800 rounded p-4 mt-4">
-                <p class="text-sm font-semibold text-luq-teal-900 dark:text-luq-teal-100 mb-2">Bundle Analysis Tips:</p>
-                <ul class="text-xs text-luq-teal-800 dark:text-luq-teal-200 space-y-1">
-                  <li>• Use <code>webpack-bundle-analyzer</code> to visualize what's included</li>
-                  <li>• Check your bundler's tree-shaking configuration</li>
-                  <li>• Ensure you're using ES modules (import/export)</li>
-                  <li>• Avoid importing entire plugin collections</li>
-                </ul>
-              </div>
-            </div>
-          </details>
-          
-          <h2 id="performance-problems">Performance Problems</h2>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Slow validation performance</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Common causes:</strong> Creating validators repeatedly, heavy transformations, or inefficient data structures.
-              </p>
-              
-              <p class="text-sm font-semibold">Debugging validation performance:</p>
-              <CodeBlock code={performanceDebuggingExample} language="typescript" showCopy={true} />
-              
-              <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-4">
-                <p class="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Performance Tips:</p>
-                <ul class="text-xs text-yellow-800 dark:text-yellow-200 space-y-1">
-                  <li>• Create validators once and reuse them</li>
-                  <li>• Move heavy processing outside of transforms</li>
-                  <li>• Use simpler data structures when possible</li>
-                  <li>• Consider using abort-early validation for large objects</li>
-                </ul>
-              </div>
-            </div>
-          </details>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Memory leaks in long-running applications</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Symptom:</strong> Memory usage grows over time in server applications.
-              </p>
-              
-              <p class="text-sm">
-                <strong>Cause:</strong> Creating new validators instead of reusing them.
-              </p>
-              
-              <p class="text-sm font-semibold">Solution:</p>
-              <CodeBlock code={memoryLeakExample} language="typescript" showCopy={true} />
-            </div>
-          </details>
-          
-          <h2 id="runtime-issues">Runtime Issues</h2>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Unexpected validation results</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Debugging steps:</strong>
-              </p>
-              <ol class="text-sm space-y-2">
-                <li>1. Check that all required plugins are imported and registered</li>
-                <li>2. Verify field paths match your data structure exactly</li>
-                <li>3. Test with simplified data to isolate the issue</li>
-                <li>4. Check for type mismatches between expected and actual data</li>
-              </ol>
-              
-              <div class="bg-luq-neutral-100 dark:bg-luq-neutral-800 rounded p-4 mt-4">
-                <p class="text-sm font-semibold mb-2">Debug validation step by step:</p>
-                <CodeBlock 
-                  code={`// Add logging to understand what's happening
-const result = validator.validate(data);
 
-console.log('Validation result:', result.isValid());
-if (!result.isValid()) {
-  console.log('Errors:', result.getErrors());
-  console.log('Data being validated:', JSON.stringify(data, null, 2));
-}`}
-                  language="typescript" 
-                  showCopy={true} 
-                />
+    <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
+      <article class="mx-auto max-w-4xl">
+        <p class="md-label-large mb-2 text-primary">Guide</p>
+        <h1 class="md-headline-large mb-4">Troubleshooting</h1>
+        <p class="md-body-large mb-10 text-on-surface-variant">
+          The errors people actually hit, with the code that causes them beside the code that
+          fixes them. Blocks marked <em>does not compile</em> are kept broken on purpose.
+        </p>
+
+        <div class="prose max-w-none">
+          <h2 id="imports">Import errors</h2>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              >ERR_PACKAGE_PATH_NOT_EXPORTED, or "cannot find module"</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> A 1.x specifier. The package publishes 84 export keys:
+                seven fixed ones and 77 under <code>./plugins/</code>. Nothing else resolves,
+                and the ones below never did — 1.x's own README named specifiers that were not
+                in its exports map.
+              </p>
+
+              <CodeBlock code={badImportsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={goodImportsExample} language="typescript" />
+
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[36rem] text-left">
+                  <thead>
+                    <tr class="border-b border-outline">
+                      <th class="md-title-small py-2 pr-4">Key</th>
+                      <th class="md-title-small py-2">What is behind it</th>
+                    </tr>
+                  </thead>
+                  <tbody class="md-body-medium text-on-surface-variant">
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>@maroonedog/luq</code></td>
+                      <td class="py-2">
+                        <code>Builder</code>, the result vocabulary, the shared types. No
+                        plugins.
+                      </td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>…/plugins/&lt;name&gt;</code></td>
+                      <td class="py-2">One plugin each, camelCase. 77 of them.</td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>…/plugins</code></td>
+                      <td class="py-2">The convenience barrel.</td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>…/result</code></td>
+                      <td class="py-2">
+                        <code>unwrap</code>, <code>isOk</code>, <code>ok</code>,
+                        <code>reject</code>, <code>ValidationFailure</code>.
+                      </td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>…/field-rule</code></td>
+                      <td class="py-2">
+                        <code>createPluginRegistry</code>, <code>createFieldRule</code>,
+                        <code>useField</code>.
+                      </td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>…/async</code></td>
+                      <td class="py-2">Promise resolution. Not <code>async.experimental</code>.</td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>…/plugin-kit</code></td>
+                      <td class="py-2">The plugin-author surface.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2 pr-4"><code>…/package.json</code></td>
+                      <td class="py-2">For tooling that reads it.</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </details>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Error messages not user-friendly</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Problem:</strong> Default error messages are too technical for end users.
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >A plugin imported from the package root is <code>undefined</code></summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> 1.x's <code>dist/index.d.ts</code> declared 57 plugin
+                exports its <code>dist/index.js</code> did not have, so the import typechecked
+                and gave you <code>undefined</code> at run time. The root now exports no
+                plugins at all — a barrel naming all 77 would make every one statically
+                reachable and end per-plugin tree-shaking.
               </p>
-              
-              <p class="text-sm font-semibold">Solution - Customize error messages:</p>
-              <CodeBlock code={errorMessageCustomizationExample} language="typescript" showCopy={true} />
+              <CodeBlock code={rootPluginsExample} language="typescript" showCopy={false} />
             </div>
           </details>
-          
-          <h2 id="advanced-issues">Advanced Issues</h2>
-          
-          <details class="not-prose border border-luq-neutral-200 dark:border-luq-neutral-800 rounded-lg p-6 mb-6">
-            <summary class="cursor-pointer font-semibold text-lg mb-4">Async validation (database checks, API calls)</summary>
-            <div class="space-y-4">
-              <p class="text-sm">
-                <strong>Luq's approach:</strong> Async validation uses a separate layer design - resolve all async data BEFORE validation, then pass it to the synchronous validator.
+
+          <h2 id="compile-errors">Compile errors</h2>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              >"Property '.email' does not exist" — a chain method is missing</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> The plugin contributing that method is not in the bag.
+                The bag is a type, so an unimported plugin's method does not typecheck —
+                that is the design, not a gap.
               </p>
-              
-              <p class="text-sm font-semibold">The correct async pattern with type safety:</p>
-              <CodeBlock code={asyncValidationExample} language="typescript" showCopy={true} />
-              
-              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-4 mt-4">
-                <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Luq's Async Architecture:</p>
-                <ol class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                  <li>1. Create async context with all async operations running in PARALLEL</li>
-                  <li>2. Resolve all async data ONCE before validation</li>
-                  <li>3. Pass pre-resolved context to validator using <code>withAsyncContext</code></li>
-                  <li>4. Validation remains synchronous and fast</li>
-                  <li>5. Plugins access async data via <code>getAsyncContext</code> (no await needed)</li>
-                  <li>6. Full type safety with TypeScript generics</li>
-                </ol>
+              <CodeBlock code={missingPluginExample} language="typescript" showCopy={false} />
+              <CodeBlock code={missingPluginFixExample} language="typescript" />
+              <p class="md-body-medium text-on-surface-variant">
+                Also check the method's <strong>name</strong>: it is often not the plugin's.
+                <code>stringMinPlugin</code> gives <code>.min()</code>,
+                <code>unionGuardPlugin</code> gives <code>.guard()</code>,
+                <code>tupleBuilderPlugin</code> gives <code>.builder()</code>. The
+                <a href="/plugins">plugin catalogue</a> lists every method.
+              </p>
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >The slot does not match the field's type</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> Choosing a slot the field's type cannot be is now a
+                compile error. 1.x let it through in silence. Use <code>b.any</code> when you
+                genuinely mean "whatever this is".
+              </p>
+              <CodeBlock code={wrongSlotExample} language="typescript" showCopy={false} />
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >The field path is not accepted</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> One rule, not four special cases: array members are
+                never enumerated, and built-in objects are opaque.
+              </p>
+              <CodeBlock code={badPathsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={goodPathsExample} language="typescript" />
+              <p class="md-body-medium text-on-surface-variant">
+                Path generation also counts down a depth budget of 6, so a self-referential
+                model yields a finite path union instead of a "type instantiation is
+                excessively deep" error. Reach deeper with the
+                <code>objectRecursively</code> plugin.
+              </p>
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              ><code>required(&#123; allowNull: true &#125;)</code> is rejected</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> <code>.required()</code> now narrows out
+                <code>null</code> as well as <code>undefined</code>, and it takes no options
+                beyond the uniform <code>RuleOptions</code>. Nullability is its own rule.
+              </p>
+              <CodeBlock code={allowNullExample} language="typescript" showCopy={false} />
+              <CodeBlock code={nullableFixExample} language="typescript" />
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >"This expression is not callable" on the built validator</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> <code>build()</code> returns an object with
+                <code>validate</code>, <code>parse</code>, <code>pick</code> and
+                <code>pickAll</code>. 1.x's README showed it being called; no implementation
+                ever returned something callable.
+              </p>
+              <CodeBlock code={buildCallableExample} language="typescript" showCopy={false} />
+            </div>
+          </details>
+
+          <h2 id="unexpected-results">Unexpected results</h2>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              >Only one issue comes back, but several fields are wrong</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> <code>abortEarly</code> defaults to
+                <strong>true</strong>. 1.x's documentation said <code>false</code>; its
+                implementation tested <code>options?.abortEarly !== false</code>, which makes
+                the default <code>true</code>. Nothing changed in behaviour — the
+                documentation was wrong.
+              </p>
+              <CodeBlock code={abortEarlyExample} language="typescript" />
+              <p class="md-body-medium text-on-surface-variant">
+                Inside an array element every field runs to completion whatever you passed, so
+                one bad element never hides its siblings.
+              </p>
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >A missing field passes validation</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> There is no implicit <code>required</code>. A field
+                that declares no presence rule accepts a missing value. 1.x had a
+                fast-path/slow-path split in which adding an array <em>elsewhere in the
+                schema</em> switched implicit-required on for unrelated fields; if you relied
+                on that, add <code>.required()</code>.
+              </p>
+              <CodeBlock code={implicitRequiredExample} language="typescript" />
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >A transform did not run</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> Transforms run only in <code>parse()</code>, and they
+                always run <strong>last</strong>. There is one order —
+                <code>default &rarr; presence &rarr; gates &rarr; checks &rarr; transforms
+                &rarr; recursion</code> — and chain position does not change it, so a check
+                written after a transform still sees the original value. 1.x had a second
+                order on a plugin-registry fallback path where transforms ran first.
+              </p>
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >A gate ran too late, or a conditional produced the wrong issue</summary
+            >
+            <div class="mt-4 space-y-4">
+              <ul class="md-body-medium space-y-2 text-on-surface-variant">
+                <li>
+                  <strong><code>validateIf</code> / <code>skip</code>.</strong> Every gate on
+                  a field is asked before any check runs. In 1.x
+                  <code>.min(3).validateIf(c)</code> still ran <code>min(3)</code>; now the
+                  two orderings are the same declaration.
+                </li>
+                <li>
+                  <strong><code>requiredIf</code> / <code>optionalIf</code>.</strong> These
+                  are presence rules, not checks. When the condition makes a field required
+                  and the value is missing you get one issue under
+                  <code>requiredIf</code> — not one per remaining rule, because the rest of
+                  the chain does not run.
+                </li>
+              </ul>
+              <CodeBlock code={gateOrderExample} language="typescript" />
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              ><code>strict()</code> did not reject an extra property</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> <code>strict()</code> is a compile-time obligation
+                that every leaf path of your type is declared. It has no runtime effect at
+                all. Rejecting unknown properties is a rule: use
+                <code>objectAdditionalProperties</code>, documented on the
+                <a href="/docs/api/builder#extra-properties">Builder page</a>.
+              </p>
+            </div>
+          </details>
+
+          <h2 id="messages">Messages and codes</h2>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              >The error code I match on has changed</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> The default code is now the <strong>plugin's
+                name</strong>, uniformly, with <code>options.code</code> overriding it. 1.x
+                emitted constants such as <code>REQUIRED</code> and
+                <code>VALIDATION_ERROR</code>.
+              </p>
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[32rem] text-left">
+                  <thead>
+                    <tr class="border-b border-outline">
+                      <th class="md-title-small py-2 pr-4">Rule</th>
+                      <th class="md-title-small py-2 pr-4">1.x code</th>
+                      <th class="md-title-small py-2">Now</th>
+                    </tr>
+                  </thead>
+                  <tbody class="md-body-medium text-on-surface-variant">
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>.required()</code></td>
+                      <td class="py-2 pr-4"><code>REQUIRED</code></td>
+                      <td class="py-2"><code>required</code></td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>.min(3)</code> on a string</td>
+                      <td class="py-2 pr-4"><code>VALIDATION_ERROR</code> family</td>
+                      <td class="py-2"><code>stringMin</code></td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>.custom(fn)</code></td>
+                      <td class="py-2 pr-4"><code>VALIDATION_ERROR</code></td>
+                      <td class="py-2"><code>custom</code></td>
+                    </tr>
+                    <tr>
+                      <td class="py-2 pr-4"><code>.orFail(fn)</code></td>
+                      <td class="py-2 pr-4"><code>VALIDATION_ERROR</code></td>
+                      <td class="py-2"><code>orFail</code></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              
-              <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-4 mt-4">
-                <p class="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">Performance Benefits:</p>
-                <ul class="text-xs text-green-800 dark:text-green-200 space-y-1">
-                  <li>• All async operations run in parallel (200ms instead of 600ms sequential)</li>
-                  <li>• Only ONE await during the entire validation process</li>
-                  <li>• Synchronous validation performance is unaffected</li>
-                  <li>• Zero overhead when not using async features</li>
+            </div>
+          </details>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              ><code>&#123; message: "…" &#125;</code> is not accepted on a rule</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> There is one message channel:
+                <code>messageFactory</code>. <code>RuleOptions</code> is
+                <code>&#123; code?, messageFactory?, severity? &#125;</code> and nothing else, so
+                there is no second precedence rule to remember. It is always the
+                <strong>last</strong> argument of a chain method, after the plugin's own.
+              </p>
+              <CodeBlock code={messageOptionExample} language="typescript" showCopy={false} />
+              <CodeBlock code={messageFactoryExample} language="typescript" />
+              <p class="md-body-medium text-on-surface-variant">
+                A call-level <code>messageFactory</code> and <code>translate</code> option
+                existed in 1.x's <code>ValidationOptions</code>. Both are gone; pass the
+                factory per rule.
+              </p>
+            </div>
+          </details>
+
+          <h2 id="async">Async checks</h2>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              >Checking a value against a database or an API</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                The whole <code>@maroonedog/luq/async</code> subpath is one
+                <code>await</code> followed by the ordinary synchronous engine. It contains no
+                rule, no plan and no loop over fields — deliberately, because a second
+                execution path is exactly how 1.x's async story died: its real context-based
+                branch existed but no call site reached it, so
+                <code>required: true</code> on <code>fromContext</code> could never see a
+                context and always failed.
+              </p>
+              <CodeBlock code={asyncExample} language="typescript" fileName="signup.ts" />
+
+              <div class="rounded-shape-md bg-surface-container p-4">
+                <p class="md-label-large mb-2">Three names, and what each one is</p>
+                <ul class="md-body-medium space-y-2 text-on-surface-variant">
+                  <li>
+                    <code>createAsyncContext()</code> — an immutable builder;
+                    <code>.set(key, promise)</code> returns a new one, and
+                    <code>.build()</code> resolves everything with
+                    <code>Promise.allSettled</code>, so entries run in parallel.
+                  </li>
+                  <li>
+                    <code>addAsyncSupport(validator)</code> — adds
+                    <code>withAsyncContext</code> without putting a fifth method on the core
+                    validator.
+                  </li>
+                  <li>
+                    <code>readAsyncContext(ruleContext, isContext)</code> — the read side, for
+                    plugin authors. It takes the guard that <em>proves</em> the shape, so a
+                    context that never resolved cannot masquerade as one that did. 1.x called
+                    it <code>getAsyncContext(context)</code> and asserted instead.
+                  </li>
                 </ul>
               </div>
             </div>
           </details>
-          
-          <h2 id="getting-help">Getting Help</h2>
-          
-          <div class="not-prose bg-luq-purple-50 dark:bg-luq-purple-900/20 border border-luq-purple-200 dark:border-luq-purple-800 rounded-lg p-6 my-8">
-            <h3 class="text-lg font-semibold mb-4 text-luq-purple-900 dark:text-luq-purple-100">Still having issues?</h3>
-            
-            <div class="space-y-4 text-sm">
-              <div class="flex items-start">
-                <span class="font-semibold mr-2">1.</span>
-                <div>
-                  <p class="font-semibold mb-1">Check the documentation:</p>
-                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Review the core concepts and examples to ensure you're following best practices.</p>
-                </div>
-              </div>
-              
-              <div class="flex items-start">
-                <span class="font-semibold mr-2">2.</span>
-                <div>
-                  <p class="font-semibold mb-1">Create a minimal reproduction:</p>
-                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Strip down your code to the smallest possible example that demonstrates the issue.</p>
-                </div>
-              </div>
-              
-              <div class="flex items-start">
-                <span class="font-semibold mr-2">3.</span>
-                <div>
-                  <p class="font-semibold mb-1">Check GitHub Issues:</p>
-                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Search for similar issues in the <a href="https://github.com/maroonedog/luq/issues" class="underline">GitHub repository</a>.</p>
-                </div>
-              </div>
-              
-              <div class="flex items-start">
-                <span class="font-semibold mr-2">4.</span>
-                <div>
-                  <p class="font-semibold mb-1">Ask for help:</p>
-                  <p class="text-luq-purple-700 dark:text-luq-purple-300">Open a new issue with your minimal reproduction and detailed description.</p>
-                </div>
-              </div>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium cursor-pointer"
+              >One async lookup failed or timed out</summary
+            >
+            <div class="mt-4 space-y-4">
+              <CodeBlock code={asyncFailureExample} language="typescript" />
+              <p class="md-body-medium text-on-surface-variant">
+                With <code>continueOnError</code> left off, a failed entry makes
+                <code>isReady</code> false and the bound validator rejects immediately with
+                one issue per failure, path = the entry's key and code
+                <code>asyncContextUnavailable</code>. No field rule runs.
+              </p>
             </div>
+          </details>
+
+          <h2 id="bundle-size">Bundle size</h2>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              >More Luq in the bundle than expected</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                First, check what "expected" was. These are the measured figures — esbuild
+                0.25.5, <code>bundle + minify + esm + es2020 + treeShaking</code>, then
+                <code>zlib.gzipSync</code>, re-measured by CI on every build.
+              </p>
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[32rem] text-left">
+                  <thead>
+                    <tr class="border-b border-outline">
+                      <th class="md-title-small py-2 pr-4">Entry</th>
+                      <th class="md-title-small py-2 text-right">gzip</th>
+                    </tr>
+                  </thead>
+                  <tbody class="md-body-medium text-on-surface-variant">
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4"><code>Builder</code> only, zero plugins</td>
+                      <td class="py-2 text-right">7,420 B</td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4">+ 1 plugin</td>
+                      <td class="py-2 text-right">7,638 B</td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4">+ 3 plugins</td>
+                      <td class="py-2 text-right">7,987 B</td>
+                    </tr>
+                    <tr class="border-b border-outline-variant">
+                      <td class="py-2 pr-4">+ 6 plugins</td>
+                      <td class="py-2 text-right">8,373 B</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2 pr-4">all 76 plugins</td>
+                      <td class="py-2 text-right">24,040 B</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="md-body-medium text-on-surface-variant">
+                Adding a plugin costs 129–224 B of gzip across that range, so if your bundle
+                is much larger than the core plus your plugin count, something is pulling in
+                more than you named.
+              </p>
+              <CodeBlock code={importCostExample} language="typescript" />
+              <ul class="md-body-medium space-y-2 text-on-surface-variant">
+                <li>
+                  The barrel is <strong>not</strong> the problem when your bundler
+                  tree-shakes — it was measured at a 1 B difference over three plugins. Check
+                  that you are emitting ES modules and that tree-shaking is on.
+                </li>
+                <li>
+                  <code>jsonSchemaFullFeature</code> bundles 49 plugins, which is why one
+                  import covers a whole document; it lands at 21,383 B. The
+                  <code>jsonSchema</code> route is billed as the tree-shakeable half and
+                  measured it is not: with a working plugin bag it is 21,371 B, twelve bytes
+                  less. Use it for the chain method, not to save bytes.
+                </li>
+                <li>
+                  <code>import * as plugins from '…'</code> defeats tree-shaking in most
+                  bundlers. Name what you import.
+                </li>
+              </ul>
+            </div>
+          </details>
+
+          <h2 id="performance">Performance</h2>
+
+          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium cursor-pointer"
+              >Validation is slower than expected</summary
+            >
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>First check: are you building inside the hot path?</strong>
+                <code>build()</code> costs 14–662&nbsp;µs depending on shape, against
+                sub-microsecond <code>validate()</code> calls. Building once at module scope
+                is the single change that matters.
+              </p>
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Second: this release really is slower than 1.x on flat and nested
+                shapes.</strong> Measured side by side in one process on one machine:
+                ×0.11 on a single field, ×0.35 on three fields, ×0.32 nested. It is faster on
+                arrays (×1.57) and JSON Schema documents (×1.09). 1.x carried a directory of
+                specialised fast paths that this implementation has no equivalent of. If your
+                workload is millions of flat-object validations per second, measure before
+                upgrading.
+              </p>
+              <p class="md-body-medium text-on-surface-variant">
+                Third: leave <code>abortEarly</code> at its default for
+                accept-or-reject work, and turn it off only where you need every complaint —
+                a form boundary, not a hot loop.
+              </p>
+              <a
+                href="/benchmarks"
+                class="md-button md-button-tonal md-state-layer md-focus-ring"
+              >
+                Full measurements
+              </a>
+            </div>
+          </details>
+
+          <h2 id="getting-help">Getting help</h2>
+
+          <div class="not-prose md-card md-card-filled my-8 p-6">
+            <ol class="md-body-medium space-y-3 text-on-surface-variant">
+              <li>
+                <strong>1. Check the breaking-change list.</strong> If you are coming from
+                1.x, most surprises are on it — build()'s return value, the loss of the
+                <code>Result</code> class, and the <code>abortEarly</code> default in
+                particular.
+              </li>
+              <li>
+                <strong>2. Reduce it to one file.</strong> Every example on this site is a
+                complete file that compiles; start from the nearest one and add your case.
+              </li>
+              <li>
+                <strong>3. Search the issues</strong> at
+                <a
+                  href="https://github.com/maroonedog/luq/issues"
+                  class="text-primary underline">github.com/maroonedog/luq/issues</a
+                >, then open one with that file and the exact compiler or runtime output.
+              </li>
+            </ol>
           </div>
-          
-          <div class="not-prose mt-12">
-            <h3 class="text-2xl font-bold mb-6">Next Steps</h3>
-            <div class="grid md:grid-cols-2 gap-6">
-              <a href="/docs/custom-plugins" class="luq-card p-6 hover:shadow-lg transition-shadow">
-                <h4 class="text-lg font-semibold mb-2">Custom Plugins</h4>
-                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                  Learn how to create your own validation plugins
-                </p>
-              </a>
-              
-              <a href="/docs/examples" class="luq-card p-6 hover:shadow-lg transition-shadow">
-                <h4 class="text-lg font-semibold mb-2">Examples & Patterns</h4>
-                <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400">
-                  See working examples and patterns
-                </p>
-              </a>
-            </div>
+
+          <div class="not-prose mt-12 grid gap-6 md:grid-cols-2">
+            <a
+              href="/docs/api/validator"
+              class="md-card md-card-outlined md-state-layer md-focus-ring block p-6"
+            >
+              <h3 class="md-title-medium mb-2">Validator API</h3>
+              <p class="md-body-medium text-on-surface-variant">
+                The result shape, the options, and the full 1.x mapping table.
+              </p>
+            </a>
+
+            <a
+              href="/docs/examples"
+              class="md-card md-card-outlined md-state-layer md-focus-ring block p-6"
+            >
+              <h3 class="md-title-medium mb-2">Examples &amp; patterns</h3>
+              <p class="md-body-medium text-on-surface-variant">
+                Working shapes to start from.
+              </p>
+            </a>
           </div>
         </div>
-      </div>
+      </article>
     </main>
-    
-    <OnThisPage tableOfContents={[
-      { id: 'typescript-errors', title: 'TypeScript Errors', level: 2 },
-      { id: 'array-validation-issues', title: 'Array Validation Issues', level: 2 },
-      { id: 'bundle-size-issues', title: 'Bundle Size Issues', level: 2 },
-      { id: 'performance-problems', title: 'Performance Problems', level: 2 },
-      { id: 'runtime-issues', title: 'Runtime Issues', level: 2 },
-      { id: 'advanced-issues', title: 'Advanced Issues', level: 2 },
-      { id: 'getting-help', title: 'Getting Help', level: 2 },
-    ]} />
+
+    <OnThisPage tableOfContents={tableOfContents} />
   </div>
-  
+
   <Footer />
 </BaseLayout>
 
 <style>
   .prose h2 {
-    @apply mt-12 mb-6;
+    @apply mb-6 mt-12;
   }
-  
-  .prose h3 {
-    @apply mt-8 mb-4;
+
+  details > summary {
+    list-style: none;
   }
-  
-  details summary {
-    @apply hover:text-luq-purple-600 dark:hover:text-luq-teal-400 transition-colors;
+
+  details > summary::-webkit-details-marker {
+    display: none;
   }
-  
-  details[open] summary {
-    @apply text-luq-purple-600 dark:text-luq-teal-400;
+
+  details > summary::before {
+    content: 'expand_more';
+    font-family: 'Material Symbols Outlined', sans-serif;
+    font-size: 20px;
+    line-height: 1;
+    vertical-align: -0.2em;
+    margin-right: 0.5rem;
+    display: inline-block;
+    transition: transform var(--md-sys-motion-duration-short-4) var(--md-sys-motion-easing-standard);
+  }
+
+  details[open] > summary::before {
+    transform: rotate(180deg);
   }
 </style>

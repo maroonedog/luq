@@ -1,136 +1,129 @@
 ---
 import CodeBlock from './CodeBlock.astro';
 
+/**
+ * MD3 outlined card for one plugin in the catalogue.
+ *
+ * The shape matches the rewrite's plugin metadata: a camelCase subpath `name`,
+ * the exported `symbol`, the chain `method` it adds, and the `slots` (field
+ * types) it may be used on. There is no `category` and no per-plugin bundle
+ * size — 1.x had both and neither survives in the rewrite's metadata.
+ *
+ * `symbol` is passed rather than derived: it is usually `name + "Plugin"`, but
+ * `objectAdditionalProperties` exports two symbols and one of them is
+ * `objectAdditionalPropertiesSchemaPlugin`, so deriving it would be wrong.
+ *
+ * Outlined, not elevated: a grid of many cards reads as a list, and MD3 uses
+ * outlined cards where elevation would compete across a dense collection.
+ */
 export interface Props {
   plugin: {
+    /** camelCase subpath name under @maroonedog/luq/plugins, e.g. "stringMin". */
     name: string;
-    category: string;
+    /** Exported symbol, e.g. "stringMinPlugin". */
+    symbol: string;
+    /** Full import specifier. */
+    subpath: string;
+    /** Chain method the plugin adds, without parentheses, e.g. "min". */
+    method: string;
+    /** Field types the method may be called on, e.g. ["string"]. */
+    slots: readonly string[];
     description: string;
-    bundleSize: string;
   };
+  /** Optional link on the card's title. Omitted renders a non-linking title. */
+  href?: string;
+  /** Adds the "add to builder" checkbox and the details button. */
+  selectable?: boolean;
 }
 
-const { plugin } = Astro.props;
+const { plugin, href, selectable = false } = Astro.props;
 
-// Generate import statement
-const importStatement = `import { ${plugin.name}Plugin } from '@/core/plugin/${plugin.name}';`;
+const importStatement = `import { ${plugin.symbol} } from "${plugin.subpath}";`;
+const checkboxId = `select-${plugin.symbol}`;
 
-// Helper function to generate example code
-function getExampleCode(pluginName: string): string {
-  const examples: Record<string, string> = {
-    required: `builder.v('name', b => b.string.required())`,
-    stringMin: `builder.v('username', b => b.string.required().min(3))`,
-    stringEmail: `builder.v('email', b => b.string.required().email())`,
-    numberMin: `builder.v('age', b => b.number.required().min(18))`,
-    arrayMinLength: `builder.v('tags', b => b.array.minLength(1))`,
-    // Add more examples as needed
-  };
-  
-  return examples[pluginName] || `builder.v('field', b => b.${pluginName}())`;
-}
+// Descriptions are written with Markdown backticks around identifiers. Split on
+// them so `.min()` renders as code rather than as literal backticks.
+const descriptionParts = plugin.description.split(/`([^`]+)`/);
 ---
 
-<div
-  class="luq-card p-6 h-full flex flex-col plugin-card"
+<article
+  class="md-card md-card-outlined plugin-card flex h-full flex-col gap-3 p-4"
+  data-plugin-symbol={plugin.symbol}
   data-plugin-name={plugin.name}
-  data-plugin-description={plugin.description}
+  data-plugin-method={plugin.method}
+  data-plugin-slots={plugin.slots.join(' ')}
 >
-  <!-- Plugin name and size -->
-  <div class="flex items-start justify-between mb-3">
-    <h3 class="text-lg font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">
-      {plugin.name}
+  <!--
+    flex-wrap, and no min-w-0 on the title: a long name like
+    `objectAdditionalProperties` next to a long badge like
+    `.additionalPropertiesSchema()` must push the badge onto its own line, not
+    hyphenate the name down the middle of a word.
+  -->
+  <header class="flex flex-wrap items-start justify-between gap-2">
+    <h3 class="md-title-medium text-on-surface">
+      {
+        href ? (
+          <a href={href} class="md-focus-ring rounded-shape-xs hover:text-primary">
+            {plugin.name}
+          </a>
+        ) : (
+          plugin.name
+        )
+      }
     </h3>
-    <span class="text-xs bg-luq-teal-100 dark:bg-luq-teal-900/30 text-luq-teal-700 dark:text-luq-teal-300 px-2 py-1 rounded-full">
-      {plugin.bundleSize}
-    </span>
-  </div>
-  
-  <!-- Description -->
-  <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 mb-4 flex-1">
-    {plugin.description}
-  </p>
-  
-  <!-- Import statement -->
-  <div class="mt-auto">
-    <CodeBlock 
-      code={importStatement}
-      language="typescript"
-      showWindowControls={false}
-      showCopy={true}
-      class="text-xs"
-    />
-    
-    <!-- Actions -->
-    <div class="flex items-center justify-between mt-3 text-sm">
-      <a
-        href={`/docs/plugins/${plugin.name}`}
-        class="text-luq-purple-600 dark:text-luq-teal-400 hover:underline luq-underline"
-      >
-        View docs →
-      </a>
-      <button
-        class="text-luq-neutral-500 hover:text-luq-purple-600 dark:hover:text-luq-teal-400 example-toggle"
-        data-plugin={plugin.name}
-      >
-        <span class="flex items-center">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-          Example
-        </span>
-      </button>
-    </div>
-  </div>
-  
-  <!-- Example (hidden by default) -->
-  <div class="hidden mt-4 pt-4 border-t border-luq-neutral-200 dark:border-luq-neutral-800 example-content" data-example-for={plugin.name}>
-    <CodeBlock 
-      code={getExampleCode(plugin.name)}
-      language="typescript"
-      showWindowControls={false}
-      showCopy={false}
-      class="text-xs"
-    />
-  </div>
-</div>
+    <code
+      class="md-label-medium shrink-0 rounded-shape-xs bg-tertiary-container px-2 py-1 font-mono text-on-tertiary-container"
+      >.{plugin.method}()</code
+    >
+  </header>
 
-<script>
-  // Copy functionality
-  document.querySelectorAll('.copy-button').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const btn = button as HTMLButtonElement;
-      const text = btn.dataset.copyText || '';
-      
-      try {
-        await navigator.clipboard.writeText(text);
-        
-        // Show success state
-        const copyIcon = btn.querySelector('.copy-icon');
-        const checkIcon = btn.querySelector('.check-icon');
-        
-        copyIcon?.classList.add('hidden');
-        checkIcon?.classList.remove('hidden');
-        
-        setTimeout(() => {
-          copyIcon?.classList.remove('hidden');
-          checkIcon?.classList.add('hidden');
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
-      }
-    });
-  });
-  
-  // Example toggle
-  document.querySelectorAll('.example-toggle').forEach((button) => {
-    button.addEventListener('click', () => {
-      const btn = button as HTMLButtonElement;
-      const pluginName = btn.dataset.plugin;
-      const example = document.querySelector(`[data-example-for="${pluginName}"]`);
-      
-      if (example) {
-        example.classList.toggle('hidden');
-      }
-    });
-  });
-</script>
+  <p class="md-body-medium flex-1 text-on-surface-variant">
+    {
+      descriptionParts.map((part, index) =>
+        index % 2 === 1 ? (
+          <code class="rounded-shape-xs bg-surface-container-highest px-1 py-0.5 font-mono text-[0.9em] text-on-surface">
+            {part}
+          </code>
+        ) : (
+          part
+        )
+      )
+    }
+  </p>
+
+  <ul class="flex flex-wrap gap-1.5" aria-label="Field types">
+    {
+      plugin.slots.map((slot) => (
+        <li class="md-chip md-chip-static md-label-medium h-6 px-2">{slot}</li>
+      ))
+    }
+  </ul>
+
+  <CodeBlock code={importStatement} language="typescript" showCopy={true} />
+
+  {
+    selectable && (
+      <div class="flex items-center justify-between gap-2 border-t border-outline-variant pt-3">
+        <label
+          class="md-label-large md-focus-ring inline-flex cursor-pointer items-center gap-2 rounded-shape-sm text-on-surface"
+          for={checkboxId}
+        >
+          <input
+            type="checkbox"
+            id={checkboxId}
+            class="plugin-checkbox h-[18px] w-[18px] accent-[var(--md-sys-color-primary)]"
+            data-plugin-symbol={plugin.symbol}
+          />
+          Add to builder
+        </label>
+        <button
+          type="button"
+          class="md-button md-button-text md-state-layer plugin-details-button"
+          data-plugin-symbol={plugin.symbol}
+        >
+          Details
+        </button>
+      </div>
+    )
+  }
+</article>
