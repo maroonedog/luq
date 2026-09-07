@@ -16,9 +16,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import { Builder } from "../../../src/builder/field-builder.types";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
-import { stringMinPlugin } from "../../../src/plugins/check-plugins";
-import { externalFlagPlugin } from "../../../src/plugins/config-plugins";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { externalFlagPlugin } from "../../support/probe-config-plugins";
 import { createAsyncContext } from "../../../src/async/async-context";
 import { withAsyncContext } from "../../../src/async/async-validator";
 import {

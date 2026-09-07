@@ -1,20 +1,13 @@
 // Shared fixture model + builder for the residual-4 call-site tests.
 import { Builder } from "../../src/builder/field-builder.types";
-import {
-  nullablePlugin,
-  optionalPlugin,
-  requiredPlugin,
-} from "../../src/plugins/presence-plugins";
-import {
-  compareFieldPlugin,
-  numberMinPlugin,
-  stringMinPlugin,
-  transformPlugin,
-} from "../../src/plugins/check-plugins";
-import {
-  externalFlagPlugin,
-  stringTruthyPlugin,
-} from "../../src/plugins/config-plugins";
+import { nullablePlugin } from "../../src/plugins/nullable";
+import { optionalPlugin } from "../../src/plugins/optional";
+import { requiredPlugin } from "../../src/plugins/required";
+import { compareFieldPlugin } from "../../src/plugins/compare-field";
+import { numberMinPlugin } from "../../src/plugins/number-min";
+import { stringMinPlugin } from "../../src/plugins/string-min";
+import { transformPlugin } from "../../src/plugins/transform";
+import { externalFlagPlugin, stringTruthyPlugin } from "./probe-config-plugins";
 
 export interface Address {
   readonly street: string;

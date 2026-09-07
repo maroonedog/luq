@@ -7,12 +7,10 @@
 // resolved bag reaches a rule, and a stub cannot show that.
 // ===========================================================================
 import { Builder } from "../../../src/builder/field-builder.types";
-import {
-  optionalPlugin,
-  requiredPlugin,
-} from "../../../src/plugins/presence-plugins";
-import { stringMinPlugin } from "../../../src/plugins/check-plugins";
-import { externalFlagPlugin } from "../../../src/plugins/config-plugins";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { externalFlagPlugin } from "../../support/probe-config-plugins";
 import { createAsyncContext } from "../../../src/async/async-context";
 import {
   ASYNC_CONTEXT_ISSUE_CODE,

@@ -29,3 +29,7 @@ vscode-extension/out/
 .git/
 *.min.js
 *.min.css
+
+# Generated catalog derivatives (regenerate with `npm run generate`)
+src/plugins/manifest.generated.ts
+src/plugins/index.generated.ts

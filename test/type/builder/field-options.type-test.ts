@@ -6,14 +6,10 @@
 // ===========================================================================
 import { Builder } from "../../../src/index";
 import type { FieldOptions, Validator } from "../../../src/index";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-} from "../../../src/plugins/check-plugins";
-import {
-  optionalPlugin,
-  requiredPlugin,
-} from "../../../src/plugins/presence-plugins";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
 import type { MissingFieldsError } from "../../../src/builder/field-builder.types";
 import type { Equals, Expect } from "../../support/model";
 

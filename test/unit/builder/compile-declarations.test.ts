@@ -22,7 +22,7 @@ import { definePlugin } from "../../../src/plugin-kit/plugin-definition";
 import type { RuleBuildContext } from "../../../src/plugin-kit/rule-build-context";
 import { PASS } from "../../../src/types";
 import { resolveGlobalConfig } from "../../../src/types/global-config";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
+import { requiredPlugin } from "../../../src/plugins/required";
 
 const resolveSpy = resolveGlobalConfig as unknown as jest.Mock;
 

@@ -8,15 +8,11 @@ import { Builder } from "../../../src/builder/field-builder.types";
 import { resetGlobalConfig } from "../../../src/builder/global-config-store";
 import { createPluginRegistry } from "../../../src/field-rule/create-plugin-registry";
 import { useField } from "../../../src/field-rule/use-field";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-  transformPlugin,
-} from "../../../src/plugins/check-plugins";
-import {
-  optionalPlugin,
-  requiredPlugin,
-} from "../../../src/plugins/presence-plugins";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { transformPlugin } from "../../../src/plugins/transform";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
 
 interface Account {
   readonly email: string;

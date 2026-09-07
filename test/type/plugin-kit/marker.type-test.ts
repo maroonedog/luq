@@ -24,10 +24,10 @@ import type {
   Labels,
   Metrics,
 } from "../../support/object-fixtures";
-import { objectPatternPropertiesPlugin } from "../../../src/plugins/object/pattern-properties";
-import { objectDependentSchemasPlugin } from "../../../src/plugins/object/dependent-schemas";
-import { oneOfSchemaPlugin } from "../../../src/plugins/composition/one-of-schema";
-import { oneOfPlugin } from "../../../src/plugins/value/one-of";
+import { objectPatternPropertiesPlugin } from "../../../src/plugins/object-pattern-properties";
+import { objectDependentSchemasPlugin } from "../../../src/plugins/object-dependent-schemas";
+import { oneOfSchemaPlugin } from "../../support/probe-marker-plugins";
+import { oneOfPlugin } from "../../../src/plugins/one-of";
 
 export type ElementOfObjectIsNever = Assert<Equals<ElementOf<Labels>, never>>;
 export type PropertyValueOfLabels = Assert<

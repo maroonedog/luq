@@ -26,26 +26,23 @@ import type {
   PluginSignature,
 } from "../plugin-kit/plugin-definition";
 import type { SlotPlugins } from "../chain/plugin-bag.types";
-import { requiredPlugin } from "../plugins/presence-plugins";
-import {
-  compareFieldPlugin,
-  numberMinPlugin,
-  stringMinPlugin,
-} from "../plugins/check-plugins";
+import { requiredPlugin } from "../plugins/required";
+import { compareFieldPlugin } from "../plugins/compare-field";
+import { numberMinPlugin } from "../plugins/number-min";
+import { stringMinPlugin } from "../plugins/string-min";
 import { arrayEachPlugin } from "../plugins/array-each";
 import { conditionalSchemaPlugin } from "../plugins/conditional-schema";
-import { arrayMaxLengthPlugin } from "../plugins/array/max-length";
-import { arrayMinLengthPlugin } from "../plugins/array/min-length";
-import { arrayUniquePlugin } from "../plugins/array/unique";
-import { numberMaxPlugin } from "../plugins/number/max";
-import { stringFormatPlugin } from "../plugins/string/format";
-import { stringMaxPlugin } from "../plugins/string/max-length";
-import { stringPatternPlugin } from "../plugins/string/pattern";
-import { literalPlugin } from "../plugins/value-plugins";
-import { oneOfPlugin } from "../plugins/value/one-of";
-import { objectAdditionalPropertiesPlugin } from "../plugins/object/additional-properties";
-import { objectPatternPropertiesPlugin } from "../plugins/object/pattern-properties";
-import { objectPropertyNamesPlugin } from "../plugins/object/property-names";
+import { arrayMaxLengthPlugin } from "../plugins/array-max-length";
+import { arrayMinLengthPlugin } from "../plugins/array-min-length";
+import { arrayUniquePlugin } from "../plugins/array-unique";
+import { numberMaxPlugin } from "../plugins/number-max";
+import { stringMaxPlugin } from "../plugins/string-max";
+import { stringPatternPlugin } from "../plugins/string-pattern";
+import { literalPlugin } from "../plugins/literal";
+import { oneOfPlugin } from "../plugins/one-of";
+import { objectAdditionalPropertiesPlugin } from "../plugins/object-additional-properties";
+import { objectPatternPropertiesPlugin } from "../plugins/object-pattern-properties";
+import { objectPropertyNamesPlugin } from "../plugins/object-property-names";
 
 /** The concrete bag `jsonSchemaFullFeature` installs. See the note above. */
 export type JsonSchemaBag = {
@@ -53,7 +50,6 @@ export type JsonSchemaBag = {
   readonly stringMin: typeof stringMinPlugin;
   readonly stringMax: typeof stringMaxPlugin;
   readonly stringPattern: typeof stringPatternPlugin;
-  readonly stringFormat: typeof stringFormatPlugin;
   readonly numberMin: typeof numberMinPlugin;
   readonly numberMax: typeof numberMaxPlugin;
   readonly arrayMinLength: typeof arrayMinLengthPlugin;

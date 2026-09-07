@@ -1,8 +1,8 @@
 // Builder().withConfig() — placement and typing, at the call site.
 import { Builder } from "../../../src/builder/field-builder.types";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
-import { stringMinPlugin } from "../../../src/plugins/check-plugins";
-import { stringTruthyPlugin } from "../../../src/plugins/config-plugins";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { stringTruthyPlugin } from "../../support/probe-config-plugins";
 import type { Account, Assert, Equals } from "../../support/config-model";
 import type { Validator } from "../../../src/builder/validator.types";
 

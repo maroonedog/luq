@@ -1,0 +1,434 @@
+{
+  "pluginCount": 70,
+  "plugins": [
+    {
+      "subpath": "./plugins/arrayContains",
+      "directory": "src/plugins/array-contains",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/arrayEach",
+      "directory": "src/plugins/array-each",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/arrayIncludes",
+      "directory": "src/plugins/array-includes",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/arrayMaxLength",
+      "directory": "src/plugins/array-max-length",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/arrayMinLength",
+      "directory": "src/plugins/array-min-length",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/arrayUnique",
+      "directory": "src/plugins/array-unique",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/booleanFalsy",
+      "directory": "src/plugins/boolean-falsy",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/booleanTruthy",
+      "directory": "src/plugins/boolean-truthy",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/compareField",
+      "directory": "src/plugins/compare-field",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/conditionalSchema",
+      "directory": "src/plugins/conditional-schema",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/custom",
+      "directory": "src/plugins/custom",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/fromContext",
+      "directory": "src/plugins/from-context",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/literal",
+      "directory": "src/plugins/literal",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/nullable",
+      "directory": "src/plugins/nullable",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberFinite",
+      "directory": "src/plugins/number-finite",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberInteger",
+      "directory": "src/plugins/number-integer",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberMax",
+      "directory": "src/plugins/number-max",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberMin",
+      "directory": "src/plugins/number-min",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberMultipleOf",
+      "directory": "src/plugins/number-multiple-of",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberNegative",
+      "directory": "src/plugins/number-negative",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberPositive",
+      "directory": "src/plugins/number-positive",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/numberRange",
+      "directory": "src/plugins/number-range",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/object",
+      "directory": "src/plugins/object",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectAdditionalProperties",
+      "directory": "src/plugins/object-additional-properties",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectDependentRequired",
+      "directory": "src/plugins/object-dependent-required",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectDependentSchemas",
+      "directory": "src/plugins/object-dependent-schemas",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectMaxProperties",
+      "directory": "src/plugins/object-max-properties",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectMinProperties",
+      "directory": "src/plugins/object-min-properties",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectPatternProperties",
+      "directory": "src/plugins/object-pattern-properties",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectPropertyNames",
+      "directory": "src/plugins/object-property-names",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/objectRecursively",
+      "directory": "src/plugins/object-recursively",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/oneOf",
+      "directory": "src/plugins/one-of",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/optional",
+      "directory": "src/plugins/optional",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/optionalIf",
+      "directory": "src/plugins/optional-if",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/orFail",
+      "directory": "src/plugins/or-fail",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/readOnly",
+      "directory": "src/plugins/read-only",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/required",
+      "directory": "src/plugins/required",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/requiredIf",
+      "directory": "src/plugins/required-if",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/skip",
+      "directory": "src/plugins/skip",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stitch",
+      "directory": "src/plugins/stitch",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringAlphanumeric",
+      "directory": "src/plugins/string-alphanumeric",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringBase64",
+      "directory": "src/plugins/string-base64",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringContentEncoding",
+      "directory": "src/plugins/string-content-encoding",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringContentMediaType",
+      "directory": "src/plugins/string-content-media-type",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringDate",
+      "directory": "src/plugins/string-date",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringDatetime",
+      "directory": "src/plugins/string-datetime",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringDuration",
+      "directory": "src/plugins/string-duration",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringEmail",
+      "directory": "src/plugins/string-email",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringEndsWith",
+      "directory": "src/plugins/string-ends-with",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringExactLength",
+      "directory": "src/plugins/string-exact-length",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringHostname",
+      "directory": "src/plugins/string-hostname",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringIpv4",
+      "directory": "src/plugins/string-ipv4",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringIpv6",
+      "directory": "src/plugins/string-ipv6",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringIri",
+      "directory": "src/plugins/string-iri",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringIriReference",
+      "directory": "src/plugins/string-iri-reference",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringJsonPointer",
+      "directory": "src/plugins/string-json-pointer",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringMax",
+      "directory": "src/plugins/string-max",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringMin",
+      "directory": "src/plugins/string-min",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringPattern",
+      "directory": "src/plugins/string-pattern",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringRelativeJsonPointer",
+      "directory": "src/plugins/string-relative-json-pointer",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringStartsWith",
+      "directory": "src/plugins/string-starts-with",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringTime",
+      "directory": "src/plugins/string-time",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringUriTemplate",
+      "directory": "src/plugins/string-uri-template",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringUrl",
+      "directory": "src/plugins/string-url",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/transform",
+      "directory": "src/plugins/transform",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/tupleBuilder",
+      "directory": "src/plugins/tuple-builder",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/unionGuard",
+      "directory": "src/plugins/union-guard",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/uuid",
+      "directory": "src/plugins/uuid",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/validateIf",
+      "directory": "src/plugins/validate-if",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/writeOnly",
+      "directory": "src/plugins/write-only",
+      "tier": "isolated"
+    }
+  ],
+  "exportKeys": [
+    ".",
+    "./package.json",
+    "./result",
+    "./plugin-kit",
+    "./async",
+    "./plugins",
+    "./plugins/arrayContains",
+    "./plugins/arrayEach",
+    "./plugins/arrayIncludes",
+    "./plugins/arrayMaxLength",
+    "./plugins/arrayMinLength",
+    "./plugins/arrayUnique",
+    "./plugins/booleanFalsy",
+    "./plugins/booleanTruthy",
+    "./plugins/compareField",
+    "./plugins/conditionalSchema",
+    "./plugins/custom",
+    "./plugins/fromContext",
+    "./plugins/literal",
+    "./plugins/nullable",
+    "./plugins/numberFinite",
+    "./plugins/numberInteger",
+    "./plugins/numberMax",
+    "./plugins/numberMin",
+    "./plugins/numberMultipleOf",
+    "./plugins/numberNegative",
+    "./plugins/numberPositive",
+    "./plugins/numberRange",
+    "./plugins/object",
+    "./plugins/objectAdditionalProperties",
+    "./plugins/objectDependentRequired",
+    "./plugins/objectDependentSchemas",
+    "./plugins/objectMaxProperties",
+    "./plugins/objectMinProperties",
+    "./plugins/objectPatternProperties",
+    "./plugins/objectPropertyNames",
+    "./plugins/objectRecursively",
+    "./plugins/oneOf",
+    "./plugins/optional",
+    "./plugins/optionalIf",
+    "./plugins/orFail",
+    "./plugins/readOnly",
+    "./plugins/required",
+    "./plugins/requiredIf",
+    "./plugins/skip",
+    "./plugins/stitch",
+    "./plugins/stringAlphanumeric",
+    "./plugins/stringBase64",
+    "./plugins/stringContentEncoding",
+    "./plugins/stringContentMediaType",
+    "./plugins/stringDate",
+    "./plugins/stringDatetime",
+    "./plugins/stringDuration",
+    "./plugins/stringEmail",
+    "./plugins/stringEndsWith",
+    "./plugins/stringExactLength",
+    "./plugins/stringHostname",
+    "./plugins/stringIpv4",
+    "./plugins/stringIpv6",
+    "./plugins/stringIri",
+    "./plugins/stringIriReference",
+    "./plugins/stringJsonPointer",
+    "./plugins/stringMax",
+    "./plugins/stringMin",
+    "./plugins/stringPattern",
+    "./plugins/stringRelativeJsonPointer",
+    "./plugins/stringStartsWith",
+    "./plugins/stringTime",
+    "./plugins/stringUriTemplate",
+    "./plugins/stringUrl",
+    "./plugins/transform",
+    "./plugins/tupleBuilder",
+    "./plugins/unionGuard",
+    "./plugins/uuid",
+    "./plugins/validateIf",
+    "./plugins/writeOnly",
+    "./plugins/readOnlyWriteOnly"
+  ]
+}

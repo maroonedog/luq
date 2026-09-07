@@ -5,8 +5,8 @@ import {
 } from "../../../src/builder/global-config-store";
 import { Builder } from "../../../src/builder/field-builder.types";
 import { DEFAULT_GLOBAL_CONFIG } from "../../../src/types/global-config";
-import { stringMinPlugin } from "../../../src/plugins/check-plugins";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { requiredPlugin } from "../../../src/plugins/required";
 
 afterEach(() => {
   resetGlobalConfig();

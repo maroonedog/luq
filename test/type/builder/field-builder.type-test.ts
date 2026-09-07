@@ -1,14 +1,10 @@
 import { Builder } from "../../../src/builder/field-builder.types";
-import {
-  nullablePlugin,
-  optionalPlugin,
-  requiredPlugin,
-} from "../../../src/plugins/presence-plugins";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-  transformPlugin,
-} from "../../../src/plugins/check-plugins";
+import { nullablePlugin } from "../../../src/plugins/nullable";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { transformPlugin } from "../../../src/plugins/transform";
 import type {
   LeafPath,
   MissingLeafPaths,

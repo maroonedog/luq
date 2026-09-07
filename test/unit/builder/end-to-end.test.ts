@@ -4,15 +4,11 @@
 // the real compiler's and the engine is the real one.
 // ===========================================================================
 import { Builder } from "../../../src/builder/field-builder.types";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-  transformPlugin,
-} from "../../../src/plugins/check-plugins";
-import {
-  optionalPlugin,
-  requiredPlugin,
-} from "../../../src/plugins/presence-plugins";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { transformPlugin } from "../../../src/plugins/transform";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
 import { resetGlobalConfig } from "../../../src/builder/global-config-store";
 
 interface Employee {

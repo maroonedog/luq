@@ -3,11 +3,9 @@
 // オブジェクトを返す / result.issues が存在しない / import パスが exports に無い)。
 // ここが落ちたら、それは利用者から見えるふるまいが壊れたということ。
 import { Builder } from "../../src/index";
-import { requiredPlugin } from "../../src/plugins/presence-plugins";
-import {
-  stringMinPlugin,
-  numberMinPlugin,
-} from "../../src/plugins/check-plugins";
+import { requiredPlugin } from "../../src/plugins/required";
+import { numberMinPlugin } from "../../src/plugins/number-min";
+import { stringMinPlugin } from "../../src/plugins/string-min";
 
 type User = {
   name: string;

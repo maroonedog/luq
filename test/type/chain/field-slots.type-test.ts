@@ -1,27 +1,19 @@
 import { Builder } from "../../../src/builder/field-builder.types";
-import {
-  nullablePlugin,
-  optionalPlugin,
-  requiredPlugin,
-} from "../../../src/plugins/presence-plugins";
-import {
-  compareFieldPlugin,
-  numberMinPlugin,
-  stringMinPlugin,
-  transformPlugin,
-} from "../../../src/plugins/check-plugins";
-import {
-  arrayContainsPlugin,
-  objectRecursivelyPlugin,
-  unionGuardPlugin,
-} from "../../../src/plugins/composite-plugins";
+import { nullablePlugin } from "../../../src/plugins/nullable";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { compareFieldPlugin } from "../../../src/plugins/compare-field";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { transformPlugin } from "../../../src/plugins/transform";
+import { arrayContainsPlugin } from "../../../src/plugins/array-contains";
+import { objectRecursivelyPlugin } from "../../../src/plugins/object-recursively";
+import { unionGuardPlugin } from "../../../src/plugins/union-guard";
 import { conditionalSchemaPlugin } from "../../../src/plugins/conditional-schema";
 import { tupleBuilderPlugin } from "../../../src/plugins/tuple-builder";
-import {
-  compareToRootPlugin,
-  stitchPlugin,
-  validateIfPlugin,
-} from "../../../src/plugins/gate-plugins";
+import { stitchPlugin } from "../../../src/plugins/stitch";
+import { validateIfPlugin } from "../../../src/plugins/validate-if";
+import { compareToRootPlugin } from "../../support/probe-marker-plugins";
 import type { MarkerResolutionProof } from "../../../src/chain/marker-coverage.types";
 import { isCat, isDog } from "../../support/model";
 import type { User } from "../../support/model";
@@ -66,7 +58,11 @@ b0.v("age", (b) =>
 );
 b0.v("age", (b) => b.number.required().compareToRoot((root) => root.age));
 b0.v("name", (b) =>
-  b.string.required().stitch(["user.address.street", "nick"], "x")
+  b.string
+    .required()
+    .stitch(["user.address.street", "nick"], (fieldValues) => ({
+      valid: fieldValues["nick"] !== undefined,
+    }))
 );
 
 // element chain, with the concrete bag preserved
@@ -210,9 +206,12 @@ b0.v("name", (b) =>
 );
 
 // 7. a FieldRef argument is checked against FieldPath<TRoot>
-b0.v("name", (b) => b.string.compareField("age", "lt"));
+b0.v("name", (b) => b.string.compareField("age"));
+b0.v("name", (b) =>
+  b.string.compareField("age", (value, target) => value !== target)
+);
 // @ts-expect-error "nope" is not a FieldPath<User>
-b0.v("name", (b) => b.string.compareField("nope", "lt"));
+b0.v("name", (b) => b.string.compareField("nope"));
 
 // 8. union guard exhaustiveness
 b0.v("pet", (b) =>

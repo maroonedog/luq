@@ -14,7 +14,7 @@
 // a function is one sub-chain, an array is a list of them (tupleBuilder), a
 // plain object is a keyed set of them (patternProperties, dependentSchemas).
 // ===========================================================================
-import { isArray, isNumber, isPlainObject } from "../types";
+import { isArray, isPlainObject } from "../types";
 import type { Rule } from "../plugin-kit/compiled-rule";
 import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import type { PluginBag } from "./plugin-bag.types";
@@ -48,10 +48,8 @@ function isSubChainDefine(value: unknown): value is SubChainDefine {
 }
 
 function readSubChainArguments(plugin: AnyPlugin): readonly number[] {
-  const source: unknown = plugin;
-  if (!isPlainObject(source)) return NO_SUB_CHAINS;
-  const declared = source["subChainArguments"];
-  return isArray(declared) ? declared.filter(isNumber) : NO_SUB_CHAINS;
+  const declared = plugin.subChainArguments;
+  return declared === undefined ? NO_SUB_CHAINS : declared;
 }
 
 /** Runs ONE sub-chain callback exactly once and freezes what it produced. */

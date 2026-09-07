@@ -38,7 +38,7 @@ function rulesOf(chain: unknown) {
 
 describe("createChainNode", () => {
   it("records rules in declaration order", () => {
-    const chain = slots().string.required().min(3).compareField("other", "eq");
+    const chain = slots().string.required().min(3).compareField("other");
     expect(ruleCodes(rulesOf(chain))).toEqual([
       "required",
       "stringMin",
@@ -57,7 +57,7 @@ describe("createChainNode", () => {
   it("keeps two chains branched from one node apart", () => {
     const start = slots().string.required();
     const left = start.min(3);
-    const right = start.compareField("other", "eq");
+    const right = start.compareField("other");
     expect(ruleCodes(rulesOf(start))).toEqual(["required"]);
     expect(ruleCodes(rulesOf(left))).toEqual(["required", "stringMin"]);
     expect(ruleCodes(rulesOf(right))).toEqual(["required", "compareField"]);
@@ -103,9 +103,12 @@ describe("createChainNode", () => {
   });
 
   it("separates a DECLARED second argument from the options argument", () => {
-    // compareField declares (other, operator); build must receive "gt", and the
-    // rule code must stay the plugin name because no options were passed.
-    const chain = slots().string.compareField("other", "gt");
+    // compareField declares (other, compare); build must receive the
+    // comparator, and the rule code must stay the plugin name because no
+    // options were passed.
+    const greaterThan = (value: unknown, target: unknown): boolean =>
+      String(value) > String(target);
+    const chain = slots().string.compareField("other", greaterThan);
     const rule = expectCheck(rulesOf(chain)[0]);
     expect(rule.code).toBe("compareField");
     expect(rule.run("b", { root: { other: "a" }, path: "name" }).ok).toBe(true);
@@ -113,7 +116,7 @@ describe("createChainNode", () => {
       false
     );
 
-    const withOptions = slots().string.compareField("other", "gt", {
+    const withOptions = slots().string.compareField("other", greaterThan, {
       code: "CMP",
     });
     expect(expectCheck(rulesOf(withOptions)[0]).code).toBe("CMP");

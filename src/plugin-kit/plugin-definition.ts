@@ -32,6 +32,14 @@ export interface PluginDefinition<
     ctx: RuleBuildContext<TSig["context"]>,
     ...args: RuntimeArgs<TSig["args"]>
   ): RuleForOut<TSig["out"]>;
+  /**
+   * Which argument POSITIONS carry a sub-chain. Absent on a plugin that takes
+   * none. It cannot be recovered from the signature at run time — a
+   * NarrowedChain and a RootPredicate are both plain functions once the types
+   * are erased — so a composite declares it, and src/chain/collect-branch-rules
+   * resolves exactly those positions to `readonly Rule[]` before build() runs.
+   */
+  readonly subChainArguments?: readonly number[];
   readonly signature?: TSig;
 }
 
@@ -52,6 +60,7 @@ export interface PluginSpec<
   readonly method: TMethod;
   readonly slots: TSlots;
   readonly build: PluginBuild<TSig>;
+  readonly subChainArguments?: readonly number[];
 }
 
 /** Curried: the signature is explicit, the identity literals are inferred. */
@@ -67,6 +76,11 @@ export function definePlugin<TSig extends PluginSignature>(): <
     method: spec.method,
     slots: spec.slots,
     build: spec.build,
+    // Only present when the plugin declared one, so a plugin that takes no
+    // sub-chain keeps exactly the four members it always had.
+    ...(spec.subChainArguments === undefined
+      ? {}
+      : { subChainArguments: spec.subChainArguments }),
   });
 }
 

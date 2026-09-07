@@ -20,7 +20,6 @@ import type {
 import {
   additionalPropertiesBinding,
   constBinding,
-  formatBinding,
   maxItemsBinding,
   maxLengthBinding,
   maximumBinding,
@@ -89,6 +88,12 @@ export interface Draft07Keywords {
   readonly else: StructuralKeyword;
 }
 
+const NO_FORMAT_MAP_YET =
+  "each Draft-07 format binds to its OWN plugin (stringEmail, stringIpv4, ...) " +
+  "through the format map, which is authored one step later. There is " +
+  "deliberately no caller-supplied format table: three disagreeing format " +
+  "tables is what the legacy implementation shipped.";
+
 const NO_PLUGIN_IN_FIXTURE_BAG =
   "no plugin for it in THIS fixture's bag; the shipped bag must bind it or say so here. " +
   "Nothing is dropped silently: an unsupported keyword is a written decision.";
@@ -128,7 +133,7 @@ export const draft07Keywords: Draft07Keywords = {
   minLength: minLengthBinding,
   maxLength: maxLengthBinding,
   pattern: patternBinding,
-  format: formatBinding,
+  format: unsupported(NO_FORMAT_MAP_YET),
   contentEncoding: unsupported(NO_PLUGIN_IN_FIXTURE_BAG),
   contentMediaType: unsupported(NO_PLUGIN_IN_FIXTURE_BAG),
 

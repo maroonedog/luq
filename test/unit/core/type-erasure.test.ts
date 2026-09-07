@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import {
   eraseAssembledRecord,
@@ -43,20 +44,28 @@ describe("the type-erasure boundary", () => {
 
   it("recognises a suppression when one is planted elsewhere", () => {
     // The detector above is worth nothing if it cannot see a violation, so
-    // prove it on a file whose content we control.
-    const planted = path.join(SOURCE_ROOT, "chain", "create-chain-node.ts");
-    const original = fs.readFileSync(planted, "utf8");
+    // prove it on a file whose content we control. That copy lives in a scratch
+    // directory and NEVER inside src/: rewriting a real source file races every
+    // other jest worker compiling it, which made this suite fail intermittently
+    // with "Test suite failed to run" and a TS6133 on the planted line.
+    const clean = fs.readFileSync(
+      path.join(SOURCE_ROOT, "chain", "create-chain-node.ts"),
+      "utf8"
+    );
+    const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "luq-erasure-"));
+    const planted = path.join(scratch, "create-chain-node.ts");
     try {
+      fs.writeFileSync(planted, clean, "utf8");
+      expect(suppressionLines(planted)).toHaveLength(0);
       fs.writeFileSync(
         planted,
-        `const smuggled = {} as unknown as string;\n${original}`,
+        `const smuggled = {} as unknown as string;\n${clean}`,
         "utf8"
       );
       expect(suppressionLines(planted)).toHaveLength(1);
     } finally {
-      fs.writeFileSync(planted, original, "utf8");
+      fs.rmSync(scratch, { recursive: true, force: true });
     }
-    expect(suppressionLines(planted)).toHaveLength(0);
   });
 
   it("returns the very object it was handed", () => {

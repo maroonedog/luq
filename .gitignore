@@ -180,3 +180,10 @@ dist/validators/
 
 # Claude Code のローカル設定
 **/.claude/settings.local.json
+
+# ========================================
+# Plugin catalog derivatives (untracked: regenerate with `npm run generate`)
+# config/plugin-catalog.lock.json and package.json#/exports are TRACKED.
+# ========================================
+src/plugins/manifest.generated.ts
+src/plugins/index.generated.ts

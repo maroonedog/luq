@@ -13,12 +13,10 @@
 // ===========================================================================
 import { Builder } from "../../../src/index";
 import type { Validator } from "../../../src/index";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-} from "../../../src/plugins/check-plugins";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
-import { stringFormatPlugin } from "../../../src/plugins/string/format";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { stringEmailPlugin } from "../../../src/plugins/string-email";
 
 type User = {
   name: string;
@@ -26,17 +24,15 @@ type User = {
   email: string;
 };
 
-const emailCheckers = { email: (value: string) => value.includes("@") };
-
 const userValidator: Validator<User> = Builder()
   .use(requiredPlugin)
   .use(stringMinPlugin)
   .use(numberMinPlugin)
-  .use(stringFormatPlugin)
+  .use(stringEmailPlugin)
   .for<User>()
   .v("name", (b) => b.string.required().min(3))
   .v("age", (b) => b.number.required().min(18))
-  .v("email", (b) => b.string.required().format("email", emailCheckers))
+  .v("email", (b) => b.string.required().email())
   .build();
 
 describe("the README Quick Start", () => {
@@ -60,19 +56,19 @@ describe("the README Quick Start", () => {
       {
         path: "name",
         code: "stringMin",
-        message: "String must have at least 3 characters",
+        message: "String must have at least 3 characters, but got 2",
         severity: "error",
       },
       {
         path: "age",
         code: "numberMin",
-        message: "Number must be at least 18",
+        message: "Value must be at least 18, but got 12",
         severity: "error",
       },
       {
         path: "email",
-        code: "stringFormat",
-        message: "String must be a valid email",
+        code: "stringEmail",
+        message: "Invalid email: invalid format",
         severity: "error",
       },
     ]);

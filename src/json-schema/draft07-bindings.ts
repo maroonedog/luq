@@ -18,17 +18,17 @@
 // than left to be discovered.
 // ===========================================================================
 import { bindKeyword } from "./bind-keyword";
-import { requiredPlugin } from "../plugins/presence-plugins";
-import { numberMinPlugin, stringMinPlugin } from "../plugins/check-plugins";
-import { arrayMaxLengthPlugin } from "../plugins/array/max-length";
-import { arrayMinLengthPlugin } from "../plugins/array/min-length";
-import { arrayUniquePlugin } from "../plugins/array/unique";
-import { numberMaxPlugin } from "../plugins/number/max";
-import { stringFormatPlugin } from "../plugins/string/format";
-import { stringMaxPlugin } from "../plugins/string/max-length";
-import { stringPatternPlugin } from "../plugins/string/pattern";
-import { literalPlugin } from "../plugins/value-plugins";
-import { objectAdditionalPropertiesPlugin } from "../plugins/object/additional-properties";
+import { requiredPlugin } from "../plugins/required";
+import { numberMinPlugin } from "../plugins/number-min";
+import { stringMinPlugin } from "../plugins/string-min";
+import { arrayMaxLengthPlugin } from "../plugins/array-max-length";
+import { arrayMinLengthPlugin } from "../plugins/array-min-length";
+import { arrayUniquePlugin } from "../plugins/array-unique";
+import { numberMaxPlugin } from "../plugins/number-max";
+import { stringMaxPlugin } from "../plugins/string-max";
+import { stringPatternPlugin } from "../plugins/string-pattern";
+import { literalPlugin } from "../plugins/literal";
+import { objectAdditionalPropertiesPlugin } from "../plugins/object-additional-properties";
 
 // -- numbers ---------------------------------------------------------------
 export const minimumBinding = bindKeyword(
@@ -57,17 +57,17 @@ export const maxLengthBinding = bindKeyword(
   stringMaxPlugin,
   (v: number) => [v] as const
 );
+/**
+ * Draft-07 spells `pattern` as an ECMA-262 source string; the plugin accepts a
+ * RegExp and only a RegExp, because 1.x's `new RegExp(source)` dropped flags
+ * silently and gave the call site no compile-time check. Compiling the schema's
+ * string is therefore done HERE, once, and nowhere else.
+ */
 export const patternBinding = bindKeyword(
   "string",
   "pattern",
   stringPatternPlugin,
-  (v: string) => [v] as const
-);
-export const formatBinding = bindKeyword(
-  "string",
-  "format",
-  stringFormatPlugin,
-  (v: string) => [v] as const
+  (v: string) => [new RegExp(v)] as const
 );
 
 // -- arrays ----------------------------------------------------------------

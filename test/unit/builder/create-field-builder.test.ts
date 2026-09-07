@@ -1,11 +1,9 @@
 import { Builder } from "../../../src/builder/field-builder.types";
 import { createFieldBuilderSurface } from "../../../src/builder/create-field-builder";
 import type { Validator } from "../../../src/builder/validator.types";
-import {
-  requiredPlugin,
-  optionalPlugin,
-} from "../../../src/plugins/presence-plugins";
-import { stringMinPlugin } from "../../../src/plugins/check-plugins";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
 
 interface Person {
   readonly name: string;

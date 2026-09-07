@@ -19,7 +19,7 @@ import {
   resetGlobalConfig,
   setGlobalConfig,
 } from "../../../src/builder/global-config-store";
-import { stringTruthyPlugin } from "../../../src/plugins/config-plugins";
+import { stringTruthyPlugin } from "../../support/probe-config-plugins";
 import type { RuleBuildContext } from "../../../src/plugin-kit/rule-build-context";
 import type { IssueSeverity, ValidationIssue } from "../../../src/types";
 import type { CheckRule, Rule } from "../../../src/plugin-kit/compiled-rule";

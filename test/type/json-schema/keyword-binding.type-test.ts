@@ -16,9 +16,9 @@ import type {
 import type { KeywordBinding } from "../../../src/json-schema/keyword-binding.types";
 import { arrayEachPlugin } from "../../../src/plugins/array-each";
 import { conditionalSchemaPlugin } from "../../../src/plugins/conditional-schema";
-import { stringMinPlugin } from "../../../src/plugins/check-plugins";
-import { arrayMinLengthPlugin } from "../../../src/plugins/array/min-length";
-import { stringPatternPlugin } from "../../../src/plugins/string/pattern";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { arrayMinLengthPlugin } from "../../../src/plugins/array-min-length";
+import { stringPatternPlugin } from "../../../src/plugins/string-pattern";
 import type { IsMarkerFree } from "../../../src/plugin-kit/marker.types";
 import type { FieldRef } from "../../../src/plugin-kit/marker.types";
 import type { JsonSchemaPlugin } from "../../../src/json-schema/json-schema-bag.types";
@@ -30,8 +30,8 @@ import type { ElementChain } from "../../../src/plugin-kit/marker.types";
 import type { FieldChain } from "../../../src/chain/field-chain.types";
 import type { OpenState } from "../../../src/chain/chain-state.types";
 import type { JsonSchemaBag } from "../../../src/json-schema/json-schema-bag.types";
-import { oneOfPlugin } from "../../../src/plugins/value/one-of";
-import { objectAdditionalPropertiesPlugin } from "../../../src/plugins/object/additional-properties";
+import { oneOfPlugin } from "../../../src/plugins/one-of";
+import { objectAdditionalPropertiesPlugin } from "../../../src/plugins/object-additional-properties";
 
 type Equals<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2

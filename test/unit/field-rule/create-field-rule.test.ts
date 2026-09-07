@@ -10,12 +10,10 @@ import { Builder } from "../../../src/builder/field-builder.types";
 import { resetGlobalConfig } from "../../../src/builder/global-config-store";
 import { createFieldRule } from "../../../src/field-rule/create-field-rule";
 import { createPluginRegistry } from "../../../src/field-rule/create-plugin-registry";
-import {
-  compareFieldPlugin,
-  stringMinPlugin,
-  transformPlugin,
-} from "../../../src/plugins/check-plugins";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
+import { compareFieldPlugin } from "../../../src/plugins/compare-field";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { transformPlugin } from "../../../src/plugins/transform";
+import { requiredPlugin } from "../../../src/plugins/required";
 
 const registry = () =>
   createPluginRegistry().use(requiredPlugin).use(stringMinPlugin);

@@ -1,10 +1,8 @@
 import { Builder } from "../../../src/builder/field-builder.types";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-} from "../../../src/plugins/check-plugins";
-import { arrayContainsPlugin } from "../../../src/plugins/composite-plugins";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { arrayContainsPlugin } from "../../../src/plugins/array-contains";
 import type { User } from "../../support/model";
 
 const b0 = Builder()
@@ -33,10 +31,12 @@ b0.v("name", (b) =>
 );
 
 // NEGATIVE: the wrong plugin's context members.
+// numberMin's second POSITIONAL argument is `exclusive`, so the options bag
+// is the third; `.min(3, { ... })` does not compile at all any more.
 b0.v("age", (b) =>
-  b.number.required().min(3, {
-    // @ts-expect-error numberMin's context has `min` but no `actual`
-    messageFactory: (ctx) => String(ctx.actual),
+  b.number.required().min(3, false, {
+    // @ts-expect-error numberMin's context has `min` but no `maximum`
+    messageFactory: (ctx) => String(ctx.maximum),
   })
 );
 

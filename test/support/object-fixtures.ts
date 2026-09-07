@@ -4,22 +4,20 @@
 // sites in the sibling files stay the only thing being read.
 // ===========================================================================
 import { Builder } from "../../src/builder/field-builder.types";
-import {
-  optionalPlugin,
-  requiredPlugin,
-} from "../../src/plugins/presence-plugins";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-} from "../../src/plugins/check-plugins";
+import { optionalPlugin } from "../../src/plugins/optional";
+import { requiredPlugin } from "../../src/plugins/required";
+import { numberMinPlugin } from "../../src/plugins/number-min";
+import { stringMinPlugin } from "../../src/plugins/string-min";
 import { conditionalSchemaPlugin } from "../../src/plugins/conditional-schema";
-import { objectPatternPropertiesPlugin } from "../../src/plugins/object/pattern-properties";
-import { objectPropertyNamesPlugin } from "../../src/plugins/object/property-names";
-import { objectAdditionalPropertiesPlugin } from "../../src/plugins/object/additional-properties";
-import { objectAdditionalPropertiesSchemaPlugin } from "../../src/plugins/object/additional-properties-schema";
-import { objectDependentSchemasPlugin } from "../../src/plugins/object/dependent-schemas";
-import { oneOfSchemaPlugin } from "../../src/plugins/composition/one-of-schema";
-import { oneOfPlugin } from "../../src/plugins/value/one-of";
+import { objectPatternPropertiesPlugin } from "../../src/plugins/object-pattern-properties";
+import { objectPropertyNamesPlugin } from "../../src/plugins/object-property-names";
+import {
+  objectAdditionalPropertiesPlugin,
+  objectAdditionalPropertiesSchemaPlugin,
+} from "../../src/plugins/object-additional-properties";
+import { objectDependentSchemasPlugin } from "../../src/plugins/object-dependent-schemas";
+import { oneOfSchemaPlugin } from "./probe-marker-plugins";
+import { oneOfPlugin } from "../../src/plugins/one-of";
 
 export type Equals<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2

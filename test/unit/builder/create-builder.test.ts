@@ -7,11 +7,9 @@ import { Builder } from "../../../src/builder/field-builder.types";
 import { definePlugin } from "../../../src/plugin-kit/plugin-definition";
 import { check } from "../../../src/plugin-kit/create-rule";
 import { PASS } from "../../../src/types";
-import {
-  requiredPlugin,
-  optionalPlugin,
-} from "../../../src/plugins/presence-plugins";
-import { stringMinPlugin } from "../../../src/plugins/check-plugins";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
 
 /** Two plugins that share a NAME but not a method: first-wins is observable. */
 const firstNamed = definePlugin<{

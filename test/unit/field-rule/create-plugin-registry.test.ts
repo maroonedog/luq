@@ -8,11 +8,9 @@ import { Builder } from "../../../src/builder/field-builder.types";
 import type { AnyChain } from "../../../src/chain/field-chain.types";
 import { NamelessPluginError } from "../../../src/builder/create-builder";
 import { createPluginRegistry } from "../../../src/field-rule/create-plugin-registry";
-import {
-  numberMinPlugin,
-  stringMinPlugin,
-} from "../../../src/plugins/check-plugins";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { requiredPlugin } from "../../../src/plugins/required";
 
 const base = () => createPluginRegistry().use(requiredPlugin);
 

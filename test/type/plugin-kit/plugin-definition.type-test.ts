@@ -5,29 +5,21 @@ import type {
   ElementChain,
   FieldRef,
 } from "../../../src/plugin-kit/marker.types";
-import {
-  nullablePlugin,
-  optionalPlugin,
-  requiredPlugin,
-} from "../../../src/plugins/presence-plugins";
-import {
-  compareFieldPlugin,
-  numberMinPlugin,
-  stringMinPlugin,
-  transformPlugin,
-} from "../../../src/plugins/check-plugins";
-import {
-  arrayContainsPlugin,
-  conditionalSchemaAsDesignedPlugin,
-  objectRecursivelyPlugin,
-  unionGuardPlugin,
-} from "../../../src/plugins/composite-plugins";
+import { nullablePlugin } from "../../../src/plugins/nullable";
+import { optionalPlugin } from "../../../src/plugins/optional";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { compareFieldPlugin } from "../../../src/plugins/compare-field";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { transformPlugin } from "../../../src/plugins/transform";
+import { arrayContainsPlugin } from "../../../src/plugins/array-contains";
+import { objectRecursivelyPlugin } from "../../../src/plugins/object-recursively";
+import { unionGuardPlugin } from "../../../src/plugins/union-guard";
+import { conditionalSchemaAsDesignedPlugin } from "../../support/conditional-schema-as-designed";
 import { tupleBuilderPlugin } from "../../../src/plugins/tuple-builder";
-import {
-  compareToRootPlugin,
-  stitchPlugin,
-  validateIfPlugin,
-} from "../../../src/plugins/gate-plugins";
+import { stitchPlugin } from "../../../src/plugins/stitch";
+import { validateIfPlugin } from "../../../src/plugins/validate-if";
+import { compareToRootPlugin } from "../../support/probe-marker-plugins";
 import type { Equals, Expect } from "../../support/model";
 
 /** A1: every rule kind and every marker family lands in AnyPlugin with NO cast. */

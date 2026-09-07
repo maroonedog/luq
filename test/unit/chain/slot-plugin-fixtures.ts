@@ -1,10 +1,8 @@
-// Fixtures shared by the chain runtime tests. The plugins are the REAL ones
-// from src/plugins/**; the only thing added here is `subChainArguments`, the
-// declaration a plugin makes about which of its argument positions carry a
-// sub-chain. definePlugin does not yet carry that field through (see
-// needsFromOthers), so the fixtures spread it on. Spreading keeps the original
-// `build` FUNCTION OBJECT, and therefore its `.length`, which is what the chain
-// uses to separate the trailing RuleOptions from a declared optional argument.
+// Fixtures shared by the chain runtime tests. Every plugin here is the REAL
+// one from src/plugins/**, re-exported under the name the tests use and
+// nothing else. `subChainArguments` used to be spread on here because
+// definePlugin dropped it; it is a declared member of PluginSpec now, so the
+// composites carry their own and the fixtures add nothing.
 import type {
   CheckRule,
   CompositeRule,
@@ -16,34 +14,21 @@ import type {
 import type { RuleContext } from "../../../src/types";
 import { DEFAULT_GLOBAL_CONFIG } from "../../../src/types/global-config";
 import type { ChainBuildContext } from "../../../src/chain/create-chain-node";
-import { requiredPlugin } from "../../../src/plugins/presence-plugins";
-import {
-  stringMinPlugin,
-  numberMinPlugin,
-  compareFieldPlugin,
-  transformPlugin,
-} from "../../../src/plugins/check-plugins";
-import { validateIfPlugin } from "../../../src/plugins/gate-plugins";
-import {
-  arrayContainsPlugin,
-  unionGuardPlugin,
-} from "../../../src/plugins/composite-plugins";
+import { requiredPlugin } from "../../../src/plugins/required";
+import { compareFieldPlugin } from "../../../src/plugins/compare-field";
+import { numberMinPlugin } from "../../../src/plugins/number-min";
+import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { transformPlugin } from "../../../src/plugins/transform";
+import { validateIfPlugin } from "../../../src/plugins/validate-if";
+import { arrayContainsPlugin } from "../../../src/plugins/array-contains";
+import { unionGuardPlugin } from "../../../src/plugins/union-guard";
 import { tupleBuilderPlugin } from "../../../src/plugins/tuple-builder";
-import { objectPatternPropertiesPlugin } from "../../../src/plugins/object/pattern-properties";
+import { objectPatternPropertiesPlugin } from "../../../src/plugins/object-pattern-properties";
 
-export const containsPlugin = {
-  ...arrayContainsPlugin,
-  subChainArguments: [0],
-};
-export const guardPlugin = { ...unionGuardPlugin, subChainArguments: [1] };
-export const builderPlugin = {
-  ...tupleBuilderPlugin,
-  subChainArguments: [0, 1],
-};
-export const patternPropertiesPlugin = {
-  ...objectPatternPropertiesPlugin,
-  subChainArguments: [0],
-};
+export const containsPlugin = arrayContainsPlugin;
+export const guardPlugin = unionGuardPlugin;
+export const builderPlugin = tupleBuilderPlugin;
+export const patternPropertiesPlugin = objectPatternPropertiesPlugin;
 
 export {
   requiredPlugin,
