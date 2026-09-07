@@ -12,7 +12,7 @@ import {
 import { withSeedTree } from "../../../type/fixtures/seed-plugins/write-seed-tree";
 
 describe("buildPackageExportMap", () => {
-  it("固定キーは7件で、この順に出る", () => {
+  it("固定キーは8件で、この順に出る", () => {
     expect(FIXED_EXPORT_KEYS).toEqual([
       ".",
       "./package.json",
@@ -20,11 +20,12 @@ describe("buildPackageExportMap", () => {
       "./plugin-kit",
       "./field-rule",
       "./async",
+      "./standard-schema",
       "./plugins",
     ]);
   });
 
-  it("カタログが空なら固定キー7件だけ", () => {
+  it("カタログが空なら固定キー8件だけ", () => {
     const exportMap = buildPackageExportMap({ entries: [] }, []);
     expect(Object.keys(exportMap)).toEqual([...FIXED_EXPORT_KEYS]);
   });

@@ -32,6 +32,11 @@
       "import": "./dist/async.mjs",
       "require": "./dist/async.js"
     },
+    "./standard-schema": {
+      "types": "./dist/standard-schema.d.ts",
+      "import": "./dist/standard-schema.mjs",
+      "require": "./dist/standard-schema.js"
+    },
     "./plugins": {
       "types": "./dist/plugins/index.d.ts",
       "import": "./dist/plugins/index.mjs",

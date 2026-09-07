@@ -389,6 +389,7 @@
     "./plugin-kit",
     "./field-rule",
     "./async",
+    "./standard-schema",
     "./plugins",
     "./plugins/arrayContains",
     "./plugins/arrayEach",
