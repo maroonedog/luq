@@ -1,0 +1,76 @@
+# ===========================================================================
+# .github/workflows/verify.yml — the gate that has to be green before publish.
+#
+# 1.x had NO workflow for build or test (docs/legacy-spec/build-and-distribution.md
+# defect #9: .github/workflows held only deploy-docs.yml), which is how a
+# README whose first example did not compile, a dist whose types and runtime
+# disagreed, and 65 filename violations all reached npm.
+#
+# Two jobs, deliberately split:
+#   verify — everything deterministic. Fails on any difference, on any machine.
+#   bench  — the throughput RATIO gate. Measured luq / hand-written in ONE
+#            process, so the runner's speed cancels out. It is NOT part of
+#            `npm run verify`: it costs about a minute per shape and verify is
+#            run interactively. It never gates on an absolute ops/sec figure —
+#            that flakes unconditionally on a shared runner
+#            (docs/design/test-strategy.md).
+# ===========================================================================
+name: verify
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The JSON-Schema-Test-Suite corpus is a pinned submodule. Without it the
+      # conformance test cannot measure anything, and check:suite-pin compares
+      # the checked-out SHA against config/json-schema-suite.json.
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # generate, format, lint, typecheck (src + scripts + bench), type tests,
+      # contract-arity / module-reachability / suite-pin, catalog, build,
+      # dist gates, doc gates, size + barrel-equivalence, jest.
+      - run: npm run verify
+
+      # The published artefact, listed. A file that should not ship shows up in
+      # the log of the run that would have published it.
+      - run: npm pack --dry-run
+
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Ratio only. config/perf-baseline.json's absolute figures are recorded
+      # on a named machine with `npm run bench:record`; they are never a
+      # pass/fail condition here.
+      - run: npm run bench:gate

@@ -42,10 +42,7 @@ export function readPublishedExportMap(
   return published;
 }
 
-function toExportTarget(
-  key: string,
-  value: unknown
-): PackageExportMap[string] {
+function toExportTarget(key: string, value: unknown): PackageExportMap[string] {
   if (typeof value === "string") return value;
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`package.json#/exports/${key} の形が不正です。`);

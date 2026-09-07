@@ -492,15 +492,18 @@ describe("カタログ: 派生物がディレクトリ構造と一致する", ()
 describe("カタログ: 公開サブパスが全部解決する", () => {
   const exportKeys = Object.keys(packageJson.exports);
 
-  it("6つの固定キーが公開されている (README の ./plugins を含む)", () => {
+  it("7つの固定キーが公開されている (README の ./plugins を含む)", () => {
     // 1.x では `@maroonedog/luq/plugins` が exports に無く、README の
     // Quick Start の import が Node の exports 制限下で解決できなかった。
+    // `./field-rule` は step 32 で追加。dist には出ていたのにどの export キーも
+    // 指しておらず、利用者から到達できなかった。
     expect(exportKeys).toEqual(
       expect.arrayContaining([
         ".",
         "./package.json",
         "./result",
         "./plugin-kit",
+        "./field-rule",
         "./async",
         "./plugins",
       ])

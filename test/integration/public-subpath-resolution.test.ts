@@ -57,21 +57,23 @@ function readLegacySubpaths(): readonly string[] {
 /** Non-plugin keys whose source entry module already exists. */
 const FIXED_KEY_SOURCE: Readonly<Record<string, string>> = {
   ".": "src/index.ts",
+  "./result": "src/result/index.ts",
+  "./plugin-kit": "src/plugin-kit/index.ts",
+  "./field-rule": "src/field-rule/index.ts",
   "./async": "src/async/index.ts",
   "./plugins": "src/plugins/index.generated.ts",
   "./package.json": "package.json",
 };
 
 /**
- * Published, but with NO source entry module on this branch. The dist names
- * `result` and `plugin-kit` are produced by a build script that step 1 never
- * authored and step 28 owns, so nothing in src/ carries those barrels yet.
+ * Published with NO source entry module. It used to hold `./result` and
+ * `./plugin-kit`, whose barrels step 28 wrote when it authored the build; the
+ * list is empty now and the assertion below is what keeps it empty.
  *
  * This list is an ASSERTION, not an excuse: the test below checks that it is
- * exactly the set of unresolvable keys. Adding a third unresolvable subpath
- * fails, and so does fixing one of these two without deleting its line.
+ * exactly the set of unresolvable keys, so a new unresolvable subpath fails.
  */
-const KNOWN_UNRESOLVABLE: readonly string[] = ["./result", "./plugin-kit"];
+const KNOWN_UNRESOLVABLE: readonly string[] = [];
 
 const packageManifest = readPackageManifest();
 const publishedSubpaths = Object.keys(packageManifest.exports);

@@ -3,6 +3,8 @@ node_modules/
 
 # Build outputs
 dist/
+# test/dist/ はビルド成果物ではなく、成果物を検査するテストのソース。
+!test/dist/
 dist-test/
 build/
 coverage/

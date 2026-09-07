@@ -387,6 +387,7 @@
     "./package.json",
     "./result",
     "./plugin-kit",
+    "./field-rule",
     "./async",
     "./plugins",
     "./plugins/arrayContains",

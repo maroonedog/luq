@@ -1,8 +1,5 @@
 import * as path from "path";
-import type {
-  PluginSourceRoot,
-  SubpathAlias,
-} from "./plugin-catalog.types";
+import type { PluginSourceRoot, SubpathAlias } from "./plugin-catalog.types";
 
 /** scripts/catalog/ から2つ上がリポジトリルート。 */
 export const REPOSITORY_ROOT = path.resolve(__dirname, "..", "..");
@@ -25,12 +22,21 @@ export const SUBPATH_ALIASES: readonly SubpathAlias[] = [
   { subpathName: "readOnlyWriteOnly", moduleName: "read-only-write-only" },
 ];
 
-/** プラグイン以外の固定 export キー。順序はそのまま package.json に出る。 */
+/**
+ * プラグイン以外の固定 export キー。順序はそのまま package.json に出る。
+ *
+ * `./field-rule` は step 32 で追加した。src/field-rule/** は実装もテストも
+ * あり dist にも出ていたのに、どの export キーも指しておらず利用者からは
+ * 到達できなかった (1.x は createFieldRule / createPluginRegistry / useField を
+ * ルートから公開していた)。出荷物に入っているのに import できないものを
+ * 残すか消すかの二択で、消さずに公開する方を選んだ。
+ */
 export const FIXED_EXPORT_KEYS: readonly string[] = [
   ".",
   "./package.json",
   "./result",
   "./plugin-kit",
+  "./field-rule",
   "./async",
   "./plugins",
 ];

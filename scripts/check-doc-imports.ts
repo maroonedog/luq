@@ -24,7 +24,9 @@ function collectMarkdownFiles(absolutePath: string): string[] {
   return fs
     .readdirSync(absolutePath, { withFileTypes: true })
     .sort((left, right) => left.name.localeCompare(right.name))
-    .flatMap((entry) => collectMarkdownFiles(path.join(absolutePath, entry.name)));
+    .flatMap((entry) =>
+      collectMarkdownFiles(path.join(absolutePath, entry.name))
+    );
 }
 
 /** "@scope/pkg/plugins/x" -> "./plugins/x"、"@scope/pkg" -> "." */
@@ -47,7 +49,9 @@ export function findDocImportViolations(
     Object.keys(buildRepositoryExportMap(repositoryRoot))
   );
   return docRoots
-    .flatMap((docRoot) => collectMarkdownFiles(path.join(repositoryRoot, docRoot)))
+    .flatMap((docRoot) =>
+      collectMarkdownFiles(path.join(repositoryRoot, docRoot))
+    )
     .flatMap((absoluteFile) => {
       const file = toRepositoryRelativePosix(repositoryRoot, absoluteFile);
       const markdown = fs.readFileSync(absoluteFile, "utf8");

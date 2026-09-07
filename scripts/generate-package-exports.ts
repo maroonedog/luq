@@ -30,11 +30,7 @@ export function generatePackageExports(repositoryRoot: string): boolean {
   const exportMap = buildRepositoryExportMap(repositoryRoot);
   const updated = renderPackageJsonWithExports(packageJsonText, exportMap);
   if (updated === packageJsonText) return false;
-  fs.writeFileSync(
-    path.join(repositoryRoot, "package.json"),
-    updated,
-    "utf8"
-  );
+  fs.writeFileSync(path.join(repositoryRoot, "package.json"), updated, "utf8");
   return true;
 }
 

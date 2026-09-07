@@ -26,7 +26,7 @@ describe("buildPluginCatalogLock", () => {
       const lock = buildPluginCatalogLock(root);
       expect(lock.pluginCount).toBe(0);
       expect(lock.plugins).toEqual([]);
-      expect(lock.exportKeys).toHaveLength(6);
+      expect(lock.exportKeys).toHaveLength(7);
     });
   });
 
@@ -57,7 +57,7 @@ describe("buildPluginCatalogLock", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const lock = buildPluginCatalogLock(root);
       expect(lock.exportKeys).toContain("./plugins/readOnlyWriteOnly");
-      expect(lock.exportKeys).toHaveLength(6 + lock.pluginCount + 1);
+      expect(lock.exportKeys).toHaveLength(7 + lock.pluginCount + 1);
     });
   });
 });

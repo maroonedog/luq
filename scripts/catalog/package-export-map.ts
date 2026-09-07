@@ -10,6 +10,7 @@ const DIST_BASE_BY_FIXED_KEY: Readonly<Record<string, string>> = {
   ".": "index",
   "./result": "result",
   "./plugin-kit": "plugin-kit",
+  "./field-rule": "field-rule",
   "./async": "async",
   "./plugins": "plugins/index",
 };

@@ -1,0 +1,120 @@
+{
+  "note": [
+    "バンドルサイズの予算。scripts/measure-bundle-size.ts が読み、超えたら CI が落ちる。",
+    "gzipCeilingBytes だけが判定に使われる。recordedGzipBytes は天井を決めたときの実測値で、",
+    "根拠として残してあるだけ。数字を目標に合わせて書き換えるのではなく、",
+    "実測が天井を超えたら『なぜ増えたか』を先に答えること。"
+  ],
+  "method": {
+    "measuredFrom": "src/ の TypeScript ソース。dist/ ではない。",
+    "whyNotDist": [
+      "公開物は未束ねの ESM (1ソース = 1モジュール) で配るので、実際に木を歩いて",
+      "捨てるのは利用者のバンドラであり、ここで esbuild に歩かせる木と同じもの。",
+      "加えて、リポジトリに残っている dist/ は旧実装の生成物である。"
+    ],
+    "entryShape": "名前を挙げたシンボルだけを再 export する合成モジュール。挙げた名前から到達できるコードだけが残る。",
+    "bundler": "esbuild 0.25.5",
+    "bundlerOptions": {
+      "bundle": true,
+      "minify": true,
+      "format": "esm",
+      "target": "es2020",
+      "platform": "neutral",
+      "treeShaking": true,
+      "legalComments": "none"
+    },
+    "compression": "node:zlib gzipSync (既定レベル)",
+    "sameAsLegacy": "オプションは旧実装の bundle-size-comparison/build-all.js と同一。そうしないと旧実装の主張と比較できない。"
+  },
+  "recorded": {
+    "date": "2026-09-07",
+    "node": "v23.11.0",
+    "esbuild": "0.25.5",
+    "catalogPluginCount": 76,
+    "ceilingRationale": [
+      "天井 = 実測値 + 約8%。プラグイン1個の追加コストは gzip で約 200-950 B なので、",
+      "余裕はそれより小さく取ってある。プラグインを1つ足したのに予算内に収まる、",
+      "という抜け道が無いようにするため。"
+    ]
+  },
+  "crossCheckAgainstDist": {
+    "why": "src から測るのが公正かどうかを、実際にビルドした dist を同じ条件で束ねて確かめた記録。ゲートではない。",
+    "date": "2026-09-07",
+    "coreOnlyGzipBytes": 7412,
+    "sixPluginGzipBytes": 8373,
+    "finding": [
+      "core-only は src 7420 B に対し dist 7412 B (差 8 B, 0.1%)、six-plugin は両者 8373 B で一致。",
+      "つまり src を測ることは、利用者のバンドラが dist を歩いた結果の代理として妥当である。",
+      "全部入りだけは dist 側が 25105 B と大きいが、これは dist 側の入口が公開サブパス77本を",
+      "export * で並べた形 (非推奨エイリアス readOnlyWriteOnly を含む) だからで、ビルドの差ではない。"
+    ]
+  },
+  "legacyBaseline": {
+    "source": "docs/legacy-spec/build-and-distribution.md",
+    "coreOnlyGzipBytes": 17423,
+    "sixPluginGzipBytes": 19562,
+    "complexGzipBytes": 23015,
+    "claim": "README は 19-23KB gzipped と謳っていたが、その 17.4KB は使う前に払う中核の床だった。"
+  },
+  "budgets": [
+    {
+      "id": "core-only",
+      "description": "Builder だけ。プラグインを1つも使わない利用者が払う床。",
+      "plugins": [],
+      "gzipCeilingBytes": 8000,
+      "recordedGzipBytes": 7420,
+      "legacyGzipBytes": 17423
+    },
+    {
+      "id": "one-plugin",
+      "description": "Builder + required。1個足したときの増分を見るための点。",
+      "plugins": ["required"],
+      "gzipCeilingBytes": 8250,
+      "recordedGzipBytes": 7638
+    },
+    {
+      "id": "three-plugin",
+      "description": "Builder + required/stringMin/numberMin。バレル等価性の比較対象と同じ組。",
+      "plugins": ["required", "stringMin", "numberMin"],
+      "gzipCeilingBytes": 8600,
+      "recordedGzipBytes": 7987
+    },
+    {
+      "id": "six-plugin",
+      "description": "Builder + 旧 bundle-size-comparison の simple と同じ6プラグイン。19-23KB 主張の直接比較対象。",
+      "plugins": [
+        "required",
+        "stringMin",
+        "stringMax",
+        "stringEmail",
+        "numberMin",
+        "numberMax"
+      ],
+      "gzipCeilingBytes": 9000,
+      "recordedGzipBytes": 8373,
+      "legacyGzipBytes": 19562
+    },
+    {
+      "id": "full-feature",
+      "description": "Builder + カタログの全プラグイン (JSON Schema 拡張2件を含む)。全部入りの上限。",
+      "plugins": "all",
+      "gzipCeilingBytes": 25600,
+      "recordedGzipBytes": 24040
+    }
+  ],
+  "treeShaking": {
+    "orderedByPluginCount": [
+      "core-only",
+      "one-plugin",
+      "three-plugin",
+      "six-plugin",
+      "full-feature"
+    ],
+    "minGzipBytesPerAddedPlugin": 50,
+    "maxCoreShareOfFullPercent": 35
+  },
+  "barrelEquivalence": {
+    "plugins": ["required", "stringMin", "numberMin"],
+    "maxDivergencePercent": 5
+  }
+}

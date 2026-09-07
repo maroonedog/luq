@@ -40,7 +40,10 @@ export function findCatalogLockMismatches(
   const parsed: unknown = JSON.parse(fs.readFileSync(lockPath, "utf8"));
   if (!isPluginCatalogLock(parsed)) {
     return [
-      { kind: "absent", detail: `${PLUGIN_CATALOG_LOCK_OUTPUT} の形が不正です` },
+      {
+        kind: "absent",
+        detail: `${PLUGIN_CATALOG_LOCK_OUTPUT} の形が不正です`,
+      },
     ];
   }
   const live = buildPluginCatalogLock(repositoryRoot);

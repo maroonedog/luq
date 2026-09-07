@@ -85,7 +85,9 @@ if (require.main === module) {
       console.error(`exports 検査 (--mode=${mode}): 違反なし`);
       return 0;
     }
-    console.error(`exports 検査 (--mode=${mode}) 違反 ${mismatches.length} 件:`);
+    console.error(
+      `exports 検査 (--mode=${mode}) 違反 ${mismatches.length} 件:`
+    );
     for (const mismatch of mismatches) {
       console.error(`  ${mismatch.subpath}: ${mismatch.detail}`);
     }

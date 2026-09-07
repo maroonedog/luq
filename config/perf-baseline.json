@@ -1,0 +1,249 @@
+{
+  "recordedAt": "2026-09-07T07:41:54.617Z",
+  "machine": {
+    "cpuModel": "AMD Ryzen 7 5825U with Radeon Graphics",
+    "logicalCores": 16,
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v23.11.0",
+    "totalMemoryGb": 15.3
+  },
+  "conditions": {
+    "abortEarly": true,
+    "inputIsAccepted": true,
+    "arrayElementCount": 50,
+    "moduleUnderTest": "src/ transpiled by ts-node (CommonJS, ES2020) — not the bundled dist",
+    "sampleCount": 9,
+    "targetSampleMs": 120
+  },
+  "shapes": [
+    {
+      "name": "singleField",
+      "declares": "1 field, 1 presence rule, 1 check (string.required().min(3))"
+    },
+    {
+      "name": "multiField",
+      "declares": "3 fields, 6 plugins (required/stringMin/stringMax/stringEmail/numberMin/numberMax) — 1.x's 'simple' shape"
+    },
+    {
+      "name": "nested",
+      "declares": "4 fields at depth 2-3 (customer.name, customer.address.*)"
+    },
+    {
+      "name": "array",
+      "declares": "array of 50 elements, 3 rules per element plus 2 length rules"
+    },
+    {
+      "name": "jsonSchema",
+      "declares": "Draft-07 document (9 properties, $ref, nested object, array of objects) via fromJsonSchema"
+    }
+  ],
+  "throughput": [
+    {
+      "shape": "singleField",
+      "operation": "validate",
+      "opsPerSecond": 2840785,
+      "relativeSpreadPercent": 1.7,
+      "isQuiet": true
+    },
+    {
+      "shape": "singleField",
+      "operation": "parse",
+      "opsPerSecond": 2814223,
+      "relativeSpreadPercent": 1.3,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "validate",
+      "opsPerSecond": 1181194,
+      "relativeSpreadPercent": 2.5,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "parse",
+      "opsPerSecond": 1111822,
+      "relativeSpreadPercent": 5,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "validate",
+      "opsPerSecond": 770339,
+      "relativeSpreadPercent": 5.3,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "parse",
+      "opsPerSecond": 773935,
+      "relativeSpreadPercent": 2.2,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "opsPerSecond": 31270,
+      "relativeSpreadPercent": 2.2,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "parse",
+      "opsPerSecond": 31454,
+      "relativeSpreadPercent": 3.5,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "validate",
+      "opsPerSecond": 173087,
+      "relativeSpreadPercent": 1.5,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "operation": "parse",
+      "opsPerSecond": 172542,
+      "relativeSpreadPercent": 2.3,
+      "isQuiet": true
+    }
+  ],
+  "buildCost": [
+    {
+      "shape": "singleField",
+      "buildsPerSecond": 75305,
+      "microsecondsPerBuild": 13.28,
+      "validateCallsPerBuild": 36,
+      "costRatioSpreadPercent": 17.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "buildsPerSecond": 23003,
+      "microsecondsPerBuild": 43.47,
+      "validateCallsPerBuild": 48,
+      "costRatioSpreadPercent": 5.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "buildsPerSecond": 15874,
+      "microsecondsPerBuild": 63,
+      "validateCallsPerBuild": 44,
+      "costRatioSpreadPercent": 4.8,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "buildsPerSecond": 15044,
+      "microsecondsPerBuild": 66.47,
+      "validateCallsPerBuild": 2,
+      "costRatioSpreadPercent": 8.8,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "buildsPerSecond": 1612,
+      "microsecondsPerBuild": 620.43,
+      "validateCallsPerBuild": 103,
+      "costRatioSpreadPercent": 6.6,
+      "isQuiet": true
+    }
+  ],
+  "referenceRatio": [
+    {
+      "shape": "singleField",
+      "luqOpsPerSecond": 2648068,
+      "referenceOpsPerSecond": 206524483,
+      "ratio": 0.0128,
+      "ratioFloor": 0.0096,
+      "luqSpreadPercent": 2.3,
+      "referenceSpreadPercent": 4.4,
+      "ratioSpreadPercent": 5.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "luqOpsPerSecond": 1089410,
+      "referenceOpsPerSecond": 21030207,
+      "ratio": 0.0516,
+      "ratioFloor": 0.0387,
+      "luqSpreadPercent": 2.4,
+      "referenceSpreadPercent": 1.7,
+      "ratioSpreadPercent": 2.5,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "luqOpsPerSecond": 722445,
+      "referenceOpsPerSecond": 37473746,
+      "ratio": 0.0193,
+      "ratioFloor": 0.0145,
+      "luqSpreadPercent": 1.8,
+      "referenceSpreadPercent": 5,
+      "ratioSpreadPercent": 4.7,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "luqOpsPerSecond": 30706,
+      "referenceOpsPerSecond": 1006806,
+      "ratio": 0.0305,
+      "ratioFloor": 0.0229,
+      "luqSpreadPercent": 3.4,
+      "referenceSpreadPercent": 6.6,
+      "ratioSpreadPercent": 7,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
+      "luqOpsPerSecond": 168071,
+      "referenceOpsPerSecond": 4770144,
+      "ratio": 0.0352,
+      "ratioFloor": 0.0264,
+      "luqSpreadPercent": 4,
+      "referenceSpreadPercent": 4.5,
+      "ratioSpreadPercent": 4.6,
+      "isQuiet": true
+    }
+  ],
+  "legacyComparison": [
+    {
+      "shape": "singleField",
+      "legacyOpsPerSecond": 30888169,
+      "currentOpsPerSecond": 2921516,
+      "speedup": 0.09,
+      "note": "1.x src and rewritten src, both ts-node transpiled, measured back to back in one process on one machine"
+    },
+    {
+      "shape": "multiField",
+      "legacyOpsPerSecond": 3493614,
+      "currentOpsPerSecond": 1174197,
+      "speedup": 0.34,
+      "note": "1.x src and rewritten src, both ts-node transpiled, measured back to back in one process on one machine"
+    },
+    {
+      "shape": "nested",
+      "legacyOpsPerSecond": 2663718,
+      "currentOpsPerSecond": 776593,
+      "speedup": 0.29,
+      "note": "1.x src and rewritten src, both ts-node transpiled, measured back to back in one process on one machine"
+    },
+    {
+      "shape": "array",
+      "legacyOpsPerSecond": 20766,
+      "currentOpsPerSecond": 32431,
+      "speedup": 1.56,
+      "note": "1.x src and rewritten src, both ts-node transpiled, measured back to back in one process on one machine"
+    },
+    {
+      "shape": "jsonSchema",
+      "legacyOpsPerSecond": 152213,
+      "currentOpsPerSecond": 174758,
+      "speedup": 1.15,
+      "note": "1.x src and rewritten src, both ts-node transpiled, measured back to back in one process on one machine"
+    }
+  ]
+}
