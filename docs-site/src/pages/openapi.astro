@@ -1,0 +1,231 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header, { navItems } from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+
+/**
+ * The integration this library exists for.
+ *
+ * The claim on this page — "change the spec and the rules stop compiling" — is
+ * not asserted in prose and left there. The example that demonstrates it is
+ * marked `must-fail`, so `npm run check:doc-examples` compiles it and fails the
+ * build if it ever succeeds. If the drift detection breaks, this page fails CI
+ * rather than quietly becoming a lie.
+ *
+ * No openapi-typescript dependency is added to check this. The generated shape
+ * is written out literally, which is also what a reader sees in their own
+ * generated file.
+ */
+
+const description =
+  'Declare validation rules against the types openapi-typescript already generated, instead of rewriting the shape in a schema. When the spec changes, the rules stop compiling.';
+
+const generatedSample = `// api.generated.ts — written by openapi-typescript. Do not edit.
+export interface components {
+  schemas: {
+    Order: {
+      /** Format: uuid */
+      id: string;
+      customer: {
+        name: string;
+        email: string;
+      };
+      items: {
+        sku: string;
+        quantity: number;
+      }[];
+    };
+  };
+}`;
+
+const rulesSample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { uuidPlugin } from "@maroonedog/luq/plugins/uuid";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+
+interface components {
+  schemas: {
+    Order: {
+      id: string;
+      customer: { name: string; email: string };
+      items: { sku: string; quantity: number }[];
+    };
+  };
+}
+
+type Order = components["schemas"]["Order"];
+
+export const validateOrder = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(stringEmailPlugin)
+  .use(uuidPlugin)
+  .use(numberMinPlugin)
+  .for<Order>()
+  .v("id", (b) => b.string.required().uuid())
+  .v("customer.name", (b) => b.string.required().min(2))
+  .v("customer.email", (b) => b.string.required().email())
+  .v("items[*].sku", (b) => b.string.required().min(3))
+  .v("items[*].quantity", (b) => b.number.required().min(1))
+  .build();`;
+
+// luq-example: must-fail — 「スペックが変わるとルールが落ちる」というこのページの主張そのもの。
+// luq-example: must-fail — これが通ったら主張が嘘になるので、ゲートが落とす。
+const driftSample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+
+// The spec renamed \`customer\` to \`buyer\`, so the regenerated file says:
+interface components {
+  schemas: {
+    Order: {
+      id: string;
+      buyer: { name: string; email: string };
+    };
+  };
+}
+
+type Order = components["schemas"]["Order"];
+
+Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .for<Order>()
+  // The rule was written against the old shape. It no longer type-checks.
+  .v("customer.email", (b) => b.string.required().email())
+  .build();`;
+
+const workflowSample = `# The spec moves upstream, so regenerate and let the compiler answer.
+npx openapi-typescript ./openapi.yaml -o ./src/api.generated.ts
+npx tsc --noEmit`;
+---
+
+<BaseLayout title="Rules on generated types" description={description}>
+  <Header />
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="px-4 py-16 sm:px-6 lg:px-8">
+    <div class="container mx-auto max-w-3xl">
+      <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
+        Integration
+      </p>
+      <h1 class="mb-6 text-display-small text-on-surface">
+        Rules on generated types
+      </h1>
+      <p class="mb-12 text-body-large text-on-surface-variant">
+        <code class="font-mono">openapi-typescript</code> already turned the spec
+        into TypeScript. The shape is decided, it is checked in, and it is not
+        yours to move. What is missing is the part OpenAPI cannot express or your
+        server does not enforce — and adding it should not mean writing the shape
+        a second time.
+      </p>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        1. The file the generator wrote
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        Nobody edits this. It is overwritten every time the spec changes.
+      </p>
+      <CodeBlock code={generatedSample} language="typescript" fileName="api.generated.ts" />
+
+      <h2 class="mb-4 mt-12 text-headline-small text-on-surface">
+        2. The rules, declared against it
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        No second definition of the shape. The paths are checked against the
+        generated type, so a typo in <code class="font-mono">"customer.emial"</code>
+        is a compile error rather than a rule that never fires.
+      </p>
+      <CodeBlock code={rulesSample} language="typescript" fileName="validate-order.ts" />
+
+      <h2 class="mb-4 mt-12 text-headline-small text-on-surface">
+        3. What happens when the spec changes
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        This is the part that pays for the direction. Someone upstream renames
+        <code class="font-mono">customer</code> to <code class="font-mono">buyer</code>.
+        You regenerate. The rule that referenced the old field
+        <strong class="text-on-surface">stops compiling</strong>:
+      </p>
+      <CodeBlock code={driftSample} language="typescript" fileName="after-the-spec-changed.ts" />
+
+      <div class="md-card md-card-filled my-8 p-6">
+        <p class="mb-3 text-body-large text-on-surface-variant">
+          The example above is marked <code class="font-mono">must-fail</code> in
+          this page's source. <code class="font-mono">npm run check:doc-examples</code>
+          compiles it on every build and fails if it ever succeeds.
+        </p>
+        <p class="text-body-medium text-on-surface-variant">
+          So the claim on this page is not prose. If the drift detection ever
+          breaks, this page breaks CI instead of quietly becoming untrue.
+        </p>
+      </div>
+
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        A hand-written schema does not do this. It keeps compiling, keeps
+        validating a field the API no longer sends, and stays green until
+        something fails in production.
+      </p>
+      <CodeBlock code={workflowSample} language="bash" fileName="After a spec bump" />
+
+      <h2 class="mb-4 mt-12 text-headline-small text-on-surface">
+        Where the same argument applies
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        Nothing here is specific to OpenAPI. It holds wherever the type is
+        generated and the generator owns it:
+      </p>
+      <ul class="mb-12 space-y-2 text-body-large text-on-surface-variant">
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">database</span>
+          <span>Prisma and Drizzle, regenerated when the migration lands</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">swap_horiz</span>
+          <span>protobuf and GraphQL codegen, shared with services you do not build</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">smart_toy</span>
+          <span>
+            A generator or a model writing the rules — the wrong path is rejected
+            before the code is ever run
+          </span>
+        </li>
+      </ul>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">Honest limits</h2>
+      <ul class="mb-12 space-y-3 text-body-medium text-on-surface-variant">
+        <li>
+          Luq reads the generated type, not the OpenAPI document. Constraints the
+          spec carries — <code class="font-mono">maxLength</code>,
+          <code class="font-mono">pattern</code>, <code class="font-mono">format</code>
+          — do not survive into TypeScript, so you write those rules yourself.
+          If you want the document itself to drive validation, that is the
+          <a class="text-primary underline underline-offset-2" href="/json-schema">
+            JSON Schema entry point</a
+          >, and it is a different trade.
+        </li>
+        <li>
+          A renamed field is caught. A field whose <em>type</em> widens in a way
+          your rules still accept is not — that is a change the compiler has no
+          reason to reject.
+        </li>
+      </ul>
+
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
+          Get started
+        </a>
+        <a href="/luq-or-zod" class="md-button md-button-outlined md-state-layer md-focus-ring">
+          Luq or zod?
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
