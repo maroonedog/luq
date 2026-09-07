@@ -7,6 +7,7 @@
 // compilation already did.
 // ===========================================================================
 import type {
+  ArrayItemContext,
   CheckOutcome,
   IssueDetail,
   IssueSeverity,
@@ -47,6 +48,21 @@ export interface PresencePolicy {
   describe(ctx: MessageContext): string;
 }
 
+/**
+ * Two finished policies and the predicate that picks between them.
+ *
+ * Both sides are built ONCE, at compile time. The run time evaluates `when`
+ * and takes a reference — it never merges flags, allocates a policy, or looks
+ * at a rule kind. A null side leaves whatever policy is standing in place, so
+ * a conditional rule can decline to have an opinion instead of having to
+ * fabricate a permissive policy that would erase the field's `.required()`.
+ */
+export interface ConditionalPresence {
+  when(root: unknown, arrayContext?: ArrayItemContext): boolean;
+  readonly whenMet: PresencePolicy | null;
+  readonly whenUnmet: PresencePolicy | null;
+}
+
 /** Late-bound reference to the plan a RecursiveRule re-enters. compileSchema
  *  creates the holder BEFORE compiling its fields and fills it afterwards, so a
  *  self-referential plan needs no forward declaration and no cast. */
@@ -78,6 +94,13 @@ export interface CompiledField {
   readonly defaultOf: ((root: unknown) => unknown) | null;
   readonly applyDefaultToNull: boolean;
   readonly presence: PresencePolicy;
+  /**
+   * The conditional overrides of `presence`, in declaration order, and the
+   * shared frozen empty array on every field that declared none — which is
+   * almost all of them, so the runtime's whole cost is one length test.
+   * A later applicable override wins over an earlier one.
+   */
+  readonly presenceOverrides: readonly ConditionalPresence[];
   readonly gates: readonly GateRule[];
   /** Composites are already erased into this list, in declaration order. */
   readonly checks: readonly CompiledCheck[];

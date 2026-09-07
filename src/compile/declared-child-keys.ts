@@ -43,7 +43,14 @@ export function indexDeclaredChildKeys(
   return (parentPath) => frozen.get(parentPath) ?? NO_KEYS;
 }
 
+/**
+ * ROOT_PATH is the SUBJECT itself, not a child of anything, so it contributes
+ * no key — and it must not reach the parser, which refuses the empty string.
+ * Asking `childKeysOf(ROOT_PATH)` still answers the top-level declared keys,
+ * which is what a root-level `additionalProperties: false` needs.
+ */
 function recordDeclaredPath(path: string, into: Map<string, string[]>): void {
+  if (path === ROOT_PATH) return;
   let prefix = ROOT_PATH;
   for (const segment of parseFieldPath(path)) {
     if (segment.kind === "each") {

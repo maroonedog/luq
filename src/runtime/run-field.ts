@@ -10,10 +10,10 @@
 import type { ArrayItemContext, RuleContext } from "../types";
 import type {
   CompiledField,
-  PresencePolicy,
   RecursionPolicy,
 } from "../compile/validation-plan.types";
 import { createIssue } from "./create-issue";
+import { decidePresence } from "./decide-presence";
 import type { IndexStack } from "./index-stack";
 import type { IssueSink } from "./issue-sink";
 
@@ -60,7 +60,7 @@ export function runField(
   };
   const read = field.read(subject);
   const value = applyDefault(field, read, context.root);
-  if (!isPresent(field.presence, value, path, context.sink)) {
+  if (!decidePresence(field, value, ruleContext, context.sink)) {
     return FIELD_VALUE_UNCHANGED;
   }
   if (!openGates(field, value, ruleContext)) return FIELD_VALUE_UNCHANGED;
@@ -86,51 +86,6 @@ function applyDefault(
   if (value === undefined) return field.defaultOf(root);
   if (value === null && field.applyDefaultToNull) return field.defaultOf(root);
   return value;
-}
-
-/**
- * Absence is decided once, by the merged policy, and it is the only thing that
- * can silence a field. Permitted absence (`.optional()` / `.nullable()`) ends
- * the field with no issue and runs no check and no transform — a length rule
- * must not fire on a value the schema said may be missing. Forbidden absence
- * ends it with exactly one issue, under the presence rule's own code. A field
- * that declared no presence rule carries OPEN_PRESENCE, which permits both, so
- * a missing value is silently absent rather than implicitly REQUIRED: the one
- * uniform answer replacing legacy's fast/slow-path split, where adding an
- * array elsewhere in the schema switched implicit REQUIRED on.
- */
-function isPresent(
-  policy: PresencePolicy,
-  value: unknown,
-  path: string,
-  sink: IssueSink
-): boolean {
-  const isMissing =
-    value === undefined || (policy.emptyStringIsMissing && value === "");
-  const isAllowed = isMissing ? policy.allowUndefined : policy.allowNull;
-  if (!isMissing && value !== null) return true;
-  return reportUnlessAllowed(policy, isAllowed, value, path, sink);
-}
-
-function reportUnlessAllowed(
-  policy: PresencePolicy,
-  isAllowed: boolean,
-  value: unknown,
-  path: string,
-  sink: IssueSink
-): boolean {
-  if (!isAllowed) {
-    sink.add(
-      createIssue({
-        path,
-        code: policy.code,
-        severity: policy.severity,
-        value,
-        render: (ctx) => policy.describe(ctx),
-      })
-    );
-  }
-  return false;
 }
 
 /** A closed gate ends the field successfully: no check, no transform. */

@@ -47,3 +47,19 @@ export function eraseChainSurface<T extends object>(
 export function eraseBuilderSurface<T extends object>(assembled: object): T {
   return assembled as unknown as T;
 }
+
+/**
+ * 理由: fromJsonSchema<T>() は「実行時に読み込んだ JSON Schema」から検証器を作る。
+ * ドキュメントは実行時の値なので、宣言された T との対応をコンパイラが検査できる
+ * 材料は原理的に存在しない。L5 の PlanBackedValidator はプランしか知らず
+ * ValidationResult<unknown> しか返せないので、呼び出し側が明示した T を戻せるのは
+ * この境界だけである — eraseBuilderSurface と同じ性質の消去であり、同じ場所に置く。
+ * 正しさは、PlanBackedValidator（src/builder/builder-surface.types.ts）が
+ * Validator<T> と同じメンバー集合を持ち、実装がそれに構造的に適合していることに
+ * 依存する。T が実際のドキュメントと食い違っていた場合、型は嘘をつくが実行時の
+ * 検証結果は正しい: build-from-schema.ts の見出しがその逃げ道を明記している。
+ * src/ 全体でこの関数の呼び出しは 1 箇所（src/json-schema/build-from-schema.ts）だけ。
+ */
+export function eraseSchemaValidator<T>(planBacked: object): T {
+  return planBacked as unknown as T;
+}

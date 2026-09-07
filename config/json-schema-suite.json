@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/json-schema-org/JSON-Schema-Test-Suite",
+  "submodulePath": "test/fixtures/json-schema-suite",
+  "commit": "f6fd52a0a95472e079cbfc6ef7f089702b80e045",
+  "dialect": "draft7",
+  "corpusDirectory": "tests/draft7",
+  "includesOptionalDirectory": false,
+  "note": "THE PIN. test/integration/json-schema-suite.test.ts asserts every number below. Moving the submodule changes contentDigest and therefore fails the build until this file is re-measured, which is what makes a suite bump a reviewed commit. skippedCases and passingCases come from test/json-schema/suite-skip-list.ts, so a bump cannot be recorded without re-reading the skip list.",
+  "fileCount": 37,
+  "groupCount": 258,
+  "caseCount": 929,
+  "contentDigest": "sha256:9b13470f746d823ec1644d4ece291973d27f52a09bc4c06580a1037bb2d82d47",
+  "skipEntryCount": 53,
+  "skippedCases": 101,
+  "passingCases": 828
+}

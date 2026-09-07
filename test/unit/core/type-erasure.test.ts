@@ -4,6 +4,7 @@ import * as path from "path";
 import {
   eraseAssembledRecord,
   eraseChainSurface,
+  eraseSchemaValidator,
 } from "../../../src/core/type-erasure";
 
 const SOURCE_ROOT = path.join(__dirname, "..", "..", "..", "src");
@@ -72,5 +73,26 @@ describe("the type-erasure boundary", () => {
     const assembled = { alpha: 1 };
     expect(eraseChainSurface<{ alpha: number }>(assembled)).toBe(assembled);
     expect(eraseAssembledRecord<{ alpha: number }>(assembled)).toBe(assembled);
+    expect(eraseSchemaValidator<{ alpha: number }>(assembled)).toBe(assembled);
+  });
+
+  it("names every escape hatch that exists, so a fifth cannot slip in", () => {
+    // fromJsonSchema<T> used to put its declared type back on through an
+    // OVERLOAD PAIR, which TypeScript accepts on lenient compatibility rules
+    // and which no reviewer of this file would ever have seen. It is a call to
+    // eraseSchemaValidator now; this list is what keeps the audit complete.
+    const source = fs.readFileSync(
+      path.join(SOURCE_ROOT, "core", "type-erasure.ts"),
+      "utf8"
+    );
+    const exported = [...source.matchAll(/export function (\w+)/g)].map(
+      (match) => match[1]
+    );
+    expect(exported).toEqual([
+      "eraseAssembledRecord",
+      "eraseChainSurface",
+      "eraseBuilderSurface",
+      "eraseSchemaValidator",
+    ]);
   });
 });

@@ -28,6 +28,10 @@ import type {
   BoundPlugin,
   NameOf,
 } from "./json-schema-bag.types";
+import type {
+  Draft07Keyword,
+  Draft07KeywordValues,
+} from "./draft07-keyword-value.types";
 
 /**
  * One JSON Schema keyword bound to one chain method.
@@ -88,3 +92,17 @@ export type KeywordHandlingFor<V> =
   | AnyKeywordBinding<V>
   | StructuralKeyword
   | UnsupportedKeyword;
+
+/** The one decision a keyword table may record, whatever the keyword. */
+export type AnyKeywordHandling = KeywordHandlingFor<never>;
+
+/**
+ * A category table: EVERY keyword of the category, each carrying a handling
+ * for that keyword's own normalised value type. Because the mapped type is
+ * total over `K`, a forgotten keyword is TS2739 and a keyword that is not in
+ * the Draft-07 vocabulary is an excess property — both compile errors, which
+ * is the whole point of writing the vocabulary down.
+ */
+export type KeywordTable<K extends Draft07Keyword> = {
+  readonly [Keyword in K]: KeywordHandlingFor<Draft07KeywordValues[Keyword]>;
+};

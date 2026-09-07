@@ -33,3 +33,6 @@ vscode-extension/out/
 # Generated catalog derivatives (regenerate with `npm run generate`)
 src/plugins/manifest.generated.ts
 src/plugins/index.generated.ts
+
+# JSON-Schema-Test-Suite (pinned git submodule; third-party sources)
+test/fixtures/json-schema-suite/

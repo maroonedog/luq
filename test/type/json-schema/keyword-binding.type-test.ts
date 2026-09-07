@@ -22,10 +22,8 @@ import { stringPatternPlugin } from "../../../src/plugins/string-pattern";
 import type { IsMarkerFree } from "../../../src/plugin-kit/marker.types";
 import type { FieldRef } from "../../../src/plugin-kit/marker.types";
 import type { JsonSchemaPlugin } from "../../../src/json-schema/json-schema-bag.types";
-import {
-  minItemsBinding,
-  minLengthBinding,
-} from "../../../src/json-schema/draft07-bindings";
+import { minItemsBinding } from "../../../src/json-schema/keyword-map-array";
+import { minLengthBinding } from "../../../src/json-schema/keyword-map-string";
 import type { ElementChain } from "../../../src/plugin-kit/marker.types";
 import type { FieldChain } from "../../../src/chain/field-chain.types";
 import type { OpenState } from "../../../src/chain/chain-state.types";

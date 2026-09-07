@@ -13,6 +13,7 @@ export type { AbortPolicy } from "./issue-sink";
 export { IndexStack, joinIssuePath } from "./index-stack";
 export { createIssue, renderFallbackMessage } from "./create-issue";
 export type { IssueRequest } from "./create-issue";
+export { decidePresence } from "./decide-presence";
 export { FIELD_VALUE_UNCHANGED, runField } from "./run-field";
 export type {
   FieldRunContext,

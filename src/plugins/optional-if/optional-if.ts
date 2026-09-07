@@ -1,17 +1,27 @@
 // ===========================================================================
 // L7  src/plugins/optional-if/optional-if.ts — the logical dual of requiredIf.
 //
-// Condition true  + empty value -> accepted.
-// Condition false + empty value -> rejected (the field is effectively required).
-// A non-empty value is always accepted.
+// Condition true  + absent value -> accepted, and the rest of the field's
+//                                   rules are skipped, as with `.optional()`.
+// Condition false + absent value -> rejected (the field is effectively
+//                                   required), undefined and null included.
+// A present value is always accepted here.
+//
+// Both sides have an opinion, which is why this plugin overrules a plain
+// `.required()` on the same field while its condition holds: that is what
+// "optional if" means.
 //
 // Legacy hard-coded both its error code and its message and never invoked the
 // messageFactory the signature advertised; 11 of its own tests failed because
 // of it. Here `ctx.code` / `ctx.messageFactory` are the same ones every other
 // plugin uses, so options.code and options.messageFactory work.
 // ===========================================================================
-import { PASS, fail, type TypeName } from "../../types";
-import { check } from "../../plugin-kit/create-rule";
+import type { TypeName } from "../../types";
+import {
+  PERMITS_ABSENCE,
+  REQUIRES_A_VALUE,
+  conditionalPresence,
+} from "../../plugin-kit/create-conditional-presence";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
 import type { RootPredicate, Unchanged } from "../../plugin-kit/marker.types";
 
@@ -32,10 +42,6 @@ const OPTIONAL_IF_SLOTS: readonly TypeName[] = [
   "any",
 ];
 
-function isEmptyForPresence(value: unknown): boolean {
-  return value === undefined || value === null || value === "";
-}
-
 export const optionalIfPlugin = /*#__PURE__*/ definePlugin<{
   args: readonly [when: RootPredicate];
   out: Unchanged;
@@ -45,16 +51,13 @@ export const optionalIfPlugin = /*#__PURE__*/ definePlugin<{
   method: "optionalIf",
   slots: OPTIONAL_IF_SLOTS,
   build: (ctx, when) =>
-    check({
+    conditionalPresence({
       code: ctx.code,
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
-      run: (value, ruleContext) => {
-        if (!isEmptyForPresence(value)) return PASS;
-        return when(ruleContext.root, ruleContext.item)
-          ? PASS
-          : fail({ actual: value });
-      },
+      when,
+      whenMet: PERMITS_ABSENCE,
+      whenUnmet: REQUIRES_A_VALUE,
       describe: () => "Field is optional when condition is met",
       buildMessageContext: () => ({ condition: false }),
     }),

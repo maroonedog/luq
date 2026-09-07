@@ -9,6 +9,15 @@
 //
 // Distinct from the COMPOSITION keyword `oneOf` (src/plugins/composition/),
 // which takes sub-schemas rather than values.
+//
+// MEMBERSHIP IS STRUCTURAL. `allowed.includes` compares by reference, so a list
+// holding `{"a":1}` or `[1,2]` could never match a parsed document — measured
+// on the official Draft-07 suite, that cost 17 of 929 cases through the `enum`
+// keyword, which is this plugin's other front door. The one definition lives in
+// src/plugin-kit/is-json-value-equal.ts and `unique` and `includes` use it too.
+// The Set fast path is kept for the case it was written for and can still be
+// taken: a list whose members are ALL primitives, where SameValueZero and
+// structural equality are the same answer.
 // ===========================================================================
 import { PASS, fail, isArray, type MessageContextExtra } from "../../types";
 import { check } from "../../plugin-kit/create-rule";
@@ -16,6 +25,7 @@ import {
   definePlugin,
   PluginArgumentError,
 } from "../../plugin-kit/plugin-definition";
+import { isJsonValueEqual } from "../../plugin-kit/is-json-value-equal";
 import type { SelfValue, Unchanged } from "../../plugin-kit/marker.types";
 
 /** Above this many members a Set beats a linear scan. Legacy used the same. */
@@ -25,15 +35,26 @@ function describeAllowed(allowed: readonly unknown[]): string {
   return allowed.map((member) => JSON.stringify(member)).join(", ");
 }
 
+/** A Set answers with SameValueZero, which is only the whole answer here when
+ *  no member has a structure to compare. `null` is a primitive for this. */
+function areAllMembersPrimitive(allowed: readonly unknown[]): boolean {
+  return allowed.every(
+    (member) => member === null || typeof member !== "object"
+  );
+}
+
 /** One membership test, decided ONCE at build time and never re-decided. */
 function createMembershipTest(
   allowed: readonly unknown[]
 ): (value: unknown) => boolean {
-  if (allowed.length > SET_MEMBERSHIP_THRESHOLD) {
+  if (
+    allowed.length > SET_MEMBERSHIP_THRESHOLD &&
+    areAllMembersPrimitive(allowed)
+  ) {
     const members = new Set<unknown>(allowed);
     return (value) => members.has(value);
   }
-  return (value) => allowed.includes(value);
+  return (value) => allowed.some((member) => isJsonValueEqual(member, value));
 }
 
 export const oneOfPlugin = /*#__PURE__*/ definePlugin<{

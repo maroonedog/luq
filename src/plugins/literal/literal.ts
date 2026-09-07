@@ -1,16 +1,21 @@
 // ===========================================================================
-// L7  src/plugins/literal/literal.ts — strict equality against one constant.
+// L7  src/plugins/literal/literal.ts — equality against one constant.
 //
 // MARKER-FREE on purpose: its declared argument tuple is its runtime tuple, so
 // IsMarkerFree is true and the Draft-07 `const` keyword can bind to it.
 //
-// The one deviation from `===` is legacy's, and is carried over: an expected
-// value of NaN matches any NaN, because `NaN === NaN` is false and a schema
-// that asks for NaN otherwise could never be satisfied.
+// EQUALITY IS STRUCTURAL, from src/plugin-kit/is-json-value-equal.ts. `===`
+// would mean `.literal({a:1})` and `const: {"a":1}` could never match a value
+// that came out of JSON.parse — measured on the official Draft-07 suite, that
+// and the same defect in `oneOf` cost 17 of 929 cases. Legacy's one documented
+// deviation from `===` is preserved by construction: SameValueZero at the
+// leaves makes an expected NaN match any NaN, so a schema asking for NaN is
+// still satisfiable.
 // ===========================================================================
-import { PASS, fail, isNumber, type TypeName } from "../../types";
+import { PASS, fail, type TypeName } from "../../types";
 import { check } from "../../plugin-kit/create-rule";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
+import { isJsonValueEqual } from "../../plugin-kit/is-json-value-equal";
 import type { Unchanged } from "../../plugin-kit/marker.types";
 
 export interface LiteralExtra {
@@ -28,15 +33,6 @@ const LITERAL_SLOTS: readonly TypeName[] = [
   "union",
   "any",
 ];
-
-function isExpectedNaN(expected: unknown): boolean {
-  return isNumber(expected) && Number.isNaN(expected);
-}
-
-function matchesLiteral(value: unknown, expected: unknown): boolean {
-  if (isExpectedNaN(expected)) return isNumber(value) && Number.isNaN(value);
-  return value === expected;
-}
 
 /** Legacy rendering: strings are quoted, everything else is String()-ed. */
 function formatLiteral(expected: unknown): string {
@@ -59,7 +55,7 @@ export const literalPlugin = /*#__PURE__*/ definePlugin<{
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
       run: (value) =>
-        matchesLiteral(value, expected)
+        isJsonValueEqual(value, expected)
           ? PASS
           : fail({ expected, actual: value }),
       describe: () => `Value must be ${formatLiteral(expected)}`,

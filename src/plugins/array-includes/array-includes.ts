@@ -17,7 +17,7 @@ import type { Unchanged } from "../../plugin-kit/marker.types";
 import { PASS, fail, isArray } from "../../types";
 import { check } from "../../plugin-kit/create-rule";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
-import { isSameValueZero } from "./same-value-zero";
+import { isSameValueZero } from "../../plugin-kit/is-json-value-equal";
 
 export interface ArrayIncludesContext {
   readonly element: unknown;

@@ -1,5 +1,5 @@
 {
-  "pluginCount": 70,
+  "pluginCount": 76,
   "plugins": [
     {
       "subpath": "./plugins/arrayContains",
@@ -60,6 +60,16 @@
       "subpath": "./plugins/fromContext",
       "directory": "src/plugins/from-context",
       "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/jsonSchema",
+      "directory": "src/json-schema/extensions/json-schema",
+      "tier": "extension"
+    },
+    {
+      "subpath": "./plugins/jsonSchemaFullFeature",
+      "directory": "src/json-schema/extensions/json-schema-full-feature",
+      "tier": "extension"
     },
     {
       "subpath": "./plugins/literal",
@@ -257,6 +267,16 @@
       "tier": "isolated"
     },
     {
+      "subpath": "./plugins/stringIdnEmail",
+      "directory": "src/plugins/string-idn-email",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringIdnHostname",
+      "directory": "src/plugins/string-idn-hostname",
+      "tier": "isolated"
+    },
+    {
       "subpath": "./plugins/stringIpv4",
       "directory": "src/plugins/string-ipv4",
       "tier": "isolated"
@@ -297,6 +317,11 @@
       "tier": "isolated"
     },
     {
+      "subpath": "./plugins/stringRegex",
+      "directory": "src/plugins/string-regex",
+      "tier": "isolated"
+    },
+    {
       "subpath": "./plugins/stringRelativeJsonPointer",
       "directory": "src/plugins/string-relative-json-pointer",
       "tier": "isolated"
@@ -309,6 +334,11 @@
     {
       "subpath": "./plugins/stringTime",
       "directory": "src/plugins/string-time",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stringUriReference",
+      "directory": "src/plugins/string-uri-reference",
       "tier": "isolated"
     },
     {
@@ -371,6 +401,8 @@
     "./plugins/conditionalSchema",
     "./plugins/custom",
     "./plugins/fromContext",
+    "./plugins/jsonSchema",
+    "./plugins/jsonSchemaFullFeature",
     "./plugins/literal",
     "./plugins/nullable",
     "./plugins/numberFinite",
@@ -410,6 +442,8 @@
     "./plugins/stringEndsWith",
     "./plugins/stringExactLength",
     "./plugins/stringHostname",
+    "./plugins/stringIdnEmail",
+    "./plugins/stringIdnHostname",
     "./plugins/stringIpv4",
     "./plugins/stringIpv6",
     "./plugins/stringIri",
@@ -418,9 +452,11 @@
     "./plugins/stringMax",
     "./plugins/stringMin",
     "./plugins/stringPattern",
+    "./plugins/stringRegex",
     "./plugins/stringRelativeJsonPointer",
     "./plugins/stringStartsWith",
     "./plugins/stringTime",
+    "./plugins/stringUriReference",
     "./plugins/stringUriTemplate",
     "./plugins/stringUrl",
     "./plugins/transform",

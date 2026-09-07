@@ -8,6 +8,7 @@ export type {
   ArrayNode,
   CompiledCheck,
   CompiledField,
+  ConditionalPresence,
   FieldDeclaration,
   PlanRef,
   PresencePolicy,
@@ -23,6 +24,10 @@ export {
   OPEN_PRESENCE_CODE,
   resolvePresence,
 } from "./resolve-presence";
+export {
+  NO_PRESENCE_OVERRIDES,
+  resolveConditionalPresence,
+} from "./resolve-conditional-presence";
 export { UnknownRuleKindError, splitRulesByKind } from "./split-rules-by-kind";
 export type { RulesByKind } from "./split-rules-by-kind";
 export {

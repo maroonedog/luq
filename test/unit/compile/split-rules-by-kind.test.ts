@@ -6,6 +6,7 @@ import type { Rule } from "../../../src/plugin-kit/compiled-rule";
 import {
   makeCheck,
   makeComposite,
+  makeConditionalPresence,
   makeGate,
   makeRecursive,
   makeTransform,
@@ -14,10 +15,11 @@ import {
 } from "./rule-fixtures";
 
 describe("splitRulesByKind", () => {
-  it("separates all six kinds", () => {
+  it("separates all seven kinds", () => {
     const split = splitRulesByKind([
       makeCheck("minLength"),
       requiredRule(),
+      makeConditionalPresence("requiredIf", () => true),
       makeGate("validateIf"),
       makeTransform(),
       makeComposite("oneOf"),
@@ -25,10 +27,22 @@ describe("splitRulesByKind", () => {
     ]);
     expect(split.checks).toHaveLength(1);
     expect(split.presences).toHaveLength(1);
+    expect(split.conditionalPresences).toHaveLength(1);
     expect(split.gates).toHaveLength(1);
     expect(split.transforms).toHaveLength(1);
     expect(split.composites).toHaveLength(1);
     expect(split.recursions).toHaveLength(1);
+  });
+
+  it("条件付き presence は静的な presence と混ざらない", () => {
+    const split = splitRulesByKind([
+      requiredRule(),
+      makeConditionalPresence("requiredIf", () => true),
+    ]);
+    expect(split.presences.map((rule) => rule.code)).toEqual(["required"]);
+    expect(split.conditionalPresences.map((rule) => rule.code)).toEqual([
+      "requiredIf",
+    ]);
   });
 
   it("preserves declaration order within a kind", () => {

@@ -1,19 +1,28 @@
 // ===========================================================================
-// L7  src/plugins/array-unique/deep-equal.ts
-// THE single equality definition behind `unique`.
+// L2  src/plugin-kit/is-json-value-equal.ts
+// THE single definition of "these two values are the same JSON value".
 //
-// docs/legacy-spec/plugin-catalog-structural.md records two separate defects
-// in the legacy answer and this module exists to close both:
-//   * legacy switched from a `===` double loop to a Set at length 11, so
-//     [NaN, NaN] was a duplicate in a long array and not in a short one. One
-//     definition is used here at every length.
+// It lives in plugin-kit because FOUR callers need the same answer and a plugin
+// may not import a sibling plugin: `unique` (array-unique), `oneOf`, `literal`,
+// and through the last two the Draft-07 `enum` and `const` keywords. Every one
+// of those keywords is defined by JSON Schema §4.2.3 in terms of the JSON data
+// model, where equality is STRUCTURAL — `{"a":1}` equals `{"a":1}` however many
+// times it was parsed — so three separate `===` tests were three ways of being
+// wrong at once. Measured on the official suite: reference equality cost 17 of
+// the 929 draft7 cases before this module existed.
+//
+// docs/legacy-spec/plugin-catalog-structural.md records two defects this closes
+// for `unique`, and they are the reason the implementation looks the way it does:
+//   * 1.x switched from a `===` double loop to a Set at length 11, so [NaN, NaN]
+//     was a duplicate in a long array and not in a short one. One definition is
+//     used here at every length.
 //   * the rewrite's first draft keyed on JSON.stringify, which is ORDER
-//     dependent: {a:1,b:2} and {b:2,a:1} are the same value and were reported
-//     as distinct. Keys are compared as a set, so order cannot matter.
+//     dependent: {a:1,b:2} and {b:2,a:1} are the same value and were reported as
+//     distinct. Keys are compared as a set, so order cannot matter.
 //
-// Leaves compare with SameValueZero (NaN equals NaN, +0 equals -0), which is
-// the definition Set and Array.prototype.includes already use, so `unique` and
-// `includes` agree about what "the same element" means.
+// Leaves compare with SameValueZero (NaN equals NaN, +0 equals -0), which is the
+// definition `Set` and `Array.prototype.includes` already use, so `unique`,
+// `includes`, `oneOf` and `literal` all agree about what "the same value" means.
 // ===========================================================================
 
 /** NaN equals NaN; +0 equals -0. `a !== a` is the NaN test that needs no cast. */
@@ -25,9 +34,10 @@ export function isSameValueZero(left: unknown, right: unknown): boolean {
  * Structural comparison for arrays and PLAIN objects only. A Date, a RegExp, a
  * Map or a class instance compares by identity, because reading their own
  * enumerable keys would call every one of them equal to every other — a RegExp
- * has none at all.
+ * has none at all. JSON has none of those shapes, so nothing that came out of
+ * JSON.parse is affected.
  */
-export function isDeepEqual(left: unknown, right: unknown): boolean {
+export function isJsonValueEqual(left: unknown, right: unknown): boolean {
   if (isSameValueZero(left, right)) return true;
   if (Array.isArray(left) || Array.isArray(right)) {
     return (
@@ -46,7 +56,7 @@ function areElementsEqual(
 ): boolean {
   if (left.length !== right.length) return false;
   for (let index = 0; index < left.length; index += 1) {
-    if (!isDeepEqual(left[index], right[index])) return false;
+    if (!isJsonValueEqual(left[index], right[index])) return false;
   }
   return true;
 }
@@ -59,7 +69,7 @@ function areEntriesEqual(
   if (leftKeys.length !== Object.keys(right).length) return false;
   for (const key of leftKeys) {
     if (!Object.prototype.hasOwnProperty.call(right, key)) return false;
-    if (!isDeepEqual(left[key], right[key])) return false;
+    if (!isJsonValueEqual(left[key], right[key])) return false;
   }
   return true;
 }

@@ -445,7 +445,9 @@ describe("カタログ: 派生物がディレクトリ構造と一致する", ()
     }
   });
 
-  it("src/plugins の直下はプラグインディレクトリと生成物だけ", () => {
+  // isolated 段だけを見る。extension 段の2つは src/json-schema/extensions/ に
+  // 住んでおり (verification.md A6)、src/plugins の直下には現れない。
+  it("src/plugins の直下は isolated 段のプラグインディレクトリと生成物だけ", () => {
     const children = fs.readdirSync(PLUGIN_ROOT, { withFileTypes: true });
     const directories = children
       .filter((entry) => entry.isDirectory())
@@ -456,9 +458,26 @@ describe("カタログ: 派生物がディレクトリ構造と一致する", ()
       .map((entry) => entry.name)
       .sort();
     expect(directories).toEqual(
-      PLUGIN_MANIFEST.map((entry) => entry.directoryName).sort()
+      PLUGIN_MANIFEST.filter((entry) => entry.tier === "isolated")
+        .map((entry) => entry.directoryName)
+        .sort()
     );
     expect(files).toEqual(["index.generated.ts", "manifest.generated.ts"]);
+  });
+
+  it("extension 段の2つは src/json-schema/extensions/ にだけ住む", () => {
+    const extensions = PLUGIN_MANIFEST.filter(
+      (entry) => entry.tier === "extension"
+    );
+    expect(extensions.map((entry) => entry.subpathName).sort()).toEqual([
+      "jsonSchema",
+      "jsonSchemaFullFeature",
+    ]);
+    for (const entry of extensions) {
+      expect(entry.entryFile.startsWith("src/json-schema/extensions/")).toBe(
+        true
+      );
+    }
   });
 
   it("lock はディレクトリ数と export キーを記録している", () => {

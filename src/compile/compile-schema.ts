@@ -18,6 +18,7 @@
 // walks through, so there is no default.
 // ===========================================================================
 import { parseFieldPath } from "../path/parse-field-path";
+import { ROOT_PATH } from "./declared-child-keys";
 import type { CompositeBranch } from "../plugin-kit/compiled-rule";
 import type { BranchExecutor } from "./branch-executor.port";
 import {
@@ -109,12 +110,24 @@ function createCompositeEraser(executor: BranchExecutor): CompositeEraser {
     });
 }
 
-/** The declared form: an absolute path plus the options that are not rules. */
+/**
+ * ROOT_PATH declares a rule on the SUBJECT ITSELF, and its template is the
+ * EMPTY array — the very shape collectBranchDeclarations below already builds
+ * for a branch's own rules, so the runtime has always supported it and only
+ * this parse step forbade it. It is what lets a JSON Schema keyword that sits
+ * on the document root (`additionalProperties`, `minProperties`, `anyOf`,
+ * `if`/`then`/`else`, …) become a rule instead of being refused: see
+ * src/json-schema/flatten-schema.ts. parseFieldPath still rejects "" for every
+ * OTHER caller, because a *child* path may not be empty.
+ */
 function parseRelativeDeclaration(
   declaration: FieldDeclaration
 ): RelativeDeclaration {
   return {
-    template: parseFieldPath(declaration.path),
+    template:
+      declaration.path === ROOT_PATH
+        ? Object.freeze([])
+        : parseFieldPath(declaration.path),
     rules: declaration.rules,
     fieldPath: declaration.path,
     defaultOf: declaration.defaultOf ?? null,

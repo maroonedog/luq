@@ -22,6 +22,7 @@ import type {
   FieldDeclaration,
   PlanRef,
 } from "./validation-plan.types";
+import { resolveConditionalPresence } from "./resolve-conditional-presence";
 import { resolvePresence } from "./resolve-presence";
 import { resolveRecursion } from "./resolve-recursion";
 import { splitRulesByKind } from "./split-rules-by-kind";
@@ -61,6 +62,7 @@ export function compileField(request: FieldCompileRequest): CompiledField {
     defaultOf: request.defaultOf,
     applyDefaultToNull: request.applyDefaultToNull,
     presence: resolvePresence(byKind.presences),
+    presenceOverrides: resolveConditionalPresence(byKind.conditionalPresences),
     gates: byKind.gates,
     checks: collectOrderedChecks(request.rules, request.eraseComposite),
     transforms: byKind.transforms,

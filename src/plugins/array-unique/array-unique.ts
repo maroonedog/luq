@@ -3,20 +3,21 @@
 //
 // Legacy semantics (docs/legacy-spec/plugin-catalog-structural.md#arrayUniquePlugin):
 // a non-array PASSES, and the default message names no value. What is NOT
-// carried over is the equality: see ./deep-equal.ts for the two defects that
-// replaced it.
+// carried over is the equality: see src/plugin-kit/is-json-value-equal.ts for
+// the two defects that replaced it, and for why `unique`, `includes`, `oneOf`
+// and `literal` now share ONE definition of "the same value".
 //
 // The bucket key below is a PERFORMANCE filter, never a decision: it is
 // derived so that two equal values always land in the same bucket, and the
-// answer inside a bucket is isDeepEqual and nothing else. That is what keeps
-// one equality definition at every array length.
+// answer inside a bucket is isJsonValueEqual and nothing else. That is what
+// keeps one equality definition at every array length.
 // ===========================================================================
 import type { MessageContextExtra } from "../../types";
 import type { Unchanged } from "../../plugin-kit/marker.types";
 import { PASS, fail, isArray } from "../../types";
 import { check } from "../../plugin-kit/create-rule";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
-import { isDeepEqual } from "./deep-equal";
+import { isJsonValueEqual } from "../../plugin-kit/is-json-value-equal";
 
 /** Equal values always share a key; unequal values may too, which is harmless. */
 function toBucketKey(value: unknown): string {
@@ -40,7 +41,8 @@ function findDuplicate(
       buckets.set(key, [value]);
       continue;
     }
-    if (bucket.some((seen) => isDeepEqual(seen, value))) return { at: index };
+    if (bucket.some((seen) => isJsonValueEqual(seen, value)))
+      return { at: index };
     bucket.push(value);
   }
   return null;

@@ -1,5 +1,6 @@
 import { PASS, fail } from "../../../src/types";
 import type {
+  ArrayItemContext,
   CheckOutcome,
   IssueSeverity,
   RuleContext,
@@ -8,7 +9,9 @@ import type {
   CheckRule,
   CompositeBranch,
   CompositeRule,
+  ConditionalPresenceRule,
   GateRule,
+  PresenceAllowance,
   PresenceRule,
   RecursiveRule,
   TransformRule,
@@ -78,6 +81,37 @@ export function makePresence(
     allowUndefined,
     allowNull,
     emptyStringIsMissing,
+    describe: () => `${code} policy`,
+  };
+}
+
+export const REJECTS_ABSENCE: PresenceAllowance = Object.freeze({
+  allowUndefined: false,
+  allowNull: false,
+  emptyStringIsMissing: true,
+});
+
+export const ALLOWS_ABSENCE: PresenceAllowance = Object.freeze({
+  allowUndefined: true,
+  allowNull: true,
+  emptyStringIsMissing: false,
+});
+
+/** 既定は「条件が真なら値が要る、偽なら何も言わない」= requiredIf の形。 */
+export function makeConditionalPresence(
+  code: string,
+  when: (root: unknown, arrayContext?: ArrayItemContext) => boolean,
+  whenMet: PresenceAllowance | null = REJECTS_ABSENCE,
+  whenUnmet: PresenceAllowance | null = null,
+  severity: IssueSeverity = "error"
+): ConditionalPresenceRule {
+  return {
+    kind: "conditionalPresence",
+    code,
+    severity,
+    when,
+    whenMet,
+    whenUnmet,
     describe: () => `${code} policy`,
   };
 }

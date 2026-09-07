@@ -92,6 +92,16 @@
       "import": "./dist/plugins/fromContext.mjs",
       "require": "./dist/plugins/fromContext.js"
     },
+    "./plugins/jsonSchema": {
+      "types": "./dist/plugins/jsonSchema.d.ts",
+      "import": "./dist/plugins/jsonSchema.mjs",
+      "require": "./dist/plugins/jsonSchema.js"
+    },
+    "./plugins/jsonSchemaFullFeature": {
+      "types": "./dist/plugins/jsonSchemaFullFeature.d.ts",
+      "import": "./dist/plugins/jsonSchemaFullFeature.mjs",
+      "require": "./dist/plugins/jsonSchemaFullFeature.js"
+    },
     "./plugins/literal": {
       "types": "./dist/plugins/literal.d.ts",
       "import": "./dist/plugins/literal.mjs",
@@ -287,6 +297,16 @@
       "import": "./dist/plugins/stringHostname.mjs",
       "require": "./dist/plugins/stringHostname.js"
     },
+    "./plugins/stringIdnEmail": {
+      "types": "./dist/plugins/stringIdnEmail.d.ts",
+      "import": "./dist/plugins/stringIdnEmail.mjs",
+      "require": "./dist/plugins/stringIdnEmail.js"
+    },
+    "./plugins/stringIdnHostname": {
+      "types": "./dist/plugins/stringIdnHostname.d.ts",
+      "import": "./dist/plugins/stringIdnHostname.mjs",
+      "require": "./dist/plugins/stringIdnHostname.js"
+    },
     "./plugins/stringIpv4": {
       "types": "./dist/plugins/stringIpv4.d.ts",
       "import": "./dist/plugins/stringIpv4.mjs",
@@ -327,6 +347,11 @@
       "import": "./dist/plugins/stringPattern.mjs",
       "require": "./dist/plugins/stringPattern.js"
     },
+    "./plugins/stringRegex": {
+      "types": "./dist/plugins/stringRegex.d.ts",
+      "import": "./dist/plugins/stringRegex.mjs",
+      "require": "./dist/plugins/stringRegex.js"
+    },
     "./plugins/stringRelativeJsonPointer": {
       "types": "./dist/plugins/stringRelativeJsonPointer.d.ts",
       "import": "./dist/plugins/stringRelativeJsonPointer.mjs",
@@ -341,6 +366,11 @@
       "types": "./dist/plugins/stringTime.d.ts",
       "import": "./dist/plugins/stringTime.mjs",
       "require": "./dist/plugins/stringTime.js"
+    },
+    "./plugins/stringUriReference": {
+      "types": "./dist/plugins/stringUriReference.d.ts",
+      "import": "./dist/plugins/stringUriReference.mjs",
+      "require": "./dist/plugins/stringUriReference.js"
     },
     "./plugins/stringUriTemplate": {
       "types": "./dist/plugins/stringUriTemplate.d.ts",
