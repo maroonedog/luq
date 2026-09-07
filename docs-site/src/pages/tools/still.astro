@@ -1,0 +1,138 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header, { navItems } from '../../components/Header.astro';
+import MobileMenuOverlay from '../../components/MobileMenuOverlay.astro';
+import Footer from '../../components/Footer.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const sources = [
+  { source: 'The clock', effect: 'Any rendered date or time differs on every run.' },
+  { source: 'Math.random', effect: 'Ordering, generated ids and placeholder data shift.' },
+  { source: 'CSS animation', effect: 'The shot lands mid-transition.' },
+  { source: 'Font loading', effect: 'The shot lands before the webfont applies.' },
+  { source: 'OS media settings', effect: 'prefers-color-scheme and reduced-motion differ per machine.' },
+  { source: 'An unsettled DOM', effect: 'Late layout shifts move everything a few pixels.' },
+];
+---
+
+<BaseLayout
+  title="luq-still"
+  description="A browser runtime layer that makes screenshots and E2E runs produce the same result every time."
+>
+  <Header />
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="container mx-auto px-4 py-16 max-w-4xl">
+    <a href="/tools" class="text-sm text-luq-teal-600 dark:text-luq-teal-400 hover:underline">← Verification Tools</a>
+
+    <h1 class="mt-4 text-4xl font-bold mb-4 font-mono text-luq-neutral-900 dark:text-luq-neutral-100">
+      luq-still
+    </h1>
+    <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 mb-12 leading-relaxed">
+      Make screenshots and E2E runs reproducible.
+    </p>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">The problem</h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        The same code produces different screenshots locally and in CI. The causes are
+        well known and every project ends up filling the same holes by hand.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-luq-neutral-300 dark:border-luq-neutral-700">
+              <th class="text-left py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Source of drift</th>
+              <th class="text-left py-3 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">What it does</th>
+            </tr>
+          </thead>
+          <tbody class="text-luq-neutral-600 dark:text-luq-neutral-400">
+            {sources.map((row) => (
+              <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+                <td class="py-2 pr-4 whitespace-nowrap">{row.source}</td>
+                <td class="py-2">{row.effect}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-6 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        Unglamorous, but visual regression and AI-driven screenshot review are both
+        impossible without it.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">Usage</h2>
+      <CodeBlock
+        code={`import { applyDeterminism, waitForStill } from "@maroonedog/luq-still";
+
+test.beforeEach(async ({ page }) => {
+  await applyDeterminism(page);
+});
+
+test("signup screen", async ({ page }) => {
+  await page.goto("/signup");
+  const settled = await waitForStill(page);
+  expect(settled).toBe(true);
+  await expect(page).toHaveScreenshot();
+});`}
+      />
+      <p class="mt-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        Every default is set to stop something that can drift. Determinism should be what
+        you get without asking; make it opt-in and nobody configures it.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        Proof, in one process
+      </h2>
+      <CodeBlock
+        language="text"
+        code={`without the shims:
+  new Date().toISOString() = 2026-09-06T12:54:59.872Z
+  Math.random() x3         = 0.797045, 0.560026, 0.350542
+
+--- first install ---
+  new Date().toISOString() = 2026-01-01T00:00:00.000Z
+  Math.random() x3         = 0.627074, 0.002736, 0.527447
+  new Date("2020-05-06")   = 2020-05-06T00:00:00.000Z  (explicit args keep real behaviour)
+--- second install ---
+  new Date().toISOString() = 2026-01-01T00:00:00.000Z
+  Math.random() x3         = 0.627074, 0.002736, 0.527447`}
+      />
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        Design decisions worth knowing
+      </h2>
+      <div class="space-y-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">One shim, one self-contained function.</strong>
+          Playwright's <code class="text-sm font-mono">addInitScript</code> ships only the
+          source of the function you hand it. A function that closes over an import throws
+          <code class="text-sm font-mono">ReferenceError</code> in the page — and does so
+          <em>silently</em>. So the shims are injected individually, each referencing nothing
+          outside itself, and a test checks that no external reference appears in their source.
+        </p>
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">Failing to settle is not an exception.</strong>
+          <code class="text-sm font-mono">waitForStill</code> returns
+          <code class="text-sm font-mono">false</code> if the page never quiets down, so the
+          caller can treat it as a confidence signal on the screenshot instead of a crash
+          or a silent pass.
+        </p>
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">Only "now" is frozen.</strong>
+          <code class="text-sm font-mono">new Date()</code> returns the fixed instant, but
+          <code class="text-sm font-mono">new Date("2020-05-06")</code> still returns the real
+          value. Breaking Date outright would make date arithmetic untestable.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

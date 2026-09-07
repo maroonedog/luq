@@ -1,0 +1,239 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header, { navItems } from '../../components/Header.astro';
+import MobileMenuOverlay from '../../components/MobileMenuOverlay.astro';
+import Footer from '../../components/Footer.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const expansionRules = [
+  { constraint: 'stringMaxLength(n)', cases: 'n-1 accept / n accept / n+1 reject' },
+  { constraint: 'stringMinLength(n)', cases: 'n-1 reject / n accept / n+1 accept' },
+  { constraint: 'stringExactLength(n)', cases: 'n-1 reject / n accept / n+1 reject' },
+  { constraint: 'required', cases: 'absent / empty / whitespace only / present' },
+  { constraint: 'numberMax(n, exclusive)', cases: 'n-1 accept / n depends on exclusive / n+1 reject' },
+  { constraint: 'numberStep(n)', cases: 'multiple of n accept / non-multiple reject' },
+  { constraint: 'stringEmail', cases: 'valid / no @ / no domain / no local part / double dot' },
+  { constraint: 'oneOf([...])', cases: 'every allowed value + one disallowed' },
+  { constraint: 'unique', cases: 'existing value reject / unused value accept' },
+  { constraint: 'relativeDate', cases: 'boundary inside / boundary / boundary outside' },
+  { constraint: 'conditionalRequired', cases: 'absent when condition holds reject / present accept / absent otherwise accept' },
+  { constraint: 'conditionalOptional', cases: 'absent when condition holds accept / absent otherwise reject' },
+  { constraint: 'fieldComparison', cases: 'satisfying side / equal boundary / violating side' },
+  { constraint: 'stringPattern(re)', cases: 'the supplied valid and invalid examples' },
+];
+
+const corpus = [
+  { name: 'Screen field table', blocks: 12, coverage: '100%', constraints: 29, unstructured: 0, rate: '100%' },
+  { name: 'REST API spec', blocks: 9, coverage: '100%', constraints: 21, unstructured: 3, rate: '85.7%' },
+  { name: 'REQ-xxx requirement list', blocks: 10, coverage: '100%', constraints: 13, unstructured: 1, rate: '92.3%' },
+  { name: 'Narrative business spec', blocks: 5, coverage: '80%', constraints: 9, unstructured: 0, rate: '100%' },
+  { name: 'Nested bullet list', blocks: 22, coverage: '100%', constraints: 23, unstructured: 1, rate: '95.7%' },
+  { name: 'Batch job spec', blocks: 10, coverage: '100%', constraints: 23, unstructured: 6, rate: '73.9%' },
+];
+---
+
+<BaseLayout
+  title="luq-spec"
+  description="Extract constraints from a written specification with AI, expand them deterministically, and emit both a reviewable plan and Playwright tests."
+>
+  <Header />
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="container mx-auto px-4 py-16 max-w-4xl">
+    <a href="/tools" class="text-sm text-luq-teal-600 dark:text-luq-teal-400 hover:underline">← Verification Tools</a>
+
+    <h1 class="mt-4 text-4xl font-bold mb-4 font-mono text-luq-neutral-900 dark:text-luq-neutral-100">
+      luq-spec
+    </h1>
+    <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 mb-12 leading-relaxed">
+      Turn a written specification into a verification plan and E2E tests.
+    </p>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">The problem</h2>
+      <div class="space-y-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <p>
+          A spec that says <em>at most 100 characters</em> implies exactly three tests:
+          99, 100 and 101. That is not something to decide — it follows mechanically
+          from the kind of constraint.
+        </p>
+        <p>
+          Hand the whole job to a model and those three cases go missing differently
+          every run. One time it drops the 101, the next time the 99. You can never say
+          the suite is complete. So luq-spec splits the work: a model reads the prose,
+          and a pure function does the expansion.
+        </p>
+      </div>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">Usage</h2>
+      <CodeBlock
+        language="bash"
+        code={`# Emit the plan a person reviews and approves
+npx luq-spec plan spec.md --ai --out plan.md
+
+# Fill in selectors, then emit runnable tests
+npx luq-spec bind spec.md --ai --out binding.json
+npx luq-spec emit spec.md --ai --binding binding.json --out tests/spec.spec.ts`}
+      />
+      <p class="mt-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <code class="text-sm font-mono text-luq-purple-600 dark:text-luq-purple-400">--ai</code>
+        drives extraction through a headless Claude Code run.
+        <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">No API key is involved</strong> —
+        it reuses the authentication the <code class="text-sm font-mono">claude</code> command already has,
+        so the library never receives or stores a credential. One call per document, because
+        the harness cost is paid per invocation.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        The plan and the code come from the same set
+      </h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        A person approves the plan; the machine runs the code. If those drift, approval
+        means nothing. Both are generated from one set of viewpoints, and a test asserts
+        that the counts and the contents match. The plan carries no timestamp, so its
+        diff reads as exactly what changed: verification items added and removed.
+      </p>
+      <CodeBlock
+        language="markdown"
+        code={`## Customer registration / Company number
+
+Spec: spec.md:14
+
+| # | What to check | Input | Expected |
+| ---: | --- | --- | --- |
+| 1 | 12 characters is rejected | a x 12 | rejected (must be exactly 13) |
+| 2 | 13 characters is accepted | a x 13 | accepted |
+| 3 | 14 characters is rejected | a x 14 | rejected (must be exactly 13) |`}
+      />
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">Expansion rules</h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        This table is the whole expander. No inference enters here — one constraint always
+        produces the same cases. Several rules deliberately emit both sides:
+        <code class="text-sm font-mono">unique</code> checks that an existing value is rejected
+        <em>and</em> that a fresh one is accepted, because testing one side alone passes an
+        implementation that always rejects and one that always accepts.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-luq-neutral-300 dark:border-luq-neutral-700">
+              <th class="text-left py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Constraint</th>
+              <th class="text-left py-3 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Cases produced</th>
+            </tr>
+          </thead>
+          <tbody class="text-luq-neutral-600 dark:text-luq-neutral-400">
+            {expansionRules.map((rule) => (
+              <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+                <td class="py-2 pr-4 font-mono text-xs text-luq-purple-600 dark:text-luq-purple-400 whitespace-nowrap">{rule.constraint}</td>
+                <td class="py-2">{rule.cases}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        Measured on a corpus, not one document
+      </h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        Scoring 100% on a single specification proves nothing — it may just have been
+        written to fit the extractor. These numbers come from six documents in
+        deliberately different shapes.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-luq-neutral-300 dark:border-luq-neutral-700">
+              <th class="text-left py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Document shape</th>
+              <th class="text-right py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Blocks</th>
+              <th class="text-right py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Coverage</th>
+              <th class="text-right py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Constraints</th>
+              <th class="text-right py-3 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Expanded</th>
+            </tr>
+          </thead>
+          <tbody class="text-luq-neutral-600 dark:text-luq-neutral-400 tabular-nums">
+            {corpus.map((row) => (
+              <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+                <td class="py-2 pr-4">{row.name}</td>
+                <td class="py-2 pr-4 text-right">{row.blocks}</td>
+                <td class="py-2 pr-4 text-right">{row.coverage}</td>
+                <td class="py-2 pr-4 text-right">{row.constraints}</td>
+                <td class="py-2 text-right">{row.rate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-4 text-sm text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        Overall: coverage 98.2%, expansion rate 90.7%. Coverage counts blocks that yielded
+        a constraint; the denominator excludes blocks classified as purely descriptive —
+        and every excluded block is listed in the plan, because a metric you can quietly
+        shrink is not a metric.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        Project-specific rules
+      </h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        What needs verifying differs per project — check digits, internal numbering
+        schemes, bespoke formats. Those do not belong in a general library, so the
+        expansion rules are extensible.
+      </p>
+      <CodeBlock
+        code={`const checkDigit = defineConstraintExtension<{ numberKind: string }>({
+  name: "checkDigit",
+  guidance: "A field whose check digit must be validated.",
+  // Required. A description alone is not enough — the model
+  // falls back to "unstructured" without concrete phrasings.
+  examplePhrases: ["The check digit is also validated."],
+  parameterSchema: { type: "object", required: ["numberKind"], properties: { ... } },
+  parseParameters: (value) => { /* validate untrusted model output */ },
+  expand: ({ parameters }) => [ /* deterministic viewpoints */ ],
+});`}
+      />
+      <p class="mt-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        The extension receives only <em>identifying</em> information from the spec.
+        Asking it to pull "a valid example number" would force the model to invent a
+        value the document never contained. The check-digit algorithm lives in your
+        code — that is where domain knowledge belongs.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        What it refuses to do
+      </h2>
+      <div class="space-y-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">It does not invent examples from a regular expression.</strong>
+          Valid and invalid samples must be supplied. Fabricated ones produce a test that
+          passes while guaranteeing nothing.
+        </p>
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">It does not silently drop a line.</strong>
+          Anything it cannot structure stays as <code class="text-sm font-mono">unstructured</code>
+          and appears in the report.
+        </p>
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">It does not hide what it could not generate.</strong>
+          Viewpoints without a binding or a settled expectation are emitted as
+          <code class="text-sm font-mono">test.fixme</code>. Removing them would leave the
+          impression that everything is covered.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

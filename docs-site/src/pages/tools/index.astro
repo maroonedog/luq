@@ -1,0 +1,166 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header, { navItems } from '../../components/Header.astro';
+import MobileMenuOverlay from '../../components/MobileMenuOverlay.astro';
+import Footer from '../../components/Footer.astro';
+
+const tools = [
+  {
+    name: 'luq-spec',
+    href: '/tools/spec',
+    tagline: 'Turn a written specification into a verification plan and E2E tests.',
+    detail:
+      'A spec that says "at most 100 characters" implies exactly three tests: 99, 100, 101. That is not a judgement call — it follows mechanically from the constraint. luq-spec extracts constraints with AI, then expands them deterministically.',
+    status: 'Working',
+  },
+  {
+    name: 'luq-impact',
+    href: '/tools/impact',
+    tagline: 'Narrow a diff down to the screens that actually need re-checking.',
+    detail:
+      'Visual regression dies for two reasons: it is slow, and one shared component breaks 300 baselines. Both come from not knowing what a change reaches. luq-impact answers that, and shows the evidence path for every answer.',
+    status: 'Working',
+  },
+  {
+    name: 'luq-still',
+    href: '/tools/still',
+    tagline: 'Make screenshots and E2E runs reproducible.',
+    detail:
+      'The clock, the random seed, animations, font loading, the OS colour scheme, a DOM that has not settled. Every project rebuilds this layer by hand. luq-still is that layer, written once.',
+    status: 'Working',
+  },
+];
+---
+
+<BaseLayout
+  title="Verification Tools"
+  description="Three tools that make verification cheap: derive tests from the spec, run only what a change affects, and make the run deterministic."
+>
+  <Header />
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="container mx-auto px-4 py-16 max-w-7xl">
+    <div class="text-center mb-16">
+      <h1 class="text-5xl font-bold mb-6 bg-gradient-to-r from-luq-purple-600 to-luq-teal-500 bg-clip-text text-transparent">
+        Verification Tools
+      </h1>
+      <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 max-w-3xl mx-auto">
+        Run the tests your specification implies — deterministically, and only the ones a change can affect.
+      </p>
+    </div>
+
+    <section class="max-w-3xl mx-auto mb-20">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        Why these exist
+      </h2>
+      <div class="space-y-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <p>
+          When code gets cheap to write, the constraint moves from producing to
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">verifying</strong>.
+          Not because checking a screen is slow, but because the correct answer lives
+          only in a person's head.
+        </p>
+        <p>
+          That splits in two. Whether something is
+          <em>broken</em> — layouts, clicks, errors — automates well. Whether it is
+          <em>what we meant</em> does not, and never will. So the leverage is not in
+          checking faster. It is in
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">shrinking what has to be checked at all</strong>.
+        </p>
+        <p>
+          Each tool stands alone and none depends on the others. Together they close a loop:
+          the spec says what to verify, the diff says which of those to run now, and the
+          runtime makes the result the same every time.
+        </p>
+      </div>
+    </section>
+
+    <div class="grid gap-6 md:grid-cols-3 mb-20">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="group block rounded-xl border border-luq-neutral-200 dark:border-luq-neutral-800 p-6 transition-colors hover:border-luq-purple-400 dark:hover:border-luq-purple-600"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-mono text-lg font-semibold text-luq-purple-600 dark:text-luq-purple-400">
+              {tool.name}
+            </h3>
+            <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              {tool.status}
+            </span>
+          </div>
+          <p class="font-medium mb-3 text-luq-neutral-900 dark:text-luq-neutral-100">
+            {tool.tagline}
+          </p>
+          <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+            {tool.detail}
+          </p>
+          <span class="mt-4 inline-block text-sm font-medium text-luq-teal-600 dark:text-luq-teal-400 group-hover:underline">
+            Reference →
+          </span>
+        </a>
+      ))}
+    </div>
+
+    <section class="max-w-3xl mx-auto mb-20">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        Where inference is allowed
+      </h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        The division of labour is the whole design. Ask a model to write the tests and
+        it forgets a different case every run — one time the 101, the next time the 99.
+        You can never claim coverage. So inference is confined to the steps that
+        genuinely need judgement, and everything downstream is mechanical.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-luq-neutral-300 dark:border-luq-neutral-700">
+              <th class="text-left py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Step</th>
+              <th class="text-left py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Who</th>
+              <th class="text-left py-3 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Why</th>
+            </tr>
+          </thead>
+          <tbody class="text-luq-neutral-600 dark:text-luq-neutral-400">
+            <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+              <td class="py-3 pr-4">Prose → constraints</td>
+              <td class="py-3 pr-4 font-medium text-luq-purple-600 dark:text-luq-purple-400">AI</td>
+              <td class="py-3">Phrasing is unbounded. Rules cannot cover it.</td>
+            </tr>
+            <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+              <td class="py-3 pr-4">Constraints → test cases</td>
+              <td class="py-3 pr-4 font-medium text-luq-teal-600 dark:text-luq-teal-400">Deterministic only</td>
+              <td class="py-3">If this varies, coverage means nothing.</td>
+            </tr>
+            <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+              <td class="py-3 pr-4">Cases → plan and code</td>
+              <td class="py-3 pr-4 font-medium text-luq-teal-600 dark:text-luq-teal-400">Deterministic only</td>
+              <td class="py-3">The approved plan and the running code must not drift.</td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4">Cases → page elements</td>
+              <td class="py-3 pr-4 font-medium text-luq-purple-600 dark:text-luq-purple-400">Human or AI</td>
+              <td class="py-3">Selectors are not in the specification.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="max-w-3xl mx-auto">
+      <div class="rounded-xl border border-luq-neutral-200 dark:border-luq-neutral-800 p-6">
+        <h2 class="text-lg font-semibold mb-2 text-luq-neutral-900 dark:text-luq-neutral-100">
+          Availability
+        </h2>
+        <p class="text-sm text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+          These repositories are private while the interfaces settle. The pages here
+          describe the current behaviour and the numbers are measured, not projected.
+          They do not depend on Luq itself — the constraint vocabulary is aligned with it
+          so that a schema and a specification land on the same shape, but nothing imports it.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

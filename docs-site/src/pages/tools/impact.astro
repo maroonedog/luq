@@ -1,0 +1,215 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header, { navItems } from '../../components/Header.astro';
+import MobileMenuOverlay from '../../components/MobileMenuOverlay.astro';
+import Footer from '../../components/Footer.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const edgeRules = [
+  { kind: 'ValueImport', factor: '1.00', why: 'A direct value dependency.' },
+  { kind: 'StyleImport', factor: '1.00', why: 'Affects appearance directly.' },
+  { kind: 'RouteEntry', factor: '1.00', why: 'Route definition to the page itself.' },
+  { kind: 'StoryTarget', factor: '1.00', why: 'Story to the component it renders.' },
+  { kind: 'ReExport (names resolved)', factor: '1.00', why: 'Precision was never lost, so there is nothing to discount.' },
+  { kind: 'ReExport (opaque)', factor: '0.60', why: 'Namespace re-exports, where names cannot be followed.' },
+  { kind: 'TokenReference', factor: '0.20', why: 'Reaches far, but few screens actually change.' },
+  { kind: 'TypeImport', factor: 'blocked', why: 'A type-only dependency cannot alter runtime appearance.' },
+];
+
+const mantine = [
+  { file: 'Spoiler.tsx', impacted: '2 / 503' },
+  { file: 'Accordion.tsx', impacted: '3 / 503' },
+  { file: 'MantineProvider.tsx', impacted: '7 / 503' },
+  { file: 'Button.tsx', impacted: '161 / 503' },
+  { file: 'ColorPicker.tsx', impacted: '248 / 503' },
+];
+---
+
+<BaseLayout
+  title="luq-impact"
+  description="Narrow a diff down to the screens and stories that actually need re-checking, with the evidence path for every answer."
+>
+  <Header />
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="container mx-auto px-4 py-16 max-w-4xl">
+    <a href="/tools" class="text-sm text-luq-teal-600 dark:text-luq-teal-400 hover:underline">← Verification Tools</a>
+
+    <h1 class="mt-4 text-4xl font-bold mb-4 font-mono text-luq-neutral-900 dark:text-luq-neutral-100">
+      luq-impact
+    </h1>
+    <p class="text-xl text-luq-neutral-600 dark:text-luq-neutral-400 mb-12 leading-relaxed">
+      Narrow a diff down to the screens that actually need re-checking.
+    </p>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">The problem</h2>
+      <div class="space-y-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <p>
+          Visual regression testing dies in practice for two reasons: it is
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">slow</strong>,
+          because every screen is re-shot, and it produces
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">total-failure noise</strong>,
+          because touching one shared component turns 300 baselines red and nobody reads them again.
+        </p>
+        <p>
+          Both grow from the same root: nothing knows what a change can reach. As diffs get
+          larger, that breaks down faster.
+        </p>
+        <p>
+          This tool takes no screenshots and makes no judgements. It answers two things —
+          which targets to re-check, and why it thinks so.
+        </p>
+      </div>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">Usage</h2>
+      <CodeBlock
+        language="bash"
+        code={`$ luq-impact --root . --tsconfig tsconfig.json --diff HEAD~1
+
+Scanned 7 modules / 2 targets / 1 impacted
+
+[1.00] src/routes/signup/page.tsx
+    <- src/components/button.tsx (ReExport) {Button}
+    <- src/components/index.ts (ValueImport) {Button}
+    <- src/routes/signup/page.tsx (RouteEntry)`}
+      />
+      <p class="mt-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        Git is not required — <code class="text-sm font-mono">--changed a.tsx b.tsx</code>
+        takes a file list directly, which CI and agents find easier to drive.
+        <code class="text-sm font-mono">--json</code> produces the same result in a form
+        Playwright, a test selector, or an agent can consume.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        Barrels are followed by name
+      </h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        A barrel — an <code class="text-sm font-mono">index.ts</code> that only re-exports —
+        is the hardest part of impact analysis. Treated naively, every screen that touches
+        the barrel is "impacted".
+      </p>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        The names crossing each edge are tracked. If one page imports
+        <code class="text-sm font-mono">{'{ Button, TextField }'}</code> and another imports only
+        <code class="text-sm font-mono">{'{ TextField }'}</code>, a change to
+        <code class="text-sm font-mono">button.tsx</code> does not reach the second one.
+        Barrels get special treatment because they are the only place names can be followed
+        exactly: an ordinary module's export-to-import dependencies cannot be resolved
+        without binding analysis, so all of its exports are assumed affected.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">Propagation</h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        Plain reachability is useless here — one shared module would mark every screen.
+        The walk carries a confidence starting at 1.0 and multiplies it per edge kind.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-luq-neutral-300 dark:border-luq-neutral-700">
+              <th class="text-left py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Edge</th>
+              <th class="text-right py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Factor</th>
+              <th class="text-left py-3 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Reasoning</th>
+            </tr>
+          </thead>
+          <tbody class="text-luq-neutral-600 dark:text-luq-neutral-400">
+            {edgeRules.map((rule) => (
+              <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+                <td class="py-2 pr-4 font-mono text-xs text-luq-purple-600 dark:text-luq-purple-400 whitespace-nowrap">{rule.kind}</td>
+                <td class="py-2 pr-4 text-right tabular-nums">{rule.factor}</td>
+                <td class="py-2">{rule.why}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-4 text-sm text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        Design tokens are damped rather than cut, because occasionally a token really does
+        change every screen. Lowering the rank is right; discarding is not.
+        Type-only imports are distinguishable because oxc's module record carries an
+        <code class="text-xs font-mono">is_type</code> flag, so no AST walking is needed.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        On a real repository
+      </h2>
+      <p class="text-luq-neutral-600 dark:text-luq-neutral-400 mb-6 leading-relaxed">
+        <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">mantinedev/mantine</strong> —
+        5,989 modules, 503 targets, scanned in 1.75 seconds. Four levels of barrels, traversed
+        with names intact.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-luq-neutral-300 dark:border-luq-neutral-700">
+              <th class="text-left py-3 pr-4 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Changed file</th>
+              <th class="text-right py-3 font-semibold text-luq-neutral-900 dark:text-luq-neutral-100">Impacted targets</th>
+            </tr>
+          </thead>
+          <tbody class="text-luq-neutral-600 dark:text-luq-neutral-400 tabular-nums">
+            {mantine.map((row) => (
+              <tr class="border-b border-luq-neutral-200 dark:border-luq-neutral-800">
+                <td class="py-2 pr-4 font-mono text-xs">{row.file}</td>
+                <td class="py-2 text-right">{row.impacted}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-4 text-sm text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        ColorPicker exceeding Button is not a false positive. The path runs
+        ColorPicker → ConfiguratorColor.control → ConfiguratorDemo → Demo → render-demo →
+        every demo story: the documentation harness genuinely renders it. Emitting the
+        evidence path is what makes a surprising-but-correct result checkable.
+        On <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">shadcn-ui/taxonomy</strong>
+        (Next.js app router), changing <code class="text-xs font-mono">components/editor.tsx</code>
+        reaches 1 of 36 routes; <code class="text-xs font-mono">ui/button.tsx</code> reaches 16.
+      </p>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">
+        What it refuses to do
+      </h2>
+      <div class="space-y-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">It always returns the evidence path.</strong>
+          A narrowing you cannot audit will not be trusted, and an untrusted narrowing sends
+          everyone back to checking everything.
+        </p>
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">It does not swallow unresolved references.</strong>
+          They are reported — relative ones individually, external packages folded by name
+          with a count. Dropping them would quietly weaken the narrowing with no signal.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold mb-4 text-luq-neutral-900 dark:text-luq-neutral-100">Known limits</h2>
+      <div class="space-y-4 text-luq-neutral-600 dark:text-luq-neutral-400 leading-relaxed">
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">One tsconfig at a time.</strong>
+          A monorepo with <code class="text-sm font-mono">@scope/*</code> at the root and
+          <code class="text-sm font-mono">@/*</code> in each app can only resolve one of them.
+          Unresolved references are reported, so the omission is visible — but it is not fixed.
+        </p>
+        <p>
+          <strong class="text-luq-neutral-900 dark:text-luq-neutral-100">Non-barrel modules propagate conservatively.</strong>
+          Tightening this needs binding analysis via oxc_semantic.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>
