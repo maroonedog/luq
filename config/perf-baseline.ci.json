@@ -14,7 +14,15 @@
     "",
     "この床は run 34127572110 の単一実行から起こしたもので、分散が分かっていない。",
     "そのため床は記録比率の 0.60 倍 (手元は 0.75 倍) と広めに取ってある。",
-    "CI で複数回記録して分散が分かったら締め直すこと。"
+    "CI で複数回記録して分散が分かったら締め直すこと。",
+    "",
+    "singleField は比率ゲートの対象外。参照実装の正味コストが約 2 ns/call で、",
+    "ハーネス自身のプール回転コスト (約 1 ns/call) と同じ桁にあり、比率が",
+    "「luq / 手書き検証器」ではなく「luq / ハーネスのループ速度」に近づくため。",
+    "measure-reference-work.ts のカナリアは健全時でも shareOfFloor 0.843 までしか",
+    "下がらず、閾値 0.95 との余裕が他の4形状 (multiField 0.13 / nested 0.28 /",
+    "array・jsonSchema 0.01) と桁違いに薄い。PR #15 の CI で実際に 1.090 を記録して",
+    "発火した。閾値調整では解決しない (測定下限の問題)。絶対値は throughput[] に残る。"
   ],
   "recordedAt": "2026-09-07T13:31:10.000Z",
   "recordedFrom": "GitHub Actions run 34127572110 / job 101759754662 / ubuntu-latest / 単一実行",
@@ -60,45 +68,6 @@
   ],
   "throughput": [],
   "referenceRatio": [
-    {
-      "shape": "singleField",
-      "operation": "validate",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 2635369,
-      "referenceOpsPerSecond": 78772246,
-      "ratio": 0.0335,
-      "ratioFloor": 0.0201,
-      "luqSpreadPercent": null,
-      "referenceSpreadPercent": null,
-      "ratioSpreadPercent": null,
-      "isQuiet": null
-    },
-    {
-      "shape": "singleField",
-      "operation": "parse",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 2485769,
-      "referenceOpsPerSecond": 78798123,
-      "ratio": 0.0314,
-      "ratioFloor": 0.0188,
-      "luqSpreadPercent": null,
-      "referenceSpreadPercent": null,
-      "ratioSpreadPercent": null,
-      "isQuiet": null
-    },
-    {
-      "shape": "singleField",
-      "operation": "validate",
-      "inputIsAccepted": false,
-      "luqOpsPerSecond": 1728269,
-      "referenceOpsPerSecond": 76912059,
-      "ratio": 0.0225,
-      "ratioFloor": 0.0135,
-      "luqSpreadPercent": null,
-      "referenceSpreadPercent": null,
-      "ratioSpreadPercent": null,
-      "isQuiet": null
-    },
     {
       "shape": "multiField",
       "operation": "validate",

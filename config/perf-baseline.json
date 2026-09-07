@@ -155,45 +155,6 @@
   ],
   "referenceRatio": [
     {
-      "shape": "singleField",
-      "operation": "validate",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 2378182,
-      "referenceOpsPerSecond": 74949319,
-      "ratio": 0.0309,
-      "ratioFloor": 0.0231,
-      "luqSpreadPercent": 21.4,
-      "referenceSpreadPercent": 19.4,
-      "ratioSpreadPercent": 14.4,
-      "isQuiet": true
-    },
-    {
-      "shape": "singleField",
-      "operation": "parse",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 2174649,
-      "referenceOpsPerSecond": 72631544,
-      "ratio": 0.029,
-      "ratioFloor": 0.0223,
-      "luqSpreadPercent": 10,
-      "referenceSpreadPercent": 16.2,
-      "ratioSpreadPercent": 11.2,
-      "isQuiet": true
-    },
-    {
-      "shape": "singleField",
-      "operation": "validate",
-      "inputIsAccepted": false,
-      "luqOpsPerSecond": 1526797,
-      "referenceOpsPerSecond": 67855545,
-      "ratio": 0.0224,
-      "ratioFloor": 0.0163,
-      "luqSpreadPercent": 7.7,
-      "referenceSpreadPercent": 12.2,
-      "ratioSpreadPercent": 10.8,
-      "isQuiet": true
-    },
-    {
       "shape": "multiField",
       "operation": "validate",
       "inputIsAccepted": true,
@@ -482,5 +443,16 @@
       "speedup": 1.09,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     }
+  ],
+  "note": [
+    "",
+    "",
+    "singleField は比率ゲートの対象外。参照実装の正味コストが約 2 ns/call で、",
+    "ハーネス自身のプール回転コスト (約 1 ns/call) と同じ桁にあり、比率が",
+    "「luq / 手書き検証器」ではなく「luq / ハーネスのループ速度」に近づくため。",
+    "measure-reference-work.ts のカナリアは健全時でも shareOfFloor 0.843 までしか",
+    "下がらず、閾値 0.95 との余裕が他の4形状 (multiField 0.13 / nested 0.28 /",
+    "array・jsonSchema 0.01) と桁違いに薄い。PR #15 の CI で実際に 1.090 を記録して",
+    "発火した。閾値調整では解決しない (測定下限の問題)。絶対値は throughput[] に残る。"
   ]
 }
