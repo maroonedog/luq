@@ -14,6 +14,8 @@ import type {
   UnionGuardCoverageError,
 } from "../chain/chain-state.types";
 import type { GlobalConfig } from "../types/global-config";
+import { createBuilder } from "./create-builder";
+import type { FieldOptions } from "./field-options.types";
 import type { Validator } from "./validator.types";
 
 export type UncoveredOf<C> = UncoveredMembers<ChainOutput<C>, ChainStateOf<C>>;
@@ -29,9 +31,14 @@ export interface FieldBuilder<
   B extends PluginBag,
   TDeclared extends string,
 > {
+  /**
+   * `options` is a FIELD CONFIGURATION and never a Rule; it is where a default
+   * is declared. See ./field-options.types.ts.
+   */
   v<K extends FieldPath<T> & string, C extends AnyChain>(
     path: K,
-    define: (b: FieldSlots<T, B, ValueAtPath<T, K>>) => C
+    define: (b: FieldSlots<T, B, ValueAtPath<T, K>>) => C,
+    options?: FieldOptions<ValueAtPath<T, K>>
   ): [UncoveredOf<C>] extends [never]
     ? FieldBuilder<T, B, TDeclared | K>
     : UnionGuardCoverageError<K, UncoveredOf<C>>;
@@ -55,5 +62,10 @@ export interface Builder<B extends PluginBag = Record<never, never>> {
   for<T extends object>(): FieldBuilder<T, B, never>;
 }
 
-declare function createBuilder(): Builder;
+/**
+ * THE SINGLE PUBLIC ENTRY POINT. It is declared here, beside the interface it
+ * merges with, so `Builder` names both the value and the type; the
+ * implementation lives in ./create-builder.ts and is reached by a value import,
+ * while that module reaches back for a TYPE only — one runtime edge, no cycle.
+ */
 export const Builder: () => Builder = createBuilder;
