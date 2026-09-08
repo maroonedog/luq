@@ -476,6 +476,11 @@ export const plugins: readonly PluginInfo[] = [
         "name": "bag",
         "type": "JsonSchemaBag",
         "optional": false
+      },
+      {
+        "name": "options",
+        "type": "JsonSchemaOptions",
+        "optional": true
       }
     ],
     "description": "Constrains one declared field by a JSON Schema document, and takes the plugin bag explicitly. It reaches root-level keywords `fromJsonSchema` cannot, such as `propertyNames` and `if` / `then` / `else` on the document root.",
@@ -522,6 +527,11 @@ export const plugins: readonly PluginInfo[] = [
         "name": "document",
         "type": "unknown",
         "optional": false
+      },
+      {
+        "name": "options",
+        "type": "JsonSchemaOptions",
+        "optional": true
       }
     ],
     "description": "One import that covers a whole Draft-07 document. The same subpath exports `fromJsonSchema<T>(schema)`, which builds a validator with no builder chain at all.",
@@ -886,6 +896,11 @@ export const plugins: readonly PluginInfo[] = [
         "name": "allowedProperties",
         "type": "readonly string[]",
         "optional": true
+      },
+      {
+        "name": "allowedPatterns",
+        "type": "readonly string[]",
+        "optional": true
       }
     ],
     "description": "Draft-07's boolean `additionalProperties`. `false` forbids any key the schema did not declare; the optional second argument is a plain allow-list of extra key names.",
@@ -919,6 +934,11 @@ export const plugins: readonly PluginInfo[] = [
       },
       {
         "name": "allowedProperties",
+        "type": "readonly string[]",
+        "optional": true
+      },
+      {
+        "name": "allowedPatterns",
         "type": "readonly string[]",
         "optional": true
       }

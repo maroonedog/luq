@@ -1,0 +1,314 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header, { navItems } from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+
+/**
+ * Positioning, not a comparison table.
+ *
+ * Deliberately absent: any benchmark or bundle figure for another library.
+ * This repository measures itself and 1.x, and nothing else — republishing
+ * third-party numbers it never re-ran is what the 1.x site did, and those
+ * tables were deleted rather than updated. Everything below is either a fact
+ * about Luq (with its source named) or a statement about direction that a
+ * reader can check against zod's own documentation.
+ */
+
+const description =
+  'When Luq is the right choice and when zod is. Luq declares rules against a type you already have; zod infers a type from a schema you write. The direction is the whole difference.';
+
+const refused = [
+  {
+    mistake: 'A rule that does not apply to the field',
+    example: 'b.string.min(3) on a number field',
+  },
+  {
+    mistake: 'A path that does not exist on the type',
+    example: '"custmer.name"',
+  },
+  {
+    mistake: 'A missing array wildcard',
+    example: '"items.name" instead of "items[*].name"',
+  },
+  {
+    mistake: 'Descending into a built-in',
+    example: '"when.getTime" on a Date',
+  },
+  {
+    mistake: 'A method that does not exist',
+    example: 'inside an element sub-chain',
+  },
+];
+
+// Both samples below do the SAME job, written out to the same depth: import,
+// establish the type, state the two rules, validate one value, read the result.
+// An earlier version of this page showed zod with no imports and no result
+// handling against a Luq sample that had both, which made the line counts say
+// something about the page rather than about the libraries.
+
+// luq-example: skip zod のコード。zod はこのリポジトリの依存ではないので型検査できない。
+const zodSample = `import { z } from "zod";
+
+// The schema is the source. The type comes out of it.
+const User = z.object({
+  name: z.string().min(3),
+  age: z.number().min(18),
+});
+
+type User = z.infer<typeof User>;
+
+const result = User.safeParse({ name: "Jo", age: 25 });
+
+if (result.success) {
+  console.log(result.data.name);
+} else {
+  for (const issue of result.error.issues) {
+    console.error(issue.path.join("."), issue.message);
+  }
+}`;
+
+const luqSample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+
+// The type is the source. The rules are declared against it.
+type User = {
+  name: string;
+  age: number;
+};
+
+const validateUser = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .use(numberMinPlugin)
+  .for<User>()
+  .v("name", (b) => b.string.required().min(3))
+  .v("age", (b) => b.number.required().min(18))
+  .build();
+
+const result = validateUser.validate({ name: "Jo", age: 25 });
+
+if (result.valid) {
+  console.log(result.data.name);
+} else {
+  for (const issue of result.issues) {
+    console.error(issue.path, issue.message);
+  }
+}`;
+
+// luq-example: with luqSample validateUser を前の抜粋から受け取る。router は tRPC 側の
+// luq-example: skip 名前で、このリポジトリの依存ではないため型検査できない。
+const bothSample = `// Standard Schema means this is not an either/or at the boundary.
+import { toStandardSchema } from "@maroonedog/luq/standard-schema";
+
+// Anything that accepts a Standard Schema takes either one.
+router.input(toStandardSchema(validateUser));`;
+---
+
+<BaseLayout title="Luq or zod?" description={description}>
+  <Header />
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="px-4 py-16 sm:px-6 lg:px-8">
+    <div class="container mx-auto max-w-3xl">
+      <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
+        Choosing
+      </p>
+      <h1 class="mb-6 text-display-small text-on-surface">Luq or zod?</h1>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        Where does your type come from?
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        A validator whose schema is the source of truth assumes you are the one
+        who decides the shape. Often you are not — it arrives already decided:
+      </p>
+      <ul class="mb-6 space-y-2 text-body-large text-on-surface-variant">
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">code</span>
+          <span
+            ><code class="font-mono">openapi-typescript</code>, generated from
+            an API spec you do not own</span
+          >
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">database</span>
+          <span>Prisma or Drizzle, generated from the schema of record</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">swap_horiz</span>
+          <span>protobuf or GraphQL codegen, shared with services in other languages</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">smart_toy</span>
+          <span>A generator or a model writing the validation for you</span>
+        </li>
+      </ul>
+      <p class="mb-12 text-body-medium text-on-surface-variant">
+        In all four the shape is upstream and not yours to move, so a schema-first
+        validator asks you to write it a second time and keep the copy in step by
+        hand. Nothing checks that the two still agree; they drift silently, and the
+        first sign is a value that validated against the copy and does not fit the
+        original.
+      </p>
+
+      <div class="md-card md-card-filled mb-12 p-6">
+        <h2 class="mb-3 text-title-medium text-on-surface">The short answer</h2>
+        <p class="mb-4 text-body-large text-on-surface-variant">
+          If you are starting from nothing and the schema will be the source of
+          truth, <strong class="text-on-surface">use zod</strong>. It is the
+          default for good reasons: it is mature, it is everywhere, and every
+          question you will have is already answered somewhere.
+        </p>
+        <p class="text-body-large text-on-surface-variant">
+          Luq is for the other case — when the type already exists and something
+          else generated it.
+        </p>
+      </div>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        The direction is the whole difference
+      </h2>
+      <p class="mb-6 text-body-large text-on-surface-variant">
+        Nearly every widely used validator in TypeScript works one way: you
+        write a schema, and the type is inferred out of it. Luq runs the other
+        way. You keep the type, and the rules are declared against it.
+      </p>
+      <p class="mb-6 text-body-medium text-on-surface-variant">
+        Luq is not the first to run that way. <a
+          class="text-primary underline underline-offset-2"
+          href="https://github.com/AlexJPotter/fluentvalidation-ts"
+          >fluentvalidation-ts</a
+        > has declared rules against an existing type with a fluent chain since 2019.
+        The direction is older than this library and the credit is not ours. What
+        Luq adds is the enforcement: the path, the slot and the method are each
+        checked by the compiler, so a rule that does not apply to the field it
+        names is a type error rather than a rule that quietly never matches.
+      </p>
+
+      <div class="mb-4 grid gap-4 md:grid-cols-2">
+        <CodeBlock code={zodSample} language="typescript" fileName="Schema first" />
+        <CodeBlock code={luqSample} language="typescript" fileName="Type first" />
+      </div>
+
+      <p class="mb-6 text-body-medium text-on-surface-variant">
+        Same job, same depth on both sides, and the Luq column is the longer
+        one. The extra lines are not scattered: they are one plugin import plus
+        one matching <code>.use()</code> per rule kind, and the type written out
+        as a type instead of falling out of the schema. That is the cost of the
+        direction — nothing is in the bundle that you did not name, and the type
+        is yours rather than inferred — and it is a real cost, not a rounding
+        error. If a schema is the only place the shape exists in your codebase,
+        the shorter column is also the honest answer.
+      </p>
+
+      <p class="mb-12 text-body-medium text-on-surface-variant">
+        Neither direction is better in the abstract. Which one fits depends on a
+        question you can answer immediately: <strong class="text-on-surface"
+          >where does the type come from today?</strong
+        >
+      </p>
+
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        What the type-first direction buys
+      </h2>
+      <p class="mb-6 text-body-large text-on-surface-variant">
+        Because the type is already known when the rules are read, the compiler
+        can check the rules against it. These are errors, not rules that compile
+        and then never fire:
+      </p>
+      <ul class="mb-4 divide-y divide-outline-variant border-y border-outline-variant">
+        {
+          refused.map((item) => (
+            <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
+              <span class="md-icon md-icon-sm text-error" aria-hidden="true">block</span>
+              <span class="text-body-medium text-on-surface">{item.mistake}</span>
+              <span class="font-mono text-label-medium text-on-surface-variant">
+                {item.example}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mb-12 text-body-small text-on-surface-variant">
+        Each is pinned by a <code class="font-mono">@ts-expect-error</code> in
+        <code class="font-mono">test/type/</code>. TypeScript reports an unused
+        directive, so a green typecheck is the proof that they still fail.
+      </p>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        What you give up
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        Written plainly, because you will find all of it out anyway:
+      </p>
+      <div class="tablewrap mb-12 overflow-x-auto">
+        <table class="w-full text-body-medium">
+          <tbody class="divide-y divide-outline-variant">
+            <tr>
+              <td class="py-3 pr-6 align-top text-on-surface">Speed</td>
+              <td class="py-3 text-on-surface-variant">
+                2.0 is slower than Luq 1.x on flat and nested shapes — three to
+                nine times, measured head to head. Arrays and JSON Schema are
+                faster. The numbers are on
+                <a class="text-primary underline underline-offset-2" href="/benchmarks"
+                  >the benchmarks page</a
+                >. No figure for any other library is published here, because
+                this repository has not measured one.
+              </td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-6 align-top text-on-surface">Ecosystem</td>
+              <td class="py-3 text-on-surface-variant">
+                zod has years of integrations, recipes and answered questions.
+                Luq has a Standard Schema adapter and this site.
+              </td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-6 align-top text-on-surface">Adoption</td>
+              <td class="py-3 text-on-surface-variant">
+                Small enough that you will find bugs nobody has hit yet. The
+                gates in this repository are the reason to think there are fewer
+                of them, not a promise that there are none.
+              </td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-6 align-top text-on-surface">Inference</td>
+              <td class="py-3 text-on-surface-variant">
+                Luq will not hand you a type. That is the point of the
+                direction, but it means there is nothing to reach for when you
+                genuinely have no type yet.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        It is not either/or at the boundary
+      </h2>
+      <p class="mb-6 text-body-large text-on-surface-variant">
+        Luq implements Standard Schema v1, so anything that accepts one — tRPC,
+        TanStack Form, Hono, t3-env — takes a Luq validator wherever it takes a
+        zod schema. Using both in one codebase is a normal outcome, not a
+        migration failure.
+      </p>
+      <CodeBlock code={bothSample} language="typescript" fileName="standard-schema.ts" />
+
+      <div class="mt-12 flex flex-col gap-3 sm:flex-row">
+        <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
+          Get started
+        </a>
+        <a href="/benchmarks" class="md-button md-button-outlined md-state-layer md-focus-ring">
+          See the measurements
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>

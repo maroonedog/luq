@@ -24,27 +24,32 @@ import type { IssueSeverity } from "../types";
 
 export interface PresenceDeclaration {
   readonly isRequired: boolean;
-  readonly allowsNull: boolean;
   readonly severity: IssueSeverity;
 }
 
 /**
- * A field that may be absent AND may be null needs no rule at all: that is
- * OPEN_PRESENCE, the policy a field with no presence rule already carries.
+ * The rule is emitted even when it forbids nothing, because it carries
+ * `nullIsValue` and that is not a permission — it is the statement that null
+ * has to be JUDGED here rather than settled by presence. A subject with no
+ * presence rule carries OPEN_PRESENCE, which ends the field on null before a
+ * single check runs; under Draft-07 that is wrong, because `false`,
+ * `{"not": {}}` and an `enum` without null all forbid null while saying
+ * nothing about `type`. Null therefore goes to the checks, and `type`
+ * (declare-value-keywords.ts) is what rejects it when the document says so —
+ * one answer instead of two that have to agree.
  */
 export function declarePresenceRules(
   declaration: PresenceDeclaration
 ): readonly Rule[] {
-  if (!declaration.isRequired && declaration.allowsNull) {
-    return Object.freeze([]);
-  }
   return Object.freeze([
     presence({
       code: declaration.isRequired ? "required" : "type",
       severity: declaration.severity,
       allowUndefined: !declaration.isRequired,
-      allowNull: declaration.allowsNull,
+      // Unreachable for null while nullIsValue is true; `type` decides.
+      allowNull: true,
       emptyStringIsMissing: false,
+      nullIsValue: true,
       describe: (messageContext) =>
         declaration.isRequired
           ? `${messageContext.path} is required`

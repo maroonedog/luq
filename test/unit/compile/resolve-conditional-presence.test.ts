@@ -44,6 +44,9 @@ describe("resolveConditionalPresence", () => {
     expect(override?.whenMet).toEqual({
       code: "optionalIf",
       severity: "error",
+      // 条件付き presence はビルダーの機能で、文書は関わらない。null は
+      // ここでは値ではなく不在のままである。
+      nullIsValue: false,
       allowUndefined: true,
       allowNull: true,
       emptyStringIsMissing: false,
@@ -52,6 +55,7 @@ describe("resolveConditionalPresence", () => {
     expect(override?.whenUnmet).toEqual({
       code: "optionalIf",
       severity: "error",
+      nullIsValue: false,
       allowUndefined: false,
       allowNull: false,
       emptyStringIsMissing: true,

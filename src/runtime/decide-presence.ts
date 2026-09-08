@@ -34,7 +34,8 @@ export function decidePresence(
   const policy = selectPolicy(field, ruleContext);
   const isMissing =
     value === undefined || (policy.emptyStringIsMissing && value === "");
-  if (!isMissing && value !== null) return true;
+  // null continues to the checks when the subject says null is a value.
+  if (!isMissing && (value !== null || policy.nullIsValue)) return true;
   const isAllowed = isMissing ? policy.allowUndefined : policy.allowNull;
   return reportUnlessAllowed(policy, isAllowed, value, ruleContext.path, sink);
 }

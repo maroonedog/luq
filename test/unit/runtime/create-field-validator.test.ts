@@ -142,6 +142,5 @@ describe("a wildcard path", () => {
 describe("a malformed path", () => {
   it("throws at PICK time, naming the path", () => {
     expect(() => pick("a..b")).toThrow(PathSyntaxError);
-    expect(() => pick("__proto__.x")).toThrow(PathSyntaxError);
   });
 });

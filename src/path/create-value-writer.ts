@@ -57,9 +57,37 @@ function writeInto(
  * conjure an array — the declaration grammar cannot express `items[0]`, so a
  * numeric key here is a Record key.
  */
+/**
+ * キーを own プロパティとして置く。**代入演算子を使わない。**
+ *
+ * `copy[key] = value` は key が "__proto__" のとき Object.prototype の
+ * アクセサ (setter) を呼び、own プロパティを作る代わりにプロトタイプを
+ * 差し替えてしまう。defineProperty はアクセサを見ずに own プロパティを
+ * 定義するので、"__proto__" という名前のプロパティを安全に持てる。
+ *
+ * "constructor" と "prototype" は Object.prototype 上でデータプロパティ
+ * なので代入でも own プロパティになるが、キーごとに分岐すると分岐のほうを
+ * 間違えるので一律にこちらを通す。
+ *
+ * これが「宣言パスに __proto__ を書けるようにする」の前提。書き込みが安全に
+ * なったので、パス文法の側で拒否する必要が無くなった (reserved-segment.ts)。
+ */
+function putOwnProperty(
+  target: Record<string, unknown>,
+  key: string,
+  value: unknown
+): void {
+  Object.defineProperty(target, key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
+}
+
 function vivify(key: string, written: unknown): Record<string, unknown> {
   const created: Record<string, unknown> = {};
-  created[key] = written;
+  putOwnProperty(created, key, written);
   return created;
 }
 
@@ -75,7 +103,9 @@ function copyWith(
     copy[index] = value;
     return copy;
   }
+  // スプレッドは own の列挙可能プロパティを CreateDataProperty で写すので、
+  // ここでは setter は動かない。危ないのは下の代入だけ。
   const copy: Record<string, unknown> = { ...container };
-  copy[key] = value;
+  putOwnProperty(copy, key, value);
   return copy;
 }

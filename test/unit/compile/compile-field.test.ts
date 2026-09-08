@@ -158,8 +158,8 @@ describe("compileField rejects a malformed path at BUILD time", () => {
     expect(() => compileAt("profile..name", [])).toThrow(/profile\.\.name/);
   });
 
-  it("refuses a reserved segment", () => {
-    expect(() => compileAt("__proto__.polluted", [])).toThrow(PathSyntaxError);
+  it("__proto__ を含むパスも受け付ける（汚染は書き込み側で閉じている）", () => {
+    expect(() => compileAt("__proto__.polluted", [])).not.toThrow();
   });
 
   it("refuses a wildcard template: a single value cannot come from many", () => {

@@ -65,7 +65,7 @@ describe("generatePackageExports", () => {
     });
   });
 
-  it("プラグイン0件でも固定キー7件を書き込む", () => {
+  it("プラグイン0件でも固定キー8件を書き込む", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       generatePackageExports(root);
       expect(Object.keys(readPublishedExportMap(root))).toEqual([
@@ -75,6 +75,7 @@ describe("generatePackageExports", () => {
         "./plugin-kit",
         "./field-rule",
         "./async",
+        "./standard-schema",
         "./plugins",
       ]);
     });

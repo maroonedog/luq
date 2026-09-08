@@ -101,12 +101,12 @@ describe("createValueReader — template validation is a BUILD-time gate", () =>
     );
   });
 
-  it("refuses a hand-built template carrying a reserved key", () => {
+  it("手で組んだテンプレートに __proto__ があっても受け付ける（読みは own のみ）", () => {
     expect(() =>
       createValueReader([
         { kind: "key", key: "a" },
         { kind: "key", key: "__proto__" },
       ])
-    ).toThrow(PathSyntaxError);
+    ).not.toThrow();
   });
 });

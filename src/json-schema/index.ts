@@ -17,6 +17,7 @@ export {
   isDefinitionContainer,
   readRefPointer,
   resolveSchemaNode,
+  resolveSchemaNodeInScope,
   toSchemaObject,
 } from "./collect-definitions";
 
@@ -51,7 +52,12 @@ export type {
   StructuralKeyword,
 } from "./structural-expansion.types";
 
-export { RefResolutionError, isResolvableRef, resolveRef } from "./resolve-ref";
+export { RefResolutionError } from "./ref-resolution-error";
+export { isResolvableRef, resolveRef, resolveRefInScope } from "./resolve-ref";
+export type { RefScope } from "./ref-scope";
+export { createDocumentScope, createLocalScope } from "./ref-scope";
+export type { SchemaRegistry } from "./schema-registry";
+export { createSchemaRegistry } from "./schema-registry";
 export { UnsupportedKeywordError } from "./unsupported-keyword-error";
 export { isDraft07Schema, isSchemaObject } from "./draft07.types";
 export type {

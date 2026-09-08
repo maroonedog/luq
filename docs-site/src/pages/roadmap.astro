@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import { conformance } from '../data/conformance';
 
 /**
  * This page replaces the 1.x roadmap, which advertised a `.luq` universal-platform
@@ -30,9 +31,9 @@ const shipped = [
   },
   {
     icon: 'schema',
-    headline: '89.13% of the Draft-07 suite',
+    headline: `${conformance.percent}% of the Draft-07 suite`,
     detail:
-      '828 of 929 required cases, with skipped cases counted as failures. A validator that always said yes would score 59.31%; 1.x scored 57.70%.',
+      `${conformance.passingCases} of ${conformance.caseCount} required cases, with skipped cases counted as failures. A validator that always said yes would score ${conformance.trivialPercent}%; 1.x scored 57.70%.`,
     href: '/json-schema',
     linkLabel: 'See the breakdown',
   },
@@ -61,6 +62,14 @@ const shipped = [
     linkLabel: 'Get started',
   },
   {
+    icon: 'cable',
+    headline: 'Standard Schema v1',
+    detail:
+      'toStandardSchema() on the @maroonedog/luq/standard-schema subpath, so anything that accepts a Standard Schema — tRPC, TanStack Form, Hono, t3-env — accepts a Luq validator. A subpath rather than part of build(), because carrying it on every validator costs 312 B gzipped.',
+    href: '/docs/getting-started#standard-schema',
+    linkLabel: 'How to use it',
+  },
+  {
     icon: 'account_tree',
     headline: 'Paths that name the real index',
     detail:
@@ -76,59 +85,54 @@ const shipped = [
  * thing that would fix it. The counts are the measured case counts. No dates:
  * none of these is scheduled.
  */
-const namedOpenWork = [
+// このページが「未対応」として並べていた9項目は、すべて解消した。
+// 表を空のまま残すより、何がどう消えたかを残すほうが読者の役に立つので、
+// 同じ形で「何が閉じたか」を並べる。件数はそのとき落ちていたケース数。
+const closedWork = [
   {
-    id: 'feature:external-ref-loader',
+    id: 'External and remote $ref',
     cases: 57,
-    what: 'Resolve external and remote $ref. A loader that touches the network is not a default a validation library should carry, so this is a design question before it is a task.',
+    what: 'Resolved against a map of documents the caller already has. Luq does not fetch: a URI written in a schema can never make the process open a socket, and conversion stays synchronous.',
   },
   {
-    id: 'feature:json-pointer-escaping',
-    cases: 9,
-    what: 'JSON pointers containing ~0, ~1, %25 or an empty token.',
-  },
-  {
-    id: 'feature:tuple-items-and-additional-items',
-    cases: 6,
-    what: 'The array form of items combined with additionalItems.',
-  },
-  {
-    id: 'feature:document-driven-presence',
-    cases: 5,
-    what: 'Let a document express whether null is permitted. Today a plugin build() returns one rule, and presence is settled before any rule runs, so the caller writes .optional() themselves.',
-  },
-  {
-    id: 'feature:additional-properties-with-patterns',
-    cases: 3,
-    what: 'Make additionalProperties consult patternProperties instead of over-rejecting.',
-  },
-  {
-    id: 'feature:ref-identifier-scope',
-    cases: 3,
-    what: 'Base URIs established by $id, and #anchor.',
-  },
-  {
-    id: 'feature:code-point-string-length',
-    cases: 2,
-    what: 'Count minLength / maxLength in code points rather than UTF-16 code units.',
-  },
-  {
-    id: 'feature:ref-chain-resolution',
-    cases: 1,
-    what: 'Collect the rules behind a second-hop $ref.',
-  },
-  {
-    id: 'feature:boolean-sub-schema',
-    cases: 1,
-    what: 'Accept true / false as a sub-schema in its own right.',
-  },
-];
-
-const decidedAgainst = [
-  {
-    id: 'decision:reserved-path-segments',
+    id: '__proto__ in a declared path',
     cases: 14,
-    what: '__proto__ as a segment of a declared path. Refused on purpose, so that prototype pollution is unreachable. This is not open work and will not be “fixed”.',
+    what: 'Declarable, and prototype pollution still unreachable — the writer uses Object.defineProperty, so __proto__ is a key rather than a setter. Conformance and safety turned out not to be a trade.',
+  },
+  {
+    id: 'JSON pointer escaping',
+    cases: 9,
+    what: 'The whole fragment is percent-decoded before it is split, which is the order RFC 6901 §6 specifies.',
+  },
+  {
+    id: 'Tuple items with additionalItems',
+    cases: 6,
+    what: 'A branch no longer re-follows the $ref that created it, so a $ref inside a tuple position produces rules instead of silently producing none.',
+  },
+  {
+    id: 'null reaching a rule',
+    cases: 5,
+    what: 'Inside a sub-schema, null is a VALUE rather than an absence presence settles first. false, {"not":{}} and an enum without null all forbid null while saying nothing about type.',
+  },
+  {
+    id: 'additionalProperties with patternProperties',
+    cases: 3,
+    what: 'The plugin takes the patterns as well as the declared keys, so it no longer over-rejects a key a pattern already matched.',
+  },
+  {
+    id: 'Base URIs from $id, and anchors',
+    cases: 3,
+    what: 'A $ref is a URI reference, so resolution carries the base in force and an index of what a URI can name — not just the root document.',
+  },
+  {
+    id: 'Code-point string length',
+    cases: 2,
+    what: 'minLength / maxLength count code points, not UTF-16 code units.',
+  },
+  {
+    id: 'Second-hop $ref, and boolean sub-schemas',
+    cases: 2,
+    what: 'The same one-line fix as tuple items: the recursion guard was stopping itself.',
   },
 ];
 
@@ -140,9 +144,9 @@ const knownWeaknesses = [
     href: '/benchmarks#against-1x',
   },
   {
-    title: 'A recursive $ref stops after the first iteration',
+    title: 'A recursive $ref is unrolled three times, and then stops',
     detail:
-      'No required suite case covers it, so it does not show up in the conformance figure — but a depth like tree.child.name is not validated. It is a real gap, recorded rather than hidden behind a number.',
+      'A mutually recursive schema has infinitely many declared paths, so the expansion is bounded. Unrolling further is exponential in the number of definitions in the cycle: a three-way cycle builds in 17 ms at one unroll, 55 ms at two, 538 ms at three and 9.3 s at four. Three is what the official corpus needs. Past that depth a document is not checked — the same silence as before, moved further out rather than removed.',
     href: '/json-schema#not-supported',
   },
   {
@@ -156,7 +160,7 @@ const knownWeaknesses = [
 
 <BaseLayout
   title="Roadmap"
-  description="What has shipped in this alpha, what is measured as missing and named in the source, and why the 1.x universal-platform roadmap has been withdrawn."
+  description="What has shipped in 2.0, what is measured as missing and named in the source, and why the 1.x universal-platform roadmap has been withdrawn."
 >
   <Header />
   <MobileMenuOverlay navItems={navItems} />
@@ -164,7 +168,7 @@ const knownWeaknesses = [
   <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
     <header class="mb-12">
-      <p class="mb-2 text-label-large text-primary">Alpha</p>
+      <p class="mb-2 text-label-large text-primary">2.0</p>
       <h1 class="mb-4 text-display-small text-on-surface">Roadmap</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
         This page carries no dates. Everything below is either measured and shipped, or measured as
@@ -208,14 +212,13 @@ const knownWeaknesses = [
 
     <!-- ================= Named open work ================= -->
     <section id="open-work" class="mb-16 scroll-mt-24">
-      <h2 class="mb-2 text-headline-medium text-on-surface">What is not done</h2>
+      <h2 class="mb-2 text-headline-medium text-on-surface">What this page used to list as missing</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        Each row is a real identifier in the repository. Every failing conformance case names the
-        feature that would resolve it, from a closed string union — so a gap cannot be recorded
-        without saying what closes it, and it cannot quietly disappear either: if a case starts
-        passing while it is still listed, the build fails.
-        <strong class="text-on-surface"> None of these is scheduled.</strong> They are listed so a
-        reader can tell whether the thing they need is missing, not so anyone can plan around a date.
+        Nine rows, and all nine are closed — the Draft-07 corpus now passes
+        <strong class="text-on-surface">929 of 929</strong>. They are kept here rather than deleted,
+        because a roadmap that only ever shows what is left tells you nothing about whether the
+        things on it actually get done. The real remaining weaknesses are further down, and the
+        first of them is speed.
       </p>
 
       <div class="md-card md-card-outlined overflow-hidden">
@@ -223,14 +226,14 @@ const knownWeaknesses = [
           <table class="w-full min-w-[46rem] border-collapse text-body-medium">
             <thead>
               <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
-                <th class="px-4 py-3 text-left font-medium">Named in the source as</th>
+                <th class="px-4 py-3 text-left font-medium">What was missing</th>
                 <th class="px-4 py-3 text-right font-medium">Suite cases</th>
-                <th class="px-4 py-3 text-left font-medium">What it would do</th>
+                <th class="px-4 py-3 text-left font-medium">What closed it</th>
               </tr>
             </thead>
             <tbody>
               {
-                namedOpenWork.map((row) => (
+                closedWork.map((row) => (
                   <tr class="border-b border-outline-variant/60 last:border-0">
                     <td class="whitespace-nowrap px-4 py-3 align-top font-mono text-body-small text-on-surface">
                       {row.id}
@@ -249,29 +252,21 @@ const knownWeaknesses = [
         </div>
       </div>
 
-      <h3 class="mb-3 mt-8 text-title-large text-on-surface">Decided against, not pending</h3>
-      <div class="md-card md-card-filled overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[46rem] border-collapse text-body-medium">
-            <tbody>
-              {
-                decidedAgainst.map((row) => (
-                  <tr>
-                    <td class="whitespace-nowrap px-4 py-4 align-top font-mono text-body-small text-on-surface">
-                      {row.id}
-                    </td>
-                    <td class="px-4 py-4 text-right align-top font-mono text-on-surface">
-                      {row.cases}
-                    </td>
-                    <td class="px-4 py-4 align-top text-body-small text-on-surface-variant">
-                      {row.what}
-                    </td>
-                  </tr>
-                ))
-              }
-            </tbody>
-          </table>
-        </div>
+      <h3 class="mb-3 mt-8 text-title-large text-on-surface">
+        A refusal that turned out not to be necessary
+      </h3>
+      <div class="md-card md-card-filled p-6">
+        <p class="text-body-medium text-on-surface-variant">
+          This page used to record <code>__proto__</code> in a declared path as decided against —
+          refused on purpose, so prototype pollution stayed unreachable, and 14 suite cases lost on
+          purpose with it. That was the wrong reading of the problem. Only ASSIGNMENT reaches
+          <code>Object.prototype</code>'s setter; writing the key with
+          <code>Object.defineProperty</code> creates an own property and touches nothing. The
+          refusal is gone, the 14 cases pass, and
+          <code>test/unit/path/prototype-pollution.test.ts</code> proves both halves — that
+          <code>__proto__</code> is declarable, and that <code>Object.prototype</code> is still
+          clean afterwards. Reverting the write back to an assignment makes it fail.
+        </p>
       </div>
     </section>
 
@@ -280,7 +275,7 @@ const knownWeaknesses = [
       <h2 class="mb-2 text-headline-medium text-on-surface">Where this release is weak</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         Not everything unfinished is a JSON Schema keyword. These are the things a reader deserves
-        to know before adopting the alpha.
+        to know before adopting 2.0.
       </p>
 
       <div class="space-y-4">

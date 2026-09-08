@@ -15,6 +15,10 @@ import type {
   Unchanged,
 } from "../../plugin-kit/marker.types";
 import type { UnexpectedPropertiesExtra } from "./object-additional-properties";
+import {
+  compilePatterns,
+  selectAdditionalKeys,
+} from "./select-additional-keys";
 
 /**
  * WHICH argument positions carry a sub-chain cannot be recovered from a
@@ -28,6 +32,7 @@ export const objectAdditionalPropertiesSchemaPlugin =
     args: readonly [
       schema: PropertyValueChain,
       allowedProperties?: readonly string[],
+      allowedPatterns?: readonly string[],
     ];
     out: Unchanged;
     context: UnexpectedPropertiesExtra;
@@ -35,10 +40,11 @@ export const objectAdditionalPropertiesSchemaPlugin =
     name: "objectAdditionalPropertiesSchema",
     method: "additionalPropertiesSchema",
     slots: ["object"] as const,
-    build: (ctx, schema, allowedProperties) => {
+    build: (ctx, schema, allowedProperties, allowedPatterns) => {
       const known: ReadonlySet<string> = new Set(
         allowedProperties ?? ctx.declaredSiblingKeys
       );
+      const patterns = compilePatterns(allowedPatterns);
       const branches: readonly CompositeBranch[] = [
         branch("additional", schema),
       ];
@@ -49,7 +55,7 @@ export const objectAdditionalPropertiesSchemaPlugin =
         branches,
         combine: (runners) => (value, runCtx) => {
           if (!isPlainObject(value)) return PASS;
-          const extra = Object.keys(value).filter((key) => !known.has(key));
+          const extra = selectAdditionalKeys(value, known, patterns);
           if (extra.length === 0) return PASS;
           const runner = runners[0];
           if (runner === undefined) return PASS;

@@ -246,6 +246,35 @@ import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
 // through three subpaths — a difference of 1 byte, 0.01%.
 import { stringEmailPlugin } from '@maroonedog/luq/plugins';`;
 
+const standardSchemaExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
+import { toStandardSchema } from '@maroonedog/luq/standard-schema';
+
+type Account = { handle: string };
+
+const standard = toStandardSchema(
+  Builder()
+    .use(requiredPlugin)
+    .use(stringMinPlugin)
+    .for<Account>()
+    .v('handle', (b) => b.string.required().min(2))
+    .build()
+);
+
+// Still the Validator — validate, parse, pick and pickAll are all there —
+// and now also a Standard Schema v1, so tRPC / TanStack Form / Hono / t3-env
+// take it wherever they take a zod schema.
+const outcome = standard['~standard'].validate({ handle: 'j' });
+
+if (outcome.issues === undefined) {
+  console.error(outcome.value.handle);
+} else {
+  for (const issue of outcome.issues) {
+    console.error(issue.message, issue.path);
+  }
+}`;
+
 const tableOfContents = [
   { id: 'installation', title: 'Installation', level: 2 },
   { id: 'typescript-configuration', title: 'TypeScript configuration', level: 3 },
@@ -258,6 +287,7 @@ const tableOfContents = [
   { id: 'nested-fields-and-arrays', title: 'Nested fields and arrays', level: 2 },
   { id: 'messages-codes-and-severity', title: 'Messages, codes and severity', level: 2 },
   { id: 'importing-plugins', title: 'Importing plugins', level: 2 },
+  { id: 'standard-schema', title: 'Standard Schema', level: 2 },
   { id: 'next-steps', title: 'Next steps', level: 2 },
 ];
 ---
@@ -304,7 +334,8 @@ const tableOfContents = [
         <h2 id="installation" class="mt-12 text-headline-small">Installation</h2>
 
         <p class="mt-3 text-body-large">
-          This is an alpha release, so the tag is part of the install line.
+          The published version is 2.0.0, on the default tag. The 0.1.x line is a
+          different library and is not upgraded into.
         </p>
 
         <div class="mt-4">
@@ -567,6 +598,37 @@ type ValidationIssue = {
           The root <code>@maroonedog/luq</code> entry exports the builder and the types — it
           deliberately exports no plugins at all, which is why the bare builder gzips to
           7,420&nbsp;B and a plugin costs 129–224&nbsp;B to add.
+        </p>
+
+        <h2 id="standard-schema" class="mt-12 text-headline-small">Standard Schema</h2>
+
+        <p class="mt-3 text-body-large">
+          Luq implements <a
+            class="text-primary underline underline-offset-2"
+            href="https://standardschema.dev">Standard Schema v1</a>, on the
+          <code>@maroonedog/luq/standard-schema</code> subpath.
+        </p>
+
+        <CodeBlock code={standardSchemaExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          Three things the spec leaves to the vendor, decided here:
+          <code>validate</code> runs <code>parse()</code> rather than
+          <code>validate()</code>, because the spec's success value is the value
+          <em>after</em> validation and only <code>parse()</code> applies a
+          transform; it collects every issue instead of stopping at the first,
+          because the consumer of this seam is a form and one-at-a-time errors
+          make a bad one; and <code>InferInput</code> resolves to the type you
+          wrote in <code>.for&lt;T&gt;()</code>, not a type read back out of a
+          schema value.
+        </p>
+
+        <p class="mt-4 text-body-large">
+          It is a subpath rather than something <code>build()</code> always
+          carries, and the reason is measured: putting <code>~standard</code> on
+          every validator costs 312&nbsp;B gzipped on a 7,420&nbsp;B core —
+          4.2% charged to everyone, including everyone who never passes a
+          validator to tRPC.
         </p>
 
         <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>

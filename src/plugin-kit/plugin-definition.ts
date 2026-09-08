@@ -40,6 +40,8 @@ export interface PluginDefinition<
    * resolves exactly those positions to `readonly Rule[]` before build() runs.
    */
   readonly subChainArguments?: readonly number[];
+  /** See PluginSpec.judgesNull. Read by src/chain/create-chain-node.ts. */
+  readonly judgesNull?: boolean;
   readonly signature?: TSig;
 }
 
@@ -61,6 +63,19 @@ export interface PluginSpec<
   readonly slots: TSlots;
   readonly build: PluginBuild<TSig>;
   readonly subChainArguments?: readonly number[];
+  /**
+   * True when this plugin's rule must be given `null` to judge, instead of
+   * presence settling it first.
+   *
+   * A field with no presence rule carries OPEN_PRESENCE, which ENDS the field
+   * on null before a single check runs. For most plugins that is right —
+   * `.min(3)` has no business firing on a value the schema said may be
+   * absent. It is wrong for a plugin that carries a whole document: a JSON
+   * Schema says whether null is allowed, and `false`, `{"not":{}}` and an
+   * `enum` without null all forbid it while saying nothing about `type`.
+   * Without this, `.jsonSchemaFullFeature({"type":"string"})` accepted null.
+   */
+  readonly judgesNull?: boolean;
 }
 
 /** Curried: the signature is explicit, the identity literals are inferred. */
@@ -76,6 +91,7 @@ export function definePlugin<TSig extends PluginSignature>(): <
     method: spec.method,
     slots: spec.slots,
     build: spec.build,
+    judgesNull: spec.judgesNull,
     // Only present when the plugin declared one, so a plugin that takes no
     // sub-chain keeps exactly the four members it always had.
     ...(spec.subChainArguments === undefined

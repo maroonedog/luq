@@ -1,6 +1,5 @@
 import { createValueWriter } from "../../../src/path/create-value-writer";
 import { parseFieldPath } from "../../../src/path/parse-field-path";
-import { PathSyntaxError } from "../../../src/path/reserved-segment";
 
 function writerFor(
   path: string
@@ -106,11 +105,11 @@ describe("createValueWriter — vivification", () => {
 });
 
 describe("createValueWriter — prototype safety", () => {
-  it("refuses a reserved segment at build time", () => {
-    expect(() => writerFor("__proto__.polluted")).toThrow(PathSyntaxError);
+  it("__proto__ を含むパスでも書ける（汚染しないことは prototype-pollution.test.ts）", () => {
+    expect(() => writerFor("__proto__.polluted")).not.toThrow();
     expect(() =>
       createValueWriter([{ kind: "key", key: "constructor" }])
-    ).toThrow(PathSyntaxError);
+    ).not.toThrow();
   });
 
   it("cannot pollute Object.prototype through any accepted path", () => {

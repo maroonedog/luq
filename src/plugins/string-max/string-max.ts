@@ -8,7 +8,7 @@ import {
   definePlugin,
 } from "../../plugin-kit/plugin-definition";
 import type { Unchanged } from "../../plugin-kit/marker.types";
-import { PASS, fail, isNumber, isString } from "../../types";
+import { PASS, fail, isNumber, countCodePoints, isString } from "../../types";
 
 /** The members `.max()` adds to the message context. Legacy name preserved. */
 export interface StringMaxContext {
@@ -33,9 +33,9 @@ export const stringMaxPlugin = /*#__PURE__*/ definePlugin<{
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
       run: (value) =>
-        !isString(value) || value.length <= max
+        !isString(value) || countCodePoints(value) <= max
           ? PASS
-          : fail({ expected: max, actual: value.length }),
+          : fail({ expected: max, actual: countCodePoints(value) }),
       describe: (detail) =>
         `String must have at most ${String(max)} characters, but got ` +
         `${String(detail.actual)}`,

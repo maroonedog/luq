@@ -10,7 +10,18 @@
 
 </div>
 
-Luq takes a type you wrote — not a schema you rewrote — and lets you declare
+Your types were probably not written by you. `openapi-typescript` generates
+them from a spec you do not own. Prisma and Drizzle generate them from the
+schema of record. protobuf and GraphQL codegen generate them for services in
+four languages at once. Increasingly, a model generates the code that uses them.
+
+A validator whose schema is the source of truth assumes you are the one who
+decides the shape. When you are not, it asks you to write that shape a second
+time and keep the copy in step by hand — and nothing checks that the two still
+agree. They drift, and the first sign is a value that passed the copy and does
+not fit the original.
+
+Luq runs the other way. It takes the type you already have and lets you declare
 rules against its field paths. What makes those declarations worth writing is
 that the compiler checks them against the type: a rule that does not apply to
 the field it is written on is a compile error, not a rule that quietly never
@@ -197,16 +208,77 @@ Measured Draft-07 conformance against the official
 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
 (required tests only, skipped cases counted as **failures**):
 
-**828 / 929 = 89.13%.** A validator that returned `true` unconditionally would
-score 551 / 929 = 59.31% on this corpus, which is the number the 89% should be
-read against. Full breakdown, including every one of the 101 failures:
+**929 / 929 = 100.00%.** Read that against the floor, not against zero: a
+validator that returned `true` unconditionally scores 551 / 929 = 59.31% on
+this corpus. The skip list is empty, and its `cause` union is `never`, so
+excluding a case again means adding a name to a type. Full breakdown, including
+what closed each cause and what is still bounded:
 [docs/json-schema-conformance.md](docs/json-schema-conformance.md).
+
+External `$ref` resolves against a map of documents **you** already have —
+`jsonSchemaFullFeature(document, { externalDocuments })`. Luq never fetches, so
+a URI written in a schema cannot make the process open a socket, conversion
+stays synchronous, and nothing is evaluated.
 
 `jsonSchemaFullFeature` bundles 49 plugins so one import covers a whole
 document. `@maroonedog/luq/plugins/jsonSchema` adds a chain method instead, so a
 single declared field can be constrained by a document; it takes the plugin bag
 explicitly. It is billed as the tree-shakeable half, and measured below, it is
 not — use it for the chain method, not to save bytes.
+
+## Standard Schema
+
+Luq implements [Standard Schema v1](https://standardschema.dev). Anything that
+accepts a Standard Schema — tRPC, TanStack Form, Hono, t3-env — accepts a Luq
+validator wherever it accepts a zod schema.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { toStandardSchema } from "@maroonedog/luq/standard-schema";
+
+type Account = { handle: string };
+
+const standard = toStandardSchema(
+  Builder()
+    .use(requiredPlugin)
+    .use(stringMinPlugin)
+    .for<Account>()
+    .v("handle", (b) => b.string.required().min(2))
+    .build()
+);
+
+// `standard` is still the Validator — `validate`, `parse`, `pick` and `pickAll`
+// are all there — and it now also satisfies Standard Schema v1, so it can be
+// handed to tRPC, TanStack Form, Hono or t3-env unchanged.
+const outcome = standard["~standard"].validate({ handle: "j" });
+
+if (outcome.issues === undefined) {
+  console.error(outcome.value.handle);
+} else {
+  for (const issue of outcome.issues) {
+    console.error(issue.message, issue.path);
+  }
+}
+```
+
+Three decisions the spec leaves open, made explicit here:
+
+- `validate` calls Luq's `parse()`, not `validate()`. The spec's success result
+  is `{ value: Output }`, and `Output` is the value *after* validation — so a
+  `transform` has to be applied, and only `parse()` applies it.
+- It collects every issue rather than stopping at the first. The consumer of
+  this seam is a form, and returning one issue at a time produces a UI where
+  fixing an error reveals the next one. Callers who want the fast path use the
+  `Validator` directly.
+- `InferInput` is the type you wrote in `.for<T>()`, not a type inferred back
+  out of a schema value.
+
+It is a subpath, not part of `build()`. Measured: the core gzips to 7,420 B and
+carrying `~standard` on every validator adds 312 B — 4.2% charged to everyone,
+including the people who never pass a validator to tRPC. Importing the subpath
+costs those 312 B only when you import it, and nothing when you don't.
 
 ## Your own rules
 
@@ -392,8 +464,8 @@ the 84 keys** against the published declarations under **both** `node16` and
   every subpath, method and slot
 - **[Breaking changes from 1.x](docs/migration/breaking-changes.md)** — every
   incompatibility with the fix beside it
-- **[Draft-07 conformance](docs/json-schema-conformance.md)** — the 89.13% and
-  all 101 failures
+- **[Draft-07 conformance](docs/json-schema-conformance.md)** — the 100% and
+  what closed each of the ten causes that used to fail
 
 ## About the "universal platform" goal
 

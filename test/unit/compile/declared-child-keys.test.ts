@@ -71,8 +71,8 @@ describe("indexDeclaredChildKeys", () => {
     );
   });
 
-  it("rejects a reserved segment", () => {
-    expect(() => indexDeclaredChildKeys(["__proto__.polluted"])).toThrow(
+  it("__proto__ を含む宣言も受け付ける", () => {
+    expect(() => indexDeclaredChildKeys(["__proto__.polluted"])).not.toThrow(
       PathSyntaxError
     );
   });

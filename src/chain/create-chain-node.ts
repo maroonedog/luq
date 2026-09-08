@@ -25,6 +25,7 @@ import type {
 } from "../types";
 import type { ResolvedGlobalConfig } from "../types/global-config";
 import type { Rule } from "../plugin-kit/compiled-rule";
+import { presence } from "../plugin-kit/create-rule";
 import type { RuleBuildContext } from "../plugin-kit/rule-build-context";
 import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import type { PluginBag } from "./plugin-bag.types";
@@ -88,6 +89,24 @@ function buildRuleContext(
   };
 }
 
+/**
+ * The presence rule a `judgesNull` plugin brings with it. It forbids
+ * NOTHING — it only says that null must reach the checks instead of ending
+ * the field, which is the one thing a check cannot say for itself.
+ */
+function nullIsAValue(severity: IssueSeverity): Rule {
+  return presence({
+    code: "type",
+    severity,
+    allowUndefined: true,
+    allowNull: true,
+    emptyStringIsMissing: false,
+    nullIsValue: true,
+    describe: (messageContext) => `${messageContext.path} must not be null`,
+    buildMessageContext: () => ({}),
+  });
+}
+
 function createSlotMethod(
   wiring: ChainNodeWiring,
   slot: TypeName,
@@ -102,7 +121,11 @@ function createSlotMethod(
       buildRuleContext(wiring, plugin, rawOptions),
       ...resolved
     );
-    return createChainNode(wiring, slot, [...rules, rule]);
+    const added =
+      plugin.judgesNull === true
+        ? [nullIsAValue(wiring.context.config.defaultSeverity), rule]
+        : [rule];
+    return createChainNode(wiring, slot, [...rules, ...added]);
   };
 }
 

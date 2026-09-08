@@ -45,8 +45,9 @@ import {
   NotASchemaError,
   collectSubSchemaRules,
   createStructuralContext,
+  createDocumentScope,
   isDraft07Schema,
-  resolveSchemaNode,
+  resolveSchemaNodeInScope,
   type Draft07Schema,
   type JsonSchemaBag,
 } from "../../index";
@@ -68,6 +69,26 @@ const SCHEMA_SLOTS: readonly TypeName[] = [
 export const SCHEMA_BRANCH_LABEL = "schema";
 
 /**
+ * What the converter may reach beyond the document itself.
+ *
+ * `externalDocuments` is a MAP, deliberately, and not a loader function:
+ *   * Luq never opens a socket, so a schema cannot make the process fetch a
+ *     URL it names (SSRF) — what can be read is written in the caller's code;
+ *   * conversion stays synchronous, so `build()` keeps returning a validator
+ *     rather than a promise;
+ *   * nothing is evaluated, so the CSP guarantee is untouched.
+ * The caller fetches, reads from disk, or bundles — whichever is right for
+ * their deployment — and hands over what they already have.
+ */
+export interface JsonSchemaOptions {
+  readonly externalDocuments?: Readonly<Record<string, unknown>> | undefined;
+}
+
+const NO_EXTERNAL_DOCUMENTS: Readonly<Record<string, unknown>> = Object.freeze(
+  {}
+);
+
+/**
  * The document as a rule list over ONE subject. Exported because it is the
  * only part of this plugin the full-feature bundle needs, and because a test
  * can then count the rules a document produces without building a validator.
@@ -75,42 +96,65 @@ export const SCHEMA_BRANCH_LABEL = "schema";
 export function collectDocumentRules(
   ctx: RuleBuildContext<MessageContextExtra>,
   document: unknown,
-  bag: JsonSchemaBag
+  bag: JsonSchemaBag,
+  options: JsonSchemaOptions = {}
 ): readonly Rule[] {
   if (!isDraft07Schema(document)) throw new NotASchemaError(document);
   const root: Draft07Schema = document;
+  const scope = createDocumentScope(
+    root,
+    options.externalDocuments ?? NO_EXTERNAL_DOCUMENTS
+  );
   // The seed's `chain` is a ChainBuildContext, whose three members a
   // RuleBuildContext already carries. Written inline because naming the type
   // would mean importing src/chain, which tier `extension` forbids.
   const seed = {
     bag,
-    root,
+    scope,
     chain: {
       fieldPath: ctx.fieldPath,
       declaredSiblingKeys: ctx.declaredSiblingKeys,
       config: ctx.config,
     },
   };
-  const node = resolveSchemaNode(root, root);
-  const context = createStructuralContext(seed, node, []);
-  return collectSubSchemaRules(root, context);
+  const resolved = resolveSchemaNodeInScope(root, scope);
+  const context = createStructuralContext(
+    seed,
+    resolved.node,
+    [],
+    resolved.scope
+  );
+  // The branch subject carries its own null policy, like every sub-schema
+  // subject: collectSubSchemaRules puts it there. `judgesNull` on the plugin
+  // gets null as far as this composite; that policy gets it the rest of the
+  // way, into the document's own rules.
+  return collectSubSchemaRules(resolved.node, context);
 }
 
 export const jsonSchemaPlugin = /*#__PURE__*/ definePlugin<{
-  args: readonly [document: unknown, bag: JsonSchemaBag];
+  args: readonly [
+    document: unknown,
+    bag: JsonSchemaBag,
+    options?: JsonSchemaOptions,
+  ];
   out: Unchanged;
   context: MessageContextExtra;
 }>()({
   name: "jsonSchema",
+  // The document decides whether null is allowed, so null has to reach it.
+  judgesNull: true,
   method: "jsonSchema",
   slots: SCHEMA_SLOTS,
-  build: (ctx, document, bag) =>
+  build: (ctx, document, bag, options) =>
     composite({
       code: ctx.code,
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
       branches: [
-        branch(SCHEMA_BRANCH_LABEL, collectDocumentRules(ctx, document, bag)),
+        branch(
+          SCHEMA_BRANCH_LABEL,
+          collectDocumentRules(ctx, document, bag, options)
+        ),
       ],
       combine: (runners) => (value, runContext) =>
         runners[0]?.run(value, runContext) ?? PASS,

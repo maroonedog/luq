@@ -21,8 +21,8 @@ import {
   composeNot,
   composeOneOf,
 } from "./compose-keyword";
+import { declareAdditionalPropertiesSchema } from "./declare-additional-properties";
 import {
-  declareAdditionalPropertiesSchema,
   declareDependencies,
   declareObjectRules,
   declarePatternProperties,
