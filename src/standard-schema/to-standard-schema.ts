@@ -21,6 +21,7 @@ import type { Validator } from "../builder/validator.types";
 import type { ValidationIssue } from "../types";
 import type {
   StandardSchemaIssue,
+  StandardSchemaOptions,
   StandardSchemaResult,
 } from "./standard-schema.types";
 import { splitIssuePath } from "./split-issue-path";
@@ -42,7 +43,19 @@ const COLLECT_EVERY_ISSUE = {
 interface SynchronousStandardProps<T extends object, TParsed> {
   readonly version: 1;
   readonly vendor: string;
-  readonly validate: (value: unknown) => StandardSchemaResult<TParsed>;
+  /**
+   * 第2引数 options は仕様にある。Luq は今のところ読まないが、**受けること
+   * 自体に意味がある**: 引数の少ない関数は多い方に代入できてしまうので、
+   * 書かないと「仕様に合っている」と型が言うのに消費側の options が黙って
+   * 捨てられる。受けた上で無視しているのだと分かる形にしてある。
+   *
+   * libraryOptions に何を入れるかはベンダーごとの取り決めで、Luq はまだ
+   * 何も定義していない。定義したらここで読む。
+   */
+  readonly validate: (
+    value: unknown,
+    options?: StandardSchemaOptions | undefined
+  ) => StandardSchemaResult<TParsed>;
   readonly types?: { readonly input: T; readonly output: TParsed } | undefined;
 }
 

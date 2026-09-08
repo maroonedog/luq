@@ -14,6 +14,7 @@ export type {
   StandardSchemaTypes,
   StandardSchemaV1,
 } from "./standard-schema.types";
+export type { StandardSchemaOptions } from "./standard-schema.types";
 export type { IssuePathSegments } from "./split-issue-path";
 export { splitIssuePath } from "./split-issue-path";
 export type { StandardLuqSchema } from "./to-standard-schema";

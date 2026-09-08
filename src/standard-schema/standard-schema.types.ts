@@ -19,7 +19,8 @@ export interface StandardSchemaProps<Input = unknown, Output = Input> {
   readonly version: 1;
   readonly vendor: string;
   readonly validate: (
-    value: unknown
+    value: unknown,
+    options?: StandardSchemaOptions | undefined
   ) => StandardSchemaResult<Output> | Promise<StandardSchemaResult<Output>>;
   /**
    * 実行時には存在しない。型を運ぶためだけのメンバーで、仕様がそう定めている。
@@ -68,3 +69,11 @@ export type InferStandardInput<Schema extends StandardSchemaV1> = NonNullable<
 export type InferStandardOutput<Schema extends StandardSchemaV1> = NonNullable<
   Schema["~standard"]["types"]
 >["output"];
+
+/**
+ * validate の第2引数。仕様が定めているので受ける。
+ * libraryOptions はベンダーごとの追加パラメータで、Luq はまだ何も定義していない。
+ */
+export interface StandardSchemaOptions {
+  readonly libraryOptions?: Record<string, unknown> | undefined;
+}
