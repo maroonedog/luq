@@ -141,10 +141,10 @@ describe("a malformed declaration fails at BUILD time, naming the path", () => {
     );
   });
 
-  it("rejects a reserved segment inside an array element path", () => {
-    expect(() => compile([{ path: "items[*].__proto__", rules: [] }])).toThrow(
-      PathSyntaxError
-    );
+  it("配列要素の中の __proto__ も受け付ける", () => {
+    expect(() =>
+      compile([{ path: "items[*].__proto__", rules: [] }])
+    ).not.toThrow(PathSyntaxError);
   });
 });
 

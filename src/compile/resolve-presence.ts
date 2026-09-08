@@ -27,6 +27,7 @@ const OPEN_POLICY: PresencePolicy = {
   allowUndefined: true,
   allowNull: true,
   emptyStringIsMissing: false,
+  nullIsValue: false,
   describe: () => "This field declares no presence rule",
 };
 
@@ -43,6 +44,9 @@ export function resolvePresence(
     allowUndefined: rules.some((rule) => rule.allowUndefined),
     allowNull: rules.some((rule) => rule.allowNull),
     emptyStringIsMissing: rules.some((rule) => rule.emptyStringIsMissing),
+    // One rule saying "null is a value here" is enough: the checks then run
+    // and decide, which is strictly more judgement, never less.
+    nullIsValue: rules.some((rule) => rule.nullIsValue === true),
     describe: (ctx) => strictest.describe(ctx),
   };
   return Object.freeze(policy);

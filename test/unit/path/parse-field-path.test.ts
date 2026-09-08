@@ -67,6 +67,10 @@ describe("parseFieldPath — rejections", () => {
     }
   );
 
+  // 名前による拒否はやめた。JSON Schema が "__proto__" というキーを持つ
+  // オブジェクトを検証できる必要があり、かつ書き込み側を defineProperty に
+  // 移したことで汚染経路が閉じたため。安全性は
+  // test/unit/path/prototype-pollution.test.ts が守る。
   it.each([
     "__proto__",
     "constructor",
@@ -75,20 +79,20 @@ describe("parseFieldPath — rejections", () => {
     "a.constructor",
     "items[*].__proto__",
     "__proto__[*]",
-  ])("throws PathSyntaxError on the reserved segment in %s", (path) => {
-    expect(() => parseFieldPath(path)).toThrow(PathSyntaxError);
-    expect(() => parseFieldPath(path)).toThrow(/reserved segment/);
+  ])("%s は宣言パスとして受け付ける", (path) => {
+    expect(() => parseFieldPath(path)).not.toThrow();
   });
 
   it("names the offending path on the error", () => {
     let caught: unknown = null;
     try {
-      parseFieldPath("a.__proto__");
+      // 文法として表現できないものは今も拒否する。
+      parseFieldPath("a..b");
     } catch (error) {
       caught = error;
     }
     expect(caught).toBeInstanceOf(PathSyntaxError);
-    expect((caught as PathSyntaxError).path).toBe("a.__proto__");
+    expect((caught as PathSyntaxError).path).toBe("a..b");
   });
 
   it("accepts a key that merely CONTAINS a reserved name", () => {
@@ -129,6 +133,6 @@ describe("parentFieldPath / leafKeyOf — step 9 depends on both", () => {
 
   it("rejects a malformed path instead of returning null", () => {
     expect(() => parentFieldPath("a..b")).toThrow(PathSyntaxError);
-    expect(() => leafKeyOf("__proto__")).toThrow(PathSyntaxError);
+    expect(() => leafKeyOf("a..b")).toThrow(PathSyntaxError);
   });
 });

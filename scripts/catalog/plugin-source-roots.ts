@@ -38,6 +38,7 @@ export const FIXED_EXPORT_KEYS: readonly string[] = [
   "./plugin-kit",
   "./field-rule",
   "./async",
+  "./standard-schema",
   "./plugins",
 ];
 

@@ -31,7 +31,7 @@ import type { Rule } from "../plugin-kit/compiled-rule";
 import type { GlobalConfig } from "../types/global-config";
 import { createStructuralContext } from "./create-structural-context";
 import { declarePresenceRules } from "./declare-presence";
-import { permitsNull } from "./declare-value-keywords";
+import { createLocalScope } from "./ref-scope";
 import type { Draft07Schema } from "./draft07.types";
 import { isDraft07Schema } from "./draft07.types";
 import { flattenSchema } from "./flatten-schema";
@@ -62,14 +62,13 @@ function collectDeclaredRules(
   chain: ChainBuildContext
 ): readonly Rule[] {
   const context = createStructuralContext(
-    { bag, root, chain },
+    { bag, scope: createLocalScope(root), chain },
     declaration.schema,
     Object.freeze([])
   );
   return Object.freeze([
     ...declarePresenceRules({
       isRequired: declaration.isRequired,
-      allowsNull: permitsNull(declaration.schema),
       severity: chain.config.defaultSeverity,
     }),
     ...expandSchemaRules(declaration.schema, context),

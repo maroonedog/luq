@@ -23,8 +23,11 @@ describe("stringExactLength", () => {
     expect(isAccepted(exactlyFour, value)).toBe(expected);
   });
 
-  it("counts UTF-16 code units, so two emoji are exactly four", () => {
-    expect(isAccepted(exactlyFour, "\u{1F600}\u{1F601}")).toBe(true);
+  it("コードポイントで数えるので、絵文字2つは2文字（4ではない）", () => {
+    expect(isAccepted(exactlyFour, "\u{1F600}\u{1F601}")).toBe(false);
+    expect(
+      isAccepted(exactlyFour, "\u{1F600}\u{1F601}\u{1F602}\u{1F603}")
+    ).toBe(true);
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {

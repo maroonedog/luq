@@ -13,6 +13,8 @@ export {
   jsonSchemaPlugin,
 } from "./json-schema";
 
+export type { JsonSchemaOptions } from "./json-schema";
+
 export {
   NotASchemaError,
   UnsupportedKeywordError,

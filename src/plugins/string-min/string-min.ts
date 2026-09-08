@@ -11,7 +11,7 @@ import {
   definePlugin,
 } from "../../plugin-kit/plugin-definition";
 import type { Unchanged } from "../../plugin-kit/marker.types";
-import { PASS, fail, isNumber, isString } from "../../types";
+import { PASS, fail, isNumber, countCodePoints, isString } from "../../types";
 
 /** The members `.min()` adds to the message context. Legacy name preserved. */
 export interface StringMinContext {
@@ -36,9 +36,9 @@ export const stringMinPlugin = /*#__PURE__*/ definePlugin<{
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
       run: (value) =>
-        !isString(value) || value.length >= min
+        !isString(value) || countCodePoints(value) >= min
           ? PASS
-          : fail({ expected: min, actual: value.length }),
+          : fail({ expected: min, actual: countCodePoints(value) }),
       describe: (detail) =>
         `String must have at least ${String(min)} characters, but got ` +
         `${String(detail.actual)}`,

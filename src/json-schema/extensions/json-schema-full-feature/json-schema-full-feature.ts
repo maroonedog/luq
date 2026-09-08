@@ -23,6 +23,7 @@ import { definePlugin } from "../../../plugin-kit/plugin-definition";
 import type { MessageContextExtra, TypeName } from "../../../types";
 import type { Unchanged } from "../../../plugin-kit/marker.types";
 import { jsonSchemaPlugin } from "../json-schema";
+import type { JsonSchemaOptions } from "../json-schema";
 import { fromJsonSchema as convertWithBag } from "../../index";
 import type { GlobalConfig } from "../../../types/global-config";
 import { jsonSchemaBag } from "./bundled-plugins";
@@ -41,15 +42,17 @@ const SCHEMA_SLOTS: readonly TypeName[] = [
 ];
 
 export const jsonSchemaFullFeaturePlugin = /*#__PURE__*/ definePlugin<{
-  args: readonly [document: unknown];
+  args: readonly [document: unknown, options?: JsonSchemaOptions];
   out: Unchanged;
   context: MessageContextExtra;
 }>()({
   name: "jsonSchemaFullFeature",
+  // The document decides whether null is allowed, so null has to reach it.
+  judgesNull: true,
   method: "jsonSchemaFullFeature",
   slots: SCHEMA_SLOTS,
-  build: (ctx, document) =>
-    jsonSchemaPlugin.build(ctx, document, jsonSchemaBag),
+  build: (ctx, document, options) =>
+    jsonSchemaPlugin.build(ctx, document, jsonSchemaBag, options),
 });
 
 /**

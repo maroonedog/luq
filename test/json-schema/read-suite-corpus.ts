@@ -56,6 +56,10 @@ export interface SuitePin {
   readonly skipEntryCount: number;
   readonly skippedCases: number;
   readonly passingCases: number;
+  readonly validCases: number;
+  readonly invalidCases: number;
+  readonly passingValidCases: number;
+  readonly passingInvalidCases: number;
 }
 
 export function repositoryRoot(): string {

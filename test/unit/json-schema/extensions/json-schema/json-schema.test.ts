@@ -218,21 +218,49 @@ describe("collectDocumentRules", () => {
     expect(rules.every((rule) => typeof rule.kind === "string")).toBe(true);
   });
 
-  it("returns nothing for an empty document, so an empty schema forbids nothing", () => {
-    expect(collectDocumentRules(BUILD_CONTEXT, {}, jsonSchemaBag)).toEqual([]);
+  it("forbids nothing for an empty document", () => {
+    // 「ルールが0本」ではなく「何も禁じない」を見る。空文書でも null 方針の
+    // 1本は必ず載る (それが無いと、presence が null を先に片付けてしまい、
+    // 文書が null について何か言っていても届かない) が、その1本は何も
+    // 禁じない。数えるのではなく、判定を確かめる。
+    const rules = collectDocumentRules(BUILD_CONTEXT, {}, jsonSchemaBag);
+    expect(rules.every((rule) => rule.kind === "presence")).toBe(true);
+    for (const value of [null, 0, "", false, [], {}, "x"]) {
+      expect(isValid({}, value)).toBe(true);
+    }
   });
 });
 
 // ---------------------------------------------------------------------------
-// MUTATION EVIDENCE for the null limitation the harness compensates for. If
-// this ever starts passing without `.optional()`, the harness glue can go.
+// null は文書が決める。
+//
+// この describe は逆のことを書いていた: 「null はフィールドが決める。文書
+// だけでは reject できない」。それが本当だった間、スイートのハーネスは
+// `.optional()` を自分で足しており、その注記は「これが `.optional()` 無しで
+// 通るようになったらグルーは消せる」だった。消せるようになったので消した。
+//
+// 効いているのは二段ある。プラグインが `judgesNull` を宣言するので null が
+// この composite まで届き、文書のルール列が自分の null 方針を持つので
+// composite の中でも届く。`type` だけを見るのでは足りない —
+// `false`・`{"not":{}}`・null を含まない `enum` は `type` に何も言わずに
+// null を禁じる。
 // ---------------------------------------------------------------------------
-describe("null is settled by the field, not by the document", () => {
-  it("does NOT reject null on its own", () => {
-    expect(isValid({ type: "string" }, null)).toBe(true);
+describe("null is decided by the document", () => {
+  it("rejects null on its own, with no help from the field", () => {
+    expect(isValid({ type: "string" }, null)).toBe(false);
   });
 
-  it("rejects null once the field declares .optional()", () => {
+  it("accepts null when the document permits it", () => {
+    expect(isValid({ type: ["string", "null"] }, null)).toBe(true);
+    expect(isValid({}, null)).toBe(true);
+  });
+
+  it("rejects null through a keyword that never mentions type", () => {
+    expect(isValid({ not: {} }, null)).toBe(false);
+    expect(isValid({ enum: [1, "a"] }, null)).toBe(false);
+  });
+
+  it("still rejects null once the field declares .optional()", () => {
     const validator = Builder()
       .use(optionalPlugin)
       .use(jsonSchemaPlugin)

@@ -63,6 +63,7 @@ function toPolicy(
     allowUndefined: allowance.allowUndefined,
     allowNull: allowance.allowNull,
     emptyStringIsMissing: allowance.emptyStringIsMissing,
+    nullIsValue: allowance.nullIsValue === true,
     // Wrapped rather than aliased, so a `describe` written as an object
     // method keeps its receiver.
     describe: (messageContext) => rule.describe(messageContext),

@@ -79,3 +79,34 @@ jobs:
       # on a named machine with `npm run bench:record`; they are never a
       # pass/fail condition here.
       - run: npm run bench:gate
+
+  # docs — the site build, run on every branch rather than only after a merge.
+  # It was NOT here, and that is how luq.dev went stale: deploy-docs.yml runs
+  # only on push to master, so the first signal that docs-site could not build
+  # was a red run AFTER the merge, with the previous site still being served.
+  # Two merges failed that way (2026-09-07) and nobody was blocked by either.
+  # The break itself: docs-site reads src/plugins/manifest.generated.ts, which
+  # is a gitignored derivative, and neither workflow ran `generate:sources`.
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # docs-site reads the generated plugin manifest, so it has to exist.
+      - run: npm run generate:sources
+
+      - run: npm run build
+
+      - working-directory: ./docs-site
+        run: npm ci
+
+      - working-directory: ./docs-site
+        run: npm run build

@@ -33,6 +33,19 @@ export interface PresenceAllowance {
   readonly allowUndefined: boolean;
   readonly allowNull: boolean;
   readonly emptyStringIsMissing: boolean;
+  /**
+   * True when `null` is a VALUE this subject has to judge, rather than an
+   * absence presence may settle. Draft-07 sub-schemas need it: `false`,
+   * `{"not": {}}` and an `enum` without null all forbid null WITHOUT saying
+   * anything about `type`, and presence — which runs first — was answering
+   * for them. `[null]` passed `{"items":{"not":{}}}` because no check ever
+   * ran.
+   *
+   * Optional, and absent means false: a field the user declared keeps the
+   * builder's meaning, where `.nullable()` ENDS the field on null. Only
+   * src/json-schema/ turns it on.
+   */
+  readonly nullIsValue?: boolean;
 }
 
 export interface PresenceRule extends PresenceAllowance {

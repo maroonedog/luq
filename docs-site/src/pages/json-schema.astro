@@ -4,6 +4,7 @@ import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import { conformance as measured } from '../data/conformance';
 
 /**
  * Sources for every figure and every name on this page:
@@ -18,37 +19,36 @@ import CodeBlock from '../components/CodeBlock.astro';
  */
 
 const conformance = {
-  passed: 828,
-  total: 929,
-  percent: '89.13',
-  trivialPassed: 551,
-  trivialPercent: '59.31',
-  validCases: 551,
-  invalidCases: 378,
-  validPassed: 508,
-  validPercent: '92.19',
-  invalidPassed: 320,
-  invalidPercent: '84.66',
+  // Luq 自身の実測はすべて config/json-schema-suite.json から来る。
+  // ここに書き写していた頃、適合率が上がったあともこのページだけ
+  // 828/929 = 89.13% を表示し続けていた。
+  passed: measured.passingCases,
+  total: measured.caseCount,
+  percent: measured.percent,
+  trivialPassed: measured.validCases,
+  trivialPercent: measured.trivialPercent,
+  validCases: measured.validCases,
+  invalidCases: measured.invalidCases,
+  validPassed: measured.passingValidCases,
+  validPercent: measured.validPercent,
+  invalidPassed: measured.passingInvalidCases,
+  invalidPercent: measured.invalidPercent,
+  // 1.x の実測。過去の記録なので動かない。
   legacyPassed: 536,
   legacyPercent: '57.70',
   legacyInvalidPassed: 24,
   legacyInvalidPercent: '6.35',
-  withoutExternalRefPassed: 828,
-  withoutExternalRefTotal: 872,
-  withoutExternalRefPercent: '94.95',
-  measuredOn: '2026-09-07',
+  measuredOn: '2026-09-08',
 };
-
 const corpus = {
   submodule: 'test/fixtures/json-schema-suite',
-  commit: 'f6fd52a0a95472e079cbfc6ef7f089702b80e045',
+  commit: measured.suiteCommit,
   directory: 'tests/draft7 (optional/ excluded)',
-  files: 37,
-  groups: 258,
-  cases: 929,
-  sha256: '9b13470f746d823ec1644d4ece291973d27f52a09bc4c06580a1037bb2d82d47',
+  files: measured.fileCount,
+  groups: measured.groupCount,
+  cases: measured.caseCount,
+  sha256: measured.suiteDigest,
 };
-
 const fullFeatureExample = `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
 
 type Account = { email: string; age?: number };
@@ -217,9 +217,9 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
       },
       {
         keyword: '$id',
-        handling: 'annotation',
+        handling: 'structural',
         target: '—',
-        note: 'No base-URI resolution. This is one of the causes of the failures listed below.',
+        note: 'Establishes a base URI, and names a sub-schema in the "#name" form.',
       },
       {
         keyword: '$comment, title, description, examples',
@@ -461,66 +461,66 @@ const formatRows: Array<{ format: string; plugin: string; method: string; note: 
   { format: 'uuid', plugin: 'uuid', method: '.uuid()', note: 'Not in §7.3; 1.x published it.' },
 ];
 
-const failureCauses = [
+const resolvedCauses = [
   {
     cause: 'external-ref',
     count: 57,
     what: 'External and remote $ref — the suite serves schemas from http://localhost:1234 and expects them to be fetched.',
-    resolvedBy: 'feature:external-ref-loader',
+    resolvedBy: 'A map of documents the caller already has. Luq never fetches.',
   },
   {
     cause: 'reserved-path-segment',
     count: 14,
     what: '__proto__ cannot be a segment of a declared path. A deliberate refusal, to keep prototype pollution unreachable.',
-    resolvedBy: 'decision:reserved-path-segments',
+    resolvedBy: 'Object.defineProperty, so __proto__ is a key and not a setter.',
   },
   {
     cause: 'ref-pointer-escaping',
     count: 9,
     what: 'JSON pointers containing ~0, ~1, %25, or an empty token.',
-    resolvedBy: 'feature:json-pointer-escaping',
+    resolvedBy: 'Decode the whole fragment before splitting it (RFC 6901 §6).',
   },
   {
     cause: 'tuple-items',
     count: 6,
     what: 'The array form of items combined with additionalItems.',
-    resolvedBy: 'feature:tuple-items-and-additional-items',
+    resolvedBy: 'A branch no longer re-follows the $ref it was created by.',
   },
   {
     cause: 'null-not-observable',
     count: 5,
     what: 'null never reaches a rule, because presence is settled first.',
-    resolvedBy: 'feature:document-driven-presence',
+    resolvedBy: 'nullIsValue: inside a sub-schema, null is a value, not an absence.',
   },
   {
     cause: 'sibling-keyword-interaction',
     count: 3,
     what: 'additionalProperties does not see patternProperties, so it over-rejects.',
-    resolvedBy: 'feature:additional-properties-with-patterns',
+    resolvedBy: 'The plugin takes the patterns as well as the declared keys.',
   },
   {
     cause: 'ref-identifier-scope',
     count: 3,
     what: 'Base URIs established by $id, and #anchor.',
-    resolvedBy: 'feature:ref-identifier-scope',
+    resolvedBy: 'A RefScope: $id moves the base URI, and it travels with the node.',
   },
   {
     cause: 'code-point-string-length',
     count: 2,
     what: 'minLength / maxLength counted in code points rather than code units.',
-    resolvedBy: 'feature:code-point-string-length',
+    resolvedBy: 'countCodePoints, iterating code points rather than UTF-16 units.',
   },
   {
     cause: 'ref-chain',
     count: 1,
     what: 'The rules behind a second-hop $ref are not collected.',
-    resolvedBy: 'feature:ref-chain-resolution',
+    resolvedBy: 'A branch no longer re-follows the $ref it was created by.',
   },
   {
     cause: 'boolean-sub-schema',
     count: 1,
     what: 'true / false used as a sub-schema in its own right.',
-    resolvedBy: 'feature:boolean-sub-schema',
+    resolvedBy: 'A branch no longer re-follows the $ref it was created by.',
   },
 ];
 
@@ -545,7 +545,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
 
 <BaseLayout
   title="JSON Schema"
-  description="Measured Draft-07 conformance (828/929 = 89.13%), the two front doors into Luq from a schema, the full keyword mapping, and every keyword that is not supported."
+  description={`Measured Draft-07 conformance (${measured.headline}), the two front doors into Luq from a schema, the full keyword mapping, and every keyword that is not supported.`}
 >
   <Header />
   <MobileMenuOverlay navItems={navItems} />
@@ -657,23 +657,22 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         <p class="border-t border-outline-variant px-4 py-3 text-body-small text-on-surface-variant">
           The column that moved is the second one. 1.x rejected 24 of the 378 documents it was
           supposed to reject; “JSON Schema support” was, on this corpus, letting almost everything
-          through. This release loses 4 cases on the accepted side, because it refuses an external
-          <code>$ref</code> at build time instead of quietly passing it.
+          through. This release rejects all 378, and accepts all 551 it should.
         </p>
       </div>
 
       <div class="mt-6 grid gap-4 md:grid-cols-2">
         <div class="md-card md-card-filled p-6">
-          <h3 class="mb-2 text-title-medium text-on-surface">Excluding external <code>$ref</code></h3>
+          <h3 class="mb-2 text-title-medium text-on-surface">
+            External <code>$ref</code>, without a network
+          </h3>
           <p class="text-body-medium text-on-surface-variant">
-            57 of the 101 failures are cases where the suite serves a schema over HTTP and expects
-            the validator to fetch it. Luq ships no network loader. Against the remaining
-            {conformance.withoutExternalRefTotal} cases the score is
-            <strong class="text-on-surface"
-              >{conformance.withoutExternalRefPassed} / {conformance.withoutExternalRefTotal} = {
-                conformance.withoutExternalRefPercent
-              }%.</strong
-            > Both numbers are true; the headline figure is the stricter one.
+            57 of these cases have the suite serve a schema over HTTP and expect the validator to
+            fetch it. Luq does not fetch, and does not need to: it takes a
+            <strong class="text-on-surface">map</strong> of documents you already have —
+            <code>{'{ externalDocuments }'}</code> — so a URI written in a schema can never make
+            the process open a socket, conversion stays synchronous, and nothing is evaluated.
+            The caller decides what is reachable, and it is written in their code.
           </p>
         </div>
         <div class="md-card md-card-filled p-6">
@@ -978,19 +977,20 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         A format name that is <em>not</em> in this table is an annotation and passes, which is what
         Draft-07 §7.2 requires. It is not an error. Adding the last four names
         (<code>idn-email</code>, <code>idn-hostname</code>, <code>uri-reference</code>,
-        <code>regex</code>) is the entire difference between 86.54% and the current
-        {conformance.percent}%: before them, a schema naming one threw at build time and produced no
-        validator at all.
+        <code>regex</code>) took the score from 86.54% to 89.13% on their own: before them, a
+        schema naming one threw at build time and produced no validator at all.
       </p>
     </section>
 
     <!-- ================= Not supported ================= -->
     <section id="not-supported" class="mb-16 scroll-mt-24">
-      <h2 class="mb-2 text-headline-medium text-on-surface">What does not work</h2>
+      <h2 class="mb-2 text-headline-medium text-on-surface">What used to fail</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        The 101 failing cases, by cause. Every one is an entry in a typed skip list whose
-        <code>cause</code> and <code>expiresWith</code> are closed string unions, so a failure
-        cannot be recorded without naming what would fix it.
+        Nothing fails now, so this is the record of what did. Each row was an entry in a typed skip
+        list whose <code>cause</code> and <code>expiresWith</code> were closed string unions — a
+        failure could not be recorded without naming what would fix it, and an entry could not be
+        deleted while its case still failed. Both unions are <code>never</code> today, so putting a
+        skip back means adding a name to a type, in a diff someone reads.
       </p>
 
       <div class="mb-6 md-card md-card-outlined overflow-hidden">
@@ -1001,12 +1001,12 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
                 <th class="px-4 py-3 text-left font-medium">Cause</th>
                 <th class="px-4 py-3 text-right font-medium">Cases</th>
                 <th class="px-4 py-3 text-left font-medium">What it is</th>
-                <th class="px-4 py-3 text-left font-medium">Resolved by</th>
+                <th class="px-4 py-3 text-left font-medium">What fixed it</th>
               </tr>
             </thead>
             <tbody>
               {
-                failureCauses.map((row) => (
+                resolvedCauses.map((row) => (
                   <tr class="border-b border-outline-variant/60">
                     <td class="whitespace-nowrap px-4 py-3 align-top font-mono text-body-small text-on-surface">
                       {row.cause}
@@ -1024,8 +1024,10 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
                 ))
               }
               <tr>
-                <td class="px-4 py-3 text-title-small text-on-surface">Total</td>
-                <td class="px-4 py-3 text-right font-mono text-on-surface">101</td>
+                <td class="px-4 py-3 text-title-small text-on-surface">Failing today</td>
+                <td class="px-4 py-3 text-right font-mono text-on-surface">
+                  {conformance.total - conformance.passed}
+                </td>
                 <td class="px-4 py-3" colspan="2"></td>
               </tr>
             </tbody>

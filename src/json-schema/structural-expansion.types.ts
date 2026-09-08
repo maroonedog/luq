@@ -24,6 +24,7 @@ import type { CompositeBranch, Rule } from "../plugin-kit/compiled-rule";
 import type { RuleBuildContext } from "../plugin-kit/rule-build-context";
 import type { MessageContextExtra } from "../types";
 import type { Draft07Schema, Draft07SchemaObject } from "./draft07.types";
+import type { RefScope } from "./ref-scope";
 import type { JsonSchemaBag } from "./json-schema-bag.types";
 
 /**
@@ -74,7 +75,13 @@ export interface ChildSchema {
 export interface StructuralContext {
   readonly bag: JsonSchemaBag;
   readonly build: ChainBuildContext;
-  readonly root: Draft07Schema;
+  /**
+   * WHERE this node is being read from. It replaces the bare `root` this
+   * interface used to carry: a `$ref` is a URI reference, so resolving one
+   * needs the base URI in force and the index of what a URI can name, and a
+   * root cannot express either. See ref-scope.ts.
+   */
+  readonly scope: RefScope;
   /**
    * The `$ref` pointers already entered on this branch of the conversion. A
    * repeat is a RECURSIVE definition, whose expansion does not terminate, so

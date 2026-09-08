@@ -8,7 +8,7 @@ import {
   definePlugin,
 } from "../../plugin-kit/plugin-definition";
 import type { Unchanged } from "../../plugin-kit/marker.types";
-import { PASS, fail, isNumber, isString } from "../../types";
+import { PASS, fail, isNumber, countCodePoints, isString } from "../../types";
 
 /** The members `.exactLength()` adds. Legacy name preserved. */
 export interface StringExactLengthContext {
@@ -33,9 +33,9 @@ export const stringExactLengthPlugin = /*#__PURE__*/ definePlugin<{
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
       run: (value) =>
-        !isString(value) || value.length === expected
+        !isString(value) || countCodePoints(value) === expected
           ? PASS
-          : fail({ expected, actual: value.length }),
+          : fail({ expected, actual: countCodePoints(value) }),
       describe: (detail) =>
         `String must have exactly ${String(expected)} characters, but got ` +
         `${String(detail.actual)}`,

@@ -17,7 +17,7 @@ import {
 } from "../../../../src/json-schema/flatten-schema";
 import { readChildSchemas } from "../../../../src/json-schema/schema-to-declarations";
 import { ROOT_PATH } from "../../../../src/compile/declared-child-keys";
-import { RefResolutionError } from "../../../../src/json-schema/resolve-ref";
+import { RefResolutionError } from "../../../../src/json-schema/ref-resolution-error";
 import { UnsupportedKeywordError } from "../../../../src/json-schema/unsupported-keyword-error";
 import { PathSyntaxError } from "../../../../src/path/reserved-segment";
 import { jsonSchemaBagFixture } from "./json-schema-bag-fixture";
@@ -36,15 +36,17 @@ describe("joinDeclaredPath", () => {
 
   it("refuses a property name the path grammar cannot express", () => {
     expect(() => joinDeclaredPath("a", "has.dot")).toThrow(PathSyntaxError);
-    expect(() => joinDeclaredPath("a", "__proto__")).toThrow(PathSyntaxError);
     expect(() => joinDeclaredPath("a", "b[0]")).toThrow(PathSyntaxError);
   });
 
-  it("stops a prototype-polluting property name from becoming a path", () => {
+  it("__proto__ という名前のプロパティを宣言パスにできる", () => {
     // JSON.parse gives a real OWN "__proto__" key; an object literal would
     // only have set the prototype, which is not what a document does.
-    const document: unknown = JSON.parse('{"properties":{"__proto__":{}}}');
-    expect(() => paths(document)).toThrow(PathSyntaxError);
+    // 名前での拒否はやめた。汚染は書き込み側 (defineProperty) で閉じている。
+    const document: unknown = JSON.parse(
+      String.raw`{"properties":{"__proto__":{"type":"string"}}}`
+    );
+    expect(paths(document)).toContain("__proto__");
   });
 });
 

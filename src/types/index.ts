@@ -112,3 +112,20 @@ export function isPlainObject(
 export function isStringArray(value: unknown): value is readonly string[] {
   return isArray(value) && value.every(isString);
 }
+
+/**
+ * 文字列の長さをコードポイントで数える。
+ *
+ * `.length` は UTF-16 のコード単位を数えるので、絵文字や星域文字が 2 と数えられる。
+ * JSON Schema §6.3.1 は minLength / maxLength をコードポイントで数えると定めており、
+ * 利用者が「3文字」と書くときに期待するのもコードポイントのほう。
+ *
+ * 1.x は `.length` を使っていた (docs/legacy-spec/plugin-catalog-core.md が
+ * 「暗黙の挙動で、まわりに落ちるテストがある。明示的な決定にすべき」と記録している)。
+ * ここでその決定をした。星域文字を含む文字列では 1.x と判定が変わる。
+ */
+export function countCodePoints(value: string): number {
+  let count = 0;
+  for (const _character of value) count += 1;
+  return count;
+}
