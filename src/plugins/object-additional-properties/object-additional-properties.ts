@@ -11,23 +11,32 @@ import { PASS, fail, isPlainObject, isStringArray } from "../../types";
 import { check } from "../../plugin-kit/create-rule";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
 import type { Unchanged } from "../../plugin-kit/marker.types";
+import {
+  compilePatterns,
+  selectAdditionalKeys,
+} from "./select-additional-keys";
 
 export interface UnexpectedPropertiesExtra {
   readonly extraProperties: readonly string[];
 }
 
 export const objectAdditionalPropertiesPlugin = /*#__PURE__*/ definePlugin<{
-  args: readonly [allowed: boolean, allowedProperties?: readonly string[]];
+  args: readonly [
+    allowed: boolean,
+    allowedProperties?: readonly string[],
+    allowedPatterns?: readonly string[],
+  ];
   out: Unchanged;
   context: UnexpectedPropertiesExtra;
 }>()({
   name: "objectAdditionalProperties",
   method: "additionalProperties",
   slots: ["object"] as const,
-  build: (ctx, allowed, allowedProperties) => {
+  build: (ctx, allowed, allowedProperties, allowedPatterns) => {
     const known: ReadonlySet<string> = new Set(
       allowedProperties ?? ctx.declaredSiblingKeys
     );
+    const patterns = compilePatterns(allowedPatterns);
     return check<UnexpectedPropertiesExtra>({
       code: ctx.code,
       messageFactory: ctx.messageFactory,
@@ -35,7 +44,7 @@ export const objectAdditionalPropertiesPlugin = /*#__PURE__*/ definePlugin<{
       run: (value) => {
         if (allowed) return PASS;
         if (!isPlainObject(value)) return PASS;
-        const extra = Object.keys(value).filter((key) => !known.has(key));
+        const extra = selectAdditionalKeys(value, known, patterns);
         return extra.length === 0 ? PASS : fail({ actual: extra });
       },
       describe: (detail) => `Unexpected properties: ${String(detail.actual)}`,

@@ -16,13 +16,13 @@ import { readChainRules } from "../chain/create-chain-node";
 import { createFieldSlots } from "../chain/create-field-slots";
 import type { Rule } from "../plugin-kit/compiled-rule";
 import { isStringArray } from "../types";
+import { applyAdditionalPropertiesBoolean } from "./declare-additional-properties";
 import { applyKeywordBinding } from "./apply-keyword-binding";
 import type { ConverterChain } from "./apply-keyword-binding";
 import { toSchemaObject } from "./collect-definitions";
 import type { Draft07Schema, Draft07SchemaObject } from "./draft07.types";
 import type { JsonSchemaBag } from "./json-schema-bag.types";
 import {
-  additionalPropertiesBinding,
   maxPropertiesBinding,
   minPropertiesBinding,
 } from "./keyword-map-object";
@@ -59,27 +59,13 @@ export function declareObjectRules(
   }
   const additional = schema.additionalProperties;
   if (typeof additional === "boolean") {
-    chain = applyKeywordBinding(chain, additionalPropertiesBinding, additional);
+    // §6.5.4 の対象は「properties にも patternProperties にも該当しない」キー。
+    // キーワード束縛は自分の値 (boolean) しか運べないので、パターンがある
+    // ときだけプラグインを直接呼ぶ。束縛のほうは残す: キーワード表と
+    // 「そのメソッドが実在する」というコンパイル時のゲートはそちらが持つ。
+    chain = applyAdditionalPropertiesBoolean(chain, schema, additional);
   }
   return readRules(chain);
-}
-
-/** The SCHEMA form of `additionalProperties`: every undeclared value obeys it. */
-export function declareAdditionalPropertiesSchema(
-  schema: Draft07SchemaObject,
-  context: StructuralContext
-): readonly Rule[] {
-  const additional = schema.additionalProperties;
-  if (additional === undefined || typeof additional === "boolean") {
-    return NO_RULES;
-  }
-  const plugin = context.bag.objectAdditionalPropertiesSchema;
-  return Object.freeze([
-    plugin.build(
-      context.ruleContextFor(plugin.name, "additionalProperties"),
-      context.collectSubSchemaRules(additional)
-    ),
-  ]);
 }
 
 /** EVERY matching pattern applies; 1.x broke after the first match. */

@@ -71,24 +71,6 @@ export interface SuiteSkip {
 
 export const SUITE_SKIPS: readonly SuiteSkip[] = [
   {
-    file: "additionalProperties.json",
-    group: "additionalProperties being false does not allow other properties",
-    test: "patternProperties are not additional properties",
-    cause: "sibling-keyword-interaction",
-    reason:
-      "objectAdditionalProperties takes a NAME LIST (the schema's own `properties` keys), so a key that is additional only because no patternProperties regex matched it cannot be expressed.",
-    expiresWith: "feature:additional-properties-with-patterns",
-  },
-  {
-    file: "additionalProperties.json",
-    group: "non-ASCII pattern with additionalProperties",
-    test: "matching the pattern is valid",
-    cause: "sibling-keyword-interaction",
-    reason:
-      "objectAdditionalProperties takes a NAME LIST (the schema's own `properties` keys), so a key that is additional only because no patternProperties regex matched it cannot be expressed.",
-    expiresWith: "feature:additional-properties-with-patterns",
-  },
-  {
     file: "boolean_schema.json",
     group: "boolean schema 'false'",
     test: "null is invalid",
@@ -167,15 +149,6 @@ export const SUITE_SKIPS: readonly SuiteSkip[] = [
     reason:
       "decide-presence settles null before any check runs, so no composite rule can reject it; only a presence policy can, and the document has no way to declare one here.",
     expiresWith: "feature:document-driven-presence",
-  },
-  {
-    file: "properties.json",
-    group: "properties, patternProperties, additionalProperties interaction",
-    test: "patternProperty validates nonproperty",
-    cause: "sibling-keyword-interaction",
-    reason:
-      "objectAdditionalProperties takes a NAME LIST (the schema's own `properties` keys), so a key that is additional only because no patternProperties regex matched it cannot be expressed.",
-    expiresWith: "feature:additional-properties-with-patterns",
   },
   {
     file: "ref.json",
