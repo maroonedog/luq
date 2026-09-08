@@ -1,5 +1,6 @@
 ---
 import LuqLogo from './LuqLogo.astro';
+import { packageInfo } from '../data/package-info';
 
 /**
  * Site footer, on `surface-container` so it separates from the page's
@@ -84,7 +85,7 @@ const footerLinks: Record<string, FooterLink[]> = {
         <span class="md-icon text-[18px] leading-none text-tertiary" aria-hidden="true">
           verified
         </span>
-        v2.0.0
+        {packageInfo.tag}
       </span>
     </div>
   </div>

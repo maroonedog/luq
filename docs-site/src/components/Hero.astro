@@ -2,6 +2,7 @@
 import LuqLogo from './LuqLogo.astro';
 import CodeBlock from './CodeBlock.astro';
 import { conformance } from '../data/conformance';
+import { packageInfo } from '../data/package-info';
 
 /**
  * Landing hero.
@@ -34,7 +35,7 @@ const measured = [
   },
 ];
 
-const install = 'npm install @maroonedog/luq';
+const install = packageInfo.install;
 
 // 1.x では通ってしまい、2.0 ではコンパイルエラーになるもの。
 // 「制約が機械で強制される」という主張を、具体例で見せるための表。
@@ -72,7 +73,7 @@ const refused = [
     <p class="mb-6">
       <span class="md-chip md-chip-static">
         <span class="md-icon md-icon-sm" aria-hidden="true">verified</span>
-        v2.0.0
+        {packageInfo.tag}
       </span>
     </p>
 
