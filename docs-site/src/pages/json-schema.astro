@@ -4,6 +4,7 @@ import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import { conformance as measured } from '../data/conformance';
 
 /**
  * Sources for every figure and every name on this page:
@@ -17,38 +18,49 @@ import CodeBlock from '../components/CodeBlock.astro';
  * Every code block below was executed against src/ before it was written here.
  */
 
+// 外部 `$ref` の 57件はスイートが localhost:1234 でスキーマを配信して
+// 初めて解ける。Luq 自身が取りに行くことは設計上しない (SSRF) ので、
+// この 57件を除いた分母も併記する。件数の出所は
+// docs/json-schema-conformance.md §5。
+const EXTERNAL_REF_CASES = 57;
+const withoutExternalRefTotal = measured.caseCount - EXTERNAL_REF_CASES;
+
+const percentOf = (part: number, whole: number) => ((part / whole) * 100).toFixed(2);
+
 const conformance = {
-  passed: 828,
-  total: 929,
-  percent: '89.13',
-  trivialPassed: 551,
-  trivialPercent: '59.31',
-  validCases: 551,
-  invalidCases: 378,
-  validPassed: 508,
-  validPercent: '92.19',
-  invalidPassed: 320,
-  invalidPercent: '84.66',
+  // Luq 自身の実測はすべて config/json-schema-suite.json から来る。
+  // ここに書き写していた頃、適合率が上がったあともこのページだけ
+  // 828/929 = 89.13% を表示し続けていた。
+  passed: measured.passingCases,
+  total: measured.caseCount,
+  percent: measured.percent,
+  trivialPassed: measured.validCases,
+  trivialPercent: measured.trivialPercent,
+  validCases: measured.validCases,
+  invalidCases: measured.invalidCases,
+  validPassed: measured.passingValidCases,
+  validPercent: measured.validPercent,
+  invalidPassed: measured.passingInvalidCases,
+  invalidPercent: measured.invalidPercent,
+  withoutExternalRefPassed: measured.passingCases,
+  withoutExternalRefTotal,
+  withoutExternalRefPercent: percentOf(measured.passingCases, withoutExternalRefTotal),
+  // 1.x の実測。過去の記録なので動かない。
   legacyPassed: 536,
   legacyPercent: '57.70',
   legacyInvalidPassed: 24,
   legacyInvalidPercent: '6.35',
-  withoutExternalRefPassed: 828,
-  withoutExternalRefTotal: 872,
-  withoutExternalRefPercent: '94.95',
-  measuredOn: '2026-09-07',
+  measuredOn: '2026-09-08',
 };
-
 const corpus = {
   submodule: 'test/fixtures/json-schema-suite',
-  commit: 'f6fd52a0a95472e079cbfc6ef7f089702b80e045',
+  commit: measured.suiteCommit,
   directory: 'tests/draft7 (optional/ excluded)',
-  files: 37,
-  groups: 258,
-  cases: 929,
-  sha256: '9b13470f746d823ec1644d4ece291973d27f52a09bc4c06580a1037bb2d82d47',
+  files: measured.fileCount,
+  groups: measured.groupCount,
+  cases: measured.caseCount,
+  sha256: measured.suiteDigest,
 };
-
 const fullFeatureExample = `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
 
 type Account = { email: string; age?: number };
@@ -545,7 +557,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
 
 <BaseLayout
   title="JSON Schema"
-  description="Measured Draft-07 conformance (828/929 = 89.13%), the two front doors into Luq from a schema, the full keyword mapping, and every keyword that is not supported."
+  description={`Measured Draft-07 conformance (${measured.headline}), the two front doors into Luq from a schema, the full keyword mapping, and every keyword that is not supported.`}
 >
   <Header />
   <MobileMenuOverlay navItems={navItems} />

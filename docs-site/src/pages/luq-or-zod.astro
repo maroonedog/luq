@@ -42,21 +42,39 @@ const refused = [
   },
 ];
 
+// Both samples below do the SAME job, written out to the same depth: import,
+// establish the type, state the two rules, validate one value, read the result.
+// An earlier version of this page showed zod with no imports and no result
+// handling against a Luq sample that had both, which made the line counts say
+// something about the page rather than about the libraries.
+
 // luq-example: skip zod のコード。zod はこのリポジトリの依存ではないので型検査できない。
-const zodSample = `// zod: the schema is the source. The type is inferred from it.
+const zodSample = `import { z } from "zod";
+
+// The schema is the source. The type comes out of it.
 const User = z.object({
   name: z.string().min(3),
   age: z.number().min(18),
 });
 
-type User = z.infer<typeof User>;`;
+type User = z.infer<typeof User>;
 
-const luqSample = `// Luq: the type is the source. The rules are declared against it.
-import { Builder } from "@maroonedog/luq";
+const result = User.safeParse({ name: "Jo", age: 25 });
+
+if (result.success) {
+  console.log(result.data.name);
+} else {
+  for (const issue of result.error.issues) {
+    console.error(issue.path.join("."), issue.message);
+  }
+}`;
+
+const luqSample = `import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
 import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
 import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
 
+// The type is the source. The rules are declared against it.
 type User = {
   name: string;
   age: number;
@@ -69,7 +87,17 @@ const validateUser = Builder()
   .for<User>()
   .v("name", (b) => b.string.required().min(3))
   .v("age", (b) => b.number.required().min(18))
-  .build();`;
+  .build();
+
+const result = validateUser.validate({ name: "Jo", age: 25 });
+
+if (result.valid) {
+  console.log(result.data.name);
+} else {
+  for (const issue of result.issues) {
+    console.error(issue.path, issue.message);
+  }
+}`;
 
 // luq-example: with luqSample validateUser を前の抜粋から受け取る。router は tRPC 側の
 // luq-example: skip 名前で、このリポジトリの依存ではないため型検査できない。
@@ -91,47 +119,12 @@ router.input(toStandardSchema(validateUser));`;
       </p>
       <h1 class="mb-6 text-display-small text-on-surface">Luq or zod?</h1>
 
-      <div class="md-card md-card-filled mb-12 p-6">
-        <h2 class="mb-3 text-title-medium text-on-surface">The short answer</h2>
-        <p class="mb-4 text-body-large text-on-surface-variant">
-          If you are starting from nothing and the schema will be the source of
-          truth, <strong class="text-on-surface">use zod</strong>. It is the
-          default for good reasons: it is mature, it is everywhere, and every
-          question you will have is already answered somewhere.
-        </p>
-        <p class="text-body-large text-on-surface-variant">
-          Luq is for the other case — when the type already exists and something
-          else generated it.
-        </p>
-      </div>
-
       <h2 class="mb-4 text-headline-small text-on-surface">
-        The direction is the whole difference
-      </h2>
-      <p class="mb-6 text-body-large text-on-surface-variant">
-        Every popular validator in TypeScript works one way: you write a schema,
-        and the type is inferred out of it. Luq runs the other way. You keep the
-        type, and the rules are declared against it.
-      </p>
-
-      <div class="mb-4 grid gap-4 md:grid-cols-2">
-        <CodeBlock code={zodSample} language="typescript" fileName="Schema first" />
-        <CodeBlock code={luqSample} language="typescript" fileName="Type first" />
-      </div>
-
-      <p class="mb-12 text-body-medium text-on-surface-variant">
-        Neither direction is better in the abstract. Which one fits depends on a
-        question you can answer immediately: <strong class="text-on-surface"
-          >where does the type come from today?</strong
-        >
-      </p>
-
-      <h2 class="mb-4 text-headline-small text-on-surface">
-        You may already be on the type-first side
+        Where does your type come from?
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
-        If any of these is how your types arrive, the schema-first direction asks
-        you to write the shape a second time and keep the two in step by hand:
+        A validator whose schema is the source of truth assumes you are the one
+        who decides the shape. Often you are not — it arrives already decided:
       </p>
       <ul class="mb-6 space-y-2 text-body-large text-on-surface-variant">
         <li class="flex gap-3">
@@ -155,10 +148,70 @@ router.input(toStandardSchema(validateUser));`;
         </li>
       </ul>
       <p class="mb-12 text-body-medium text-on-surface-variant">
-        In all four the type is upstream and not yours to move. Declaring rules
-        against it keeps one source; inferring a second type from a hand-written
-        schema creates two that can drift apart silently.
+        In all four the shape is upstream and not yours to move, so a schema-first
+        validator asks you to write it a second time and keep the copy in step by
+        hand. Nothing checks that the two still agree; they drift silently, and the
+        first sign is a value that validated against the copy and does not fit the
+        original.
       </p>
+
+      <div class="md-card md-card-filled mb-12 p-6">
+        <h2 class="mb-3 text-title-medium text-on-surface">The short answer</h2>
+        <p class="mb-4 text-body-large text-on-surface-variant">
+          If you are starting from nothing and the schema will be the source of
+          truth, <strong class="text-on-surface">use zod</strong>. It is the
+          default for good reasons: it is mature, it is everywhere, and every
+          question you will have is already answered somewhere.
+        </p>
+        <p class="text-body-large text-on-surface-variant">
+          Luq is for the other case — when the type already exists and something
+          else generated it.
+        </p>
+      </div>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        The direction is the whole difference
+      </h2>
+      <p class="mb-6 text-body-large text-on-surface-variant">
+        Nearly every widely used validator in TypeScript works one way: you
+        write a schema, and the type is inferred out of it. Luq runs the other
+        way. You keep the type, and the rules are declared against it.
+      </p>
+      <p class="mb-6 text-body-medium text-on-surface-variant">
+        Luq is not the first to run that way. <a
+          class="text-primary underline underline-offset-2"
+          href="https://github.com/AlexJPotter/fluentvalidation-ts"
+          >fluentvalidation-ts</a
+        > has declared rules against an existing type with a fluent chain since 2019.
+        The direction is older than this library and the credit is not ours. What
+        Luq adds is the enforcement: the path, the slot and the method are each
+        checked by the compiler, so a rule that does not apply to the field it
+        names is a type error rather than a rule that quietly never matches.
+      </p>
+
+      <div class="mb-4 grid gap-4 md:grid-cols-2">
+        <CodeBlock code={zodSample} language="typescript" fileName="Schema first" />
+        <CodeBlock code={luqSample} language="typescript" fileName="Type first" />
+      </div>
+
+      <p class="mb-6 text-body-medium text-on-surface-variant">
+        Same job, same depth on both sides, and the Luq column is the longer
+        one. The extra lines are not scattered: they are one plugin import plus
+        one matching <code>.use()</code> per rule kind, and the type written out
+        as a type instead of falling out of the schema. That is the cost of the
+        direction — nothing is in the bundle that you did not name, and the type
+        is yours rather than inferred — and it is a real cost, not a rounding
+        error. If a schema is the only place the shape exists in your codebase,
+        the shorter column is also the honest answer.
+      </p>
+
+      <p class="mb-12 text-body-medium text-on-surface-variant">
+        Neither direction is better in the abstract. Which one fits depends on a
+        question you can answer immediately: <strong class="text-on-surface"
+          >where does the type come from today?</strong
+        >
+      </p>
+
 
       <h2 class="mb-4 text-headline-small text-on-surface">
         What the type-first direction buys

@@ -1,5 +1,6 @@
 ---
 import CodeBlock from './CodeBlock.astro';
+import { conformance } from '../data/conformance';
 
 /**
  * The five claims worth making, each with the code that backs it.
@@ -101,7 +102,7 @@ Builder()
     icon: 'schema',
     title: 'JSON Schema, with the score written down',
     description:
-      '828 of 929 cases on the official Draft-07 suite — required tests only, skipped cases counted as failures. Read it against the trivial floor: a validator that returned true unconditionally scores 551 / 929 = 59.31% on the same corpus.',
+      `${conformance.passingCases} of ${conformance.caseCount} cases on the official Draft-07 suite — required tests only, skipped cases counted as failures. Read it against the trivial floor: a validator that returned true unconditionally scores ${conformance.validCases} / ${conformance.caseCount} = ${conformance.trivialPercent}% on the same corpus.`,
     fileName: 'account.ts',
     example: `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
 
@@ -116,7 +117,7 @@ const accountValidator = fromJsonSchema<Account>({
   required: ["email"],
 });
 
-// 828 / 929 = 89.13% — docs/json-schema-conformance.md`,
+// ${conformance.headline} — docs/json-schema-conformance.md`,
   },
 ];
 ---

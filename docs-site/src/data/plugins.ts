@@ -886,6 +886,11 @@ export const plugins: readonly PluginInfo[] = [
         "name": "allowedProperties",
         "type": "readonly string[]",
         "optional": true
+      },
+      {
+        "name": "allowedPatterns",
+        "type": "readonly string[]",
+        "optional": true
       }
     ],
     "description": "Draft-07's boolean `additionalProperties`. `false` forbids any key the schema did not declare; the optional second argument is a plain allow-list of extra key names.",
@@ -919,6 +924,11 @@ export const plugins: readonly PluginInfo[] = [
       },
       {
         "name": "allowedProperties",
+        "type": "readonly string[]",
+        "optional": true
+      },
+      {
+        "name": "allowedPatterns",
         "type": "readonly string[]",
         "optional": true
       }

@@ -5,19 +5,19 @@
 `config/json-schema-suite.json` に対して**両方向に**表明している
 （退行も、記録されていない改善も、同じようにビルドを落とす）。
 
-最終測定日: 2026-09-07 / ブランチ `feature/ts-rewrite-v1`
+最終測定日: 2026-09-08 / ブランチ `feature/standard-schema`
 
 ---
 
 ## 1. 見出しの数字
 
-**855 / 929 = 92.04%**
+**855 / 929 = 92.03%**
 
 公式 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
 draft7、必須テストのみ（`tests/draft7/optional/` は含まない）。
 
 **skip したケースは合格ではなく「不合格」として数えている。**
-101件の skip はすべて上の 101件の失敗と同一集合であり、
+74件の skip はすべて上の 74件の失敗と同一集合であり、
 「skip して率を上げる」ことは構造的にできない。
 
 | | 件数 |
@@ -37,7 +37,7 @@ draft7、必須テストのみ（`tests/draft7/optional/` は含まない）。
 | | 有効と判定すべき 551件 | 無効と判定すべき 378件 | 合計 |
 |---|---|---|---|
 | 常に true を返すだけの検証器 | 551 (100%) | 0 (0%) | 551 (59.31%) |
-| **新実装** | **508 (92.19%)** | **320 (84.66%)** | **828 (89.13%)** |
+| **新実装** | **523 (94.92%)** | **332 (87.83%)** | **855 (92.03%)** |
 
 ## 2. 固定したコーパス
 
@@ -96,33 +96,37 @@ null の可否はルールではなく**存在ポリシー**で表現するし�
 
 | 失敗のしかた | 件数 |
 |---|---|
-| 検証器の構築自体が例外を投げる（判定に到達しない） | 79 |
-| 構築はできたが判定が誤り | 22 |
+| 検証器の構築自体が例外を投げる（判定に到達しない） | 57 |
+| 構築はできたが判定が誤り | 17 |
 | `validate()` の実行時例外 | **0** |
 
 ### 原因別
 
+数え方は `test/json-schema/report-skip-causes.ts` を実行したもので、手では数えない。
+
 | 原因 | 件数 | 解消に必要なもの |
 |---|---|---|
 | `external-ref` — `http://localhost:1234/...` などの外部・リモート `$ref` | 57 | `feature:external-ref-loader` |
-| `reserved-path-segment` — `__proto__` を宣言パスの一部にできない | 14 | `decision:reserved-path-segments`（意図的な拒否） |
-| `ref-pointer-escaping` — `~0` `~1` `%25` や空トークンを含む JSON ポインタ | 9 | `feature:json-pointer-escaping` |
 | `tuple-items` — 配列形の `items` と `additionalItems` の組み合わせ | 6 | `feature:tuple-items-and-additional-items` |
 | `null-not-observable` — null がルールに届かない（§3 のグルーと同根） | 5 | `feature:document-driven-presence` |
-| `sibling-keyword-interaction` — `additionalProperties` が `patternProperties` を見ない | 3 | `feature:additional-properties-with-patterns` |
 | `ref-identifier-scope` — `$id` によるベース URI と `#anchor` | 3 | `feature:ref-identifier-scope` |
-| `code-point-string-length` — `minLength`/`maxLength` をコードポイントで数える | 2 | `feature:code-point-string-length` |
-| `ref-chain` — 2ホップ目の `$ref` のルールが集められない | 1 | `feature:ref-chain-resolution` |
+| `ref-chain` — 2ホップ目の `$ref` のルールが集められない | 2 | `feature:ref-chain-resolution` |
 | `boolean-sub-schema` — `true` / `false` そのものが部分スキーマである形 | 1 | `feature:boolean-sub-schema` |
-| **合計** | **101** | |
+| **合計** | **74** | |
+
+解消済みで表から消えた原因が4つある: `reserved-path-segment` (14件、
+`__proto__` を宣言できるようにした)、`ref-pointer-escaping` (9件)、
+`sibling-keyword-interaction` (3件)、`code-point-string-length` (2件)。
+消えた原因の名前は `SuiteSkipCause` からも消してあるので、復活させるには
+型を足す必要がある。
 
 外部 `$ref` の 57件（全体の 6.1%）はスイートが `localhost:1234` でスキーマを配信して
 取りに行かせるもので、Luq にはネットワークローダーが無い。
-これを除いた 872 ケースに対する合格率は **828 / 872 = 94.95%**。
+これを除いた 872 ケースに対する合格率は **855 / 872 = 98.05%**。
 
 ### skip リスト
 
-`test/json-schema/suite-skip-list.ts` の **53 エントリ**が上の 101 ケースを覆う。
+`test/json-schema/suite-skip-list.ts` の **44 エントリ**が上の 74 ケースを覆う。
 エントリは型付きデータで、`cause` と `expiresWith` は閉じた文字列ユニオン、
 `reason` は必須プロパティなので、書き忘れは型エラーになる。
 
@@ -140,9 +144,9 @@ Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build()
 
 | | 旧実装 | 新実装 | 差 |
 |---|---|---|---|
-| 合格 / 929 | **536 (57.70%)** | **828 (89.13%)** | +292 (+31.43pt) |
-| 有効と判定すべき 551件 | 512 (92.92%) | 508 (92.19%) | −4 |
-| **無効と判定すべき 378件** | **24 (6.35%)** | **320 (84.66%)** | **+296 (+78.31pt)** |
+| 合格 / 929 | **536 (57.70%)** | **855 (92.03%)** | +319 (+34.33pt) |
+| 有効と判定すべき 551件 | 512 (92.92%) | **523 (94.92%)** | +11 |
+| **無効と判定すべき 378件** | **24 (6.35%)** | **332 (87.83%)** | **+308 (+81.48pt)** |
 | 構築が失敗したケース | 41 | 79 | |
 | 判定が誤ったケース | 352 | 22 | |
 

@@ -1,6 +1,7 @@
 ---
 import LuqLogo from './LuqLogo.astro';
 import CodeBlock from './CodeBlock.astro';
+import { conformance } from '../data/conformance';
 
 /**
  * Landing hero.
@@ -22,9 +23,9 @@ const measured = [
     source: 'config/plugin-catalog.lock.json',
   },
   {
-    value: '89.13%',
+    value: `${conformance.percent}%`,
     label: 'JSON Schema Draft-07',
-    source: 'docs/json-schema-conformance.md',
+    source: 'config/json-schema-suite.json',
   },
   {
     value: '0',
@@ -81,10 +82,18 @@ const refused = [
     </h1>
 
     <p class="mx-auto mb-4 max-w-3xl text-body-large text-on-surface-variant sm:text-title-medium">
-      Luq takes a type you wrote — not a schema you rewrote — and lets you declare
-      rules against its field paths. The compiler checks those declarations
-      against the type, so a rule that does not apply to the field it is written
-      on is an error rather than a rule that quietly never fires.
+      Your types were probably not written by you. <code>openapi-typescript</code>
+      generates them from a spec you do not own; Prisma generates them from the
+      schema of record; protobuf generates them for four languages at once. A
+      validator whose schema is the source of truth asks you to write that shape a
+      second time, and nothing checks that the copy still agrees with the original.
+    </p>
+
+    <p class="mx-auto mb-4 max-w-3xl text-body-large text-on-surface-variant sm:text-title-medium">
+      Luq runs the other way. It takes the type you already have and lets you
+      declare rules against its field paths — and the compiler checks those
+      declarations against the type, so a rule that does not apply to the field it
+      is written on is an error rather than a rule that quietly never fires.
     </p>
 
     <p class="mx-auto mb-8 max-w-3xl text-body-medium text-on-surface-variant">

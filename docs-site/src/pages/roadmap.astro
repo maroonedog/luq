@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import { conformance } from '../data/conformance';
 
 /**
  * This page replaces the 1.x roadmap, which advertised a `.luq` universal-platform
@@ -30,9 +31,9 @@ const shipped = [
   },
   {
     icon: 'schema',
-    headline: '89.13% of the Draft-07 suite',
+    headline: `${conformance.percent}% of the Draft-07 suite`,
     detail:
-      '828 of 929 required cases, with skipped cases counted as failures. A validator that always said yes would score 59.31%; 1.x scored 57.70%.',
+      `${conformance.passingCases} of ${conformance.caseCount} required cases, with skipped cases counted as failures. A validator that always said yes would score ${conformance.trivialPercent}%; 1.x scored 57.70%.`,
     href: '/json-schema',
     linkLabel: 'See the breakdown',
   },
@@ -59,6 +60,14 @@ const shipped = [
       'A scratch consumer typechecks all 84 against the published declarations under both node16 and bundler resolution, and proves an unpublished subpath fails.',
     href: '/docs/getting-started',
     linkLabel: 'Get started',
+  },
+  {
+    icon: 'cable',
+    headline: 'Standard Schema v1',
+    detail:
+      'toStandardSchema() on the @maroonedog/luq/standard-schema subpath, so anything that accepts a Standard Schema — tRPC, TanStack Form, Hono, t3-env — accepts a Luq validator. A subpath rather than part of build(), because carrying it on every validator costs 312 B gzipped.',
+    href: '/docs/getting-started#standard-schema',
+    linkLabel: 'How to use it',
   },
   {
     icon: 'account_tree',
@@ -156,7 +165,7 @@ const knownWeaknesses = [
 
 <BaseLayout
   title="Roadmap"
-  description="What has shipped in this alpha, what is measured as missing and named in the source, and why the 1.x universal-platform roadmap has been withdrawn."
+  description="What has shipped in 2.0, what is measured as missing and named in the source, and why the 1.x universal-platform roadmap has been withdrawn."
 >
   <Header />
   <MobileMenuOverlay navItems={navItems} />
@@ -164,7 +173,7 @@ const knownWeaknesses = [
   <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
     <header class="mb-12">
-      <p class="mb-2 text-label-large text-primary">Alpha</p>
+      <p class="mb-2 text-label-large text-primary">2.0</p>
       <h1 class="mb-4 text-display-small text-on-surface">Roadmap</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
         This page carries no dates. Everything below is either measured and shipped, or measured as
@@ -280,7 +289,7 @@ const knownWeaknesses = [
       <h2 class="mb-2 text-headline-medium text-on-surface">Where this release is weak</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         Not everything unfinished is a JSON Schema keyword. These are the things a reader deserves
-        to know before adopting the alpha.
+        to know before adopting 2.0.
       </p>
 
       <div class="space-y-4">

@@ -39,6 +39,8 @@ interface CaseResult {
   readonly group: string;
   readonly test: string;
   readonly passed: boolean;
+  /** スイートがそのケースに期待する答え。有効/無効の内訳を数えるのに使う。 */
+  readonly expected: boolean;
   readonly skip: SuiteSkip | undefined;
   readonly detail: string;
 }
@@ -61,6 +63,7 @@ function runCorpus(corpus: SuiteCorpus): readonly CaseResult[] {
           group: group.description,
           test: one.description,
           passed,
+          expected: one.valid,
           skip: findSuiteSkip(file.name, group.description, one.description),
           detail:
             outcome.kind === "verdict"
@@ -186,6 +189,23 @@ describeCorpus("JSON-Schema-Test-Suite draft7 conformance", () => {
 
     it("reports the recorded pass count, exactly", () => {
       expect(passing.length).toBe(pin.passingCases);
+    });
+
+    // 適合率は「何を渡しても true を返す検証器」の下限と比べて初めて意味を
+    // 持つ。その比較表を docs と docs-site が載せているので、内訳もピンに
+    // 記録して、片方だけ古くなることを防ぐ。
+    it("reports the recorded valid/invalid breakdown, exactly", () => {
+      expect({
+        validCases: results.filter((r) => r.expected).length,
+        invalidCases: results.filter((r) => !r.expected).length,
+        passingValidCases: passing.filter((r) => r.expected).length,
+        passingInvalidCases: passing.filter((r) => !r.expected).length,
+      }).toEqual({
+        validCases: pin.validCases,
+        invalidCases: pin.invalidCases,
+        passingValidCases: pin.passingValidCases,
+        passingInvalidCases: pin.passingInvalidCases,
+      });
     });
 
     it("counts every case as passing, skipped or failing exactly once", () => {

@@ -470,9 +470,10 @@
     "check:doc-examples": "npx ts-node --project scripts/tsconfig.json scripts/check-doc-examples.ts",
     "check:doc-imports": "npx ts-node --project scripts/tsconfig.json scripts/check-doc-imports.ts",
     "check:generated-docs": "npx ts-node --project scripts/tsconfig.json scripts/generate-docs.ts --check",
-    "check:docs": "npm run check:generated-docs && npm run check:doc-examples && npm run check:doc-imports",
+    "check:docs": "npm run check:generated-docs && npm run check:doc-examples && npm run check:doc-imports && npm run check:conformance-figures",
     "bench:record": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --record",
-    "bench:gate": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --gate"
+    "bench:gate": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --gate",
+    "check:conformance-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-conformance-figures.ts"
   },
   "repository": {
     "type": "git",
