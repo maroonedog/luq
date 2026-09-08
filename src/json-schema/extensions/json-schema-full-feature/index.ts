@@ -24,4 +24,6 @@ export {
   listBundledPluginNames,
 } from "./bundle-coverage";
 
+export type { JsonSchemaOptions } from "../json-schema";
+
 export type { JsonSchemaBag } from "../../index";

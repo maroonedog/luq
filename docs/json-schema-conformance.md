@@ -6,26 +6,28 @@
 （退行も、記録されていない改善も、同じようにビルドを落とす）。
 
 最終測定日: 2026-09-08 / ブランチ `feature/standard-schema`
+数え方は `test/json-schema/report-skip-causes.ts` を実行したもので、手では数えない。
 
 ---
 
 ## 1. 見出しの数字
 
-**855 / 929 = 92.03%**
+**929 / 929 = 100.00%**
 
 公式 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
 draft7、必須テストのみ（`tests/draft7/optional/` は含まない）。
 
 **skip したケースは合格ではなく「不合格」として数えている。**
-74件の skip はすべて上の 74件の失敗と同一集合であり、
-「skip して率を上げる」ことは構造的にできない。
+skip リストは**空**である。率を上げるために何かを除外した、ということが
+構造的に起きていない (`SuiteSkipCause` が `never` なので、skip を1件
+書き足すには型に名前を足す必要がある)。
 
 | | 件数 |
 |---|---|
 | 総ケース数 | 929 |
-| 合格 | **855** |
-| 不合格 | 74 |
-| うち skip リストに載っているもの | 74 |
+| 合格 | **929** |
+| 不合格 | **0** |
+| うち skip リストに載っているもの | 0 |
 | skip リストに無い不合格 | **0** |
 
 ### 自明な下限との比較
@@ -37,7 +39,7 @@ draft7、必須テストのみ（`tests/draft7/optional/` は含まない）。
 | | 有効と判定すべき 551件 | 無効と判定すべき 378件 | 合計 |
 |---|---|---|---|
 | 常に true を返すだけの検証器 | 551 (100%) | 0 (0%) | 551 (59.31%) |
-| **新実装** | **523 (94.92%)** | **332 (87.83%)** | **855 (92.03%)** |
+| **新実装** | **551 (100%)** | **378 (100%)** | **929 (100.00%)** |
 
 ## 2. 固定したコーパス
 
@@ -90,48 +92,86 @@ null の可否はルールではなく**存在ポリシー**で表現するし�
 これは実際の呼び出し側も書く必要がある3行であり、
 「プラグインが1つのルールしか返せない」という制約の帰結である（§7 参照）。
 
-## 4. 落ちている 101件の内訳（実測）
-
-### 失敗のしかた
+## 4. 落ちているケース: **無し**
 
 | 失敗のしかた | 件数 |
 |---|---|
-| 検証器の構築自体が例外を投げる（判定に到達しない） | 57 |
-| 構築はできたが判定が誤り | 17 |
+| 検証器の構築自体が例外を投げる（判定に到達しない） | **0** |
+| 構築はできたが判定が誤り | **0** |
 | `validate()` の実行時例外 | **0** |
-
-### 原因別
 
 数え方は `test/json-schema/report-skip-causes.ts` を実行したもので、手では数えない。
 
-| 原因 | 件数 | 解消に必要なもの |
+### ここまでに消えた原因（記録）
+
+skip の原因は一度も「率のために消した」ことがない。すべて、待っていたものが
+できたときに消えている。消えた原因の名前は `SuiteSkipCause` からも消して
+あるので、復活させるには型に名前を足す必要がある。
+
+| 原因 | 件数 | 何で消えたか |
 |---|---|---|
-| `external-ref` — `http://localhost:1234/...` などの外部・リモート `$ref` | 57 | `feature:external-ref-loader` |
-| `tuple-items` — 配列形の `items` と `additionalItems` の組み合わせ | 6 | `feature:tuple-items-and-additional-items` |
-| `null-not-observable` — null がルールに届かない（§3 のグルーと同根） | 5 | `feature:document-driven-presence` |
-| `ref-identifier-scope` — `$id` によるベース URI と `#anchor` | 3 | `feature:ref-identifier-scope` |
-| `ref-chain` — 2ホップ目の `$ref` のルールが集められない | 2 | `feature:ref-chain-resolution` |
-| `boolean-sub-schema` — `true` / `false` そのものが部分スキーマである形 | 1 | `feature:boolean-sub-schema` |
-| **合計** | **74** | |
+| `external-ref` | 57 | 呼び出し側が渡した文書だけを見る `externalDocuments`。Luq は取りに行かない |
+| `reserved-path-segment` | 14 | `__proto__` を宣言できるようにした（`Object.defineProperty` で書く） |
+| `ref-pointer-escaping` | 9 | フラグメント全体を先に復号する RFC 6901 の順序 |
+| `tuple-items` | 6 | 下の1行 |
+| `null-not-observable` | 5 | `nullIsValue`: サブスキーマの中では null は不在ではなく値 |
+| `ref-identifier-scope` | 3 | `$id` がベース URI を動かすことを表すスコープ (`ref-scope.ts`) |
+| `sibling-keyword-interaction` | 3 | `additionalProperties` が `patternProperties` を見る |
+| `code-point-string-length` | 2 | 長さをコードポイントで数える |
+| `ref-chain` | 2 | 下の1行 |
+| `boolean-sub-schema` | 1 | 下の1行 |
 
-解消済みで表から消えた原因が4つある: `reserved-path-segment` (14件、
-`__proto__` を宣言できるようにした)、`ref-pointer-escaping` (9件)、
-`sibling-keyword-interaction` (3件)、`code-point-string-length` (2件)。
-消えた原因の名前は `SuiteSkipCause` からも消してあるので、復活させるには
-型を足す必要がある。
+`tuple-items` / `ref-chain` / `boolean-sub-schema` の9件は同じ1行で消えた。
+`toSchemaBranch` が `context.collectSubSchemaRules` を呼んでおり、その
+context は **すでにこの `$ref` を降りて作られたもの** だったので、同じ
+`$ref` を二度目にたどった再帰ガードが自分で自分を止めていた。
+`{"items":[{"$ref":"#/definitions/x"}]}` は何も制約せず、
+`{"items":[{"type":"integer"}]}` は正しく効く、という食い違いがその印だった。
 
-外部 `$ref` の 57件（全体の 6.1%）はスイートが `localhost:1234` でスキーマを配信して
-取りに行かせるもので、Luq にはネットワークローダーが無い。
-これを除いた 872 ケースに対する合格率は **855 / 872 = 98.05%**。
+### 外部 `$ref` をどう通したか（Luq はネットワークに触れない）
+
+スイートの 57件は `http://localhost:1234/...` でスキーマを配信して取りに
+行かせるものである。Luq はローダー関数ではなく **地図** を受け取る:
+
+```ts
+b.any.jsonSchemaFullFeature(document, { externalDocuments })
+```
+
+呼び出し側が既に持っている文書だけが解決に使われる。これで三つが同時に立つ:
+スキーマに書かれた URI でプロセスがソケットを開くことがない (SSRF)、変換は
+同期のままなので `build()` は Promise を返さない、`eval` も `new Function`
+も増えないので CSP の保証が変わらない。取りに行くのは呼び出し側の仕事で、
+スイートのハーネスではそれがファイルシステムである
+(`test/json-schema/read-remote-documents.ts`)。
+
+### 再帰の展開に上限がある（実測に基づく）
+
+相互再帰する `$ref` は無限の宣言パスを持つので、展開はどこかで止まる。
+一周で止めていたときは tree -> node -> tree が2階層しか検査できなかった。
+上限を上げると、相互再帰の本数に対して指数的に高くなる。三本の相互再帰で:
+
+| 展開回数 | build 時間 |
+|---|---|
+| 1 | 17 ms |
+| 2 | 55 ms |
+| 3 | 538 ms |
+| 4 | 9257 ms |
+
+コーパスが要求するのは3回（ref.json の tree は3階層目に不正値を置く）なので
+3にしてある。これは build 時に一度だけ払うコストである。加えて
+`EXPANSION_BUDGET` が変換1回あたりの `$ref` 展開総数を抑える: 深さの上限は
+深さしか縛らず、幅は文書任せになるため。公式コーパス全体がこの予算の下に
+収まるので、普通の文書では何も変わらない。
 
 ### skip リスト
 
-`test/json-schema/suite-skip-list.ts` の **44 エントリ**が上の 74 ケースを覆う。
-エントリは型付きデータで、`cause` と `expiresWith` は閉じた文字列ユニオン、
-`reason` は必須プロパティなので、書き忘れは型エラーになる。
+`test/json-schema/suite-skip-list.ts` は **空** である。`SuiteSkipCause` は
+`never` なので、`SuiteSkip` はそもそも構築できない。skip を1件戻すには
+型に名前を足す必要があり、それはレビュアーが読む差分になる。
 
-**skip したケースも必ず実行される。** skip されたケースが合格したらビルドが落ちる
-（`findStaleSkips`）。skip は「まだ落ちる」という表明であって、退行の隠し場所ではない。
+**skip したケースも必ず実行される** という規則はそのまま残してある
+（`findStaleSkips`）。skip は「まだ落ちる」という表明であって、退行の隠し
+場所ではない。
 
 ## 5. 旧実装との比較（同一コーパスで再実測）
 
@@ -144,9 +184,9 @@ Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build()
 
 | | 旧実装 | 新実装 | 差 |
 |---|---|---|---|
-| 合格 / 929 | **536 (57.70%)** | **855 (92.03%)** | +319 (+34.33pt) |
-| 有効と判定すべき 551件 | 512 (92.92%) | **523 (94.92%)** | +11 |
-| **無効と判定すべき 378件** | **24 (6.35%)** | **332 (87.83%)** | **+308 (+81.48pt)** |
+| 合格 / 929 | **536 (57.70%)** | **929 (100.00%)** | +393 (+42.30pt) |
+| 有効と判定すべき 551件 | 512 (92.92%) | **551 (100%)** | +39 |
+| **無効と判定すべき 378件** | **24 (6.35%)** | **378 (100%)** | **+354 (+93.65pt)** |
 | 構築が失敗したケース | 41 | 79 | |
 | 判定が誤ったケース | 352 | 22 | |
 
@@ -187,7 +227,7 @@ Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build()
   各プラグインの見出しには**何を検査し、何を検査しないか**が書いてある
   （たとえば `string-idn-hostname` は IDNA2008 の派生プロパティ表と Bidi 規則を
   検査しない、と明記している）。
-  この4つの追加が 804 → 828（86.54% → 89.13%）の全部である。
+  この4つの追加だけで 804 → 828（86.54% → 89.13%）動いた。
 - キーワード束縛が名指すプラグイン: 35。`jsonSchemaFullFeature` が同梱するプラグイン: 49。
 - プラグインカタログ: 76 ディレクトリ（isolated 74 / extension 2）、
   `package.json#/exports` は 84 キー

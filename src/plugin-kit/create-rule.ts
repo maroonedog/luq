@@ -59,6 +59,17 @@ export interface PresenceSpec<C extends MessageContextExtra> {
   readonly allowUndefined: boolean;
   readonly allowNull: boolean;
   readonly emptyStringIsMissing: boolean;
+  /**
+   * True when `null` must be JUDGED here rather than settled by presence.
+   *
+   * OPTIONAL, and false by default, because `presence()` is an API plugin
+   * AUTHORS use: making it required would break every plugin outside this
+   * repository to add a flag almost none of them want. The default is the
+   * behaviour that was always there — `.nullable()` ends the field on null.
+   * src/json-schema/ sets it, because a DOCUMENT decides whether null is
+   * allowed and `type` is not the only keyword that decides it.
+   */
+  readonly nullIsValue?: boolean;
   describe(ctx: MessageContext): string;
   buildMessageContext(): C;
 }
@@ -73,6 +84,7 @@ export function presence<C extends MessageContextExtra>(
     allowUndefined: spec.allowUndefined,
     allowNull: spec.allowNull,
     emptyStringIsMissing: spec.emptyStringIsMissing,
+    nullIsValue: spec.nullIsValue === true,
     describe: (ctx) =>
       renderMessage(
         spec.messageFactory,

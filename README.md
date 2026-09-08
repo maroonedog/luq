@@ -208,10 +208,17 @@ Measured Draft-07 conformance against the official
 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
 (required tests only, skipped cases counted as **failures**):
 
-**855 / 929 = 92.03%.** A validator that returned `true` unconditionally would
-score 551 / 929 = 59.31% on this corpus, which is the number the 89% should be
-read against. Full breakdown, including every one of the 101 failures:
+**929 / 929 = 100.00%.** Read that against the floor, not against zero: a
+validator that returned `true` unconditionally scores 551 / 929 = 59.31% on
+this corpus. The skip list is empty, and its `cause` union is `never`, so
+excluding a case again means adding a name to a type. Full breakdown, including
+what closed each cause and what is still bounded:
 [docs/json-schema-conformance.md](docs/json-schema-conformance.md).
+
+External `$ref` resolves against a map of documents **you** already have —
+`jsonSchemaFullFeature(document, { externalDocuments })`. Luq never fetches, so
+a URI written in a schema cannot make the process open a socket, conversion
+stays synchronous, and nothing is evaluated.
 
 `jsonSchemaFullFeature` bundles 49 plugins so one import covers a whole
 document. `@maroonedog/luq/plugins/jsonSchema` adds a chain method instead, so a
@@ -457,8 +464,8 @@ the 84 keys** against the published declarations under **both** `node16` and
   every subpath, method and slot
 - **[Breaking changes from 1.x](docs/migration/breaking-changes.md)** — every
   incompatibility with the fix beside it
-- **[Draft-07 conformance](docs/json-schema-conformance.md)** — the 92.03% and
-  all 101 failures
+- **[Draft-07 conformance](docs/json-schema-conformance.md)** — the 100% and
+  what closed each of the ten causes that used to fail
 
 ## About the "universal platform" goal
 

@@ -34,9 +34,11 @@ import { jsonSchemaFullFeaturePlugin } from "../../src/json-schema/extensions/js
 // Not on src/json-schema/index.ts. Imported from the module that owns it so
 // the harness asks the SAME question the converter asks about null.
 import { permitsNull } from "../../src/json-schema/declare-value-keywords";
-import { resolveSchemaNode } from "../../src/json-schema/collect-definitions";
+import { resolveSchemaNodeInScope } from "../../src/json-schema/collect-definitions";
+import { createDocumentScope } from "../../src/json-schema/ref-scope";
 import { isDraft07Schema } from "../../src/json-schema/draft07.types";
 import type { Validator } from "../../src/index";
+import { readRemoteDocuments } from "./read-remote-documents";
 
 export interface SuiteSubject {
   readonly instance: unknown;
@@ -47,7 +49,8 @@ export const SUITE_SUBJECT_KEY = "instance";
 /** True when the document permits an explicit null at its root. */
 export function documentPermitsNull(document: unknown): boolean {
   if (!isDraft07Schema(document)) return true;
-  return permitsNull(resolveSchemaNode(document, document));
+  const scope = createDocumentScope(document, externalDocuments());
+  return permitsNull(resolveSchemaNodeInScope(document, scope).node);
 }
 
 /**
@@ -56,18 +59,32 @@ export function documentPermitsNull(document: unknown): boolean {
  * runner records it as a failure of every case in the group rather than
  * swallowing it.
  */
+/**
+ * スイートが localhost:1234 で配る文書を、ディスクから読んで一度だけ地図に
+ * する。Luq は取りに行かないので、外部 `$ref` はここで渡した分だけ解ける。
+ * 読み込みが一度なのは、929ケースごとに remotes/ を走査すると測定が遅く
+ * なるからで、意味は変わらない。
+ */
+let remoteDocuments: Readonly<Record<string, unknown>> | undefined;
+
+function externalDocuments(): Readonly<Record<string, unknown>> {
+  remoteDocuments ??= readRemoteDocuments();
+  return remoteDocuments;
+}
+
 export function buildSuiteValidator(
   document: unknown
 ): Validator<SuiteSubject> {
   const allowsNull = documentPermitsNull(document);
+  const options = { externalDocuments: externalDocuments() };
   return Builder()
     .use(optionalPlugin)
     .use(jsonSchemaFullFeaturePlugin)
     .for<SuiteSubject>()
     .v(SUITE_SUBJECT_KEY, (b) =>
       allowsNull
-        ? b.any.jsonSchemaFullFeature(document)
-        : b.any.optional().jsonSchemaFullFeature(document)
+        ? b.any.jsonSchemaFullFeature(document, options)
+        : b.any.optional().jsonSchemaFullFeature(document, options)
     )
     .build();
 }

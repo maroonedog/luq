@@ -18,7 +18,10 @@
 // ===========================================================================
 import type { Draft07Schema, Draft07SchemaObject } from "./draft07.types";
 import { isSchemaObject } from "./draft07.types";
-import { resolveRef } from "./resolve-ref";
+import type { RefScope } from "./ref-scope";
+import { createLocalScope } from "./ref-scope";
+import { resolveRefInScope } from "./resolve-ref";
+import { nextBaseUri } from "./uri-reference";
 
 /** `true`: matches every instance. */
 const ALWAYS_SCHEMA: Draft07SchemaObject = Object.freeze({});
@@ -54,9 +57,62 @@ export function resolveSchemaNode(
   schema: Draft07Schema,
   root: Draft07Schema
 ): Draft07SchemaObject {
+  return resolveSchemaNodeInScope(schema, createLocalScope(root)).node;
+}
+
+/** What a node resolved to, and the scope that is in force INSIDE it. */
+export interface ResolvedNode {
+  readonly node: Draft07SchemaObject;
+  readonly scope: RefScope;
+}
+
+/**
+ * The scope-aware form, and the one the converter uses.
+ *
+ * The returned scope is not the one passed in: following a `$ref` can cross
+ * into another document, and a `$ref` written inside THAT document resolves
+ * against ITS base. Returning only the node — which is what the root-taking
+ * form above can do — loses that, and is why a two-document schema resolved
+ * its second hop against the first document.
+ */
+export function resolveSchemaNodeInScope(
+  schema: Draft07Schema,
+  scope: RefScope
+): ResolvedNode {
   const node = toSchemaObject(schema);
-  if (node.$ref === undefined) return node;
-  return toSchemaObject(resolveRef(node.$ref, root));
+  if (node.$ref === undefined) {
+    // A node's own `$id` moves the base for everything inside it (§8.2).
+    return { node, scope: advanceBase(scope, node) };
+  }
+  // Following a `$ref` lands in whatever base the TARGET lives in, and
+  // resolve-ref already knows it — for a document fetched by URI that is the
+  // retrieval URI, which the draft says wins over the document's own `$id`.
+  const resolved = resolveRefInScope(node.$ref, scope);
+  return { node: toSchemaObject(resolved.schema), scope: resolved.scope };
+}
+
+/**
+ * The ONE place a base URI advances. It was also being done by the caller,
+ * and doing it in both meant a relative `$id` was applied twice: a `$ref`
+ * of "nested/foo.json" under `$id: "nested/"` went looking for
+ * ".../nested/nested/foo.json".
+ *
+ * A base-setting `$id` starts a new RESOURCE, so the node also becomes the
+ * document that `#/definitions/x` written under it resolves against. Moving
+ * the base without moving the document is why
+ * `{"$id":"a.json","properties":{"foo":{"$id":"b.json","definitions":{...},
+ * "allOf":[{"$ref":"#/definitions/inner"}]}}}` looked for `inner` in the
+ * OUTER document, where it does not exist.
+ */
+export function advanceBase(
+  scope: RefScope,
+  node: Draft07SchemaObject
+): RefScope {
+  const id = node.$id;
+  if (typeof id !== "string" || id === "") return scope;
+  const baseUri = nextBaseUri(scope.baseUri, id);
+  if (baseUri === scope.baseUri) return scope;
+  return { ...scope, baseUri, document: node };
 }
 
 /**

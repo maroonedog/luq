@@ -10,11 +10,11 @@
   "groupCount": 258,
   "caseCount": 929,
   "contentDigest": "sha256:323c37914b8c8a41176ccd343cfc110659039c740d380d50ca71f96a5b4860aa",
-  "skipEntryCount": 44,
-  "skippedCases": 74,
-  "passingCases": 855,
+  "skipEntryCount": 0,
+  "skippedCases": 0,
+  "passingCases": 929,
   "validCases": 551,
   "invalidCases": 378,
-  "passingValidCases": 523,
-  "passingInvalidCases": 332
+  "passingValidCases": 551,
+  "passingInvalidCases": 378
 }

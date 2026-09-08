@@ -17,7 +17,7 @@ import {
 } from "../../../../src/json-schema/flatten-schema";
 import { readChildSchemas } from "../../../../src/json-schema/schema-to-declarations";
 import { ROOT_PATH } from "../../../../src/compile/declared-child-keys";
-import { RefResolutionError } from "../../../../src/json-schema/resolve-ref";
+import { RefResolutionError } from "../../../../src/json-schema/ref-resolution-error";
 import { UnsupportedKeywordError } from "../../../../src/json-schema/unsupported-keyword-error";
 import { PathSyntaxError } from "../../../../src/path/reserved-segment";
 import { jsonSchemaBagFixture } from "./json-schema-bag-fixture";

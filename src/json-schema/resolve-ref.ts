@@ -1,10 +1,14 @@
 // ===========================================================================
-// L8  src/json-schema/resolve-ref.ts — local `$ref` resolution.
+// L8  src/json-schema/resolve-ref.ts — `$ref` resolution.
 //
-// Local only, and deliberately so: `$id` base-URI resolution and network
-// fetching are both out of scope, and a converter that quietly ignored an
-// external `$ref` would build a validator that checks less than the schema
-// says. An external reference therefore throws.
+// A `$ref` is a URI REFERENCE, not a pointer into the current file: `$id`
+// moves the base, so the same string can name different places depending on
+// where it was written. uri-reference.ts does that arithmetic and
+// schema-registry.ts holds the index; ref-scope.ts carries where we are.
+//
+// Luq still never FETCHES. A reference that leaves the documents the caller
+// supplied throws, because a converter that quietly ignored it would build a
+// validator that checks less than the schema says.
 //
 // The part 1.x got wrong is the CHAIN. Its `resolveRef` returned the first
 // target it found, so `#/definitions/a -> {$ref:"#/definitions/b"} ->
@@ -18,95 +22,125 @@
 // NOT a cycle: resolving that pointer terminates at once on a schema object.
 // ===========================================================================
 import type { Draft07Schema } from "./draft07.types";
+import { RefResolutionError } from "./ref-resolution-error";
 import { isDraft07Schema, isSchemaObject } from "./draft07.types";
-import { isArray, isPlainObject } from "../types";
-
-export class RefResolutionError extends Error {
-  readonly ref: string;
-
-  constructor(ref: string, reason: string) {
-    super(`Cannot resolve $ref "${ref}": ${reason}`);
-    this.name = "RefResolutionError";
-    this.ref = ref;
-    // Without this, `instanceof` fails when the package is compiled to ES5.
-    Object.setPrototypeOf(this, RefResolutionError.prototype);
-  }
-}
+import { advanceBase } from "./collect-definitions";
+import { walkPointer } from "./follow-json-pointer";
+import type { RefScope } from "./ref-scope";
+import { createLocalScope } from "./ref-scope";
+import { resolveUriReference, splitUri } from "./uri-reference";
 
 /** No legitimate document chains this many `$ref`s. See resolveRef. */
 const MAX_REF_HOPS = 1000;
 
-/** RFC 6901: `~1` is "/" and `~0` is "~", decoded in that order. */
-function decodePointerToken(token: string): string {
-  return token.replace(/~1/g, "/").replace(/~0/g, "~");
-}
-
-/**
- * `$ref` は URI で、ポインタはそのフラグメント。RFC 6901 §6 は
- * 「フラグメントの規則でパーセント符号化されている」と定めるので、
- * **スラッシュで割る前にフラグメント全体を復号する**。
- *
- * 順序が意味を持つ。`#/definitions/percent%25field` は復号して
- * `/definitions/percent%field` になり、そこで割ってトークンを得る。
- * 先に割ってからトークンごとに復号すると `%25` は復号されるが、
- * `%2F` が「区切りとしてのスラッシュ」に戻る仕様どおりの挙動にならない。
- *
- * 壊れたパーセント列 (`%zz`) は decodeURIComponent が投げるので、
- * 復号できないポインタはそのまま扱う。ここで投げると、ポインタが1つ
- * 壊れているだけで文書全体が読めなくなる。
- */
-function decodeFragment(pointer: string): string {
-  try {
-    return decodeURIComponent(pointer);
-  } catch {
-    return pointer;
-  }
-}
-
-function toPointerTokens(ref: string): readonly string[] {
-  const pointer = decodeFragment(ref.slice(1));
-  if (pointer === "") return [];
-  // "/" は「ルート直下の空文字キー」であって空のトークン列ではない。
-  // ここを [] にすると `{"": ...}` を指すポインタがルートに化ける。
-  return pointer.split("/").slice(1).map(decodePointerToken);
-}
-
-/**
- * `definitions` and `$defs` are the same container to a pointer: a Draft-07
- * document spells it one way, a 2019-09 document the other, and a schema that
- * mixes them (they exist) must still resolve. A real `definitions` member
- * always wins, so a property literally named "definitions" is unaffected.
- */
-function stepInto(current: unknown, token: string): unknown {
-  if (isArray(current)) return current[Number(token)];
-  if (!isPlainObject(current)) return undefined;
-  if (token === "definitions" || token === "$defs") {
-    return current["definitions"] ?? current["$defs"];
-  }
-  return current[token];
-}
-
-function followPointer(ref: string, root: Draft07Schema): Draft07Schema {
-  let current: unknown = root;
-  for (const token of toPointerTokens(ref)) {
-    current = stepInto(current, token);
-    if (current === undefined) {
+function followPointer(
+  ref: string,
+  fragment: string,
+  scope: RefScope
+): { schema: Draft07Schema; scope: RefScope } {
+  const walked = walkPointer(
+    fragment,
+    scope.document,
+    scope,
+    (at, node) =>
+      isDraft07Schema(node) && isSchemaObject(node)
+        ? advanceBase(at, node)
+        : at,
+    (token) => {
       throw new RefResolutionError(ref, `no schema at segment "${token}"`);
     }
-  }
-  if (!isDraft07Schema(current)) {
+  );
+  if (!isDraft07Schema(walked.node)) {
     throw new RefResolutionError(ref, "the target is not a schema");
   }
-  return current;
+  return { schema: walked.node, scope: walked.scope };
+}
+
+/** True for `#name`: a plain-name fragment, which names rather than locates. */
+function isPlainNameFragment(fragment: string): boolean {
+  return fragment !== "" && !fragment.startsWith("/");
+}
+
+/** What one hop produced: the node named, and the scope it lives in. */
+interface RefStep {
+  readonly schema: Draft07Schema;
+  readonly scope: RefScope;
 }
 
 /**
- * Resolves `ref` against `root`, then keeps following `$ref` until it reaches
- * a schema that is not one. `visited` holds the pointers already entered on
- * THIS chain, so `a -> b -> a` throws instead of looping forever.
+ * One hop. The returned scope's `document` is the RESOURCE the target was
+ * found in, never the target itself — otherwise `a -> b` would resolve `b`
+ * against the node `a` names, and a two-link chain of local pointers stops
+ * finding anything after the first hop.
  */
-export function resolveRef(ref: string, root: Draft07Schema): Draft07Schema {
+function stepRef(ref: string, scope: RefScope): RefStep {
+  const absolute = resolveUriReference(scope.baseUri, ref);
+  const { resource, fragment } = splitUri(absolute);
+  if (isPlainNameFragment(fragment)) {
+    const named = scope.registry.findIdentified(absolute);
+    if (named === undefined) {
+      throw new RefResolutionError(ref, `no schema is named "${absolute}"`);
+    }
+    return {
+      schema: named.schema,
+      scope: {
+        registry: scope.registry,
+        document: named.document,
+        baseUri: named.baseUri,
+      },
+    };
+  }
+  const target = resolveResource(ref, resource, scope);
+  // The RESOURCE's retrieval URI wins over any `$id` the document carries —
+  // "retrieved nested refs resolve relative to their URI not $id" in the
+  // suite is exactly that. Every `$id` INSIDE it still counts, and
+  // followPointer collects them as it walks.
+  const landed: RefScope = {
+    registry: scope.registry,
+    document: target.document,
+    baseUri: target.baseUri,
+  };
+  return followPointer(ref, fragment, landed);
+}
+
+/**
+ * The DOCUMENT a resource URI names. An empty resource is "the document this
+ * reference was written in", which is what makes `#/definitions/x` local.
+ */
+function resolveResource(
+  ref: string,
+  resource: string,
+  scope: RefScope
+): { document: Draft07Schema; baseUri: string } {
+  if (resource === "" || resource === scope.baseUri) {
+    return { document: scope.document, baseUri: scope.baseUri };
+  }
+  const identified = scope.registry.findIdentified(resource);
+  if (identified === undefined || !isSchemaObject(identified.document)) {
+    // The one place an external reference is refused, and it is refused for
+    // ONE reason: nobody handed Luq that document. Luq does not go and get it.
+    throw new RefResolutionError(
+      ref,
+      `"${resource}" was not supplied. Luq never fetches a schema; pass it ` +
+        "in externalDocuments."
+    );
+  }
+  return { document: identified.document, baseUri: identified.baseUri };
+}
+
+/**
+ * Resolves `ref` in `scope`, then keeps following `$ref` until it reaches a
+ * schema that is not one. `visited` holds the ABSOLUTE URIs already entered on
+ * THIS chain, so `a -> b -> a` throws instead of looping forever — absolute,
+ * because two different bases can spell the same target differently and a
+ * relative comparison would miss the cycle.
+ */
+export function resolveRefInScope(
+  ref: string,
+  scope: RefScope
+): { schema: Draft07Schema; scope: RefScope } {
   const visited = new Set<string>();
+  let current = scope;
   let currentRef = ref;
   for (let hop = 0; ; hop += 1) {
     // The visited set is the real cycle detector and gives the good message.
@@ -117,28 +151,32 @@ export function resolveRef(ref: string, root: Draft07Schema): Draft07Schema {
     if (hop > MAX_REF_HOPS) {
       throw new RefResolutionError(ref, `more than ${MAX_REF_HOPS} $ref hops`);
     }
-    if (!currentRef.startsWith("#")) {
-      throw new RefResolutionError(
-        currentRef,
-        "external references are not supported"
-      );
-    }
-    if (visited.has(currentRef)) {
+    const absolute = resolveUriReference(current.baseUri, currentRef);
+    if (visited.has(absolute)) {
       throw new RefResolutionError(
         ref,
-        `circular reference: ${[...visited, currentRef].join(" -> ")}`
+        `circular reference: ${[...visited, absolute].join(" -> ")}`
       );
     }
-    visited.add(currentRef);
-    const target = followPointer(currentRef, root);
-    if (!isSchemaObject(target) || target.$ref === undefined) return target;
-    currentRef = target.$ref;
+    visited.add(absolute);
+    const step = stepRef(currentRef, current);
+    current = step.scope;
+    if (!isSchemaObject(step.schema) || step.schema.$ref === undefined) {
+      return { schema: step.schema, scope: current };
+    }
+    currentRef = step.schema.$ref;
   }
 }
 
+/** The local-only door, kept for callers that have nothing but a root. */
+export function resolveRef(ref: string, root: Draft07Schema): Draft07Schema {
+  return resolveRefInScope(ref, createLocalScope(root)).schema;
+}
+
 /**
- * True when `ref` resolves without leaving the document and without entering a
- * cycle. It answers the question without making the caller catch to find out.
+ * True when `ref` resolves without leaving what the caller supplied and
+ * without entering a cycle. It answers the question without making the caller
+ * catch to find out.
  */
 export function isResolvableRef(ref: string, root: Draft07Schema): boolean {
   try {

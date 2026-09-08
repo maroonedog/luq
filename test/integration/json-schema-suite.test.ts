@@ -171,11 +171,15 @@ describeCorpus("JSON-Schema-Test-Suite draft7 conformance", () => {
     });
 
     it("gives every entry a cause, a reason and an expiry", () => {
+      // `cause` and `expiresWith` are `never` while the list is empty, so
+      // they are read through String(): the check has to keep compiling for
+      // the day a skip comes back, and emptying the union must not quietly
+      // delete the rule that makes a skip explain itself.
       const incomplete = SUITE_SKIPS.filter(
         (skip) =>
           skip.reason.trim().length === 0 ||
-          skip.cause.length === 0 ||
-          skip.expiresWith.length === 0
+          String(skip.cause).length === 0 ||
+          String(skip.expiresWith).length === 0
       );
       expect(incomplete).toEqual([]);
     });

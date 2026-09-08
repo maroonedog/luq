@@ -7,8 +7,8 @@
 // error QUICKLY - each cycle case is given a timeout so that a regression to
 // "loops forever" fails the suite instead of hanging CI.
 // ===========================================================================
+import { RefResolutionError } from "../../../../src/json-schema/ref-resolution-error";
 import {
-  RefResolutionError,
   isResolvableRef,
   resolveRef,
 } from "../../../../src/json-schema/resolve-ref";
@@ -199,13 +199,22 @@ describe("a cycle is an error, and a fast one", () => {
 });
 
 describe("what the resolver refuses", () => {
-  it("refuses an external reference", () => {
+  // resolveRef は「呼び出し側が何も渡していない」入口なので、外部参照は
+  // 必ず失敗する。失敗の理由は「対応していない」ではなく「渡されていない」
+  // であり、その区別が Luq が取りに行かないという設計そのものを言っている。
+  it("refuses an external reference nobody supplied", () => {
     expect(() =>
       resolveRef("https://example.com/s.json", withDefinitions)
     ).toThrow(RefResolutionError);
     expect(() =>
       resolveRef("other.json#/definitions/x", withDefinitions)
-    ).toThrow(/external references are not supported/);
+    ).toThrow(/was not supplied/);
+  });
+
+  it("says Luq never fetches, rather than leaving the caller to guess", () => {
+    expect(() =>
+      resolveRef("other.json#/definitions/x", withDefinitions)
+    ).toThrow(/never fetches/);
   });
 
   it("refuses an external reference reached through a chain", () => {
@@ -213,7 +222,7 @@ describe("what the resolver refuses", () => {
       definitions: { hop: { $ref: "https://example.com/s.json" } },
     };
     expect(() => resolveRef("#/definitions/hop", root)).toThrow(
-      /external references are not supported/
+      /was not supplied/
     );
   });
 
