@@ -508,16 +508,16 @@ skipped. Every subject rotates over a pool of at least four distinct values —
 one frozen input let V8 delete a subject outright, which is the artefact
 described below. Each figure is the median of the fastest half of 9 samples; the
 spread quoted alongside is the full range over that figure, and on these ten it
-is <!-- generated:perf-spread -->3.2–9.8%<!-- /generated:perf-spread -->.
+is <!-- generated:perf-spread -->2.4–16.3%<!-- /generated:perf-spread -->.
 
 | Shape | `validate` ops/sec | `parse` ops/sec |
 |---|---:|---:|
 <!-- generated:perf-throughput -->
-| 1 field, 1 check | 3,627,024 | 3,661,526 |
-| 3 fields, 6 plugins | 1,542,468 | 1,441,606 |
-| nested, depth 2–3 | 1,101,418 | 1,095,896 |
-| array of 50 elements | 36,156 | 36,444 |
-| JSON Schema document | 211,726 | 210,267 |
+| 1 field, 1 check | 3,945,275 | 3,879,024 |
+| 3 fields, 6 plugins | 1,729,320 | 1,645,504 |
+| nested, depth 2–3 | 1,119,343 | 1,094,440 |
+| array of 50 elements | 41,053 | 42,329 |
+| JSON Schema document | 229,883 | 222,612 |
 <!-- /generated:perf-throughput -->
 
 **This rewrite is slower than 1.x on flat and nested shapes.** Measured side by
@@ -527,11 +527,11 @@ sample interleaved so a drift in the machine hits both halves of every ratio:
 | Shape | 1.x | this | ratio |
 |---|---:|---:|---:|
 <!-- generated:perf-legacy -->
-| 1 field | 25,899,407 | 3,741,553 | **×0.15** |
-| 3 fields | 2,536,684 | 1,296,000 | **×0.52** |
-| nested | 2,162,196 | 1,099,255 | **×0.51** |
-| array of 50 | 18,837 | 37,541 | ×2.00 |
-| JSON Schema | 142,322 | 228,510 | ×1.62 |
+| 1 field | 22,470,910 | 3,966,011 | **×0.17** |
+| 3 fields | 2,655,161 | 1,735,581 | **×0.65** |
+| nested | 1,951,792 | 1,183,260 | **×0.61** |
+| array of 50 | 18,142 | 43,351 | ×2.49 |
+| JSON Schema | 132,782 | 237,454 | ×1.80 |
 <!-- /generated:perf-legacy -->
 
 1.x carried a directory of specialised fast paths that this implementation has

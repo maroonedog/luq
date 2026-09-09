@@ -43,6 +43,23 @@ import type {
  */
 const FIRST_FLOOR_FRACTION = 0.75;
 
+/**
+ * 比率ゲートに載せない形状。
+ *
+ * singleField の参照実装の正味コストは約 2 ns/call で、ハーネス自身のプール
+ * 回転コスト (約 1 ns/call) と同じ桁にある。比率は「luq / 手書き検証器」では
+ * なく「luq / ハーネスのループ速度」に近づき、measure-reference-work.ts の
+ * カナリアは健全時でも shareOfFloor 0.843 までしか下がらない — 他の4形状
+ * (multiField 0.13 / nested 0.28 / array・jsonSchema 0.01) と桁違いに薄く、
+ * PR #15 の CI で実際に 1.090 を記録して発火した。閾値調整では直らない
+ * (測定下限の問題である)。絶対値は throughput[] に残る。
+ *
+ * **ここに書いてあるのは、以前これが記録済みファイルの手編集だったから
+ * である。** 手で消された除外は bench:record を一度回せば黙って戻り、実際に
+ * 戻った。除外の理由が記録器の中にあれば、録り直しても消えない。
+ */
+const SHAPES_OUTSIDE_THE_RATIO_GATE: readonly string[] = ["singleField"];
+
 export interface RecordOptions {
   readonly recalibrateFloors?: boolean;
 }
@@ -61,6 +78,7 @@ export function measureRatioRecords(
   const previous = readPreviousBaseline();
   const records: ReferenceRatioRecord[] = [];
   for (const shape of BENCH_SHAPES) {
+    if (SHAPES_OUTSIDE_THE_RATIO_GATE.includes(shape.name)) continue;
     for (const ratioCase of RATIO_CASES) {
       const measured = measureThroughputRatio(shape, ratioCase);
       const kept =

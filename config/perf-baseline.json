@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-09T12:52:53.465Z",
+  "recordedAt": "2026-09-09T13:51:10.447Z",
   "machine": {
     "cpuModel": "AMD Ryzen 7 5825U with Radeon Graphics",
     "logicalCores": 16,
@@ -43,310 +43,271 @@
     {
       "shape": "singleField",
       "operation": "validate",
-      "opsPerSecond": 3627024,
-      "relativeSpreadPercent": 9.8,
+      "opsPerSecond": 3945275,
+      "relativeSpreadPercent": 16.3,
       "isQuiet": true
     },
     {
       "shape": "singleField",
       "operation": "parse",
-      "opsPerSecond": 3661526,
-      "relativeSpreadPercent": 6.3,
+      "opsPerSecond": 3879024,
+      "relativeSpreadPercent": 8.4,
       "isQuiet": true
     },
     {
       "shape": "multiField",
       "operation": "validate",
-      "opsPerSecond": 1542468,
-      "relativeSpreadPercent": 7.1,
-      "isQuiet": true
-    },
-    {
-      "shape": "multiField",
-      "operation": "parse",
-      "opsPerSecond": 1441606,
-      "relativeSpreadPercent": 3.2,
-      "isQuiet": true
-    },
-    {
-      "shape": "nested",
-      "operation": "validate",
-      "opsPerSecond": 1101418,
+      "opsPerSecond": 1729320,
       "relativeSpreadPercent": 8.3,
       "isQuiet": true
     },
     {
-      "shape": "nested",
+      "shape": "multiField",
       "operation": "parse",
-      "opsPerSecond": 1095896,
+      "opsPerSecond": 1645504,
+      "relativeSpreadPercent": 15.8,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "validate",
+      "opsPerSecond": 1119343,
       "relativeSpreadPercent": 4.8,
       "isQuiet": true
     },
     {
+      "shape": "nested",
+      "operation": "parse",
+      "opsPerSecond": 1094440,
+      "relativeSpreadPercent": 7.6,
+      "isQuiet": true
+    },
+    {
       "shape": "array",
       "operation": "validate",
-      "opsPerSecond": 36156,
-      "relativeSpreadPercent": 4.2,
+      "opsPerSecond": 41053,
+      "relativeSpreadPercent": 2.4,
       "isQuiet": true
     },
     {
       "shape": "array",
       "operation": "parse",
-      "opsPerSecond": 36444,
-      "relativeSpreadPercent": 6.7,
+      "opsPerSecond": 42329,
+      "relativeSpreadPercent": 10.4,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "validate",
-      "opsPerSecond": 211726,
-      "relativeSpreadPercent": 6.4,
+      "opsPerSecond": 229883,
+      "relativeSpreadPercent": 9.2,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "parse",
-      "opsPerSecond": 210267,
-      "relativeSpreadPercent": 5.5,
+      "opsPerSecond": 222612,
+      "relativeSpreadPercent": 7.8,
       "isQuiet": true
     }
   ],
   "buildCost": [
     {
       "shape": "singleField",
-      "buildsPerSecond": 69697,
-      "microsecondsPerBuild": 14.35,
-      "validateCallsPerBuild": 47,
-      "costRatioSpreadPercent": 3.9,
+      "buildsPerSecond": 64058,
+      "microsecondsPerBuild": 15.61,
+      "validateCallsPerBuild": 55,
+      "costRatioSpreadPercent": 17.2,
       "isQuiet": true
     },
     {
       "shape": "multiField",
-      "buildsPerSecond": 18099,
-      "microsecondsPerBuild": 55.25,
-      "validateCallsPerBuild": 70,
-      "costRatioSpreadPercent": 16.1,
+      "buildsPerSecond": 18832,
+      "microsecondsPerBuild": 53.1,
+      "validateCallsPerBuild": 84,
+      "costRatioSpreadPercent": 14.7,
       "isQuiet": true
     },
     {
       "shape": "nested",
-      "buildsPerSecond": 14621,
-      "microsecondsPerBuild": 68.4,
-      "validateCallsPerBuild": 73,
-      "costRatioSpreadPercent": 14.8,
+      "buildsPerSecond": 13893,
+      "microsecondsPerBuild": 71.98,
+      "validateCallsPerBuild": 79,
+      "costRatioSpreadPercent": 15.3,
       "isQuiet": true
     },
     {
       "shape": "array",
-      "buildsPerSecond": 13109,
-      "microsecondsPerBuild": 76.29,
-      "validateCallsPerBuild": 2,
-      "costRatioSpreadPercent": 11.3,
+      "buildsPerSecond": 12841,
+      "microsecondsPerBuild": 77.88,
+      "validateCallsPerBuild": 3,
+      "costRatioSpreadPercent": 16.4,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
-      "buildsPerSecond": 1345,
-      "microsecondsPerBuild": 743.4,
-      "validateCallsPerBuild": 152,
-      "costRatioSpreadPercent": 10.4,
+      "buildsPerSecond": 1275,
+      "microsecondsPerBuild": 784.43,
+      "validateCallsPerBuild": 176,
+      "costRatioSpreadPercent": 13.2,
       "isQuiet": true
     }
   ],
   "referenceRatio": [
     {
-      "shape": "singleField",
-      "operation": "validate",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 3352559,
-      "referenceOpsPerSecond": 72984284,
-      "ratio": 0.0458,
-      "ratioFloor": 0.0305,
-      "luqSpreadPercent": 5.8,
-      "referenceSpreadPercent": 5,
-      "ratioSpreadPercent": 4.9,
-      "isQuiet": true
-    },
-    {
-      "shape": "singleField",
-      "operation": "parse",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 3002804,
-      "referenceOpsPerSecond": 75949590,
-      "ratio": 0.0395,
-      "ratioFloor": 0.0285,
-      "luqSpreadPercent": 9.1,
-      "referenceSpreadPercent": 5.1,
-      "ratioSpreadPercent": 9.4,
-      "isQuiet": true
-    },
-    {
-      "shape": "singleField",
-      "operation": "validate",
-      "inputIsAccepted": false,
-      "luqOpsPerSecond": 2074814,
-      "referenceOpsPerSecond": 69716240,
-      "ratio": 0.0297,
-      "ratioFloor": 0.0211,
-      "luqSpreadPercent": 5.1,
-      "referenceSpreadPercent": 1.8,
-      "ratioSpreadPercent": 5.1,
-      "isQuiet": true
-    },
-    {
       "shape": "multiField",
       "operation": "validate",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 1176364,
-      "referenceOpsPerSecond": 11861745,
-      "ratio": 0.1003,
+      "luqOpsPerSecond": 1571033,
+      "referenceOpsPerSecond": 12725717,
+      "ratio": 0.1249,
       "ratioFloor": 0.0547,
-      "luqSpreadPercent": 7.4,
-      "referenceSpreadPercent": 17.2,
-      "ratioSpreadPercent": 11.8,
+      "luqSpreadPercent": 8.2,
+      "referenceSpreadPercent": 8.6,
+      "ratioSpreadPercent": 5.4,
       "isQuiet": true
     },
     {
       "shape": "multiField",
       "operation": "parse",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 1336218,
-      "referenceOpsPerSecond": 12764379,
-      "ratio": 0.1052,
+      "luqOpsPerSecond": 1480155,
+      "referenceOpsPerSecond": 11918072,
+      "ratio": 0.1241,
       "ratioFloor": 0.0548,
-      "luqSpreadPercent": 9.8,
-      "referenceSpreadPercent": 10.5,
-      "ratioSpreadPercent": 18.4,
+      "luqSpreadPercent": 1.6,
+      "referenceSpreadPercent": 5.5,
+      "ratioSpreadPercent": 6.7,
       "isQuiet": true
     },
     {
       "shape": "multiField",
       "operation": "validate",
       "inputIsAccepted": false,
-      "luqOpsPerSecond": 1189603,
-      "referenceOpsPerSecond": 15927841,
-      "ratio": 0.0749,
+      "luqOpsPerSecond": 1274653,
+      "referenceOpsPerSecond": 16228155,
+      "ratio": 0.0787,
       "ratioFloor": 0.0434,
-      "luqSpreadPercent": 4.6,
-      "referenceSpreadPercent": 4.3,
-      "ratioSpreadPercent": 7.7,
+      "luqSpreadPercent": 9.3,
+      "referenceSpreadPercent": 8.6,
+      "ratioSpreadPercent": 2.5,
       "isQuiet": true
     },
     {
       "shape": "nested",
       "operation": "validate",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 997160,
-      "referenceOpsPerSecond": 26809177,
-      "ratio": 0.0372,
+      "luqOpsPerSecond": 1043834,
+      "referenceOpsPerSecond": 22478395,
+      "ratio": 0.0446,
       "ratioFloor": 0.0169,
-      "luqSpreadPercent": 9.5,
-      "referenceSpreadPercent": 5.9,
-      "ratioSpreadPercent": 8.2,
+      "luqSpreadPercent": 28.3,
+      "referenceSpreadPercent": 26.3,
+      "ratioSpreadPercent": 19.7,
       "isQuiet": true
     },
     {
       "shape": "nested",
       "operation": "parse",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 996988,
-      "referenceOpsPerSecond": 26276187,
-      "ratio": 0.0382,
+      "luqOpsPerSecond": 1028824,
+      "referenceOpsPerSecond": 22490312,
+      "ratio": 0.0455,
       "ratioFloor": 0.0174,
-      "luqSpreadPercent": 5.7,
-      "referenceSpreadPercent": 9.6,
-      "ratioSpreadPercent": 11,
-      "isQuiet": true
-    },
-    {
-      "shape": "nested",
-      "operation": "validate",
-      "inputIsAccepted": false,
-      "luqOpsPerSecond": 1076641,
-      "referenceOpsPerSecond": 31204589,
-      "ratio": 0.0352,
-      "ratioFloor": 0.0168,
-      "luqSpreadPercent": 5.7,
-      "referenceSpreadPercent": 7.1,
-      "ratioSpreadPercent": 6.3,
-      "isQuiet": true
-    },
-    {
-      "shape": "array",
-      "operation": "validate",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 34640,
-      "referenceOpsPerSecond": 895306,
-      "ratio": 0.0391,
-      "ratioFloor": 0.0227,
-      "luqSpreadPercent": 6.2,
-      "referenceSpreadPercent": 10,
-      "ratioSpreadPercent": 16.7,
-      "isQuiet": true
-    },
-    {
-      "shape": "array",
-      "operation": "parse",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 35391,
-      "referenceOpsPerSecond": 899980,
-      "ratio": 0.0391,
-      "ratioFloor": 0.0226,
-      "luqSpreadPercent": 3.8,
-      "referenceSpreadPercent": 4.3,
-      "ratioSpreadPercent": 5.1,
-      "isQuiet": true
-    },
-    {
-      "shape": "array",
-      "operation": "validate",
-      "inputIsAccepted": false,
-      "luqOpsPerSecond": 45553,
-      "referenceOpsPerSecond": 1205113,
-      "ratio": 0.0388,
-      "ratioFloor": 0.022,
-      "luqSpreadPercent": 5.8,
-      "referenceSpreadPercent": 7.8,
+      "luqSpreadPercent": 22.5,
+      "referenceSpreadPercent": 22.3,
       "ratioSpreadPercent": 10.6,
       "isQuiet": true
     },
     {
-      "shape": "jsonSchema",
+      "shape": "nested",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 1160345,
+      "referenceOpsPerSecond": 28705999,
+      "ratio": 0.041,
+      "ratioFloor": 0.0168,
+      "luqSpreadPercent": 10.3,
+      "referenceSpreadPercent": 9.6,
+      "ratioSpreadPercent": 5,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
       "operation": "validate",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 197911,
-      "referenceOpsPerSecond": 907321,
-      "ratio": 0.2229,
-      "ratioFloor": 0.1194,
-      "luqSpreadPercent": 6.1,
-      "referenceSpreadPercent": 5.3,
+      "luqOpsPerSecond": 42666,
+      "referenceOpsPerSecond": 837024,
+      "ratio": 0.0524,
+      "ratioFloor": 0.0227,
+      "luqSpreadPercent": 8.4,
+      "referenceSpreadPercent": 10.4,
+      "ratioSpreadPercent": 15.2,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 41696,
+      "referenceOpsPerSecond": 788587,
+      "ratio": 0.0527,
+      "ratioFloor": 0.0226,
+      "luqSpreadPercent": 1.2,
+      "referenceSpreadPercent": 3.2,
+      "ratioSpreadPercent": 3.8,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "inputIsAccepted": false,
+      "luqOpsPerSecond": 57835,
+      "referenceOpsPerSecond": 1122500,
+      "ratio": 0.0516,
+      "ratioFloor": 0.022,
+      "luqSpreadPercent": 6.6,
+      "referenceSpreadPercent": 7.2,
       "ratioSpreadPercent": 5.4,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
+      "operation": "validate",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 229564,
+      "referenceOpsPerSecond": 862149,
+      "ratio": 0.2667,
+      "ratioFloor": 0.1194,
+      "luqSpreadPercent": 8.5,
+      "referenceSpreadPercent": 10.9,
+      "ratioSpreadPercent": 17.8,
+      "isQuiet": true
+    },
+    {
+      "shape": "jsonSchema",
       "operation": "parse",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 196799,
-      "referenceOpsPerSecond": 885390,
-      "ratio": 0.2202,
+      "luqOpsPerSecond": 227973,
+      "referenceOpsPerSecond": 854123,
+      "ratio": 0.2668,
       "ratioFloor": 0.1182,
-      "luqSpreadPercent": 7.4,
-      "referenceSpreadPercent": 9.1,
-      "ratioSpreadPercent": 10.5,
+      "luqSpreadPercent": 7.8,
+      "referenceSpreadPercent": 7.8,
+      "ratioSpreadPercent": 10.2,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "validate",
       "inputIsAccepted": false,
-      "luqOpsPerSecond": 391502,
-      "referenceOpsPerSecond": 1424516,
-      "ratio": 0.2714,
+      "luqOpsPerSecond": 424960,
+      "referenceOpsPerSecond": 1271554,
+      "ratio": 0.3294,
       "ratioFloor": 0.1537,
-      "luqSpreadPercent": 10.2,
-      "referenceSpreadPercent": 4.5,
-      "ratioSpreadPercent": 14.8,
+      "luqSpreadPercent": 19.1,
+      "referenceSpreadPercent": 8.3,
+      "ratioSpreadPercent": 18.7,
       "isQuiet": true
     }
   ],
@@ -354,82 +315,82 @@
     {
       "shape": "singleField",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 94672110,
-      "referenceOpsPerSecond": 79721500,
-      "shareOfFloor": 0.863,
-      "netNanosecondsPerCall": 1.98
+      "harnessFloorOpsPerSecond": 89641204,
+      "referenceOpsPerSecond": 53794291,
+      "shareOfFloor": 0.604,
+      "netNanosecondsPerCall": 7.43
     },
     {
       "shape": "singleField",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 95553411,
-      "referenceOpsPerSecond": 73023615,
-      "shareOfFloor": 0.767,
-      "netNanosecondsPerCall": 3.23
+      "harnessFloorOpsPerSecond": 88180292,
+      "referenceOpsPerSecond": 52424284,
+      "shareOfFloor": 0.596,
+      "netNanosecondsPerCall": 7.73
     },
     {
       "shape": "multiField",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 93781144,
-      "referenceOpsPerSecond": 12641357,
-      "shareOfFloor": 0.135,
-      "netNanosecondsPerCall": 68.44
+      "harnessFloorOpsPerSecond": 83460392,
+      "referenceOpsPerSecond": 12423139,
+      "shareOfFloor": 0.149,
+      "netNanosecondsPerCall": 68.51
     },
     {
       "shape": "multiField",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 94187021,
-      "referenceOpsPerSecond": 16795742,
-      "shareOfFloor": 0.179,
-      "netNanosecondsPerCall": 48.92
+      "harnessFloorOpsPerSecond": 86952757,
+      "referenceOpsPerSecond": 16911875,
+      "shareOfFloor": 0.194,
+      "netNanosecondsPerCall": 47.63
     },
     {
       "shape": "nested",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 93587832,
-      "referenceOpsPerSecond": 26196494,
-      "shareOfFloor": 0.275,
-      "netNanosecondsPerCall": 27.49
+      "harnessFloorOpsPerSecond": 87754405,
+      "referenceOpsPerSecond": 25098941,
+      "shareOfFloor": 0.288,
+      "netNanosecondsPerCall": 28.45
     },
     {
       "shape": "nested",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 96310594,
-      "referenceOpsPerSecond": 31225361,
-      "shareOfFloor": 0.322,
-      "netNanosecondsPerCall": 21.64
+      "harnessFloorOpsPerSecond": 82328210,
+      "referenceOpsPerSecond": 27144358,
+      "shareOfFloor": 0.329,
+      "netNanosecondsPerCall": 24.69
     },
     {
       "shape": "array",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 91224065,
-      "referenceOpsPerSecond": 867787,
+      "harnessFloorOpsPerSecond": 82529473,
+      "referenceOpsPerSecond": 788306,
       "shareOfFloor": 0.01,
-      "netNanosecondsPerCall": 1141.39
+      "netNanosecondsPerCall": 1256.43
     },
     {
       "shape": "array",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 98023682,
-      "referenceOpsPerSecond": 1210719,
+      "harnessFloorOpsPerSecond": 82975767,
+      "referenceOpsPerSecond": 1056779,
       "shareOfFloor": 0.013,
-      "netNanosecondsPerCall": 815.75
+      "netNanosecondsPerCall": 934.22
     },
     {
       "shape": "jsonSchema",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 94221749,
-      "referenceOpsPerSecond": 919056,
+      "harnessFloorOpsPerSecond": 82147146,
+      "referenceOpsPerSecond": 821393,
       "shareOfFloor": 0.01,
-      "netNanosecondsPerCall": 1077.46
+      "netNanosecondsPerCall": 1205.27
     },
     {
       "shape": "jsonSchema",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 91859988,
-      "referenceOpsPerSecond": 1401407,
+      "harnessFloorOpsPerSecond": 82510251,
+      "referenceOpsPerSecond": 1278798,
       "shareOfFloor": 0.015,
-      "netNanosecondsPerCall": 702.68
+      "netNanosecondsPerCall": 769.86
     }
   ],
   "gateSensitivity": {
@@ -449,37 +410,37 @@
   "legacyComparison": [
     {
       "shape": "singleField",
-      "legacyOpsPerSecond": 25899407,
-      "currentOpsPerSecond": 3741553,
-      "speedup": 0.15,
+      "legacyOpsPerSecond": 22470910,
+      "currentOpsPerSecond": 3966011,
+      "speedup": 0.17,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "multiField",
-      "legacyOpsPerSecond": 2536684,
-      "currentOpsPerSecond": 1296000,
-      "speedup": 0.52,
+      "legacyOpsPerSecond": 2655161,
+      "currentOpsPerSecond": 1735581,
+      "speedup": 0.65,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "nested",
-      "legacyOpsPerSecond": 2162196,
-      "currentOpsPerSecond": 1099255,
-      "speedup": 0.51,
+      "legacyOpsPerSecond": 1951792,
+      "currentOpsPerSecond": 1183260,
+      "speedup": 0.61,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "array",
-      "legacyOpsPerSecond": 18837,
-      "currentOpsPerSecond": 37541,
-      "speedup": 2,
+      "legacyOpsPerSecond": 18142,
+      "currentOpsPerSecond": 43351,
+      "speedup": 2.49,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "jsonSchema",
-      "legacyOpsPerSecond": 142322,
-      "currentOpsPerSecond": 228510,
-      "speedup": 1.62,
+      "legacyOpsPerSecond": 132782,
+      "currentOpsPerSecond": 237454,
+      "speedup": 1.8,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     }
   ]

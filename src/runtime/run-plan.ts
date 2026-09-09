@@ -44,7 +44,10 @@ export function runPlan(
   targets: readonly ArrayWriteTarget[] = NO_WRITE_TARGETS
 ): unknown {
   let current = subject;
-  for (const field of plan.fields) {
+  const fields = plan.fields;
+  for (let i = 0; i < fields.length; i += 1) {
+    const field = fields[i];
+    if (field === undefined) continue;
     const outcome = runField(field, current, context);
     current = writeFieldValue(
       field,

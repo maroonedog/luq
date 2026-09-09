@@ -118,7 +118,10 @@ function runElementFields(
   elementContext: FieldRunContext
 ): unknown {
   let current = element;
-  for (const field of node.elementFields) {
+  const fields = node.elementFields;
+  for (let i = 0; i < fields.length; i += 1) {
+    const field = fields[i];
+    if (field === undefined) continue;
     const outcome = runField(field, current, elementContext);
     current = writeFieldValue(
       field,

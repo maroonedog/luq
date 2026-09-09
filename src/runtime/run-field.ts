@@ -94,7 +94,17 @@ function openGates(
   value: unknown,
   ruleContext: RuleContext
 ): boolean {
-  for (const gate of field.gates) {
+  // 添字ループである。for-of ではない。ここが回るのはコンパイル済みの
+  // 凍結配列で、凍結配列は V8 では PACKED_FROZEN_ELEMENTS になり、配列
+  // イテレータの高速化パスから外れる — イテレータと IteratorResult が
+  // 消去されず、要素×フィールドの回数だけ確保される。配列シェイプでは
+  // それだけで全ゴミの 45〜54% を占めていた (独立に5通りの改変で -45%
+  // 〜 -54%)。凍結は落とさない: コンパイル層の不変条件であり、凍結を
+  // 外しても添字ループより速くはならない。
+  const gates = field.gates;
+  for (let i = 0; i < gates.length; i += 1) {
+    const gate = gates[i];
+    if (gate === undefined) continue;
     if (!gate.shouldRun(value, ruleContext)) return false;
   }
   return true;
@@ -107,7 +117,10 @@ function runChecks(
   context: FieldRunContext,
   mark: number
 ): void {
-  for (const check of field.checks) {
+  const checks = field.checks;
+  for (let i = 0; i < checks.length; i += 1) {
+    const check = checks[i];
+    if (check === undefined) continue;
     const outcome = check.run(value, ruleContext);
     if (outcome.ok) continue;
     context.sink.add(
@@ -135,7 +148,10 @@ function runTransforms(
     return value;
   }
   let current = value;
-  for (const transform of field.transforms) {
+  const transforms = field.transforms;
+  for (let i = 0; i < transforms.length; i += 1) {
+    const transform = transforms[i];
+    if (transform === undefined) continue;
     current = transform.apply(current, ruleContext);
   }
   return current;
