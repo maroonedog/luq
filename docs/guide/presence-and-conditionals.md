@@ -184,22 +184,42 @@ precedence rule between them. There is one message channel now.
 `compareField` reads one other declared path; `stitch` reads several and hands
 them to a predicate as a bundle keyed by the path string.
 
+**The bundle is typed.** Each entry carries the type your model gives that
+path — nested paths included, keyed by the path string exactly as written — and
+`value` is the field's own type after presence has been settled. Asking for a
+path the model does not have is a compile error, and so is using a bundled value
+at the wrong type.
+
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
 import { stitchPlugin } from "@maroonedog/luq/plugins/stitch";
 
-type Booking = { start: string; end: string };
+type Booking = {
+  start: string;
+  end: string;
+  seats: number;
+  venue: { capacity: number };
+};
 
 export const bookingValidator = Builder()
   .use(requiredPlugin)
   .use(stitchPlugin)
   .for<Booking>()
   .v("start", (b) => b.string.required())
+  .v("venue.capacity", (b) => b.number.required())
   .v("end", (b) =>
+    // fieldValues.start is string, and so is value — no cast, no narrowing.
     b.string.required().stitch(["start"], (fieldValues, value) => ({
-      valid: String(value) > String(fieldValues.start),
+      valid: value > fieldValues.start,
       message: "end must come after start",
+    }))
+  )
+  .v("seats", (b) =>
+    // A nested path keeps its own type, under its own key.
+    b.number.required().stitch(["venue.capacity"], (fieldValues, value) => ({
+      valid: value <= fieldValues["venue.capacity"],
+      message: "seats must fit the venue",
     }))
   )
   .build();
@@ -208,7 +228,46 @@ export const bookingValidator = Builder()
 The predicate runs **once**. 1.x ran it a second time to build the message, so a
 predicate with a cost or a side effect ran twice; here the message travels with
 the outcome. 1.x also shipped three implementations of this — `stitch`,
-`stitchTyped`, `stitchSimple` — all claiming the same method name. There is one.
+`stitchTyped`, `stitchSimple` — all claiming the same method name. There is one,
+and it is the typed one: 1.x handed the bundle over as
+`Record<string, unknown>`, so every cross-field rule opened with a cast even
+though the paths had just been declared and their types were knowable.
+
+### `stitchWith`: a chain over the bundle — EXPERIMENTAL
+
+`stitch` takes a predicate. `stitchWith` takes **a chain**, so the bundle is
+validated with the same rules as any other value rather than with hand-written
+`if`s. The fields are named with aliases, and the chain sees them under those
+names with their types intact.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { customPlugin } from "@maroonedog/luq/plugins/custom";
+import { stitchWithPlugin } from "@maroonedog/luq/plugins/stitchWith";
+
+type Line = { total: number; price: number; quantity: number };
+
+export const lineValidator = Builder()
+  .use(requiredPlugin)
+  .use(customPlugin)
+  .use(stitchWithPlugin)
+  .for<Line>()
+  .v("price", (b) => b.number.required())
+  .v("quantity", (b) => b.number.required())
+  .v("total", (b) =>
+    b.number
+      .required()
+      .stitchWith({ sum: "total", cost: "price", count: "quantity" }, (f) =>
+        // `bundle.sum`, `bundle.cost` and `bundle.count` are all number.
+        f.object.custom((bundle) => bundle.sum === bundle.cost * bundle.count)
+      )
+  )
+  .build();
+```
+
+It is **EXPERIMENTAL**: the shape of what the chain receives may still move.
+`stitch` is the stable way to read several fields at once.
 
 ## `custom`: an arbitrary predicate
 
