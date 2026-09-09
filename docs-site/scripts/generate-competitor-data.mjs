@@ -8,6 +8,9 @@
 // サイズ) を四度目にしないためである。
 //
 // 勝ちだけを出す整形はしない。ratio < 1 の行も同じ表に入る。
+//
+// machine は写さない。競合表はライブラリ同士の比であって機種の比ではない。
+// 機種を書けばそこが論点になる。数字だけを並べる。
 // ===========================================================================
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -61,7 +64,6 @@ function run() {
   const body = [
     HEADER,
     "export const competitorBenchmark = {",
-    `  machine: ${JSON.stringify(baseline.machine, null, 2).replace(/\n/g, "\n  ")},`,
     `  libraries: ${JSON.stringify(baseline.competitors)},`,
     `  rows: ${JSON.stringify(rows, null, 2).replace(/\n/g, "\n  ")},`,
     `  disagreements: ${JSON.stringify(disagreements, null, 2).replace(/\n/g, "\n  ")},`,

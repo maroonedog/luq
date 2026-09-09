@@ -500,13 +500,10 @@ npm run check:no-dynamic-code`;
       </p>
 
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        The table below was recorded on the machine named at the bottom of this page. The same
-        measurement also runs on every push and every pull request, on a neutral CI runner, and the
-        result is uploaded there as an artifact — so the numbers are not only the author's machine's
-        numbers. What CI <em>gates</em> on is narrower and on purpose: whether the libraries still
-        agree about which values are valid. That is deterministic. Throughput is not, and a ratio
-        gate that moves with the runner was already tried in this repository and had to be given
-        per-environment floors.
+        The same measurement runs on every push and every pull request. What CI <em>gates</em> on
+        is narrower and on purpose: whether the libraries still agree about which values are valid.
+        That is deterministic. Throughput is not, and a ratio gate that moves with the runner was
+        already tried in this repository and had to be given per-environment floors.
       </p>
 
       <div class="mb-6 md-card md-card-outlined overflow-hidden">

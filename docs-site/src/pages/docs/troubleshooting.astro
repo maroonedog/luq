@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { bundleSize } from '../../data/bundle-size';
+import { legacySpeedups } from '../../data/legacy-speedups';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
@@ -849,8 +850,10 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Second: this release really is slower than 1.x on flat and nested
                 shapes.</strong> Measured side by side in one process on one machine:
-                ×0.11 on a single field, ×0.35 on three fields, ×0.32 nested. It is faster on
-                arrays (×1.57) and JSON Schema documents (×1.09). 1.x carried a directory of
+                {legacySpeedups.singleField} on a single field, {legacySpeedups.multiField} on
+                three fields, {legacySpeedups.nested} nested. It is faster on arrays
+                ({legacySpeedups.array}) and JSON Schema documents ({legacySpeedups.jsonSchema}).
+                1.x carried a directory of
                 specialised fast paths that this implementation has no equivalent of. If your
                 workload is millions of flat-object validations per second, measure before
                 upgrading.

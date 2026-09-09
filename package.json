@@ -480,14 +480,16 @@
     "check:doc-examples": "npx ts-node --project scripts/tsconfig.json scripts/check-doc-examples.ts",
     "check:doc-imports": "npx ts-node --project scripts/tsconfig.json scripts/check-doc-imports.ts",
     "check:generated-docs": "npx ts-node --project scripts/tsconfig.json scripts/generate-docs.ts --check",
-    "check:docs": "npm run check:generated-docs && npm run check:doc-examples && npm run check:doc-imports && npm run check:conformance-figures",
+    "check:docs": "npm run check:generated-docs && npm run check:doc-examples && npm run check:doc-imports && npm run check:conformance-figures && npm run check:perf-figures",
     "bench:record": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --record",
     "bench:gate": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --gate",
     "check:conformance-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-conformance-figures.ts",
     "bench:competitors": "npx ts-node --project bench/tsconfig.json bench/competitors/report-competitors.ts",
     "bench:competitors:check": "npx ts-node --project bench/tsconfig.json bench/competitors/check-competitors.ts",
     "lint:ox": "oxlint -c .oxlintrc.json src bench",
-    "lint:naming": "eslint \"src/**/*.ts\" \"bench/**/*.ts\""
+    "lint:naming": "eslint \"src/**/*.ts\" \"bench/**/*.ts\"",
+    "generate:perf-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-perf-figures.ts --write",
+    "check:perf-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-perf-figures.ts"
   },
   "repository": {
     "type": "git",
