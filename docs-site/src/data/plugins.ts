@@ -50,7 +50,7 @@ export interface PluginInfo {
 /** Every field type a plugin may be offered on. */
 export const PLUGIN_SLOTS = ["string","number","boolean","date","array","tuple","object","union","any"] as const;
 
-/** 77 plugin objects across 76 subpaths. */
+/** 78 plugin objects across 77 subpaths. */
 export const plugins: readonly PluginInfo[] = [
   {
     "name": "arrayContains",
@@ -1491,6 +1491,51 @@ export const plugins: readonly PluginInfo[] = [
     }
   },
   {
+    "name": "stitchWith",
+    "symbol": "stitchWithPlugin",
+    "subpath": "@maroonedog/luq/plugins/stitchWith",
+    "method": "stitchWith",
+    "slots": [
+      "string",
+      "number",
+      "boolean",
+      "date",
+      "object",
+      "array",
+      "tuple",
+      "union"
+    ],
+    "tier": "isolated",
+    "parameters": [
+      {
+        "name": "fields",
+        "type": "BundleAliasMap",
+        "optional": false
+      },
+      {
+        "name": "define",
+        "type": "NarrowedChain",
+        "optional": false
+      }
+    ],
+    "description": "EXPERIMENTAL. Cross-field validation over a TYPED bundle. Name the paths under aliases, then judge them together in one sub-chain. stitch hands the bundle over as Record<string, unknown>; here a misspelt member or a wrong type is a compile error.",
+    "example": {
+      "declarations": [
+        "price: number;",
+        "quantity: number;",
+        "total: number;"
+      ],
+      "field": "total",
+      "uses": [
+        "requiredPlugin",
+        "customPlugin"
+      ],
+      "chain": "number.required().stitchWith({ sum: \"total\", cost: \"price\", count: \"quantity\" }, (f) => f.object.custom((b) => b.sum === b.cost * b.count))",
+      "imports": [],
+      "prelude": []
+    }
+  },
+  {
     "name": "stringAlphanumeric",
     "symbol": "stringAlphanumericPlugin",
     "subpath": "@maroonedog/luq/plugins/stringAlphanumeric",
@@ -2459,5 +2504,5 @@ export const plugins: readonly PluginInfo[] = [
   }
 ];
 
-export const pluginObjectCount = 77;
-export const pluginSubpathCount = 76;
+export const pluginObjectCount = 78;
+export const pluginSubpathCount = 77;

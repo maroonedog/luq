@@ -41,6 +41,32 @@ export class UnknownRuleKindError extends Error {
   }
 }
 
+/**
+ * 空の束は一つを共有する。
+ *
+ * 七つの種のうち、どのフィールドもたいてい二つか三つしか使わない。残りは
+ * 空配列だが、フィールドごとに新しく Object.freeze([]) を作っていたので、
+ * 空であること自体は同じなのにマップの同一性だけが全部違っていた。実行時の
+ * `field.gates.length` や `field.transforms` の読み出しは、フィールドを
+ * またぐたびに別の受け手を見ることになる。
+ *
+ * この置き換えは src/compile/resolve-conditional-presence.ts の
+ * NO_PRESENCE_OVERRIDES と src/runtime/output-writer.ts の NO_WRITE_TARGETS が
+ * 既にやっていることを、残りの種にも広げただけである。
+ */
+const NO_RULES_OF_THIS_KIND: readonly never[] = Object.freeze([]);
+
+/**
+ * 空なら共有の一つを返す。中身があるならその配列を凍結して返す。
+ *
+ * `readonly never[]` はどの `readonly R[]` にも代入できるので、共有する
+ * ためにアサーションを書く必要はない。型アサーションを書いてよいのは
+ * src/core/type-erasure.ts だけである。
+ */
+function freezeRules<R>(rules: readonly R[]): readonly R[] {
+  return rules.length === 0 ? NO_RULES_OF_THIS_KIND : Object.freeze(rules);
+}
+
 export function splitRulesByKind(rules: readonly Rule[]): RulesByKind {
   const checks: CheckRule[] = [];
   const presences: PresenceRule[] = [];
@@ -61,13 +87,13 @@ export function splitRulesByKind(rules: readonly Rule[]): RulesByKind {
     else rejectUnknownRuleKind(rule);
   }
   return Object.freeze({
-    checks: Object.freeze(checks),
-    presences: Object.freeze(presences),
-    conditionalPresences: Object.freeze(conditionalPresences),
-    gates: Object.freeze(gates),
-    transforms: Object.freeze(transforms),
-    composites: Object.freeze(composites),
-    recursions: Object.freeze(recursions),
+    checks: freezeRules(checks),
+    presences: freezeRules(presences),
+    conditionalPresences: freezeRules(conditionalPresences),
+    gates: freezeRules(gates),
+    transforms: freezeRules(transforms),
+    composites: freezeRules(composites),
+    recursions: freezeRules(recursions),
   });
 }
 

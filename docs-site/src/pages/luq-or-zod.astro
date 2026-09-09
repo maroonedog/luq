@@ -150,9 +150,9 @@ router.input(toStandardSchema(validateUser));`;
       <p class="mb-12 text-body-medium text-on-surface-variant">
         In all four the shape is upstream and not yours to move, so a schema-first
         validator asks you to write it a second time and keep the copy in step by
-        hand. Nothing checks that the two still agree; they drift silently, and the
-        first sign is a value that validated against the copy and does not fit the
-        original.
+        hand. The compiler can be made to check the copy against the original —
+        <code>satisfies z.ZodType&lt;Order&gt;</code> does exactly that — but the
+        copy still has to be authored, updated, and remembered.
       </p>
 
       <div class="md-card md-card-filled mb-12 p-6">
@@ -164,10 +164,105 @@ router.input(toStandardSchema(validateUser));`;
           question you will have is already answered somewhere.
         </p>
         <p class="text-body-large text-on-surface-variant">
-          Luq is for the other case — when the type already exists and something
-          else generated it.
+          Luq is for the other case — when the shape is already decided somewhere
+          you do not control.
         </p>
       </div>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        The part that is a real tension, not a talking point
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        A codebase should have one source of truth for a shape.
+        <strong class="text-on-surface"
+          >If that source is a schema you author, schema-first is the coherent
+          arrangement</strong
+        > — you write one artefact, the types come out of it, and there is nothing
+        to keep in step. That is a better position than Luq's, and Luq cannot give
+        it to you.
+      </p>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        Luq's case is the one where the artefact already exists elsewhere and is
+        not yours to move. Then the schema-first arrangement asks you to author a
+        <em>second</em> source of truth, and the question stops being which library
+        is nicer and becomes which copy is right.
+      </p>
+      <p class="mb-4 text-body-medium text-on-surface-variant">
+        Two things follow that are easy to miss. First,
+        <strong class="text-on-surface">Luq contains both directions</strong>:
+        <code>fromJsonSchema(document)</code> is schema-first, and the document
+        decides. That is the same principle pointed at a different upstream, not a
+        contradiction to argue away — what Luq declines to do is make you
+        hand-write the second copy. Second, the choice is
+        <strong class="text-on-surface">per boundary, not per project</strong>:
+        Standard Schema means a zod schema and a Luq validator are interchangeable
+        where they meet, so "the schema is the truth here, the type is the truth
+        there" is a workable arrangement rather than an unresolved argument.
+      </p>
+      <p class="mb-12 text-body-medium text-on-surface-variant">
+        If neither description fits — you own the shape and you are starting from
+        nothing — the honest recommendation is still the one in the card above.
+      </p>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        It patches onto the types you already have
+      </h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        This is what being type-first buys you in an existing codebase, and it is
+        the main practical reason to reach for Luq:
+        <strong class="text-on-surface">your type definitions do not change.</strong>
+        Not re-authored as a schema, not replaced by an inferred one, not moved.
+        <code>.for&lt;Order&gt;()</code> takes the <code>Order</code> that is
+        already there, and every rule is declared against it.
+      </p>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        So Luq asks you to describe the <strong class="text-on-surface">rules</strong>,
+        not the shape — the shape is already written down. Covering an existing
+        codebase with a schema-first validator means producing a second description
+        of the same shape for every type you cover, and then keeping the two in
+        agreement; that is per-type work whether you author the schema beside the
+        type or switch the type to be inferred from it. Luq skips that step because
+        it never needs the second description.
+      </p>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        Which is what makes adoption a patch rather than a migration. Nothing here
+        is global — no registry, no installation step, no shared configuration
+        object; a validator is a value in a module:
+      </p>
+      <ul class="mb-12 space-y-2 text-body-medium text-on-surface-variant">
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">filter_alt</span>
+          <span
+            >Declare only the fields you care about. A path you did not declare is
+            not validated, not required and not read, so a partly-covered type is a
+            normal state rather than a half-finished one.</span
+          >
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">touch_app</span>
+          <span
+            ><code>pick(path)</code> returns a validator for one field, which is
+            what a form needs on blur. <code>pickAll(paths)</code> does a named
+            subset.</span
+          >
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">swap_horiz</span>
+          <span
+            >Standard Schema means adding Luq to one route does not commit the
+            next one, and does not remove zod from the ones it is already in.</span
+          >
+        </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">rule</span>
+          <span
+            >And when you want the opposite, <code>.strict()</code> asks for it: the
+            builder stops compiling until every leaf path of the type is declared,
+            and the error names the ones you missed. Partial is the default, not
+            the only option.</span
+          >
+        </li>
+      </ul>
 
       <h2 class="mb-4 text-headline-small text-on-surface">
         The direction is the whole difference
@@ -241,7 +336,7 @@ router.input(toStandardSchema(validateUser));`;
       </p>
 
       <h2 class="mb-4 text-headline-small text-on-surface">
-        What you give up
+        What you give up by choosing this direction
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
         Written plainly, because you will find all of it out anyway:

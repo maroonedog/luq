@@ -69,6 +69,19 @@ export function fail(detail: IssueDetail): CheckOutcome {
   return { ok: false, detail };
 }
 
+/**
+ * クロスフィールドの判定が返せるもの。真偽だけでも、メッセージ付きでもよい。
+ *
+ * ここ (L0) にあるのは、チェーン層が `stitch` の呼び出し側の型を組むときに
+ * 参照するからである。プラグイン (L7) に置いたままだと L3 -> L7 の import に
+ * なり、層が逆流する。プラグイン側の `StitchOutcome` はこれの別名で、
+ * 公開名は変えていない。
+ */
+export interface CrossFieldOutcome {
+  readonly valid: boolean;
+  readonly message?: string;
+}
+
 export interface ArrayItemContext {
   readonly index: number;
   readonly item: unknown;

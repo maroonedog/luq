@@ -12,6 +12,7 @@
 // silently unvalidated.
 // ===========================================================================
 import { createArrayReader } from "../path/create-array-reader";
+import { formatIssuePath } from "../path/format-issue-path";
 import type {
   ArrayNode,
   CompiledField,
@@ -54,6 +55,9 @@ export function compileRelativeDeclaration(
  * `matrix[*][*]` reaches the same shape through an EMPTY nested template —
  * the element of the outer array is itself the inner array.
  */
+/** A grouped node template never keeps a wildcard, so rendering needs no index. */
+const NO_INDICES: readonly number[] = Object.freeze([]);
+
 export function compileArrayNode(
   group: ArrayFieldGroup,
   context: NodeCompileContext
@@ -62,6 +66,7 @@ export function compileArrayNode(
   const template = Object.freeze(group.template);
   const node: ArrayNode = {
     template,
+    renderedPath: formatIssuePath(template, NO_INDICES),
     read: createArrayReader(template),
     elementFields: Object.freeze(
       grouped.direct.map((declaration) =>

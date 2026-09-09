@@ -47,6 +47,8 @@
       "unchanged",
       "transformOut",
       "guardOut",
+      "stitchOut",
+      "bundleOut",
       "excludeMissing",
       "excludeUndefined",
       "excludeNull",
@@ -56,6 +58,8 @@
       "Unchanged",
       "TransformOut",
       "GuardOut",
+      "StitchOut",
+      "BundleOut",
       "PresenceShift"
     ],
     "presenceShiftKinds": [
@@ -65,7 +69,11 @@
       "allowNull"
     ],
     "resolveArgTypeParameterCount": 5,
-    "chainStateMembers": ["undefinedAllowed", "nullAllowed", "covered"],
+    "chainStateMembers": [
+      "undefinedAllowed",
+      "nullAllowed",
+      "covered"
+    ],
     "ruleBuildContextMembers": [
       "pluginName",
       "code",

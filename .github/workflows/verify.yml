@@ -110,3 +110,40 @@ jobs:
 
       - working-directory: ./docs-site
         run: npm run build
+
+  # competitors — zod / valibot / ajv / yup との比較を、中立なランナーで回す。
+  #
+  # ゲートするのは **判定の一致だけ** である。決定的で機械に依らないので、
+  # 例えば zod がメールの厳しさを版で変えれば、ここが落ちて気づける。
+  #
+  # 速度比は印字するが落とさない。config/perf-baseline.ci.json が存在するのと
+  # 同じ理由で、比率がランナーを相殺するという前提はこのリポジトリで一度
+  # 反証されている。CI の数字は記録された数字と並べて出るので、桁が違えば
+  # 人間が気づく。
+  #
+  # 測定結果は artifact として上げる。作者の機械で測った数字だけが公開値で
+  # あり続けるより、中立なランナーの数字がいつでも取り出せるほうがよい。
+  competitors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run bench:competitors:check
+
+      # 記録し直したものを取り出せるようにする。コミットは戻さない —
+      # CI が勝手に config/ を書き換えると、公開値がどの実行のものか
+      # 分からなくなる。
+      - run: npm run bench:competitors
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: competitor-baseline-${{ github.run_id }}
+          path: config/competitor-baseline.json

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { bundleSize } from '../../data/bundle-size';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
@@ -320,7 +321,7 @@ const tableOfContents = [
             <h2 class="text-title-medium">Plugins are imports</h2>
             <p class="mt-1 text-body-medium text-on-surface-variant">
               An unimported plugin's method does not typecheck. The builder alone gzips to
-              7,420&nbsp;B.
+              {bundleSize.coreOnly.gzip}.
             </p>
           </div>
           <div class="md-card md-card-filled p-4">
@@ -598,7 +599,7 @@ type ValidationIssue = {
           77 plugin objects ship across 76 subpaths, plus one deprecated alias kept from 1.x.
           The root <code>@maroonedog/luq</code> entry exports the builder and the types — it
           deliberately exports no plugins at all, which is why the bare builder gzips to
-          7,420&nbsp;B and a plugin costs 129–224&nbsp;B to add.
+          {bundleSize.coreOnly.gzip} and a plugin costs 129–224&nbsp;B to add.
         </p>
 
         <h2 id="standard-schema" class="mt-12 text-headline-small">Standard Schema</h2>
@@ -627,7 +628,7 @@ type ValidationIssue = {
         <p class="mt-4 text-body-large">
           It is a subpath rather than something <code>build()</code> always
           carries, and the reason is measured: putting <code>~standard</code> on
-          every validator costs 312&nbsp;B gzipped on a 7,420&nbsp;B core —
+          every validator costs 312&nbsp;B gzipped, measured on the 2.0.0 core —
           4.2% charged to everyone, including everyone who never passes a
           validator to tRPC.
         </p>

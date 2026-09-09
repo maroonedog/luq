@@ -37,6 +37,11 @@
       "import": "./dist/standard-schema.mjs",
       "require": "./dist/standard-schema.js"
     },
+    "./presets": {
+      "types": "./dist/presets/index.d.ts",
+      "import": "./dist/presets/index.mjs",
+      "require": "./dist/presets/index.js"
+    },
     "./plugins": {
       "types": "./dist/plugins/index.d.ts",
       "import": "./dist/plugins/index.mjs",
@@ -252,6 +257,11 @@
       "import": "./dist/plugins/stitch.mjs",
       "require": "./dist/plugins/stitch.js"
     },
+    "./plugins/stitchWith": {
+      "types": "./dist/plugins/stitchWith.d.ts",
+      "import": "./dist/plugins/stitchWith.mjs",
+      "require": "./dist/plugins/stitchWith.js"
+    },
     "./plugins/stringAlphanumeric": {
       "types": "./dist/plugins/stringAlphanumeric.d.ts",
       "import": "./dist/plugins/stringAlphanumeric.mjs",
@@ -432,14 +442,14 @@
     "build": "npx ts-node --project scripts/tsconfig.json scripts/build.ts",
     "test": "jest --no-watch --no-watchman --passWithNoTests",
     "test:watch": "jest --watch",
-    "lint": "eslint \"src/**/*.ts\" \"bench/**/*.ts\"",
+    "lint": "npm run lint:ox && npm run lint:naming",
     "prepare": "npm run build",
     "prepublishOnly": "npm run verify",
     "generate-docs": "npx ts-node --project scripts/tsconfig.json scripts/generate-docs.ts",
-    "lint:fix": "eslint \"src/**/*.ts\" \"bench/**/*.ts\" --fix",
+    "lint:fix": "oxlint -c .oxlintrc.json --fix src bench",
     "lint:filenames": "node scripts/check-filenames.js",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.ts\" \"bench/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.ts\" \"bench/**/*.ts\"",
+    "format": "oxfmt src test scripts bench",
+    "format:check": "oxfmt --check src test scripts bench",
     "typecheck": "npm run typecheck:src && npm run typecheck:scripts && npm run typecheck:bench",
     "typecheck:src": "tsc --noEmit -p tsconfig.json",
     "typecheck:scripts": "tsc --noEmit -p scripts/tsconfig.json",
@@ -470,10 +480,16 @@
     "check:doc-examples": "npx ts-node --project scripts/tsconfig.json scripts/check-doc-examples.ts",
     "check:doc-imports": "npx ts-node --project scripts/tsconfig.json scripts/check-doc-imports.ts",
     "check:generated-docs": "npx ts-node --project scripts/tsconfig.json scripts/generate-docs.ts --check",
-    "check:docs": "npm run check:generated-docs && npm run check:doc-examples && npm run check:doc-imports && npm run check:conformance-figures",
+    "check:docs": "npm run check:generated-docs && npm run check:doc-examples && npm run check:doc-imports && npm run check:conformance-figures && npm run check:perf-figures",
     "bench:record": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --record",
     "bench:gate": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --gate",
-    "check:conformance-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-conformance-figures.ts"
+    "check:conformance-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-conformance-figures.ts",
+    "bench:competitors": "npx ts-node --project bench/tsconfig.json bench/competitors/report-competitors.ts",
+    "bench:competitors:check": "npx ts-node --project bench/tsconfig.json bench/competitors/check-competitors.ts",
+    "lint:ox": "oxlint -c .oxlintrc.json src bench",
+    "lint:naming": "eslint \"src/**/*.ts\" \"bench/**/*.ts\"",
+    "generate:perf-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-perf-figures.ts --write",
+    "check:perf-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-perf-figures.ts"
   },
   "repository": {
     "type": "git",
@@ -496,27 +512,23 @@
     "dist"
   ],
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
     "@standard-schema/spec": "^1.1.0",
-    "@swc/cli": "^0.4.0",
-    "@swc/core": "^1.7.36",
-    "@swc/jest": "^0.2.36",
     "@types/jest": "^29.5.14",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "dts-bundle-generator": "^9.5.1",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "esbuild": "^0.25.5",
     "eslint": "^8.57.1",
-    "expect-type": "^1.4.0",
     "jest": "^29.7.0",
-    "prettier": "^3.6.2",
-    "rollup": "^4.46.2",
-    "rollup-plugin-dts": "^6.2.1",
-    "sharp": "^0.34.3",
+    "oxfmt": "^0.67.0",
+    "oxlint": "^1.82.0",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
+    "valibot": "^1.4.2",
+    "yup": "^1.7.1",
     "zod": "^4.0.14"
   },
   "sideEffects": false

@@ -107,7 +107,7 @@ function hasRootRuleKeyword(node: Draft07SchemaObject): boolean {
 function dropDistributedKeywords(
   node: Draft07SchemaObject
 ): Draft07SchemaObject {
-  const { type, required, allOf, ...residual } = node;
+  const { type: _type, required: _required, allOf: _allOf, ...residual } = node;
   return residual;
 }
 

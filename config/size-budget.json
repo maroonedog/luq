@@ -3,7 +3,10 @@
     "バンドルサイズの予算。scripts/measure-bundle-size.ts が読み、超えたら CI が落ちる。",
     "gzipCeilingBytes だけが判定に使われる。recordedGzipBytes は天井を決めたときの実測値で、",
     "根拠として残してあるだけ。数字を目標に合わせて書き換えるのではなく、",
-    "実測が天井を超えたら『なぜ増えたか』を先に答えること。"
+    "実測が天井を超えたら『なぜ増えたか』を先に答えること。",
+    "recordedGzipBytes は 2026-09-09 に取り直した。それまでの値は 2.1.0 の作業で最大 170 B ずれており、天井は等号ではないので誰も気づかなかった。README と docs-site の公開値も同時に直してある。full-feature の天井を 25600 -> 26100 に上げたのは、カタログにプラグインが1つ増えた分 (+191 B、README が言う 129-224 B の範囲内) で超えたためで、実装が重くなったのではない。",
+    "2026-09-10: RuleContext を遅延させる FieldRuleContext を足した分、全エントリが gzip で 75-125 B 増えた。受理パスで +26% の代価である (bench/ の比で 0.0480 -> 0.0605、4巡すべてで四分位が分離)。天井を動かしたのは preset-presence の 1件だけで、8200 B を 3 B 超えたため 8300 B にした。他の6件は据え置きで、余裕が縮んだことがそのまま残る。",
+    "同じ機能を `#` private で書くと 302 B 増えて全エントリが天井を割る。ES2020 では TypeScript が `#` を WeakMap 3本と __classPrivateFieldGet/Set に落とすためで、配布物では要素ごとに WeakMap 参照が増える。ベンチは esbuild で変換していて `#` がそのまま残るため、計測では差が見えなかった — 測る対象と配る対象が違うと数字が転移しない、という例として残す。"
   ],
   "method": {
     "measuredFrom": "src/ の TypeScript ソース。dist/ ではない。",
@@ -62,22 +65,28 @@
       "description": "Builder だけ。プラグインを1つも使わない利用者が払う床。",
       "plugins": [],
       "gzipCeilingBytes": 8000,
-      "recordedGzipBytes": 7420,
+      "recordedGzipBytes": 7954,
       "legacyGzipBytes": 17423
     },
     {
       "id": "one-plugin",
       "description": "Builder + required。1個足したときの増分を見るための点。",
-      "plugins": ["required"],
+      "plugins": [
+        "required"
+      ],
       "gzipCeilingBytes": 8250,
-      "recordedGzipBytes": 7638
+      "recordedGzipBytes": 8087
     },
     {
       "id": "three-plugin",
       "description": "Builder + required/stringMin/numberMin。バレル等価性の比較対象と同じ組。",
-      "plugins": ["required", "stringMin", "numberMin"],
+      "plugins": [
+        "required",
+        "stringMin",
+        "numberMin"
+      ],
       "gzipCeilingBytes": 8600,
-      "recordedGzipBytes": 7987
+      "recordedGzipBytes": 8466
     },
     {
       "id": "six-plugin",
@@ -91,15 +100,47 @@
         "numberMax"
       ],
       "gzipCeilingBytes": 9000,
-      "recordedGzipBytes": 8373,
+      "recordedGzipBytes": 8879,
       "legacyGzipBytes": 19562
+    },
+    {
+      "id": "preset-presence",
+      "description": "Builder + presets の presence (required/optional/nullable)。プリセットの最小。",
+      "plugins": [
+        "required",
+        "optional",
+        "nullable"
+      ],
+      "gzipCeilingBytes": 8300,
+      "recordedGzipBytes": 8203
+    },
+    {
+      "id": "preset-everyday",
+      "description": "Builder + presets の everydayRules (13プラグイン)。use() を並べる代わりに払う額。",
+      "plugins": [
+        "required",
+        "optional",
+        "nullable",
+        "stringMin",
+        "stringMax",
+        "stringPattern",
+        "stringEmail",
+        "numberMin",
+        "numberMax",
+        "numberInteger",
+        "arrayMinLength",
+        "arrayMaxLength",
+        "arrayEach"
+      ],
+      "gzipCeilingBytes": 9600,
+      "recordedGzipBytes": 9437
     },
     {
       "id": "full-feature",
       "description": "Builder + カタログの全プラグイン (JSON Schema 拡張2件を含む)。全部入りの上限。",
       "plugins": "all",
-      "gzipCeilingBytes": 25600,
-      "recordedGzipBytes": 24040
+      "gzipCeilingBytes": 26100,
+      "recordedGzipBytes": 25991
     }
   ],
   "treeShaking": {
@@ -114,7 +155,11 @@
     "maxCoreShareOfFullPercent": 35
   },
   "barrelEquivalence": {
-    "plugins": ["required", "stringMin", "numberMin"],
+    "plugins": [
+      "required",
+      "stringMin",
+      "numberMin"
+    ],
     "maxDivergencePercent": 5
   }
 }
