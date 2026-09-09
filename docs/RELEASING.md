@@ -52,28 +52,90 @@ rewrite is the one about the next one.
    (**check `baseRefName` before merging**; a PR was once merged to the wrong
    base because nobody looked)
 5. tag on `master`: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
-6. `npm publish --access public --tag latest` — **manual**, and needs an OTP
-7. confirm: `npm view @maroonedog/luq version`
-8. the push to `master` deploys the docs site; confirm the run went green
+6. **that is the last manual step.** The tag starts `.github/workflows/publish.yml`,
+   which publishes to npm. Nothing is typed, and there is no OTP.
+7. the push to `master` deploys the docs site; confirm the run went green
+
+The publish workflow refuses to run before it has checked two things, because
+both are mistakes only the person who pushed the tag can undo:
+
+- the tag and `version` in `package.json` say the same thing. Otherwise a tag
+  reading `v2.2.0` puts some other version on npm.
+- that version is not already on npm. npm versions are immutable, so a second
+  publish of the same number cannot succeed — better to say so in five seconds
+  than after a five-minute `verify`.
+
+`npm publish` runs `prepublishOnly`, which is `npm run verify`. The workflow
+does **not** also call verify itself; calling it twice is the same waste the
+competitors job used to carry.
+
+`access` and `provenance` live in `publishConfig` in `package.json` rather
+than as CLI flags, so a publish typed by hand gets the same treatment as one
+run by CI.
+
+## One-time npm setup (trusted publishing)
+
+The workflow authenticates with OIDC — npm's **trusted publishing** — so there
+is no token in this repository's secrets and no 2FA prompt. Nothing is stored,
+so nothing can leak. It has to be told once, on npmjs.com, that this workflow is
+allowed to publish:
+
+1. npmjs.com → the `@maroonedog/luq` package → **Settings** → **Trusted publisher**
+2. Publisher: **GitHub Actions**
+3. Organization or user: `maroonedog`, Repository: `luq`
+4. Workflow filename: `publish.yml`
+5. Environment: `npm` (the workflow declares this; leaving it blank here while
+   the workflow declares one will not match)
+
+Until that exists the workflow fails at the publish step with npm's own error,
+and **nothing is published** — a failed release, not a wrong one.
+
+If trusted publishing is ever unavailable, the fallback is an automation token
+(`NPM_TOKEN` secret, and `registry-url` on `setup-node`). It works, and it is
+worse: it is a long-lived credential that publishes as you, stored in a place
+that is not npm.
 
 ## What CI covers
 
-Four jobs on every push and every pull request: `verify` (the command above),
-`bench` (the throughput ratio gate), `docs` (the site build), and
-`competitors` (zod / valibot / ajv / yup — agreement gated, speed recorded and
-uploaded as an artifact). The competitor numbers from a neutral runner are
-therefore available for every commit, not only the ones measured on the author's
-machine.
+Four workflows, each watching what it can actually be affected by. `push` is
+subscribed on `master` and `develop` only; work in progress is seen through
+`pull_request`. Subscribing to both for every branch ran the whole set twice
+per commit.
+
+| workflow | what it watches | what it gates on |
+|---|---|---|
+| `verify` | everything — no path filter | any difference, on any machine |
+| `bench` | `src/`, `bench/`, the recorded floors | the throughput RATIO, never an absolute |
+| `docs` | `docs-site/` and what it reads | the site building at all |
+| `competitors` | `src/`, `bench/competitors/`, `package-lock.json` | agreement only; speed is recorded |
+
+`verify` has no path filter on purpose. A one-line README change makes
+`check:doc-examples` recompile that example, and touching `config/*.json` makes
+`check:perf-figures` compare the published figures against it. "I did not touch
+the code" is not a safe assumption here, by design.
+
+`competitors` watches `package-lock.json` because that is where a competitor's
+version moves — if zod changes how strict its email check is, the agreement
+count changes and this is what notices.
+
+If required status checks are ever configured, make **`verify` the only one**.
+A required check that a path filter skips stays pending forever, and blocks
+every pull request that does not touch its paths.
 
 ## Known weaknesses in this process
 
-**Publishing is manual.** Steps 6 and 7 are typed by a human with a 2FA code.
-That is a single point of failure and it is not yet automated; changesets plus
-npm provenance would fix it and neither is set up.
+**The version number is chosen by hand.** Nothing derives it from what actually
+changed, so "this was a breaking change and went out as a minor" is a mistake
+this process can still make. changesets would fix it and is not set up.
 
-**No provenance attestation.** The published tarball is not signed, so a
-consumer cannot verify it was built from this repository by CI.
+**One person can release.** There is one maintainer, so the tag that starts a
+publish is pushed by one person and reviewed by nobody. The workflow's two
+checks catch a wrong version, not a wrong decision.
 
-Both are listed rather than left implicit, because "how does this get released"
-is a question a person deciding whether to depend on a package is entitled to
-ask.
+Listed rather than left implicit, because "how does this get released" is a
+question a person deciding whether to depend on a package is entitled to ask.
+
+Two weaknesses that used to be on this list are gone. Publishing is no longer
+typed by a human with a 2FA code, and the tarball now carries a **provenance
+attestation** — npm records which commit and which workflow run built it, and a
+consumer can verify that.
