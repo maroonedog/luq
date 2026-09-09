@@ -618,6 +618,20 @@ the 86 keys** against the published declarations under **both** `node16` and
 - **[Draft-07 conformance](docs/json-schema-conformance.md)** — the 100% and
   what closed each of the ten causes that used to fail
 
+## Status, and how this gets changed
+
+The 2.x API is stable and the surface below is gated, but the production track
+record is still short. Breaking changes happen in a major and nowhere else, an
+API being removed is deprecated one major ahead, and each major ships with the
+codemod needed to cross it.
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — `npm run verify` is the whole
+  contract; the gates and what each one refuses
+- **[SECURITY.md](SECURITY.md)** — reporting, zero runtime dependencies, the
+  prototype-pollution and SSRF positions, and what is *not* protected against
+- **[docs/RELEASING.md](docs/RELEASING.md)** — the release steps, the versioning
+  policy, and the two places the process is still manual
+
 ## About the "universal platform" goal
 
 1.x described a `.luq` DSL that would generate validators for other languages,

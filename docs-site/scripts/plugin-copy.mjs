@@ -472,13 +472,13 @@ export const PLUGIN_COPY = {
   },
   stitchWithPlugin: {
     description:
-      "EXPERIMENTAL. The typed successor to stitch: name the paths you need, then declare rules for each one instead of hand-writing a predicate. The bundle is typed, so a wrong slot or a misspelt name is a compile error.",
+      "EXPERIMENTAL. Cross-field validation over a TYPED bundle. Name the paths under aliases, then judge them together in one sub-chain. stitch hands the bundle over as Record<string, unknown>; here a misspelt member or a wrong type is a compile error.",
     example: {
-      declarations: ["price: number;", "total: number;"],
+      declarations: ["price: number;", "quantity: number;", "total: number;"],
       field: "total",
-      uses: ["requiredPlugin", "numberMinPlugin"],
+      uses: ["requiredPlugin", "customPlugin"],
       chain:
-        'number.required().stitchWith({ cost: "price" }, { cost: (x) => x.number.min(10) })',
+        'number.required().stitchWith({ sum: "total", cost: "price", count: "quantity" }, (f) => f.object.custom((b) => b.sum === b.cost * b.count))',
     },
   },
   stringAlphanumericPlugin: {

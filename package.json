@@ -514,6 +514,8 @@
     "@types/jest": "^29.5.14",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "dts-bundle-generator": "^9.5.1",
     "esbuild": "^0.25.5",
     "eslint": "^8.57.1",
@@ -527,6 +529,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
+    "valibot": "^1.4.2",
+    "yup": "^1.7.1",
     "zod": "^4.0.14"
   },
   "sideEffects": false

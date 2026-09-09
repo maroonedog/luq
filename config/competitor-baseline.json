@@ -1,0 +1,336 @@
+{
+  "note": [
+    "Luq と競合ライブラリを同一プロセスで交互に測ったもの。bench/competitors/ が生成する。",
+    "ratio は luq_ops / competitor_ops のペアごとの中央値。1 より大きければ Luq が速い。",
+    "時間を測ったのは両者の判定が一致した値だけである。食い違った値は agreement 欄に残してある。",
+    "ajv が速いのは検証関数をコードとして生成するからで、数字だけを比べても意味は取れない。",
+    "ただし『ajv は CSP 厳格な環境で使えない』は誤りである: ajv/dist/standalone で事前に",
+    "コンパイルすれば、生成物に new Function も eval も含まれない (実際に生成して確認した)。",
+    "差が出るのはスキーマが実行時に届く場合だけである — サーバから来る、DB に入っている、",
+    "利用者が書く。そのとき事前コンパイルは原理的にできず、ajv は実行時のコード生成に戻る。",
+    "Luq は実行時の文書をルールに変換するだけでコードを生成しないので、そこでも動く。"
+  ],
+  "machine": {
+    "cpuModel": "AMD Ryzen 7 5825U with Radeon Graphics",
+    "logicalCores": 16,
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v23.11.0",
+    "totalMemoryGb": 15.3
+  },
+  "competitors": [
+    {
+      "name": "zod",
+      "version": "4.0.14"
+    },
+    {
+      "name": "valibot",
+      "version": "1.4.2"
+    },
+    {
+      "name": "ajv",
+      "version": "8.20.0"
+    },
+    {
+      "name": "yup",
+      "version": "1.7.1"
+    }
+  ],
+  "agreement": [
+    {
+      "shape": "singleField",
+      "competitor": "zod",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "singleField",
+      "competitor": "valibot",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "singleField",
+      "competitor": "ajv",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "singleField",
+      "competitor": "yup",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "multiField",
+      "competitor": "zod",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "multiField",
+      "competitor": "valibot",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "multiField",
+      "competitor": "ajv",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "multiField",
+      "competitor": "yup",
+      "agreedValues": 7,
+      "disagreements": [
+        {
+          "luqSaid": false,
+          "value": "{\"name\":\"Alexandra\",\"email\":\".alexandra@example.com\",\"age\":34}"
+        }
+      ]
+    },
+    {
+      "shape": "nested",
+      "competitor": "zod",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "nested",
+      "competitor": "valibot",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "nested",
+      "competitor": "ajv",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "nested",
+      "competitor": "yup",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "array",
+      "competitor": "zod",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "array",
+      "competitor": "valibot",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "array",
+      "competitor": "ajv",
+      "agreedValues": 8,
+      "disagreements": []
+    },
+    {
+      "shape": "array",
+      "competitor": "yup",
+      "agreedValues": 8,
+      "disagreements": []
+    }
+  ],
+  "measured": [
+    {
+      "shape": "singleField",
+      "competitor": "zod",
+      "competitorVersion": "4.0.14",
+      "luqOpsPerSecond": 1807175.4197623602,
+      "competitorOpsPerSecond": 96959.14262192318,
+      "ratio": 18.524902076771692,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 5.192496074562449,
+      "competitorSpreadPercent": 6.849230987281918
+    },
+    {
+      "shape": "singleField",
+      "competitor": "valibot",
+      "competitorVersion": "1.4.2",
+      "luqOpsPerSecond": 1767843.075854173,
+      "competitorOpsPerSecond": 3798195.655460914,
+      "ratio": 0.46487876841355913,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 5.345307084994367,
+      "competitorSpreadPercent": 5.6672411084807575
+    },
+    {
+      "shape": "singleField",
+      "competitor": "ajv",
+      "competitorVersion": "8.20.0",
+      "luqOpsPerSecond": 1798110.330986235,
+      "competitorOpsPerSecond": 24071744.23073913,
+      "ratio": 0.07497410615763764,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 5.767670186004785,
+      "competitorSpreadPercent": 7.787518749206987
+    },
+    {
+      "shape": "singleField",
+      "competitor": "yup",
+      "competitorVersion": "1.7.1",
+      "luqOpsPerSecond": 1856989.0474470346,
+      "competitorOpsPerSecond": 37307.999377363136,
+      "ratio": 49.775201927329434,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 4.768102479973231,
+      "competitorSpreadPercent": 3.4956407483576797
+    },
+    {
+      "shape": "multiField",
+      "competitor": "zod",
+      "competitorVersion": "4.0.14",
+      "luqOpsPerSecond": 828140.7859849941,
+      "competitorOpsPerSecond": 77105.48272889227,
+      "ratio": 10.58915524924446,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 7.684776966435529,
+      "competitorSpreadPercent": 8.992173932013447
+    },
+    {
+      "shape": "multiField",
+      "competitor": "valibot",
+      "competitorVersion": "1.4.2",
+      "luqOpsPerSecond": 899683.8908892446,
+      "competitorOpsPerSecond": 1718264.5289004839,
+      "ratio": 0.5218838068147682,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 2.463101970366572,
+      "competitorSpreadPercent": 2.9407556710135387
+    },
+    {
+      "shape": "multiField",
+      "competitor": "ajv",
+      "competitorVersion": "8.20.0",
+      "luqOpsPerSecond": 866105.0119562019,
+      "competitorOpsPerSecond": 9286181.174140198,
+      "ratio": 0.09363714442887562,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 9.462974271057952,
+      "competitorSpreadPercent": 12.417715239803885
+    },
+    {
+      "shape": "multiField",
+      "competitor": "yup",
+      "competitorVersion": "1.7.1",
+      "luqOpsPerSecond": 881736.0738691572,
+      "competitorOpsPerSecond": 34621.54536658346,
+      "ratio": 25.45999548193148,
+      "comparedValues": 7,
+      "disagreedValues": 1,
+      "luqSpreadPercent": 6.908652385374442,
+      "competitorSpreadPercent": 6.7651829048092
+    },
+    {
+      "shape": "nested",
+      "competitor": "zod",
+      "competitorVersion": "4.0.14",
+      "luqOpsPerSecond": 545541.1736679107,
+      "competitorOpsPerSecond": 73822.87427328559,
+      "ratio": 7.571499140200671,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 13.096695186520952,
+      "competitorSpreadPercent": 10.385526324182552
+    },
+    {
+      "shape": "nested",
+      "competitor": "valibot",
+      "competitorVersion": "1.4.2",
+      "luqOpsPerSecond": 643386.7813714398,
+      "competitorOpsPerSecond": 1123707.9081569277,
+      "ratio": 0.5719530158908379,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 1.4653325278917444,
+      "competitorSpreadPercent": 2.120096478012278
+    },
+    {
+      "shape": "nested",
+      "competitor": "ajv",
+      "competitorVersion": "8.20.0",
+      "luqOpsPerSecond": 636753.4496395119,
+      "competitorOpsPerSecond": 10433036.244028278,
+      "ratio": 0.0614076988609697,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 5.439411116822546,
+      "competitorSpreadPercent": 5.44836474188297
+    },
+    {
+      "shape": "nested",
+      "competitor": "yup",
+      "competitorVersion": "1.7.1",
+      "luqOpsPerSecond": 621620.6605174612,
+      "competitorOpsPerSecond": 21503.27600810288,
+      "ratio": 28.86302272552203,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 1.4584435049374023,
+      "competitorSpreadPercent": 2.7222907671452434
+    },
+    {
+      "shape": "array",
+      "competitor": "zod",
+      "competitorVersion": "4.0.14",
+      "luqOpsPerSecond": 29422.13509551228,
+      "competitorOpsPerSecond": 33876.563158883204,
+      "ratio": 0.8897849987549956,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 6.423099941314322,
+      "competitorSpreadPercent": 5.077006068022316
+    },
+    {
+      "shape": "array",
+      "competitor": "valibot",
+      "competitorVersion": "1.4.2",
+      "luqOpsPerSecond": 30511.01010184036,
+      "competitorOpsPerSecond": 54034.950968896876,
+      "ratio": 0.5653761613105835,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 4.383991021765792,
+      "competitorSpreadPercent": 2.450547341285965
+    },
+    {
+      "shape": "array",
+      "competitor": "ajv",
+      "competitorVersion": "8.20.0",
+      "luqOpsPerSecond": 29961.314750222937,
+      "competitorOpsPerSecond": 457892.34403364925,
+      "ratio": 0.06591345676693847,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 6.517595269270222,
+      "competitorSpreadPercent": 9.452568692680503
+    },
+    {
+      "shape": "array",
+      "competitor": "yup",
+      "competitorVersion": "1.7.1",
+      "luqOpsPerSecond": 29722.720265701602,
+      "competitorOpsPerSecond": 1457.4961910201287,
+      "ratio": 20.398069597156898,
+      "comparedValues": 8,
+      "disagreedValues": 0,
+      "luqSpreadPercent": 1.9098641451304041,
+      "competitorSpreadPercent": 4.7365537796802055
+    }
+  ]
+}

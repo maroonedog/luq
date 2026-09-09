@@ -15,11 +15,20 @@ import CodeBlock from '../components/CodeBlock.astro';
  * Nothing is typed in by hand except the arithmetic derived below, and the
  * conformance figures, which come from docs/json-schema-conformance.md.
  *
- * There are no competitor numbers on this page. This repository does not
- * measure AJV, Zod, Valibot, Yup or Joi, so publishing a table of them would be
- * publishing figures nobody here re-ran. The comparators that ARE measured are
- * a hand-written validator in the same process, and Luq 1.x's own source.
+ * Competitor figures ARE on this page now, and they were measured here — zod,
+ * valibot, ajv and yup, in the same process, interleaved sample by sample,
+ * against the same value pools. What is NOT here is a third-party figure this
+ * repository did not re-run.
+ *
+ * Two disciplines make the table mean something. Judgements are compared before
+ * anything is timed, and only values every library answers the same way are
+ * timed; the disagreements are printed rather than dropped. And the losses are
+ * in the same table as the wins — Luq loses to valibot on all four shapes and
+ * to ajv by an order of magnitude, and both are here.
+ *
+ *   config/competitor-baseline.json  written by bench/competitors/
  */
+import { competitorBenchmark } from '../data/competitors';
 import perfBaseline from '../../../config/perf-baseline.json';
 import sizeBudget from '../../../config/size-budget.json';
 
@@ -207,10 +216,11 @@ npm run check:no-dynamic-code`;
             forward.
           </li>
           <li>
-            <strong class="text-on-surface">No competitor tables.</strong> The 1.x version of this
-            page ranked Luq against AJV, Zod, Valibot, Yup and Joi. Those were third-party figures
-            this repository never re-ran, so they are not republished. What is measured instead: a
-            hand-written validator in the same process, and 1.x's own source.
+            <strong class="text-on-surface">Competitors are measured, and Luq loses some of
+            them.</strong> zod, valibot, ajv and yup are run here, in this process, against the same
+            values — Luq is faster in {competitorBenchmark.luqWins} of
+            {competitorBenchmark.total} pairings and slower in the rest. The table is below and the
+            losses are in it.
           </li>
           <li>
             <strong class="text-on-surface">The subject is <code>src/</code>, not the bundle.</strong>
@@ -466,6 +476,122 @@ npm run check:no-dynamic-code`;
         inputs instead of one frozen object changed nothing, and 1.x demonstrably rejects bad values
         on all five shapes, so it is not doing less work. It is simply faster on the flat cases.
       </p>
+    </section>
+
+    <!-- ================= Competitors ================= -->
+    <section id="against-others" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">
+        Against zod, valibot, ajv and yup
+      </h2>
+      <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
+        Measured here, in one process, interleaved sample by sample against the same value pools.
+        Luq is faster in <strong class="text-on-surface">{competitorBenchmark.luqWins} of
+        {competitorBenchmark.total}</strong> pairings. The other
+        {competitorBenchmark.total - competitorBenchmark.luqWins} are losses and they are in the
+        same table.
+      </p>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        <strong class="text-on-surface">Judgements are compared before anything is timed.</strong>
+        Only values every library answers the same way are timed, because a ratio against a library
+        doing different work is not a slow number, it is a wrong one. Where they disagree, the value
+        is listed below rather than dropped. That check earned its place immediately: the first run
+        had ajv rejecting every accepted array value, which turned out to be a missing backslash in
+        the JSON Schema written here — an error of ours, not a difference of ajv's.
+      </p>
+
+      <div class="mb-6 md-card md-card-outlined overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[46rem] border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
+                <th class="px-4 py-3 text-left font-medium">Shape</th>
+                <th class="px-4 py-3 text-left font-medium">Library</th>
+                <th class="px-4 py-3 text-right font-medium">Luq ops/sec</th>
+                <th class="px-4 py-3 text-right font-medium">Theirs ops/sec</th>
+                <th class="px-4 py-3 text-right font-medium">Ratio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                competitorBenchmark.rows.map((row) => (
+                  <tr class="border-b border-outline-variant/60 last:border-0">
+                    <td class="whitespace-nowrap px-4 py-3 font-mono text-body-small text-on-surface">
+                      {row.shape}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-on-surface-variant">
+                      {row.competitor} {row.version}
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono tabular-nums text-on-surface">
+                      {row.luq}
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono tabular-nums text-on-surface-variant">
+                      {row.other}
+                    </td>
+                    <td
+                      class={`px-4 py-3 text-right font-mono tabular-nums ${
+                        row.luqIsFaster ? 'text-primary' : 'text-error'
+                      }`}
+                    >
+                      ×{row.ratio}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {
+        competitorBenchmark.disagreements.length > 0 && (
+          <div class="mb-6 md-card md-card-filled p-6">
+            <h3 class="mb-2 text-title-medium text-on-surface">
+              Where a library disagreed, and was therefore not timed on that value
+            </h3>
+            <ul class="space-y-2 text-body-small text-on-surface-variant">
+              {competitorBenchmark.disagreements.map((one) => (
+                <li>
+                  <code class="font-mono">
+                    {one.shape} / {one.competitor}
+                  </code>{' '}
+                  — Luq said {String(one.luqSaid)}, it said {String(!one.luqSaid)} for{' '}
+                  <code class="font-mono">{one.value}</code>
+                </li>
+              ))}
+            </ul>
+            <p class="mt-3 text-body-small text-on-surface-variant">
+              This is a difference in what the libraries consider valid, not in how fast they are.
+              Neither answer is a bug.
+            </p>
+          </div>
+        )
+      }
+
+      <div class="md-card md-card-filled p-6">
+        <h3 class="mb-2 text-title-medium text-on-surface">
+          Reading the ajv column, which is the interesting one
+        </h3>
+        <p class="mb-3 text-body-medium text-on-surface-variant">
+          ajv is an order of magnitude faster than Luq on every shape here, and it is faster for a
+          structural reason: it compiles a schema into generated JavaScript. That is a real
+          advantage and it is not going away.
+        </p>
+        <p class="mb-3 text-body-medium text-on-surface-variant">
+          <strong class="text-on-surface">What is NOT true is that this makes ajv unusable under a
+          strict Content-Security-Policy.</strong> <code>ajv/dist/standalone</code> precompiles a
+          schema to a module ahead of time, and the generated source contains no dynamic code —
+          generated and inspected while writing this page. With build-time schemas, ajv is fine
+          under a strict CSP, and saying otherwise would be an easy thing to claim and a wrong one.
+        </p>
+        <p class="text-body-medium text-on-surface-variant">
+          The difference is a schema that is only known at <strong class="text-on-surface">run
+          time</strong> — one that arrives from a server, sits in a database, or is written by the
+          user. Precompiling is then impossible by construction, and a code-generating validator has
+          to build a function in the browser, which is exactly what the policy forbids. Luq turns a
+          runtime document into rules and generates nothing, so it keeps working. If your schemas
+          are fixed at build time, ajv's speed is yours to take.
+        </p>
+      </div>
     </section>
 
     <!-- ================= Build cost ================= -->

@@ -17,6 +17,20 @@ import {
  *
  * An empty dist/ is a FAILURE, not a pass: a gate that reports "no violations"
  * because it scanned nothing is worse than no gate.
+ *
+ * WHAT THIS DOES AND DOES NOT BUY, written down because the claim is easy to
+ * overstate and this repository did overstate it once. "ajv cannot run under a
+ * strict CSP" is FALSE: ajv/dist/standalone precompiles a schema to a module
+ * ahead of time, and the generated source contains no dynamic code at all
+ * (generated and inspected, 2026-09-09). Under a strict CSP, a code-generating
+ * validator whose schemas are known at build time is perfectly fine.
+ *
+ * The difference is a schema that is only known at RUN TIME — one that arrives
+ * from a server, sits in a database, or is written by the user. Precompiling is
+ * then impossible by construction, and a code-generating validator has to build
+ * a function in the browser, which is what the policy forbids. Luq turns a
+ * runtime document into rules and generates nothing, so it keeps working.
+ * That, and not "no dynamic code anywhere", is the property this gate protects.
  */
 export function checkNoDynamicCode(repositoryRoot: string): number {
   const distRoot = resolveDistRoot(repositoryRoot);
