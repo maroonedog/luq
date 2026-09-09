@@ -8,10 +8,14 @@ import * as path from "path";
 import {
   README,
   checkPerfFigures,
+  readSources,
   renderReadme,
   writePerfFigures,
 } from "../../../scripts/check-perf-figures";
-import type { PerfBaseline } from "../../../scripts/perf-figures/render-perf-tables";
+import type {
+  PerfBaseline,
+  SizeBudget,
+} from "../../../scripts/perf-figures/render-perf-tables";
 
 const SHAPES = [
   "singleField",
@@ -44,6 +48,19 @@ const BASELINE: PerfBaseline = {
   })),
 };
 
+const BUDGET: SizeBudget = {
+  budgets: [
+    {
+      id: "core-only",
+      gzipCeilingBytes: 100,
+      recordedGzipBytes: 40,
+      legacyGzipBytes: 400,
+    },
+    { id: "six-plugin", gzipCeilingBytes: 200, recordedGzipBytes: 80 },
+    { id: "full-feature", gzipCeilingBytes: 500, recordedGzipBytes: 200 },
+  ],
+};
+
 const MARKED_README = [
   "| Shape | validate | parse |",
   "<!-- generated:perf-throughput -->",
@@ -56,9 +73,15 @@ const MARKED_README = [
   "spread is <!-- generated:perf-spread --><!-- /generated:perf-spread -->.",
   "1.x did <!-- generated:perf-legacy-simple --><!-- /generated:perf-legacy-simple --> here.",
   "",
+  "| Entry | gzip | 1.x |",
+  "<!-- generated:bundle-size -->",
+  "<!-- /generated:bundle-size -->",
+  "",
+  "core is <!-- generated:bundle-core-share --><!-- /generated:bundle-core-share -->.",
+  "",
 ].join("\n");
 
-/** 実際の config/ を読ませないため、baseline も readme も差し替えた根で回す。 */
+/** 実際の config/ を読ませないため、出所も readme も差し替えた根で回す。 */
 function withRepository(
   readme: string,
   run: (root: string) => void,
@@ -66,6 +89,11 @@ function withRepository(
 ): void {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "luq-perf-figures-"));
   fs.mkdirSync(path.join(root, "config"));
+  fs.writeFileSync(
+    path.join(root, "config", "size-budget.json"),
+    JSON.stringify(BUDGET),
+    "utf8"
+  );
   fs.writeFileSync(
     path.join(root, "config", "perf-baseline.json"),
     JSON.stringify(baseline),
@@ -135,7 +163,9 @@ describe("a missing marker is a violation, not a pass", () => {
     ["<!-- /generated:perf-legacy -->", "closing"],
   ])("refuses a README whose %s marker was deleted", (marker) => {
     withRepository(MARKED_README.replace(marker, ""), (root) => {
-      expect(() => renderReadme(root, BASELINE)).toThrow(/perf-legacy/);
+      expect(() => renderReadme(root, readSources(root))).toThrow(
+        /perf-legacy/
+      );
     });
   });
 
@@ -145,7 +175,9 @@ describe("a missing marker is a violation, not a pass", () => {
       "<!-- /generated:perf-legacy -->\n<!-- generated:perf-legacy -->"
     );
     withRepository(swapped, (root) => {
-      expect(() => renderReadme(root, BASELINE)).toThrow(/perf-legacy/);
+      expect(() => renderReadme(root, readSources(root))).toThrow(
+        /perf-legacy/
+      );
     });
   });
 });

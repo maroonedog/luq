@@ -13,6 +13,7 @@ import type {
   RecursionPolicy,
 } from "../compile/validation-plan.types";
 import { createIssue } from "./create-issue";
+import { FieldRuleContext } from "./field-rule-context";
 import { decidePresence } from "./decide-presence";
 import type { IndexStack } from "./index-stack";
 import type { IssueSink } from "./issue-sink";
@@ -51,13 +52,13 @@ export function runField(
   subject: unknown,
   context: FieldRunContext
 ): FieldRunOutcome {
-  const path = context.indices.renderFieldPath(field.renderedPath);
-  const ruleContext: RuleContext = {
-    root: context.root,
-    path,
-    item: context.item,
-    external: context.external,
-  };
+  const ruleContext: RuleContext = new FieldRuleContext(
+    context.root,
+    context.indices,
+    field.renderedPath,
+    context.item,
+    context.external
+  );
   const read = field.read(subject);
   const value = applyDefault(field, read, context.root);
   if (!decidePresence(field, value, ruleContext, context.sink)) {

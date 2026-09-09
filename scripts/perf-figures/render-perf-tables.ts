@@ -26,6 +26,17 @@ export interface LegacyRecord {
   readonly speedup: number | null;
 }
 
+export interface SizeBudgetEntry {
+  readonly id: string;
+  readonly gzipCeilingBytes: number;
+  readonly recordedGzipBytes: number;
+  readonly legacyGzipBytes?: number;
+}
+
+export interface SizeBudget {
+  readonly budgets: readonly SizeBudgetEntry[];
+}
+
 export interface PerfBaseline {
   readonly throughput: readonly ThroughputRecord[];
   readonly legacyComparison: readonly LegacyRecord[];
@@ -118,6 +129,49 @@ export function renderLegacySimpleOps(baseline: PerfBaseline): string {
   const record = findLegacy(baseline, "multiField");
   if (record.legacyOpsPerSecond === null) return "no comparable figure";
   return `${(record.legacyOpsPerSecond / 1_000_000).toFixed(2)}M`;
+}
+
+/** README のバンドル表に出す行と、その見出し。 */
+const SIZE_ROWS: readonly (readonly [string, string])[] = [
+  ["`Builder` only, zero plugins", "core-only"],
+  ['+ 6 plugins (1.x\'s "simple" set)', "six-plugin"],
+  ["all 77 plugins", "full-feature"],
+];
+
+/**
+ * バンドル表。ここに出るのは config/size-budget.json が **毎ビルド測り直して
+ * いる** 行だけである。
+ *
+ * README はこれを手で書いていて、腐っていた: core-only を 7,590 B と書いた
+ * まま実測は 7,646 B になり、さらに 7,954 B になった。同じ事故を数えるのは
+ * これで六度目 (適合率・バージョン・バンドルサイズ・競合表・性能表に続く)。
+ */
+export function renderSizeTable(budget: SizeBudget): string {
+  return SIZE_ROWS.map(([label, id]) => {
+    const entry = budget.budgets.find((one) => one.id === id);
+    if (entry === undefined) {
+      throw new Error(`config/size-budget.json に ${id} が無い`);
+    }
+    const legacy =
+      entry.legacyGzipBytes === undefined
+        ? "—"
+        : `${entry.legacyGzipBytes.toLocaleString("en-US")} B`;
+    return `| ${label} | **${entry.recordedGzipBytes.toLocaleString("en-US")} B** | ${legacy} |`;
+  }).join("\n");
+}
+
+/** 「core は全部入りの 29.6%」の二つの数字。表と同じ出所から出す。 */
+export function renderCoreShare(budget: SizeBudget): string {
+  const core = budget.budgets.find((one) => one.id === "core-only");
+  const all = budget.budgets.find((one) => one.id === "full-feature");
+  if (core === undefined || all === undefined) {
+    throw new Error("core-only または full-feature が無い");
+  }
+  const share = (
+    (core.recordedGzipBytes / all.recordedGzipBytes) *
+    100
+  ).toFixed(1);
+  return `${share}% of the all-plugins build (${core.recordedGzipBytes.toLocaleString("en-US")} of ${all.recordedGzipBytes.toLocaleString("en-US")} B)`;
 }
 
 /** 「on these ten it is 2.9–8.6%」の数字。丸めは表示と同じ小数第1位。 */

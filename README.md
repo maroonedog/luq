@@ -473,17 +473,28 @@ so the two columns are comparable. Recorded in
 
 | Entry | gzip | 1.x, same method |
 |---|---:|---:|
-| `Builder` only, zero plugins | **7,590 B** | 17,423 B |
-| + 6 plugins (1.x's "simple" set) | **8,475 B** | 19,562 B |
-| all 77 plugins | **25,607 B** | — |
-| core + `jsonSchema`, plugin alone (not usable) | **18,992 B** | — |
-| core + `jsonSchema` + a working 49-plugin bag | **21,371 B** | 26.06–29.08 KB |
-| core + `jsonSchemaFullFeature` | **21,383 B** | 31.75–32.31 KB |
+<!-- generated:bundle-size -->
+| `Builder` only, zero plugins | **7,954 B** | 17,423 B |
+| + 6 plugins (1.x's "simple" set) | **8,879 B** | 19,562 B |
+| all 77 plugins | **25,991 B** | — |
+<!-- /generated:bundle-size -->
+
+Three more entries were measured the same way on 2026-09-07 but are **not** in
+`config/size-budget.json`, so nothing re-measures them and they can go stale
+without anything noticing. They are kept because the JSON Schema claim needs
+evidence, and marked because a figure nobody checks is worth less than one that
+is checked:
+
+| Entry (measured once, not gated) | gzip | 1.x, same method |
+|---|---:|---:|
+| core + `jsonSchema`, plugin alone (not usable) | 18,992 B | — |
+| core + `jsonSchema` + a working 49-plugin bag | 21,371 B | 26.06–29.08 KB |
+| core + `jsonSchemaFullFeature` | 21,383 B | 31.75–32.31 KB |
 
 1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
 core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
-figure. Here the core is 29.6% of the all-plugins build (7,590 of 25,607 B), and
-adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
+figure. Here the core is <!-- generated:bundle-core-share -->30.6% of the all-plugins build (7,954 of 25,991 B)<!-- /generated:bundle-core-share -->,
+and adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
 the difference is where the bytes sit, not which README is right.
 
 Two lines that are **not** wins:
@@ -508,16 +519,16 @@ skipped. Every subject rotates over a pool of at least four distinct values —
 one frozen input let V8 delete a subject outright, which is the artefact
 described below. Each figure is the median of the fastest half of 9 samples; the
 spread quoted alongside is the full range over that figure, and on these ten it
-is <!-- generated:perf-spread -->2.5–15.5%<!-- /generated:perf-spread -->.
+is <!-- generated:perf-spread -->1.2–12.3%<!-- /generated:perf-spread -->.
 
 | Shape | `validate` ops/sec | `parse` ops/sec |
 |---|---:|---:|
 <!-- generated:perf-throughput -->
-| 1 field, 1 check | 5,832,278 | 5,646,070 |
-| 3 fields, 6 plugins | 2,246,229 | 2,245,799 |
-| nested, depth 2–3 | 1,636,844 | 1,614,237 |
-| array of 50 elements | 56,760 | 56,841 |
-| JSON Schema document | 271,755 | 272,314 |
+| 1 field, 1 check | 5,581,199 | 5,593,550 |
+| 3 fields, 6 plugins | 2,444,308 | 1,933,180 |
+| nested, depth 2–3 | 1,722,770 | 1,701,094 |
+| array of 50 elements | 90,590 | 90,013 |
+| JSON Schema document | 312,630 | 309,502 |
 <!-- /generated:perf-throughput -->
 
 **This rewrite is slower than 1.x on flat and nested shapes.** Measured side by
@@ -527,11 +538,11 @@ sample interleaved so a drift in the machine hits both halves of every ratio:
 | Shape | 1.x | this | ratio |
 |---|---:|---:|---:|
 <!-- generated:perf-legacy -->
-| 1 field | 24,516,003 | 5,576,257 | **×0.23** |
-| 3 fields | 2,823,708 | 2,285,467 | **×0.81** |
-| nested | 2,135,910 | 1,700,673 | **×0.80** |
-| array of 50 | 18,600 | 59,033 | ×3.19 |
-| JSON Schema | 134,374 | 264,779 | ×1.97 |
+| 1 field | 26,568,111 | 5,463,953 | **×0.21** |
+| 3 fields | 3,082,290 | 2,434,509 | **×0.79** |
+| nested | 2,203,633 | 1,842,200 | **×0.83** |
+| array of 50 | 19,610 | 84,707 | ×4.30 |
+| JSON Schema | 146,283 | 306,778 | ×2.10 |
 <!-- /generated:perf-legacy -->
 
 1.x carried a directory of specialised fast paths that this implementation has
@@ -542,7 +553,7 @@ reject the rejected pool before either is timed.
 
 Also worth stating plainly: **neither figure 1.x's README published reproduces
 here.** It claimed 1.2M ops/sec simple and 43K complex; on this machine 1.x
-itself does <!-- generated:perf-legacy-simple -->2.82M<!-- /generated:perf-legacy-simple -->
+itself does <!-- generated:perf-legacy-simple -->3.08M<!-- /generated:perf-legacy-simple -->
 on the shape rebuilt from its own "simple" benchmark source, and "complex" has
 no reproducible definition to measure.
 

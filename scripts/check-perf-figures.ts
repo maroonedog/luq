@@ -22,28 +22,54 @@ import * as path from "path";
 import { REPOSITORY_ROOT } from "./catalog/plugin-source-roots";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
 import {
+  renderCoreShare,
   renderLegacySimpleOps,
   renderLegacyTable,
+  renderSizeTable,
   renderSpreadRange,
   renderThroughputTable,
 } from "./perf-figures/render-perf-tables";
-import type { PerfBaseline } from "./perf-figures/render-perf-tables";
+import type {
+  PerfBaseline,
+  SizeBudget,
+} from "./perf-figures/render-perf-tables";
 
 export const README = "README.md";
 const BASELINE = path.join("config", "perf-baseline.json");
+const SIZE_BUDGET = path.join("config", "size-budget.json");
+
+/** 生成物が読む出所。どちらも実測が書いたファイルで、手で書く場所ではない。 */
+interface Sources {
+  readonly baseline: PerfBaseline;
+  readonly budget: SizeBudget;
+}
 
 interface GeneratedBlock {
   readonly name: string;
-  readonly render: (baseline: PerfBaseline) => string;
+  readonly render: (sources: Sources) => string;
   /** 文の途中に埋まる印。改行を足すと段落が崩れるので、そのまま差し込む。 */
   readonly isInline?: boolean;
 }
 
 const BLOCKS: readonly GeneratedBlock[] = [
-  { name: "perf-throughput", render: renderThroughputTable },
-  { name: "perf-legacy", render: renderLegacyTable },
-  { name: "perf-spread", render: renderSpreadRange, isInline: true },
-  { name: "perf-legacy-simple", render: renderLegacySimpleOps, isInline: true },
+  { name: "perf-throughput", render: (s) => renderThroughputTable(s.baseline) },
+  { name: "perf-legacy", render: (s) => renderLegacyTable(s.baseline) },
+  {
+    name: "perf-spread",
+    render: (s) => renderSpreadRange(s.baseline),
+    isInline: true,
+  },
+  {
+    name: "perf-legacy-simple",
+    render: (s) => renderLegacySimpleOps(s.baseline),
+    isInline: true,
+  },
+  { name: "bundle-size", render: (s) => renderSizeTable(s.budget) },
+  {
+    name: "bundle-core-share",
+    render: (s) => renderCoreShare(s.budget),
+    isInline: true,
+  },
 ];
 
 function openMarker(name: string): string {
@@ -54,9 +80,15 @@ function closeMarker(name: string): string {
   return `<!-- /generated:${name} -->`;
 }
 
-export function readBaseline(repositoryRoot: string): PerfBaseline {
-  const file = path.join(repositoryRoot, BASELINE);
-  return JSON.parse(fs.readFileSync(file, "utf8")) as PerfBaseline;
+export function readSources(repositoryRoot: string): Sources {
+  return {
+    baseline: JSON.parse(
+      fs.readFileSync(path.join(repositoryRoot, BASELINE), "utf8")
+    ) as PerfBaseline,
+    budget: JSON.parse(
+      fs.readFileSync(path.join(repositoryRoot, SIZE_BUDGET), "utf8")
+    ) as SizeBudget,
+  };
 }
 
 /**
@@ -83,17 +115,14 @@ function replaceBlock(
     : `${head}\n${rendered}\n${tail}`;
 }
 
-export function renderReadme(
-  repositoryRoot: string,
-  baseline: PerfBaseline
-): string {
+export function renderReadme(repositoryRoot: string, sources: Sources): string {
   const file = path.join(repositoryRoot, README);
   let contents = fs.readFileSync(file, "utf8");
   for (const block of BLOCKS) {
     contents = replaceBlock(
       contents,
       block.name,
-      block.render(baseline),
+      block.render(sources),
       block.isInline === true
     );
   }
@@ -101,25 +130,23 @@ export function renderReadme(
 }
 
 export function checkPerfFigures(repositoryRoot: string): number {
-  const baseline = readBaseline(repositoryRoot);
-  const expected = renderReadme(repositoryRoot, baseline);
+  const expected = renderReadme(repositoryRoot, readSources(repositoryRoot));
   const actual = fs.readFileSync(path.join(repositoryRoot, README), "utf8");
   if (expected === actual) {
     console.error(`性能表の表記検査: ${README} は実測と一致`);
     return 0;
   }
   console.error(
-    `${README} の性能表が ${BASELINE} とずれている。` +
+    `${README} の数字が ${BASELINE} / ${SIZE_BUDGET} とずれている。` +
       "npm run generate:perf-figures で書き戻すこと。"
   );
   return 1;
 }
 
 export function writePerfFigures(repositoryRoot: string): number {
-  const baseline = readBaseline(repositoryRoot);
   fs.writeFileSync(
     path.join(repositoryRoot, README),
-    renderReadme(repositoryRoot, baseline),
+    renderReadme(repositoryRoot, readSources(repositoryRoot)),
     "utf8"
   );
   console.error(`生成: ${README} の性能表`);

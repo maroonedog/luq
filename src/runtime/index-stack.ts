@@ -11,29 +11,33 @@
 //
 // A CompiledField's template is RELATIVE to the subject it reads from, so an
 // element field of `items[*]` has the template `name` and could never render
-// `items[0].name` on its own. The array runner pushes the enclosing node, and
-// the rendered prefix is cached per frame: entering costs one string, and a
-// field then pays one concatenation rather than re-walking the whole nesting.
+// `items[0].name` on its own. The array runner pushes the enclosing node and
+// the index; the stack renders the prefix.
+//
+// The prefix is rendered ON DEMAND and remembered until the next push or pop.
+// Entering used to build `items[0]` eagerly, which is one string per element
+// that nothing reads unless a rule fails — and now nothing reads it even then
+// until FieldRuleContext is asked for its path. Entering therefore costs two
+// pushes and one assignment, and the first field that asks pays the render.
 //
 // It is deliberately MUTABLE and pushed/popped around an element loop: one
 // stack lives for one validate() call, and 10k elements must not allocate 10k
-// index arrays.
+// index arrays. It is also why FieldRuleContext remembers the path it built —
+// this stack has moved on by the time a retained context could read it.
 // ===========================================================================
 
 export class IndexStack {
-  private readonly prefixes: string[] = [];
+  private readonly nodePaths: string[] = [];
   private readonly openIndices: number[] = [];
   /**
-   * The top of `prefixes`, held as a plain field.
+   * The rendered prefix, or `null` when it has not been asked for since the
+   * last push or pop. `null` and not `""` because the empty string is a real
+   * answer — the root.
    *
-   * It was a getter reading `prefixes[prefixes.length - 1] ?? ""`, and a CPU
-   * profile of the array shape put 12% of self time there: every field of
-   * every element asks for the prefix, so 50 elements with 3 element fields
-   * read the top of that array 150 times per validate() for a string that
-   * only changes on push and pop. Maintaining it where it changes costs one
-   * assignment per element and nothing per field.
+   * Invalidating rather than recomputing on push is the point: an element that
+   * raises no issue never renders its own prefix at all.
    */
-  private currentPrefix = "";
+  private currentPrefix: string | null = null;
 
   /** How many array levels are currently open. */
   get depth(): number {
@@ -46,24 +50,32 @@ export class IndexStack {
   }
 
   /**
-   * The top of `prefixes`, or `""` when nothing is open.
+   * The prefix for the currently open frames — `""` when none are open,
+   * `items[0]` inside one, `grid[0][2]` inside two.
    *
-   * The length is tested BEFORE indexing. `prefixes[prefixes.length - 1]` at
-   * depth 0 is `prefixes[-1]`, which is not an element read at all: -1 is
+   * Indexed, never `nodePaths[nodePaths.length - 1]`. That expression at
+   * depth 0 is `nodePaths[-1]`, which is not an element read at all: -1 is
    * outside the array, so V8 falls back to a named-property lookup and walks
-   * the prototype chain. That single expression was the whole reason the old
-   * `prefix` getter took 12% of the array shape's self time.
+   * the prototype chain. The `prefix` getter used to be written that way and
+   * it took 12% of the array shape's self time.
    */
   private readTop(): string {
-    const depth = this.prefixes.length;
-    if (depth === 0) return "";
-    const top = this.prefixes[depth - 1];
-    return top === undefined ? "" : top;
+    const already = this.currentPrefix;
+    if (already !== null) return already;
+    let built = "";
+    for (let i = 0; i < this.nodePaths.length; i += 1) {
+      const nodePath = this.nodePaths[i];
+      const index = this.openIndices[i];
+      if (nodePath === undefined || index === undefined) continue;
+      built = `${joinIssuePath(built, nodePath)}[${index}]`;
+    }
+    this.currentPrefix = built;
+    return built;
   }
 
   /** `""` at the root, `items[0]` inside the first element of `items`. */
   get prefix(): string {
-    return this.currentPrefix;
+    return this.readTop();
   }
 
   /**
@@ -82,10 +94,9 @@ export class IndexStack {
         `an array index must be a non-negative integer, received ${String(index)}`
       );
     }
-    const entered = `${joinIssuePath(this.currentPrefix, nodePath)}[${index}]`;
-    this.prefixes.push(entered);
+    this.nodePaths.push(nodePath);
     this.openIndices.push(index);
-    this.currentPrefix = entered;
+    this.currentPrefix = null;
   }
 
   /** An unbalanced pop means a runner lost track of its own nesting. */
@@ -93,9 +104,9 @@ export class IndexStack {
     if (this.openIndices.length === 0) {
       throw new RangeError("popped an array index that was never pushed");
     }
-    this.prefixes.pop();
+    this.nodePaths.pop();
     this.openIndices.pop();
-    this.currentPrefix = this.readTop();
+    this.currentPrefix = null;
   }
 
   /**
@@ -106,7 +117,7 @@ export class IndexStack {
    * string once per element.
    */
   renderFieldPath(renderedPath: string): string {
-    return joinIssuePath(this.currentPrefix, renderedPath);
+    return joinIssuePath(this.readTop(), renderedPath);
   }
 }
 
