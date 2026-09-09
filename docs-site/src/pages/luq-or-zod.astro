@@ -253,6 +253,15 @@ router.input(toStandardSchema(validateUser));`;
             next one, and does not remove zod from the ones it is already in.</span
           >
         </li>
+        <li class="flex gap-3">
+          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">rule</span>
+          <span
+            >And when you want the opposite, <code>.strict()</code> asks for it: the
+            builder stops compiling until every leaf path of the type is declared,
+            and the error names the ones you missed. Partial is the default, not
+            the only option.</span
+          >
+        </li>
       </ul>
 
       <h2 class="mb-4 text-headline-small text-on-surface">
@@ -360,18 +369,6 @@ router.input(toStandardSchema(validateUser));`;
                 Small enough that you will find bugs nobody has hit yet. The
                 gates in this repository are the reason to think there are fewer
                 of them, not a promise that there are none.
-              </td>
-            </tr>
-            <tr>
-              <td class="py-3 pr-6 align-top text-on-surface">Silent gaps</td>
-              <td class="py-3 text-on-surface-variant">
-                Partial coverage is the flip side of patchability, and it is
-                silent. A field you meant to cover and forgot looks exactly like
-                one you deliberately left alone. A schema-first validator that
-                wants the whole shape up front does not have this failure mode —
-                that is a real advantage of doing it that way.
-                <code>additionalProperties(false)</code> plus a rule per field is
-                how you ask Luq to be strict, and it is opt-in.
               </td>
             </tr>
             <tr>

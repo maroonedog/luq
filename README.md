@@ -198,14 +198,37 @@ None of this needs a migration step, because there is nothing global to migrate:
 no registry, no plugin installation, no shared configuration object. A validator
 is a value in a module, declared against a type that was there before it.
 
-**The cost of that, stated plainly: partial coverage is silent.** Nothing tells
-you that `customerNote` has no rules. A field you meant to cover and forgot looks
-exactly like a field you deliberately left alone, and the compiler cannot tell
-them apart — it checks the rules you wrote, not the ones you did not. A
-schema-first validator that requires the whole shape up front does not have this
-failure mode, and that is a real advantage of doing it that way. If you want
-Luq to be strict about a whole object, `additionalProperties(false)` and an
-explicit rule per field is the way to ask for it; it is opt-in, not the default.
+**And when you want the opposite, ask for it: `.strict()`.** Partial coverage is
+the default because that is what makes a patch possible, but a builder that
+declares `.strict()` will not compile until every leaf path of `T` is declared —
+and the error names the ones you missed:
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+type Order = { id: string; customerNote: string; nested: { deep: number } };
+
+export const incomplete = Builder()
+  .use(requiredPlugin)
+  .for<Order>()
+  .v("id", (b) => b.string.required())
+  .strict()
+  // @ts-expect-error strict() returned
+  // MissingFieldsError<"customerNote" | "nested.deep">, which has no build().
+  .build();
+```
+
+It counts leaves, so an optional property, a `Date`, an array's elements
+(`tags[*]`) and a field inside an array of objects (`items[*].sku`) are each
+required in their own right. It has no run-time effect at all — the obligation
+is discharged by the compiler.
+
+So the choice between "cover one field" and "cover everything" is a single call,
+made per builder, and reported at compile time with the missing names rather than
+at run time as a value that quietly passed. What `.strict()` does **not** cover is
+properties that are not in the type; rejecting those is a run-time rule and
+belongs to `additionalProperties(false)`.
 
 ## When schema-first is the right answer
 
