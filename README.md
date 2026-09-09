@@ -681,7 +681,7 @@ codemod needed to cross it.
 - **[SECURITY.md](SECURITY.md)** — reporting, zero runtime dependencies, the
   prototype-pollution and SSRF positions, and what is *not* protected against
 - **[docs/RELEASING.md](docs/RELEASING.md)** — the release steps, the versioning
-  policy, and the two places the process is still manual
+  policy, what each CI workflow watches, and what is still decided by hand
 
 ## About the "universal platform" goal
 

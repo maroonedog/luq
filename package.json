@@ -511,6 +511,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "devDependencies": {
     "@standard-schema/spec": "^1.1.0",
     "@types/jest": "^29.5.14",
