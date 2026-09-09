@@ -63,7 +63,7 @@
       "description": "Builder だけ。プラグインを1つも使わない利用者が払う床。",
       "plugins": [],
       "gzipCeilingBytes": 8000,
-      "recordedGzipBytes": 7590,
+      "recordedGzipBytes": 7646,
       "legacyGzipBytes": 17423
     },
     {
@@ -102,11 +102,43 @@
       "legacyGzipBytes": 19562
     },
     {
+      "id": "preset-presence",
+      "description": "Builder + presets の presence (required/optional/nullable)。プリセットの最小。",
+      "plugins": [
+        "required",
+        "optional",
+        "nullable"
+      ],
+      "gzipCeilingBytes": 8200,
+      "recordedGzipBytes": 7875
+    },
+    {
+      "id": "preset-everyday",
+      "description": "Builder + presets の everydayRules (13プラグイン)。use() を並べる代わりに払う額。",
+      "plugins": [
+        "required",
+        "optional",
+        "nullable",
+        "stringMin",
+        "stringMax",
+        "stringPattern",
+        "stringEmail",
+        "numberMin",
+        "numberMax",
+        "numberInteger",
+        "arrayMinLength",
+        "arrayMaxLength",
+        "arrayEach"
+      ],
+      "gzipCeilingBytes": 9600,
+      "recordedGzipBytes": 9098
+    },
+    {
       "id": "full-feature",
       "description": "Builder + カタログの全プラグイン (JSON Schema 拡張2件を含む)。全部入りの上限。",
       "plugins": "all",
       "gzipCeilingBytes": 26100,
-      "recordedGzipBytes": 25607
+      "recordedGzipBytes": 25632
     }
   ],
   "treeShaking": {

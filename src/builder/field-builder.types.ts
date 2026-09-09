@@ -54,6 +54,19 @@ export interface Builder<B extends PluginBag = Record<never, never>> {
   // NB: the intersection is written INLINE.
   use<P extends AnyPlugin>(plugin: P): Builder<B & BagEntry<P>>;
   /**
+   * A whole SET of plugins at once — a preset, or any object of them.
+   *
+   * A bag is a name -> plugin map, so a preset is that value and nothing more;
+   * there is no registry and no preset type to learn. `use()` one at a time
+   * still works and still costs only what it names, which is the point of the
+   * subpaths — this is for the case where writing fifteen `use()` lines is the
+   * thing standing between you and the validator.
+   *
+   * Duplicates follow the same rule as `use()`: FIRST WINS, so a preset cannot
+   * quietly replace a plugin you already registered.
+   */
+  useAll<Bag extends PluginBag>(plugins: Bag): Builder<B & Bag>;
+  /**
    * The per-builder override of the process-wide GlobalConfig. Merged over
    * getGlobalConfig() once, at build(), and handed to every plugin as
    * RuleBuildContext.config.

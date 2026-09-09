@@ -61,6 +61,15 @@ export function createBuilderSurface(): BuilderSurface {
       registerPlugin(registration.plugins, plugin);
       return surface;
     },
+    useAll(plugins) {
+      // 順序は Object.values の列挙順。first-wins なので、同じ名前が二度
+      // 来ても最初のものが残る — プリセットが既に登録したものを黙って
+      // 置き換えることはない。
+      for (const plugin of Object.values(plugins)) {
+        registerPlugin(registration.plugins, plugin);
+      }
+      return surface;
+    },
     withConfig(config) {
       registration.config = Object.assign({}, registration.config, config);
       return surface;

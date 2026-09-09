@@ -395,6 +395,7 @@
     "./field-rule",
     "./async",
     "./standard-schema",
+    "./presets",
     "./plugins",
     "./plugins/arrayContains",
     "./plugins/arrayEach",

@@ -4,8 +4,8 @@
 
 export const bundleSize = {
   coreOnly: {
-    bytes: 7590,
-    gzip: "7,590 B",
+    bytes: 7646,
+    gzip: "7,646 B",
     ceiling: 8000,
   },
   onePlugin: {
@@ -24,8 +24,8 @@ export const bundleSize = {
     ceiling: 9000,
   },
   fullFeature: {
-    bytes: 25607,
-    gzip: "25,607 B",
+    bytes: 25632,
+    gzip: "25,632 B",
     ceiling: 26100,
   },
   legacyCoreGzip: 17423,
