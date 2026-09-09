@@ -1,0 +1,90 @@
+name: Bug report or feature request
+description: Report something that behaves wrongly, or ask for something that is missing.
+title: "[bug|feature] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Written in English so every issue reads the same way to everyone.
+
+        For a security problem, do **not** open an issue — see
+        [SECURITY.md](https://github.com/maroonedog/luq/blob/master/SECURITY.md).
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: >
+        What happened, or what is missing, in two or three sentences. For a bug,
+        say what you expected and what you got instead; "it does not work" is not
+        something anyone can act on.
+      placeholder: >
+        Validating an array of 50 elements reports the declaration pattern
+        `items[*].name` as the issue path instead of the real index.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      description: Which of the two this is. Pick one; if it is genuinely both, open two issues.
+      options:
+        - Bug — something behaves differently from what is documented
+        - Feature request — something is missing
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: >
+        For a bug: the smallest code that shows it, including the type, the
+        builder chain and the value being validated. Runnable beats described —
+        an issue that can be pasted into a file and run gets fixed faster than
+        one that has to be reconstructed. For a feature request: the code you
+        would like to be able to write, even if it does not compile today.
+      render: typescript
+      placeholder: |
+        import { Builder } from "@maroonedog/luq";
+        import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+        type Order = { items: { name: string }[] };
+
+        const validator = Builder()
+          .use(requiredPlugin)
+          .for<Order>()
+          .v("items[*].name", (b) => b.string.required())
+          .build();
+
+        const result = validator.validate({ items: [{ name: "" }] });
+        console.log(result.issues.map((issue) => issue.path));
+        // expected: ["items[0].name"]
+        // actual:   ["items[*].name"]
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: >
+        The version of `@maroonedog/luq` you are on — `npm ls @maroonedog/luq`.
+        1.x is a different implementation and is not maintained; see
+        [docs/migration/breaking-changes.md](https://github.com/maroonedog/luq/blob/master/docs/migration/breaking-changes.md).
+      placeholder: "2.2.0"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: >
+        TypeScript and Node versions, and the bundler if the problem only shows
+        up in a build. Skip it if the reproduction above is plain Node.
+      placeholder: "TypeScript 5.6.3, Node 22.11.0, Vite 5"
+    validations:
+      required: false
