@@ -57,6 +57,22 @@ export interface TransformOut {
 export interface GuardOut {
   readonly [MARKER]: "guardOut";
 }
+/**
+ * Like GuardOut, these exist so ChainMethod can give the method a call-site
+ * type parameter. ResolveArgs resolves each argument against a FIXED
+ * TRoot/TValue and cannot make argument 2 depend on argument 1, so a plugin
+ * whose second argument is typed by its first has to come through this door.
+ *
+ * `StitchOut` types the FIELD VALUES a cross-field predicate receives, from
+ * the paths named in argument 1. `BundleOut` types the SUBJECT of a sub-chain,
+ * from the alias-to-path map in argument 1.
+ */
+export interface StitchOut {
+  readonly [MARKER]: "stitchOut";
+}
+export interface BundleOut {
+  readonly [MARKER]: "bundleOut";
+}
 export type PresenceShiftKind =
   | "excludeMissing"
   | "excludeUndefined"
@@ -94,6 +110,8 @@ export interface OutputMarkerRegistry {
   readonly unchanged: Unchanged;
   readonly transformOut: TransformOut;
   readonly guardOut: GuardOut;
+  readonly stitchOut: StitchOut;
+  readonly bundleOut: BundleOut;
   readonly excludeMissing: PresenceShift<"excludeMissing">;
   readonly excludeUndefined: PresenceShift<"excludeUndefined">;
   readonly excludeNull: PresenceShift<"excludeNull">;

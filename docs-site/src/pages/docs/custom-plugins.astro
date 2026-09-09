@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { bundleSize } from '../../data/bundle-size';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
@@ -703,7 +704,7 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           That rule is why importing one plugin does not drag in the other 76, and it is
-          measured: a plugin costs 129–224&nbsp;B of gzip to add, against a 7,420&nbsp;B
+          measured: a plugin costs 129–224&nbsp;B of gzip to add, against a {bundleSize.coreOnly.gzip}
           builder. A plugin published from your own package has the same shape and imports
           <code>@maroonedog/luq/plugin-kit</code> instead of relative paths.
         </p>

@@ -13,14 +13,24 @@
 //   - "no allValues -> fail" is gone: RuleContext.root is always present.
 // ===========================================================================
 import { PASS, fail, isPlainObject, isString } from "../../types";
+import type { CrossFieldOutcome } from "../../types";
 import { check } from "../../plugin-kit/create-rule";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
 import { createValueReader, parseFieldPath } from "../../path/index";
 import type { ValueReader } from "../../path/index";
 import type { PickPaths } from "../../path/index";
-import type { FieldRefs, Unchanged } from "../../plugin-kit/marker.types";
+import type { FieldRefs, StitchOut } from "../../plugin-kit/marker.types";
 
-/** The bundle handed to the check, keyed by the path exactly as declared. */
+/**
+ * The bundle handed to the check at RUN TIME, keyed by the path exactly as
+ * declared.
+ *
+ * 呼び出し側がこれを見ることはもう無い。`.stitch(["price"], ...)` と書いた
+ * 時点でパスの集合は分かっているので、述語が受け取る束の型は
+ * `PickPaths<TRoot, F>` として組まれる (src/chain/chain-method.types.ts の
+ * StitchOut の腕)。この型が残っているのは、実行時に集める側が「キーは
+ * パス文字列」という事実を書き留めておく場所だからである。
+ */
 export type StitchFieldValues = Readonly<Record<string, unknown>>;
 
 /**
@@ -36,12 +46,22 @@ export type StitchFieldsOf<
   TFields extends readonly string[],
 > = PickPaths<TRoot, TFields>;
 
-/** 1.x's `{ valid, message? }`, unchanged. */
-export interface StitchOutcome {
-  readonly valid: boolean;
-  readonly message?: string;
-}
+/**
+ * 1.x の `{ valid, message? }`、名前も形もそのまま。実体は src/types の
+ * CrossFieldOutcome で、チェーン層が呼び出し側の型を組むのに参照する —
+ * L3 から L7 を import しないための置き場である。
+ */
+export type StitchOutcome = CrossFieldOutcome;
 
+/**
+ * 実行時に build() が受け取る形。**呼び出し側が見る型ではない。**
+ *
+ * `.stitch(["price", "quantity"], ...)` と書いた時点でパスの集合は分かって
+ * いるので、述語が受け取る束は `PickPaths<TRoot, F>` として組まれ、キーごとに
+ * 値の型が付く (src/chain/chain-method.types.ts の StitchOut の腕)。
+ * ここが `Record<string, unknown>` のままだったのが、その腕を足すまでの
+ * stitch である。
+ */
 export type StitchCheck = (
   fieldValues: StitchFieldValues,
   value: unknown,
@@ -84,7 +104,7 @@ function collectFieldValues(
 
 export const stitchPlugin = /*#__PURE__*/ definePlugin<{
   args: readonly [fields: FieldRefs, check: StitchCheck];
-  out: Unchanged;
+  out: StitchOut;
   context: StitchExtra;
 }>()({
   name: "stitch",

@@ -18,7 +18,19 @@ import { join } from "path";
 import { tmpdir } from "os";
 
 const REPOSITORY_ROOT = join(__dirname, "..", "..");
-const DEFAULT_REF = process.env["LUQ_LEGACY_REF"] ?? "master";
+/**
+ * The LAST 1.x commit on master (PR #12), pinned as a SHA on purpose.
+ *
+ * This was `master`, and `master` moved. When 2.0 merged (PR #15) the
+ * comparison quietly began extracting the rewrite and measuring it against
+ * itself. The export guard below caught it and recorded "not comparable"
+ * rather than a 1.00x figure, which is the only reason no invented number
+ * reached the site — but the guard is the second line, not the first. A
+ * historical comparison must name a commit that cannot move, and a branch
+ * name is not one. Override with LUQ_LEGACY_REF to compare against another.
+ */
+const LEGACY_1X_COMMIT = "b84d236c8a3ebf26f9671a517fa4ebd9367ff68a";
+const DEFAULT_REF = process.env["LUQ_LEGACY_REF"] ?? LEGACY_1X_COMMIT;
 const EXTRACT_ROOT = join(tmpdir(), "luq-legacy-sources");
 const STAMP_FILE = "extracted-from.txt";
 
@@ -72,9 +84,16 @@ export function extractLegacySources(ref: string = DEFAULT_REF): LegacySources {
   try {
     rmSync(target, { recursive: true, force: true });
     mkdirSync(target, { recursive: true });
-    const archivePath = join(target, "legacy-src.tar");
+    // The archive is named RELATIVELY and extracted with `cwd`, so no absolute
+    // path reaches tar's argv. GNU tar reads `C:\...` as host:path and tries to
+    // resolve "C" as a remote machine — "tar: Cannot connect to C: resolve
+    // failed" — which is how this comparison silently became "not comparable"
+    // on Windows while every shape still recorded a current figure.
+    const archiveName = "legacy-src.tar";
+    const archivePath = join(target, archiveName);
     runGit(["archive", "--format=tar", "-o", archivePath, commit, "src"]);
-    execFileSync("tar", ["-xf", archivePath, "-C", target], {
+    execFileSync("tar", ["-xf", archiveName], {
+      cwd: target,
       stdio: ["ignore", "pipe", "pipe"],
     });
     rmSync(archivePath, { force: true });

@@ -69,6 +69,7 @@ export interface FieldBuilderSurface {
 /** The erased twin of Builder<B>. `use` mutates and returns the receiver. */
 export interface BuilderSurface {
   use(plugin: AnyPlugin): BuilderSurface;
+  useAll(plugins: PluginBag): BuilderSurface;
   withConfig(config: GlobalConfig): BuilderSurface;
   for(): FieldBuilderSurface;
 }

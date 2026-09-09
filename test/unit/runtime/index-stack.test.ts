@@ -7,10 +7,10 @@
 // order would still emit `grid[2][0]` and pass a state-only assertion.
 // ===========================================================================
 import { IndexStack, joinIssuePath } from "../../../src/runtime/index-stack";
-import { parseFieldPath } from "../../../src/path/parse-field-path";
 
-const NAME = parseFieldPath("name");
-const ELEMENT_ITSELF: ReturnType<typeof parseFieldPath> = [];
+const NAME = "name";
+/** 要素そのものを指す宣言は、自分自身のパスを持たない。 */
+const ELEMENT_ITSELF = "";
 
 describe("IndexStack renders a concrete issue path", () => {
   it("is at the root before anything is pushed", () => {
@@ -40,9 +40,7 @@ describe("IndexStack renders a concrete issue path", () => {
   it("renders data[1].nested.inner across two levels of keys", () => {
     const stack = new IndexStack();
     stack.push("data", 1);
-    expect(stack.renderFieldPath(parseFieldPath("nested.inner"))).toBe(
-      "data[1].nested.inner"
-    );
+    expect(stack.renderFieldPath("nested.inner")).toBe("data[1].nested.inner");
   });
 
   it("carries the outer index into a nested array node", () => {
@@ -50,9 +48,7 @@ describe("IndexStack renders a concrete issue path", () => {
     stack.push("items", 0);
     stack.push("tags", 2);
     expect(stack.renderFieldPath(ELEMENT_ITSELF)).toBe("items[0].tags[2]");
-    expect(stack.renderFieldPath(parseFieldPath("label"))).toBe(
-      "items[0].tags[2].label"
-    );
+    expect(stack.renderFieldPath("label")).toBe("items[0].tags[2].label");
   });
 
   it("pops back to the enclosing level", () => {
@@ -99,12 +95,15 @@ describe("IndexStack refuses a location no declaration could produce", () => {
     expect(() => stack.pop()).toThrow(/never pushed/);
   });
 
-  it("refuses to render a wildcard template instead of doubling the index", () => {
+  // ワイルドカードを含むテンプレートの拒否は、ここではなく **コンパイル時**
+  // の仕事になった。フィールド自身のパスは compileField が一度だけ描画するので、
+  // 描画できないテンプレートはそこで落ちる (test/unit/compile/compile-field.test.ts
+  // の「refuses a wildcard template」がそれを固定している)。実行時に残るのは
+  // 接頭辞との連結だけで、そこには落ちる余地が無い。
+  it("joins a rendered field path onto the open prefix, and nothing more", () => {
     const stack = new IndexStack();
     stack.push("items", 0);
-    expect(() =>
-      stack.renderFieldPath(parseFieldPath("items[*].name"))
-    ).toThrow(RangeError);
+    expect(stack.renderFieldPath("name")).toBe("items[0].name");
   });
 });
 

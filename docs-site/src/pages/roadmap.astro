@@ -1,16 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { bundleSize } from '../data/bundle-size';
 import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import { conformance } from '../data/conformance';
+import { legacySpeedups } from '../data/legacy-speedups';
 
 /**
  * This page replaces the 1.x roadmap, which advertised a `.luq` universal-platform
  * DSL — @database adapters, @endpoint definitions, `luq generate --lang=java`,
  * OpenAPI emission — against dated milestones ("Coming Q1–Q3 2026", "Q4 2026 —
  * v1.0", "2027+"). Those dates have now passed with none of it shipped, so the
- * page is not a plan any more; it is a broken promise. Nothing here carries a
+ * page is a record of what was promised and not delivered, so nothing here carries a
  * date, and nothing here is unmeasured.
  *
  * Sources:
@@ -39,9 +41,9 @@ const shipped = [
   },
   {
     icon: 'compress',
-    headline: 'A 7,420 B gzipped floor',
+    headline: `A ${bundleSize.coreOnly.gzip} gzipped floor`,
     detail:
-      'That is Builder with zero plugins. 1.x charged 17,423 B before you used anything. Adding the first six plugins costs about 159 B each.',
+      `That is Builder with zero plugins. 1.x charged ${bundleSize.legacyCoreGzip.toLocaleString('en-US')} B before you used anything. Adding the first six plugins costs about 148 B each.`,
     href: '/benchmarks#bundle-size',
     linkLabel: 'See the measurements',
   },
@@ -140,7 +142,7 @@ const knownWeaknesses = [
   {
     title: 'Slower than 1.x on flat and nested shapes',
     detail:
-      'Measured in one process: ×0.11 on one field, ×0.35 on three fields, ×0.32 nested. Arrays (×1.57) and JSON Schema (×1.09) are the two wins. 1.x carried a directory of specialised fast paths that this implementation has no equivalent of. Recovering that ground is the largest single piece of unfinished engineering in the project.',
+      `Measured in one process: ${legacySpeedups.singleField} on one field, ${legacySpeedups.multiField} on three fields, ${legacySpeedups.nested} nested. Arrays (${legacySpeedups.array}) and JSON Schema (${legacySpeedups.jsonSchema}) are the two wins. 1.x carried a directory of specialised fast paths that this implementation has no equivalent of. Recovering that ground is the largest single piece of unfinished engineering in the project.`,
     href: '/benchmarks#against-1x',
   },
   {

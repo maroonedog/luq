@@ -17,7 +17,7 @@ table is typed by hand, so it cannot drift away from the implementation.
 - **Slots** — which `b.<slot>` the method appears on. Choosing a slot the
   field's type cannot be is a **compile** error, not a runtime one.
 
-**77 plugin objects** (isolated 75, extension 2).
+**78 plugin objects** (isolated 76, extension 2).
 
 | Subpath | Symbol | Method | Slots | Tier |
 |---|---|---|---|---|
@@ -64,6 +64,7 @@ table is typed by hand, so it cannot drift away from the implementation.
 | `./plugins/requiredIf` | `requiredIfPlugin` | `.requiredIf()` | every slot | isolated |
 | `./plugins/skip` | `skipPlugin` | `.skip()` | every slot | isolated |
 | `./plugins/stitch` | `stitchPlugin` | `.stitch()` | `string` `number` `boolean` `date` `object` `array` `tuple` `union` | isolated |
+| `./plugins/stitchWith` | `stitchWithPlugin` | `.stitchWith()` | `string` `number` `boolean` `date` `object` `array` `tuple` `union` | isolated |
 | `./plugins/stringAlphanumeric` | `stringAlphanumericPlugin` | `.alphanumeric()` | `string` | isolated |
 | `./plugins/stringBase64` | `stringBase64Plugin` | `.base64()` | `string` | isolated |
 | `./plugins/stringContentEncoding` | `stringContentEncodingPlugin` | `.contentEncoding()` | `string` | isolated |

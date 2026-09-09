@@ -1,5 +1,5 @@
 {
-  "pluginCount": 76,
+  "pluginCount": 77,
   "plugins": [
     {
       "subpath": "./plugins/arrayContains",
@@ -212,6 +212,11 @@
       "tier": "isolated"
     },
     {
+      "subpath": "./plugins/stitchWith",
+      "directory": "src/plugins/stitch-with",
+      "tier": "isolated"
+    },
+    {
       "subpath": "./plugins/stringAlphanumeric",
       "directory": "src/plugins/string-alphanumeric",
       "tier": "isolated"
@@ -390,6 +395,7 @@
     "./field-rule",
     "./async",
     "./standard-schema",
+    "./presets",
     "./plugins",
     "./plugins/arrayContains",
     "./plugins/arrayEach",
@@ -433,6 +439,7 @@
     "./plugins/requiredIf",
     "./plugins/skip",
     "./plugins/stitch",
+    "./plugins/stitchWith",
     "./plugins/stringAlphanumeric",
     "./plugins/stringBase64",
     "./plugins/stringContentEncoding",

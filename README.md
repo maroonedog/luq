@@ -16,10 +16,11 @@ schema of record. protobuf and GraphQL codegen generate them for services in
 four languages at once. Increasingly, a model generates the code that uses them.
 
 A validator whose schema is the source of truth assumes you are the one who
-decides the shape. When you are not, it asks you to write that shape a second
-time and keep the copy in step by hand — and nothing checks that the two still
-agree. They drift, and the first sign is a value that passed the copy and does
-not fit the original.
+decides the shape. When that assumption holds, it is the better arrangement and
+this README will say so again below. When it does not, you end up maintaining a
+second description of a shape you did not choose. You can have the compiler check
+the copy against the original — zod's `satisfies z.ZodType<Order>` does exactly
+that — but you still author it, update it, and remember to write the check.
 
 Luq runs the other way. It takes the type you already have and lets you declare
 rules against its field paths. What makes those declarations worth writing is
@@ -43,9 +44,9 @@ an array wildcard gets a red squiggle, not a validator that passes everything.
 Every rule you can call is a plugin you imported by name, so the bundle contains
 what you used and nothing else.
 
-Every number on this page was measured on this repository. Where a measurement
-is worse than the 1.x release, it is written down as worse. The provenance of
-each figure is named next to it.
+Every number on this page was measured on this repository, and the file it came
+from is named next to it. Where a measurement is worse than 1.x — and some are —
+it is written down as worse.
 
 ## Install
 
@@ -109,10 +110,155 @@ carries `data`, both branches carry `issues`, and each issue is
 `{ path, code, message, severity }`.
 
 > Every code block on this page is extracted and typechecked against the built
-> package by `npm run check:docs`. The 1.x README's quick start called `build()`'s
-> return value as a function, read a `result.issues` member 1.x's `Result` did not
-> have, and imported a subpath the exports map did not contain. That is what the
-> gate exists to prevent.
+> package by `npm run check:docs`. It exists because documentation drifts from
+> the API it documents unless something compiles it — 1.x's quick start had drifted
+> in three places at once (a `build()` result called as a function, a `result.issues`
+> member that did not exist, and a subpath missing from the exports map), and each
+> was the readable kind of mistake that nobody reads.
+
+## It patches onto the types you already have
+
+This is the practical consequence of being type-first, and it is the main reason
+to reach for Luq: **your type definitions do not change.** Not re-authored as a
+schema, not replaced by an inferred one, not moved. `.for<Order>()` takes the
+`Order` you already have, exactly as it is, and every rule is declared against
+it.
+
+So Luq asks you to describe the **rules**, not the shape — the shape is already
+written down. Adopting a schema-first validator on an existing codebase means
+producing a second description of the same shape for every type you cover, and
+then keeping the two in agreement; that is per-type work whether you author the
+schema alongside the type or switch the type to be inferred from it. Luq skips
+that step because it never needs the second description.
+
+Which is what makes adoption a patch rather than a migration:
+
+**Declare only the fields you care about.** A path you did not declare is not
+validated, not required, and not read. There is no "unknown key" behaviour to
+opt out of, so a partly-covered type is a normal state and not a half-finished
+one.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+
+type Order = {
+  id: string;
+  customerNote: string;
+  legacyBlob: unknown;
+};
+
+// One field of three.
+const orderValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Order>()
+  .v("id", (b) => b.string.required().min(3))
+  .build();
+
+// `customerNote` and `legacyBlob` are never read, so anything goes there —
+// including being absent.
+console.error(orderValidator.validate({ id: "abc" } as Order).valid); // true
+console.error(orderValidator.validate({ id: "ab" } as Order).valid); // false
+```
+
+**Validate one field at a time.** `pick(path)` gives back a validator for a
+single declared path, which is what a form needs on blur. It takes the field's
+own value, and optionally its siblings for cross-field rules.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+
+type Order = { id: string; customerNote: string };
+
+const id = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Order>()
+  .v("id", (b) => b.string.required().min(3))
+  .build()
+  .pick("id");
+
+console.error(id.validate("ab").valid); // false
+console.error(id.validate("abc").valid); // true
+```
+
+`pickAll(["a", "b"])` does the same for a named subset and hands back exactly
+those paths, keyed by the strings you asked for.
+
+**Keep what you already have.** Luq implements Standard Schema v1, so a Luq
+validator and a zod schema are interchangeable at any boundary that accepts one.
+Adding Luq to one route does not commit the next one, and does not remove zod
+from the routes it is already in.
+
+None of this needs a migration step, because there is nothing global to migrate:
+no registry, no plugin installation, no shared configuration object. A validator
+is a value in a module, declared against a type that was there before it.
+
+**And when you want the opposite, ask for it: `.strict()`.** Partial coverage is
+the default because that is what makes a patch possible, but a builder that
+declares `.strict()` will not compile until every leaf path of `T` is declared —
+and the error names the ones you missed:
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+type Order = { id: string; customerNote: string; nested: { deep: number } };
+
+export const incomplete = Builder()
+  .use(requiredPlugin)
+  .for<Order>()
+  .v("id", (b) => b.string.required())
+  .strict()
+  // @ts-expect-error strict() returned
+  // MissingFieldsError<"customerNote" | "nested.deep">, which has no build().
+  .build();
+```
+
+It counts leaves, so an optional property, a `Date`, an array's elements
+(`tags[*]`) and a field inside an array of objects (`items[*].sku`) are each
+required in their own right. It has no run-time effect at all — the obligation
+is discharged by the compiler.
+
+So the choice between "cover one field" and "cover everything" is a single call,
+made per builder, and reported at compile time with the missing names rather than
+at run time as a value that quietly passed. What `.strict()` does **not** cover is
+properties that are not in the type; rejecting those is a run-time rule and
+belongs to `additionalProperties(false)`.
+
+## When schema-first is the right answer
+
+Worth stating plainly, because it is a real tension and not a debating point:
+**if the schema genuinely is your single source of truth, schema-first is the
+coherent arrangement, and zod, valibot or TypeBox are the right tools.** You
+write one artefact, your types come out of it, and there is nothing to keep in
+step. That is a better position than Luq's, and Luq cannot give it to you.
+
+Luq is for the case where that artefact already exists somewhere else and is not
+yours to move — an OpenAPI document you consume, a Prisma schema, a `.proto`
+shared with three other services, a type someone generated last week. There, the
+schema-first arrangement asks you to author a *second* source of truth, and the
+question stops being which library is nicer and becomes which copy is right.
+
+Two things follow that are easy to miss:
+
+- **Luq contains both directions.** `fromJsonSchema(document)` is schema-first —
+  the document decides, and Luq builds the rules from it. That is not a
+  contradiction to be argued away; it is the same principle applied to a
+  different upstream. What Luq declines to do is make you *hand-write* the second
+  copy.
+- **You do not have to pick a side per project, only per boundary.** Standard
+  Schema means a zod schema and a Luq validator are interchangeable where they
+  meet, so "the schema is the truth here, the type is the truth there" is a
+  workable arrangement rather than an unresolved argument.
+
+If you are starting from nothing and you will own the shape, use zod. It is
+mature, it is everywhere, and every question you will have is already answered
+somewhere.
 
 ## Field paths
 
@@ -151,6 +297,40 @@ A path that does not exist on the type is a compile error, not a silent no-op.
 So is choosing a slot the field's type cannot be: `b.number` on a `string`
 field fails to compile.
 
+**Cross-field rules read those paths back with their types intact.** `stitch`
+takes the paths it needs and hands them over as a bundle keyed by the path
+string — each one typed from your type, nested paths included. There is no
+`unknown` to narrow and no cast to write.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { stitchPlugin } from "@maroonedog/luq/plugins/stitch";
+
+type Booking = { seats: number; venue: { capacity: number } };
+
+const bookingValidator = Builder()
+  .use(requiredPlugin)
+  .use(numberMinPlugin)
+  .use(stitchPlugin)
+  .for<Booking>()
+  .v("venue.capacity", (b) => b.number.required().min(1))
+  .v("seats", (b) =>
+    b.number.required().stitch(["venue.capacity"], (fieldValues, value) => ({
+      // fieldValues["venue.capacity"] is number, and value is number.
+      valid: value <= fieldValues["venue.capacity"],
+      message: "seats must fit the venue",
+    }))
+  )
+  .build();
+```
+
+Asking for a path the type does not have is a compile error, and so is using a
+bundled value at the wrong type. 1.x passed this bundle as
+`Record<string, unknown>`, which meant every cross-field rule opened with a
+cast; the paths were already declared, so the types were always knowable.
+
 ## Plugins are imports
 
 There is no plugin registry to populate and no barrel you have to pay for.
@@ -174,7 +354,7 @@ const draftValidator = Builder()
 export const isTitled = draftValidator.validate({ title: "x" }).valid;
 ```
 
-77 plugin objects ship across 76 subpaths, plus one deprecated alias kept from
+78 plugin objects ship across 77 subpaths, plus one deprecated alias kept from
 1.x. The complete table — subpath, symbol, chain method, slots — is generated
 from the built package: **[docs/guide/plugin-reference.md](docs/guide/plugin-reference.md)**.
 
@@ -275,7 +455,7 @@ Three decisions the spec leaves open, made explicit here:
 - `InferInput` is the type you wrote in `.for<T>()`, not a type inferred back
   out of a schema value.
 
-It is a subpath, not part of `build()`. Measured: the core gzips to 7,420 B and
+It is a subpath, not part of `build()`. Measured on the 2.0.0 core (7,420 B) and
 carrying `~standard` on every validator adds 312 B — 4.2% charged to everyone,
 including the people who never pass a validator to tRPC. Importing the subpath
 costs those 312 B only when you import it, and nothing when you don't.
@@ -327,21 +507,33 @@ so the two columns are comparable. Recorded in
 
 | Entry | gzip | 1.x, same method |
 |---|---:|---:|
-| `Builder` only, zero plugins | **7,420 B** | 17,423 B |
-| + 6 plugins (1.x's "simple" set) | **8,373 B** | 19,562 B |
-| all 76 plugins | **24,040 B** | — |
-| core + `jsonSchema`, plugin alone (not usable) | **18,992 B** | — |
-| core + `jsonSchema` + a working 49-plugin bag | **21,371 B** | 26.06–29.08 KB |
-| core + `jsonSchemaFullFeature` | **21,383 B** | 31.75–32.31 KB |
+<!-- generated:bundle-size -->
+| `Builder` only, zero plugins | **7,954 B** | 17,423 B |
+| + 6 plugins (1.x's "simple" set) | **8,879 B** | 19,562 B |
+| all 77 plugins | **25,991 B** | — |
+<!-- /generated:bundle-size -->
 
-The claim 1.x's README made — "tree-shakeable, 19–23KB gzipped" — was measuring
-a core bundle that cost 17.4 KB **before you used anything**: 89.1% of its
-"simple" figure was paid up front. Here the core is 30.9% of the all-plugins
-build (7,420 of 24,040 B), and adding a plugin costs 129–224 B of gzip.
+Three more entries were measured the same way on 2026-09-07 but are **not** in
+`config/size-budget.json`, so nothing re-measures them and they can go stale
+without anything noticing. They are kept because the JSON Schema claim needs
+evidence, and marked because a figure nobody checks is worth less than one that
+is checked:
+
+| Entry (measured once, not gated) | gzip | 1.x, same method |
+|---|---:|---:|
+| core + `jsonSchema`, plugin alone (not usable) | 18,992 B | — |
+| core + `jsonSchema` + a working 49-plugin bag | 21,371 B | 26.06–29.08 KB |
+| core + `jsonSchemaFullFeature` | 21,383 B | 31.75–32.31 KB |
+
+1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
+core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
+figure. Here the core is <!-- generated:bundle-core-share -->30.6% of the all-plugins build (7,954 of 25,991 B)<!-- /generated:bundle-core-share -->,
+and adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
+the difference is where the bytes sit, not which README is right.
 
 Two lines that are **not** wins:
 
-- "all 76 plugins at 24,040 B" is larger than the 23,015 B 1.x published for its
+- "all 77 plugins at 25,607 B" is larger than the 23,015 B 1.x published for its
   `complex` case. The two are not comparable — 1.x's figure was one schema's
   plugin set, not its whole catalogue — so it is not counted either way here.
 - The 18,992 B for `jsonSchema` measures the plugin **without a bag**, which is
@@ -361,15 +553,17 @@ skipped. Every subject rotates over a pool of at least four distinct values —
 one frozen input let V8 delete a subject outright, which is the artefact
 described below. Each figure is the median of the fastest half of 9 samples; the
 spread quoted alongside is the full range over that figure, and on these ten it
-is 2.9–8.6%.
+is <!-- generated:perf-spread -->1.2–12.3%<!-- /generated:perf-spread -->.
 
 | Shape | `validate` ops/sec | `parse` ops/sec |
 |---|---:|---:|
-| 1 field, 1 check | 2,801,628 | 2,617,522 |
-| 3 fields, 6 plugins | 1,073,925 | 1,078,706 |
-| nested, depth 2–3 | 707,734 | 700,829 |
-| array of 50 elements | 29,963 | 29,774 |
-| JSON Schema document | 159,643 | 159,966 |
+<!-- generated:perf-throughput -->
+| 1 field, 1 check | 5,581,199 | 5,593,550 |
+| 3 fields, 6 plugins | 2,444,308 | 1,933,180 |
+| nested, depth 2–3 | 1,722,770 | 1,701,094 |
+| array of 50 elements | 90,590 | 90,013 |
+| JSON Schema document | 312,630 | 309,502 |
+<!-- /generated:perf-throughput -->
 
 **This rewrite is slower than 1.x on flat and nested shapes.** Measured side by
 side, in one process on one machine, 1.x source against this source, sample by
@@ -377,11 +571,13 @@ sample interleaved so a drift in the machine hits both halves of every ratio:
 
 | Shape | 1.x | this | ratio |
 |---|---:|---:|---:|
-| 1 field | 25,660,195 | 2,724,339 | **×0.11** |
-| 3 fields | 3,059,093 | 1,069,167 | **×0.35** |
-| nested | 2,215,768 | 708,461 | **×0.32** |
-| array of 50 | 18,941 | 29,629 | ×1.57 |
-| JSON Schema | 138,809 | 152,536 | ×1.09 |
+<!-- generated:perf-legacy -->
+| 1 field | 26,568,111 | 5,463,953 | **×0.21** |
+| 3 fields | 3,082,290 | 2,434,509 | **×0.79** |
+| nested | 2,203,633 | 1,842,200 | **×0.83** |
+| array of 50 | 19,610 | 84,707 | ×4.30 |
+| JSON Schema | 146,283 | 306,778 | ×2.10 |
+<!-- /generated:perf-legacy -->
 
 1.x carried a directory of specialised fast paths that this implementation has
 no equivalent of. The comparison was checked for the ways it could be wrong: 1.x
@@ -391,8 +587,9 @@ reject the rejected pool before either is timed.
 
 Also worth stating plainly: **neither figure 1.x's README published reproduces
 here.** It claimed 1.2M ops/sec simple and 43K complex; on this machine 1.x
-itself does 3.06M on the shape rebuilt from its own "simple" benchmark source,
-and "complex" has no reproducible definition to measure.
+itself does <!-- generated:perf-legacy-simple -->3.08M<!-- /generated:perf-legacy-simple -->
+on the shape rebuilt from its own "simple" benchmark source, and "complex" has
+no reproducible definition to measure.
 
 `build()` costs 14–662 µs depending on shape, against sub-microsecond
 `validate()` calls — so one `build()` pays for itself after 35–100 `validate()`
@@ -428,20 +625,24 @@ figures recorded here span 0.01–0.86.
 
 No `eval`, no `new Function`. Checked mechanically over all 762 emitted `.js`
 and `.mjs` files by `npm run check:no-dynamic-code`, and over `src/` by the
-public-API smoke test: **0 occurrences**. 1.x made this claim in its README while
-carrying a live `new Function` in `src/types/array-type-analysis.ts`; this is the
-first release where it is enforced rather than asserted.
+public-API smoke test: **0 occurrences**.
+
+The check is there because the claim is easy to make and easy to stop being true
+— 1.x's README made it while `src/types/array-type-analysis.ts` still carried a
+live `new Function`. This is the first release where a script enforces it on
+every build rather than a sentence asserting it.
 
 ### Package
 
-84 keys in `exports`, every one resolving to files that exist: 7 fixed keys
+86 keys in `exports`, every one resolving to files that exist: 8 fixed keys
 (`.`, `./package.json`, `./result`, `./plugin-kit`, `./field-rule`, `./async`,
-`./plugins`) and 77 under `./plugins/` — 76 plugins plus one deprecated alias.
-`npm pack --dry-run`: 1,149 files, 322,079 B packed, 1,216,371 B unpacked —
-`LICENSE`, `README.md`, `package.json` and `dist/` (382 `.d.ts` + 382 `.js` +
-382 `.mjs`), with nothing from `src/`, `test/`, `scripts/`, `bench/` or `docs/`,
+`./plugins`, `./standard-schema`) and 78 under `./plugins/` — 77 plugins plus one
+deprecated alias.
+`npm pack --dry-run`: 1,197 files, 376.9 kB packed, 1.4 MB unpacked —
+`LICENSE`, `README.md`, `package.json` and `dist/` (398 `.d.ts` + 398 `.js` +
+398 `.mjs`), with nothing from `src/`, `test/`, `scripts/`, `bench/` or `docs/`,
 no raw `.ts` and no source maps. A scratch consumer typechecks **every one of
-the 84 keys** against the published declarations under **both** `node16` and
+the 86 keys** against the published declarations under **both** `node16` and
 `bundler` resolution, and an unpublished subpath is proven to fail.
 
 1.x's `createPluginRegistry` / `useField` / `createFieldRule` are published at
@@ -455,7 +656,8 @@ the 84 keys** against the published declarations under **both** `node16` and
 - **[Field paths](docs/guide/field-paths.md)** — what a path may be, and what
   changed from 1.x
 - **[Presence and conditionals](docs/guide/presence-and-conditionals.md)** —
-  `required` / `optional` / `nullable` / `requiredIf` and the order rules run in
+  `required` / `optional` / `nullable` / `requiredIf`, the order rules run
+  in, and the cross-field rules (`compareField` / `stitch` / `stitchWith`)
 - **[JSON Schema](docs/guide/json-schema.md)** — the two front doors, and the
   keywords that are not supported
 - **[Writing a plugin](docs/guide/writing-a-plugin.md)** — markers, `out`,
@@ -467,12 +669,27 @@ the 84 keys** against the published declarations under **both** `node16` and
 - **[Draft-07 conformance](docs/json-schema-conformance.md)** — the 100% and
   what closed each of the ten causes that used to fail
 
+## Status, and how this gets changed
+
+The 2.x API is stable and the surface below is gated, but the production track
+record is still short. Breaking changes happen in a major and nowhere else, an
+API being removed is deprecated one major ahead, and each major ships with the
+codemod needed to cross it.
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — `npm run verify` is the whole
+  contract; the gates and what each one refuses
+- **[SECURITY.md](SECURITY.md)** — reporting, zero runtime dependencies, the
+  prototype-pollution and SSRF positions, and what is *not* protected against
+- **[docs/RELEASING.md](docs/RELEASING.md)** — the release steps, the versioning
+  policy, what each CI workflow watches, and what is still decided by hand
+
 ## About the "universal platform" goal
 
-1.x's README advertised a `.luq` DSL that generates validators for other
-languages, with dated milestones. No part of it ships in this package and this
-release makes no claim about when it will. What is in the box is the TypeScript
-validation library described above.
+1.x described a `.luq` DSL that would generate validators for other languages,
+against dated milestones. Those dates have passed and none of it shipped, so the
+plan has been withdrawn rather than moved: no part of it is in this package, and
+this release makes no claim about when any of it will exist. What is in the box
+is the TypeScript validation library described above.
 
 ## License
 

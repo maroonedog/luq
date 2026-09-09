@@ -7,12 +7,13 @@
 // field READS from (the root, or one array element); `context.root` stays the
 // real root, because cross-field rules are written against the root.
 // ===========================================================================
-import type { ArrayItemContext, RuleContext } from "../types";
+import type { ArrayItemContext, IssueDetail, RuleContext } from "../types";
 import type {
   CompiledField,
   RecursionPolicy,
 } from "../compile/validation-plan.types";
 import { createIssue } from "./create-issue";
+import { FieldRuleContext } from "./field-rule-context";
 import { decidePresence } from "./decide-presence";
 import type { IndexStack } from "./index-stack";
 import type { IssueSink } from "./issue-sink";
@@ -51,13 +52,13 @@ export function runField(
   subject: unknown,
   context: FieldRunContext
 ): FieldRunOutcome {
-  const path = context.indices.renderFieldPath(field.template);
-  const ruleContext: RuleContext = {
-    root: context.root,
-    path,
-    item: context.item,
-    external: context.external,
-  };
+  const ruleContext: RuleContext = new FieldRuleContext(
+    context.root,
+    context.indices,
+    field.renderedPath,
+    context.item,
+    context.external
+  );
   const read = field.read(subject);
   const value = applyDefault(field, read, context.root);
   if (!decidePresence(field, value, ruleContext, context.sink)) {
@@ -94,10 +95,51 @@ function openGates(
   value: unknown,
   ruleContext: RuleContext
 ): boolean {
-  for (const gate of field.gates) {
+  // 添字ループである。for-of ではない。ここが回るのはコンパイル済みの
+  // 凍結配列で、凍結配列は V8 では PACKED_FROZEN_ELEMENTS になり、配列
+  // イテレータの高速化パスから外れる — イテレータと IteratorResult が
+  // 消去されず、要素×フィールドの回数だけ確保される。配列シェイプでは
+  // それだけで全ゴミの 45〜54% を占めていた (独立に5通りの改変で -45%
+  // 〜 -54%)。凍結は落とさない: コンパイル層の不変条件であり、凍結を
+  // 外しても添字ループより速くはならない。
+  const gates = field.gates;
+  for (let i = 0; i < gates.length; i += 1) {
+    const gate = gates[i];
+    if (gate === undefined) continue;
     if (!gate.shouldRun(value, ruleContext)) return false;
   }
   return true;
+}
+
+/**
+ * 失敗したときだけ通る側。ループ本体から出してある。
+ *
+ * runChecks はバイトコードで 302 バイトあり、TurboFan の呼び出し先
+ * インライン予算 (既定で累計 920 バイト) の最大の落選候補として
+ * --trace-turbo-inlining に名指しされていた。その 302 バイトの大半が、
+ * 受理された値では一度も走らない issue の組み立てである。ここへ出すと
+ * 残るループ本体が縮み、受理パスで 6.4% 速くなった。
+ *
+ * 中断の判定はここに含めない。issue を足したあとに shouldStopField を
+ * 見るという順序が abortEarlyOnEachField の意味そのものなので、呼び出し側に
+ * 並べて置いておく。
+ */
+function reportCheckFailure(
+  check: CompiledField["checks"][number],
+  detail: IssueDetail,
+  value: unknown,
+  ruleContext: RuleContext,
+  context: FieldRunContext
+): void {
+  context.sink.add(
+    createIssue({
+      path: ruleContext.path,
+      code: check.code,
+      severity: check.severity,
+      value,
+      render: (ctx) => check.describe(detail, ctx),
+    })
+  );
 }
 
 function runChecks(
@@ -107,18 +149,13 @@ function runChecks(
   context: FieldRunContext,
   mark: number
 ): void {
-  for (const check of field.checks) {
+  const checks = field.checks;
+  for (let i = 0; i < checks.length; i += 1) {
+    const check = checks[i];
+    if (check === undefined) continue;
     const outcome = check.run(value, ruleContext);
     if (outcome.ok) continue;
-    context.sink.add(
-      createIssue({
-        path: ruleContext.path,
-        code: check.code,
-        severity: check.severity,
-        value,
-        render: (ctx) => check.describe(outcome.detail, ctx),
-      })
-    );
+    reportCheckFailure(check, outcome.detail, value, ruleContext, context);
     if (context.sink.shouldStopField(mark)) return;
   }
 }
@@ -135,7 +172,10 @@ function runTransforms(
     return value;
   }
   let current = value;
-  for (const transform of field.transforms) {
+  const transforms = field.transforms;
+  for (let i = 0; i < transforms.length; i += 1) {
+    const transform = transforms[i];
+    if (transform === undefined) continue;
     current = transform.apply(current, ruleContext);
   }
   return current;

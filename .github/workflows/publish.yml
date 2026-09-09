@@ -1,0 +1,116 @@
+# ===========================================================================
+# .github/workflows/publish.yml — npm への公開。
+#
+# **何を見ているか**: `v*` のタグ。タグが押された commit をそのまま公開する。
+# ブランチへの push では動かない。公開は取り消せないので、起動する条件は
+# 「人がタグを押した」ただ一つにしてある。
+#
+# 手作業だったときの手順 (docs/RELEASING.md の 6) は
+#   npm publish --access public --tag latest
+# で、OTP を打つ必要があった。OTP を打てるのは人間だけなので、公開だけが
+# 自動化から取り残されていた。ここでは **trusted publishing (OIDC)** を使う。
+# npm 側に「この repository のこの workflow からの公開を認める」と登録して
+# おけば、トークンも OTP も要らない。保存しておく資格情報がゼロになるので、
+# 漏れる資格情報もゼロになる。
+#
+# 一度だけの設定は docs/RELEASING.md に書いてある。未設定のまま走らせると
+# 公開の直前で落ちる — 何も公開されないまま、何をすればよいかが出る。
+#
+# provenance は publishConfig で常に付く。どの commit の、どの workflow 実行が
+# その tarball を作ったかが npm 側で検証可能になる。
+# ===========================================================================
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+  # 公開が途中で落ちたときの入口。押せるのは **既にあるタグ** だけで、
+  # そのタグの中身しか公開できない。ブランチ名は受け付けない。
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish, e.g. v2.2.0"
+        required: true
+        type: string
+
+permissions:
+  # OIDC の身分証を貰うために要る。これが無いと trusted publishing も
+  # provenance も成立しない。
+  id-token: write
+  contents: read
+
+concurrency:
+  # 同じ版を二重に走らせない。npm 側でも二度目は弾かれるが、弾かれる前に
+  # verify を丸ごと二度回すことになる。
+  group: publish-${{ github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@maroonedog/luq
+    steps:
+      # verify は JSON-Schema-Test-Suite のコーパスを読む。submodule が無いと
+      # 適合率が測れず、check:suite-pin が落ちる。
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          submodules: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Node 20 が同梱する npm は 10.x で、OIDC を知らない。trusted publishing
+      # には 11.5.1 以降が要る。
+      - name: Use an npm that knows about trusted publishing
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      # タグと package.json が食い違ったまま公開すると、v2.2.0 というタグで
+      # 別の版が npm に載る。押した人にしか直せない事故なので、押した直後に
+      # 落とす。
+      - name: Tag must match the version in package.json
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          PKG="v$(node -p "require('./package.json').version")"
+          echo "tag=$TAG  package.json=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag $TAG does not match $PKG in package.json"
+            exit 1
+          fi
+
+      # 既に載っている版は上書きできない。npm も弾くが、弾かれるのは verify を
+      # 5分回したあとになる。先に見て、先に落とす。
+      - name: Version must not already be on npm
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          NAME="$(node -p "require('./package.json').name")"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::$NAME@$VERSION is already published; npm versions are immutable"
+            exit 1
+          fi
+          echo "$NAME@$VERSION is not on npm yet"
+
+      - run: npm ci
+
+      # `npm publish` が prepublishOnly を通るので、ここで verify が回る。
+      # 明示的に呼ばないのは、呼ぶと同じ verify を二度回すことになるからで、
+      # それは competitors ジョブで一度やった無駄と同じ形である。
+      #
+      # access と provenance は package.json の publishConfig にある。CLI の
+      # フラグにしないのは、手で publish したときにも同じ条件になるように。
+      - name: Publish
+        run: npm publish
+
+      - name: Confirm what npm now serves
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          sleep 5
+          npm view "$NAME" version
+          npm view "$NAME" dist-tags

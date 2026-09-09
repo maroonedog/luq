@@ -470,6 +470,17 @@ export const PLUGIN_COPY = {
         'number.required().stitch(["price", "quantity"], (fieldValues, value) => ({ valid: typeof fieldValues.price === "number" && typeof fieldValues.quantity === "number" && value === fieldValues.price * fieldValues.quantity }))',
     },
   },
+  stitchWithPlugin: {
+    description:
+      "EXPERIMENTAL. Cross-field validation over a TYPED bundle. Name the paths under aliases, then judge them together in one sub-chain. stitch hands the bundle over as Record<string, unknown>; here a misspelt member or a wrong type is a compile error.",
+    example: {
+      declarations: ["price: number;", "quantity: number;", "total: number;"],
+      field: "total",
+      uses: ["requiredPlugin", "customPlugin"],
+      chain:
+        'number.required().stitchWith({ sum: "total", cost: "price", count: "quantity" }, (f) => f.object.custom((b) => b.sum === b.cost * b.count))',
+    },
+  },
   stringAlphanumericPlugin: {
     description:
       "ASCII letters and digits only. The empty string fails; pass `true` to allow spaces.",

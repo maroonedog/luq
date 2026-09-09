@@ -80,6 +80,14 @@ export type NestedLeaf = Expect<
 export type DateIsALeaf = Expect<
   Equals<Extract<LeafPath<User>, "when">, "when">
 >;
+// README が .strict() の説明でこの二つを名指ししている ("an optional property"
+// と "a field inside an array of objects")。文章だけが残って型が動くのを防ぐ。
+export type OptionalIsALeaf = Expect<
+  Equals<Extract<LeafPath<User>, "nick">, "nick">
+>;
+export type ItemFieldIsALeaf = Expect<
+  Equals<Extract<LeafPath<User>, "items[*].name">, "items[*].name">
+>;
 /** A string-index-signature subtree imposes no .strict() obligation. */
 export type LooseIsNotALeaf = Expect<
   Equals<Extract<LeafPath<User>, `loose${string}`>, never>

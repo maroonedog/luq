@@ -22,13 +22,17 @@ import type {
   ValidateOptions,
   ValidationResult,
 } from "../types/validation-result.types";
-import type { ValidationPlan } from "../compile/validation-plan.types";
+import type {
+  ArrayNode,
+  ValidationPlan,
+} from "../compile/validation-plan.types";
 import { IndexStack } from "./index-stack";
 import { IssueSink, resolveAbortPolicy } from "./issue-sink";
 import { NO_WRITE_TARGETS, createPlanWriteTargets } from "./output-writer";
 import type { ArrayWriteTarget } from "./output-writer";
 import { createRecursionRunner } from "./run-recursion";
 import { runPlan } from "./run-plan";
+import type { RecursionRunner } from "./run-field";
 
 /** The untyped pair. L6 puts the declared type back on top of it. */
 export interface PlanValidator {
@@ -73,12 +77,47 @@ export function hasRejectingIssue(issues: readonly ValidationIssue[]): boolean {
   return issues.some((issue) => issue.severity === "error");
 }
 
+/**
+ * 再帰しないプランのための、共有の何もしないランナー。
+ *
+ * createRecursionRunner は WeakSet と四つのクロージャを作る。プランに
+ * 再帰規則が一つも無くても validate() のたびに作っていて、それが固定コストの
+ * 88% を占めていた — 計測で 9.7%。プランが再帰を含むかは build() 時に
+ * 分かることで、実行時に問い直すことではない。
+ *
+ * 呼ばれることはない。呼ばれるのは field.recursion が null でない場合だけで、
+ * そのときは planCanRecurse が true を返しているので本物が渡っている。
+ */
+const NO_RECURSION: RecursionRunner = () => {};
+
+/**
+ * ルートのランナーが要るか。
+ *
+ * 見るのはルートの直下と配列ノードの要素だけでよい。合成 (oneOf など) の
+ * 枝は run-branch が自前のランナーを作って入れ子のプランを回すので、
+ * ここで渡すものを使わない。
+ */
+function planCanRecurse(plan: ValidationPlan): boolean {
+  return (
+    plan.fields.some((field) => field.recursion !== null) ||
+    plan.arrays.some(nodeCanRecurse)
+  );
+}
+
+function nodeCanRecurse(node: ArrayNode): boolean {
+  return (
+    node.elementFields.some((field) => field.recursion !== null) ||
+    node.nested.some(nodeCanRecurse)
+  );
+}
+
 function runRoot(
   plan: ValidationPlan,
   value: unknown,
   options: ValidateOptions | undefined,
   targets: readonly ArrayWriteTarget[],
-  shouldApplyTransforms: boolean
+  shouldApplyTransforms: boolean,
+  canRecurse: boolean
 ): ValidationResult<unknown> {
   if (value === null || value === undefined) return rejectMissingRoot();
   const sink = new IssueSink(resolveAbortPolicy(options));
@@ -90,11 +129,13 @@ function runRoot(
       sink,
       indices: new IndexStack(),
       shouldApplyTransforms,
-      runRecursion: createRecursionRunner({
-        root: value,
-        sink,
-        external: options?.external,
-      }),
+      runRecursion: canRecurse
+        ? createRecursionRunner({
+            root: value,
+            sink,
+            external: options?.external,
+          })
+        : NO_RECURSION,
       external: options?.external,
     },
     targets
@@ -107,16 +148,18 @@ function runRoot(
 export function createValidator(plan: ValidationPlan): PlanValidator {
   const parseTargets = createPlanWriteTargets(plan);
   const shouldWriteOutput = parseTargets !== null;
+  const canRecurse = planCanRecurse(plan);
   return {
     validate: (value, options) =>
-      runRoot(plan, value, options, NO_WRITE_TARGETS, false),
+      runRoot(plan, value, options, NO_WRITE_TARGETS, false, canRecurse),
     parse: (value, options) =>
       runRoot(
         plan,
         value,
         options,
         parseTargets ?? NO_WRITE_TARGETS,
-        shouldWriteOutput
+        shouldWriteOutput,
+        canRecurse
       ),
   };
 }

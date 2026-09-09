@@ -168,9 +168,8 @@ async function detailedProfile() {
   };
 
   // Deep nested access
-  const { createFieldAccessor } = await import(
-    "../src/core/plugin/utils/field-accessor.js"
-  );
+  const { createFieldAccessor } =
+    await import("../src/core/plugin/utils/field-accessor.js");
   const deepAccessor = createFieldAccessor("user.profile.details.info.name");
 
   results.deepFieldAccess = profileFunction("Deep Field Access", () => {

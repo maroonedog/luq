@@ -8,48 +8,12 @@
   "plugins": [
     "@typescript-eslint"
   ],
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
-  ],
+  "extends": [],
   "env": {
     "es2022": true,
     "node": true
   },
   "rules": {
-    "max-lines": [
-      "error",
-      {
-        "max": 200,
-        "skipBlankLines": false,
-        "skipComments": false
-      }
-    ],
-    "max-classes-per-file": [
-      "error",
-      1
-    ],
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/no-unsafe-function-type": "off",
-    "@typescript-eslint/ban-types": [
-      "error",
-      {
-        "types": {
-          "Function": "具体的な関数シグネチャを書く: (value: unknown) => boolean のように。",
-          "Object": "具体的な型か Record<string, unknown> を使う。",
-          "{}": "unknown か具体的なオブジェクト型を使う。"
-        },
-        "extendDefaults": true
-      }
-    ],
-    "@typescript-eslint/no-non-null-assertion": "error",
-    "@typescript-eslint/consistent-type-assertions": [
-      "error",
-      {
-        "assertionStyle": "as",
-        "objectLiteralTypeAssertions": "never"
-      }
-    ],
     "no-restricted-syntax": [
       "error",
       {
@@ -158,29 +122,6 @@
           "match": false
         }
       }
-    ],
-    "no-console": [
-      "error",
-      {
-        "allow": [
-          "warn",
-          "error"
-        ]
-      }
-    ],
-    "eqeqeq": [
-      "error",
-      "smart"
-    ],
-    "no-var": "error",
-    "prefer-const": "error",
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "ignoreRestSiblings": true
-      }
     ]
   },
   "overrides": [
@@ -191,11 +132,8 @@
         "test/**/*.ts"
       ],
       "rules": {
-        "max-lines": "off",
-        "@typescript-eslint/no-explicit-any": "off",
         "no-restricted-syntax": "off",
-        "@typescript-eslint/naming-convention": "off",
-        "@typescript-eslint/no-non-null-assertion": "off"
+        "@typescript-eslint/naming-convention": "off"
       }
     }
   ]

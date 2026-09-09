@@ -18,7 +18,6 @@
 import { isArray } from "../types";
 import type { ArrayItemContext } from "../types";
 import type { ArrayNode } from "../compile/validation-plan.types";
-import { formatIssuePath } from "../path/format-issue-path";
 import { runField } from "./run-field";
 import type { FieldRunContext } from "./run-field";
 import {
@@ -27,9 +26,6 @@ import {
   writeFieldValue,
 } from "./output-writer";
 import type { ArrayWriteTarget } from "./output-writer";
-
-/** A node template never contains a wildcard: the grouping cut it off. */
-const NO_INDICES: readonly number[] = Object.freeze([]);
 
 /**
  * `targets` mirrors `nodes` by position and is EMPTY on every run that produces
@@ -77,16 +73,27 @@ function runElements(
   context: FieldRunContext,
   target: ArrayWriteTarget | undefined
 ): readonly unknown[] {
-  const nodePath = formatIssuePath(node.template, NO_INDICES);
+  const nodePath = node.renderedPath;
   const elementSink = context.sink.forArrayElements();
   const nested = target === undefined ? NO_WRITE_TARGETS : target.nested;
+  // 要素コンテキストはノードごとに一つ。7つの成員のうち要素ごとに変わるのは
+  // `item` だけで、残る6つは validate() 一回のあいだ、あるいはこのノードの
+  // あいだ動かない。毎要素で組み直していたのは、動かないものを動くものと
+  // 同じ場所に置いていたからにすぎない。**プラグインには渡らない** —
+  // プラグインが見るのは runField が組む RuleContext で、そちらは `item` を
+  // 都度読み直すので、この使い回しは外から観測できない。
+  const elementContext: MutableElementContext = {
+    root: context.root,
+    sink: elementSink,
+    indices: context.indices,
+    shouldApplyTransforms: context.shouldApplyTransforms,
+    runRecursion: context.runRecursion,
+    item: undefined,
+    external: context.external,
+  };
   let rebuilt = array;
   for (let index = 0; index < array.length; index += 1) {
-    const elementContext: FieldRunContext = {
-      ...context,
-      sink: elementSink,
-      item: describeItem(array, index),
-    };
+    elementContext.item = describeItem(array, index);
     context.indices.push(nodePath, index);
     const element = runNested(
       node,
@@ -100,6 +107,18 @@ function runElements(
   }
   return rebuilt;
 }
+
+/**
+ * FieldRunContext with `item` writable, and nothing else.
+ *
+ * The interface is readonly because nothing outside this loop may write to a
+ * context; this alias exists so the one place that legitimately does is named
+ * rather than asserted. src/core/type-erasure.ts is the only file allowed to
+ * write a type assertion, so this is a Mutable<> mapped type, not a cast.
+ */
+type MutableElementContext = Omit<FieldRunContext, "item"> & {
+  item: ArrayItemContext | undefined;
+};
 
 /** The stack frame for this element is still open, so `sub` pushes onto it. */
 function runNested(
@@ -118,7 +137,10 @@ function runElementFields(
   elementContext: FieldRunContext
 ): unknown {
   let current = element;
-  for (const field of node.elementFields) {
+  const fields = node.elementFields;
+  for (let i = 0; i < fields.length; i += 1) {
+    const field = fields[i];
+    if (field === undefined) continue;
     const outcome = runField(field, current, elementContext);
     current = writeFieldValue(
       field,

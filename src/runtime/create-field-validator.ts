@@ -87,19 +87,33 @@ function createSubjectComposer(
     const write = createValueWriter(template);
     return (siblings, value) => write(siblings ?? {}, value);
   }
-  return (siblings, value) =>
-    mergeOntoSiblings(siblings, nestValue(template, 0, value));
+  const nest = compileNester(template);
+  return (siblings, value) => mergeOntoSiblings(siblings, nest(value));
 }
 
-function nestValue(
-  template: readonly PathSegment[],
-  from: number,
-  value: unknown
-): unknown {
-  const segment = template[from];
-  if (segment === undefined) return value;
-  if (segment.kind === "each") return [nestValue(template, from + 1, value)];
-  return { [segment.key]: nestValue(template, from + 1, value) };
+/**
+ * テンプレートを **一度だけ** 歩いて、包む関数に畳んでおく。
+ *
+ * 以前はここが `nestValue(template, 0, value)` で、検証のたびにテンプレートを
+ * 歩き直して `segment.kind` を読み直していた。src/compile/validation-plan.types.ts
+ * が書いているとおり「実行時はルールが何であるかを決め直してはならない。
+ * 決めるのはコンパイルが済ませたこと」であり、ここはその例外になっていた。
+ * 非ワイルドカードの経路 (createValueWriter) は最初からこの形である。
+ */
+function compileNester(
+  template: readonly PathSegment[]
+): (value: unknown) => unknown {
+  let nest: (value: unknown) => unknown = (value) => value;
+  for (let index = template.length - 1; index >= 0; index -= 1) {
+    const segment = template[index];
+    if (segment === undefined) continue;
+    const inner = nest;
+    nest =
+      segment.kind === "each"
+        ? (value) => [inner(value)]
+        : ((key) => (value: unknown) => ({ [key]: inner(value) }))(segment.key);
+  }
+  return nest;
 }
 
 /** The wrapper wins on the key it names; every other sibling survives. */
