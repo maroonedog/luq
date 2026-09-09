@@ -85,9 +85,9 @@ const refused = [
     <p class="mx-auto mb-4 max-w-3xl text-body-large text-on-surface-variant sm:text-title-medium">
       Your types were probably not written by you. <code>openapi-typescript</code>
       generates them from a spec you do not own; Prisma generates them from the
-      schema of record; protobuf generates them for four languages at once. A
-      validator whose schema is the source of truth asks you to write that shape a
-      second time, and nothing checks that the copy still agrees with the original.
+      schema of record; protobuf generates them for four languages at once. When
+      the shape is already decided somewhere else, a validator whose schema is the
+      source of truth asks you to maintain a second description of it.
     </p>
 
     <p class="mx-auto mb-4 max-w-3xl text-body-large text-on-surface-variant sm:text-title-medium">
@@ -100,8 +100,15 @@ const refused = [
     <p class="mx-auto mb-8 max-w-3xl text-body-medium text-on-surface-variant">
       That matters most when the code calling this library is generated rather
       than typed by hand. A generator that picks the wrong rule, misspells a path
-      or drops an array wildcard gets a red squiggle — not a validator that
+      or drops an array wildcard gets a red squiggle instead of a validator that
       passes everything.
+    </p>
+
+    <p class="mx-auto mb-8 max-w-3xl text-body-medium text-on-surface-variant">
+      Being type-first is also what makes it patchable: your type definitions do
+      not change, so covering one field of one type is a normal state rather than
+      a half-finished migration. There is no second description of the shape to
+      author and keep in step — only the rules.
     </p>
 
     <div class="mx-auto mb-12 max-w-xl">
@@ -110,7 +117,7 @@ const refused = [
 
     <div class="mx-auto mb-12 max-w-3xl text-left">
       <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
-        Rejected at compile time
+        Caught by the compiler, not at run time
       </p>
       <ul class="divide-y divide-outline-variant border-y border-outline-variant">
         {

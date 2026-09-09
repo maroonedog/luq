@@ -306,14 +306,14 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
         keyword: 'multipleOf',
         handling: 'bind',
         target: 'numberMultipleOf — .multipleOf(v)',
-        note: 'Compares scaled integers, so multipleOf: 0.1 accepts 0.3. The float-modulo answer 1.x gave here was wrong.',
+        note: 'Compares scaled integers, so multipleOf: 0.1 accepts 0.3. Float modulo, which 1.x used here, answers differently on this case.',
       },
     ],
   },
   {
     title: 'Array',
     blurb:
-      'Note the renames: the Draft-07 keyword is minItems, the chain method is minLength. 1.x guessed the method name and the constraint silently evaporated.',
+      'Note the renames: the Draft-07 keyword is minItems, the chain method is minLength. The rename is why the keyword map exists: bound to a method that does not exist, the constraint would produce no rule at all.',
     rows: [
       {
         keyword: 'items',
@@ -386,7 +386,7 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
         keyword: 'patternProperties',
         handling: 'structural',
         target: 'objectPatternProperties',
-        note: 'One sub-chain per key pattern, and EVERY matching pattern applies — 1.x broke after the first.',
+        note: 'One sub-chain per key pattern, and EVERY matching pattern applies. 1.x stopped after the first match.',
       },
       {
         keyword: 'propertyNames',
@@ -656,8 +656,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         </div>
         <p class="border-t border-outline-variant px-4 py-3 text-body-small text-on-surface-variant">
           The column that moved is the second one. 1.x rejected 24 of the 378 documents it was
-          supposed to reject; “JSON Schema support” was, on this corpus, letting almost everything
-          through. This release rejects all 378, and accepts all 551 it should.
+          supposed to reject, so on this corpus most invalid documents went through. This release
+          rejects all 378, and accepts all 551 it should.
         </p>
       </div>
 
@@ -850,7 +850,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         All {keywordTotals.total} of them — the count is checked against the draft-07 metaschema's
         own <code>properties</code> keys by a test. Each is one of three decisions, written down,
-        with no fall-through: 1.x stored eleven keywords it then never read again.
+        with no fall-through: 1.x stored eleven keywords that were never read back.
       </p>
 
       <div class="mb-8 grid gap-4 sm:grid-cols-3">
@@ -936,7 +936,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         (<code>url</code>, <code>uuid</code>, <code>duration</code>). None is out of scope: the
         “unsupported” column of this table is empty. There is exactly one format table in the
         library and every entry points at the plugin that owns the grammar, so there is one regex
-        per format and nothing to drift from it — 1.x shipped three tables and they disagreed with
+        per format and nothing to drift from it — 1.x carried three tables, and they disagreed with
         each other about <code>email</code>, <code>uuid</code> and <code>date-time</code>.
       </p>
 

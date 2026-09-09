@@ -16,10 +16,11 @@ schema of record. protobuf and GraphQL codegen generate them for services in
 four languages at once. Increasingly, a model generates the code that uses them.
 
 A validator whose schema is the source of truth assumes you are the one who
-decides the shape. When you are not, it asks you to write that shape a second
-time and keep the copy in step by hand — and nothing checks that the two still
-agree. They drift, and the first sign is a value that passed the copy and does
-not fit the original.
+decides the shape. When that assumption holds, it is the better arrangement and
+this README will say so again below. When it does not, you end up maintaining a
+second description of a shape you did not choose. You can have the compiler check
+the copy against the original — zod's `satisfies z.ZodType<Order>` does exactly
+that — but you still author it, update it, and remember to write the check.
 
 Luq runs the other way. It takes the type you already have and lets you declare
 rules against its field paths. What makes those declarations worth writing is
@@ -43,9 +44,9 @@ an array wildcard gets a red squiggle, not a validator that passes everything.
 Every rule you can call is a plugin you imported by name, so the bundle contains
 what you used and nothing else.
 
-Every number on this page was measured on this repository. Where a measurement
-is worse than the 1.x release, it is written down as worse. The provenance of
-each figure is named next to it.
+Every number on this page was measured on this repository, and the file it came
+from is named next to it. Where a measurement is worse than 1.x — and some are —
+it is written down as worse.
 
 ## Install
 
@@ -109,10 +110,132 @@ carries `data`, both branches carry `issues`, and each issue is
 `{ path, code, message, severity }`.
 
 > Every code block on this page is extracted and typechecked against the built
-> package by `npm run check:docs`. The 1.x README's quick start called `build()`'s
-> return value as a function, read a `result.issues` member 1.x's `Result` did not
-> have, and imported a subpath the exports map did not contain. That is what the
-> gate exists to prevent.
+> package by `npm run check:docs`. It exists because documentation drifts from
+> the API it documents unless something compiles it — 1.x's quick start had drifted
+> in three places at once (a `build()` result called as a function, a `result.issues`
+> member that did not exist, and a subpath missing from the exports map), and each
+> was the readable kind of mistake that nobody reads.
+
+## It patches onto the types you already have
+
+This is the practical consequence of being type-first, and it is the main reason
+to reach for Luq: **your type definitions do not change.** Not re-authored as a
+schema, not replaced by an inferred one, not moved. `.for<Order>()` takes the
+`Order` you already have, exactly as it is, and every rule is declared against
+it.
+
+So Luq asks you to describe the **rules**, not the shape — the shape is already
+written down. Adopting a schema-first validator on an existing codebase means
+producing a second description of the same shape for every type you cover, and
+then keeping the two in agreement; that is per-type work whether you author the
+schema alongside the type or switch the type to be inferred from it. Luq skips
+that step because it never needs the second description.
+
+Which is what makes adoption a patch rather than a migration:
+
+**Declare only the fields you care about.** A path you did not declare is not
+validated, not required, and not read. There is no "unknown key" behaviour to
+opt out of, so a partly-covered type is a normal state and not a half-finished
+one.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+
+type Order = {
+  id: string;
+  customerNote: string;
+  legacyBlob: unknown;
+};
+
+// One field of three.
+const orderValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Order>()
+  .v("id", (b) => b.string.required().min(3))
+  .build();
+
+// `customerNote` and `legacyBlob` are never read, so anything goes there —
+// including being absent.
+console.error(orderValidator.validate({ id: "abc" } as Order).valid); // true
+console.error(orderValidator.validate({ id: "ab" } as Order).valid); // false
+```
+
+**Validate one field at a time.** `pick(path)` gives back a validator for a
+single declared path, which is what a form needs on blur. It takes the field's
+own value, and optionally its siblings for cross-field rules.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+
+type Order = { id: string; customerNote: string };
+
+const id = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<Order>()
+  .v("id", (b) => b.string.required().min(3))
+  .build()
+  .pick("id");
+
+console.error(id.validate("ab").valid); // false
+console.error(id.validate("abc").valid); // true
+```
+
+`pickAll(["a", "b"])` does the same for a named subset and hands back exactly
+those paths, keyed by the strings you asked for.
+
+**Keep what you already have.** Luq implements Standard Schema v1, so a Luq
+validator and a zod schema are interchangeable at any boundary that accepts one.
+Adding Luq to one route does not commit the next one, and does not remove zod
+from the routes it is already in.
+
+None of this needs a migration step, because there is nothing global to migrate:
+no registry, no plugin installation, no shared configuration object. A validator
+is a value in a module, declared against a type that was there before it.
+
+**The cost of that, stated plainly: partial coverage is silent.** Nothing tells
+you that `customerNote` has no rules. A field you meant to cover and forgot looks
+exactly like a field you deliberately left alone, and the compiler cannot tell
+them apart — it checks the rules you wrote, not the ones you did not. A
+schema-first validator that requires the whole shape up front does not have this
+failure mode, and that is a real advantage of doing it that way. If you want
+Luq to be strict about a whole object, `additionalProperties(false)` and an
+explicit rule per field is the way to ask for it; it is opt-in, not the default.
+
+## When schema-first is the right answer
+
+Worth stating plainly, because it is a real tension and not a debating point:
+**if the schema genuinely is your single source of truth, schema-first is the
+coherent arrangement, and zod, valibot or TypeBox are the right tools.** You
+write one artefact, your types come out of it, and there is nothing to keep in
+step. That is a better position than Luq's, and Luq cannot give it to you.
+
+Luq is for the case where that artefact already exists somewhere else and is not
+yours to move — an OpenAPI document you consume, a Prisma schema, a `.proto`
+shared with three other services, a type someone generated last week. There, the
+schema-first arrangement asks you to author a *second* source of truth, and the
+question stops being which library is nicer and becomes which copy is right.
+
+Two things follow that are easy to miss:
+
+- **Luq contains both directions.** `fromJsonSchema(document)` is schema-first —
+  the document decides, and Luq builds the rules from it. That is not a
+  contradiction to be argued away; it is the same principle applied to a
+  different upstream. What Luq declines to do is make you *hand-write* the second
+  copy.
+- **You do not have to pick a side per project, only per boundary.** Standard
+  Schema means a zod schema and a Luq validator are interchangeable where they
+  meet, so "the schema is the truth here, the type is the truth there" is a
+  workable arrangement rather than an unresolved argument.
+
+If you are starting from nothing and you will own the shape, use zod. It is
+mature, it is everywhere, and every question you will have is already answered
+somewhere.
 
 ## Field paths
 
@@ -334,10 +457,11 @@ so the two columns are comparable. Recorded in
 | core + `jsonSchema` + a working 49-plugin bag | **21,371 B** | 26.06–29.08 KB |
 | core + `jsonSchemaFullFeature` | **21,383 B** | 31.75–32.31 KB |
 
-The claim 1.x's README made — "tree-shakeable, 19–23KB gzipped" — was measuring
-a core bundle that cost 17.4 KB **before you used anything**: 89.1% of its
-"simple" figure was paid up front. Here the core is 30.9% of the all-plugins
-build (7,420 of 24,040 B), and adding a plugin costs 129–224 B of gzip.
+1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
+core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
+figure. Here the core is 30.9% of the all-plugins build (7,420 of 24,040 B), and
+adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
+the difference is where the bytes sit, not which README is right.
 
 Two lines that are **not** wins:
 
@@ -428,9 +552,12 @@ figures recorded here span 0.01–0.86.
 
 No `eval`, no `new Function`. Checked mechanically over all 762 emitted `.js`
 and `.mjs` files by `npm run check:no-dynamic-code`, and over `src/` by the
-public-API smoke test: **0 occurrences**. 1.x made this claim in its README while
-carrying a live `new Function` in `src/types/array-type-analysis.ts`; this is the
-first release where it is enforced rather than asserted.
+public-API smoke test: **0 occurrences**.
+
+The check is there because the claim is easy to make and easy to stop being true
+— 1.x's README made it while `src/types/array-type-analysis.ts` still carried a
+live `new Function`. This is the first release where a script enforces it on
+every build rather than a sentence asserting it.
 
 ### Package
 
@@ -469,10 +596,11 @@ the 84 keys** against the published declarations under **both** `node16` and
 
 ## About the "universal platform" goal
 
-1.x's README advertised a `.luq` DSL that generates validators for other
-languages, with dated milestones. No part of it ships in this package and this
-release makes no claim about when it will. What is in the box is the TypeScript
-validation library described above.
+1.x described a `.luq` DSL that would generate validators for other languages,
+against dated milestones. Those dates have passed and none of it shipped, so the
+plan has been withdrawn rather than moved: no part of it is in this package, and
+this release makes no claim about when any of it will exist. What is in the box
+is the TypeScript validation library described above.
 
 ## License
 
