@@ -508,16 +508,16 @@ skipped. Every subject rotates over a pool of at least four distinct values —
 one frozen input let V8 delete a subject outright, which is the artefact
 described below. Each figure is the median of the fastest half of 9 samples; the
 spread quoted alongside is the full range over that figure, and on these ten it
-is <!-- generated:perf-spread -->2.4–16.3%<!-- /generated:perf-spread -->.
+is <!-- generated:perf-spread -->3.5–12.1%<!-- /generated:perf-spread -->.
 
 | Shape | `validate` ops/sec | `parse` ops/sec |
 |---|---:|---:|
 <!-- generated:perf-throughput -->
-| 1 field, 1 check | 3,945,275 | 3,879,024 |
-| 3 fields, 6 plugins | 1,729,320 | 1,645,504 |
-| nested, depth 2–3 | 1,119,343 | 1,094,440 |
-| array of 50 elements | 41,053 | 42,329 |
-| JSON Schema document | 229,883 | 222,612 |
+| 1 field, 1 check | 4,253,927 | 4,127,004 |
+| 3 fields, 6 plugins | 1,821,697 | 1,784,646 |
+| nested, depth 2–3 | 1,375,016 | 1,301,871 |
+| array of 50 elements | 49,005 | 50,062 |
+| JSON Schema document | 253,057 | 258,664 |
 <!-- /generated:perf-throughput -->
 
 **This rewrite is slower than 1.x on flat and nested shapes.** Measured side by
@@ -527,11 +527,11 @@ sample interleaved so a drift in the machine hits both halves of every ratio:
 | Shape | 1.x | this | ratio |
 |---|---:|---:|---:|
 <!-- generated:perf-legacy -->
-| 1 field | 22,470,910 | 3,966,011 | **×0.17** |
-| 3 fields | 2,655,161 | 1,735,581 | **×0.65** |
-| nested | 1,951,792 | 1,183,260 | **×0.61** |
-| array of 50 | 18,142 | 43,351 | ×2.49 |
-| JSON Schema | 132,782 | 237,454 | ×1.80 |
+| 1 field | 25,678,058 | 4,090,411 | **×0.16** |
+| 3 fields | 2,968,134 | 1,876,015 | **×0.63** |
+| nested | 2,203,441 | 1,371,768 | **×0.63** |
+| array of 50 | 19,720 | 52,503 | ×2.71 |
+| JSON Schema | 144,981 | 264,324 | ×1.83 |
 <!-- /generated:perf-legacy -->
 
 1.x carried a directory of specialised fast paths that this implementation has
@@ -542,8 +542,9 @@ reject the rejected pool before either is timed.
 
 Also worth stating plainly: **neither figure 1.x's README published reproduces
 here.** It claimed 1.2M ops/sec simple and 43K complex; on this machine 1.x
-itself does 3.06M on the shape rebuilt from its own "simple" benchmark source,
-and "complex" has no reproducible definition to measure.
+itself does <!-- generated:perf-legacy-simple -->2.97M<!-- /generated:perf-legacy-simple -->
+on the shape rebuilt from its own "simple" benchmark source, and "complex" has
+no reproducible definition to measure.
 
 `build()` costs 14–662 µs depending on shape, against sub-microsecond
 `validate()` calls — so one `build()` pays for itself after 35–100 `validate()`

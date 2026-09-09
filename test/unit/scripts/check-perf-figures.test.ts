@@ -54,6 +54,7 @@ const MARKED_README = [
   "<!-- /generated:perf-legacy -->",
   "",
   "spread is <!-- generated:perf-spread --><!-- /generated:perf-spread -->.",
+  "1.x did <!-- generated:perf-legacy-simple --><!-- /generated:perf-legacy-simple --> here.",
   "",
 ].join("\n");
 
@@ -105,6 +106,15 @@ describe("the gate reads the measurement, not the prose around it", () => {
       writePerfFigures(root);
       expect(fs.readFileSync(path.join(root, README), "utf8")).toContain(
         "1.x carried a directory of specialised fast paths."
+      );
+    });
+  });
+
+  it("writes the 1.x simple figure in millions, inside its sentence", () => {
+    withRepository(MARKED_README, (root) => {
+      writePerfFigures(root);
+      expect(fs.readFileSync(path.join(root, README), "utf8")).toContain(
+        "1.x did <!-- generated:perf-legacy-simple -->0.00M<!-- /generated:perf-legacy-simple --> here."
       );
     });
   });

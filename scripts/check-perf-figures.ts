@@ -22,6 +22,7 @@ import * as path from "path";
 import { REPOSITORY_ROOT } from "./catalog/plugin-source-roots";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
 import {
+  renderLegacySimpleOps,
   renderLegacyTable,
   renderSpreadRange,
   renderThroughputTable,
@@ -42,6 +43,7 @@ const BLOCKS: readonly GeneratedBlock[] = [
   { name: "perf-throughput", render: renderThroughputTable },
   { name: "perf-legacy", render: renderLegacyTable },
   { name: "perf-spread", render: renderSpreadRange, isInline: true },
+  { name: "perf-legacy-simple", render: renderLegacySimpleOps, isInline: true },
 ];
 
 function openMarker(name: string): string {

@@ -133,6 +133,18 @@ export interface CompiledField {
 /** Loop interchange: one array is read once however many element fields exist. */
 export interface ArrayNode {
   readonly template: readonly PathSegment[];
+  /**
+   * The node's own path, rendered once at build time — `lines`, never
+   * `lines[*]`, because the grouping already cut the wildcard off.
+   *
+   * CompiledField has carried its `renderedPath` since rebuilding it per
+   * element was measured at 35% of the per-element price. The array NODE was
+   * left behind and went on rendering the same string on every validate().
+   * Rendering can throw on a template with an unconsumed wildcard, so moving
+   * it here also moves that throw from validate() to build(), which is the
+   * direction this layer is supposed to push everything.
+   */
+  readonly renderedPath: string;
   readonly read: (subject: unknown) => unknown;
   readonly elementFields: readonly CompiledField[];
   readonly nested: readonly ArrayNode[];

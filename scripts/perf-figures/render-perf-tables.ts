@@ -107,6 +107,19 @@ export function renderLegacyTable(baseline: PerfBaseline): string {
   }).join("\n");
 }
 
+/**
+ * 1.x が自分の README で「simple」と呼んでいた形状を、こちらで測り直した値。
+ *
+ * README の一文の中に `3.06M` と書かれていて、そこだけ生成の外に残っていた。
+ * 表を生成にしても一文が腐れば同じことなので、ここに引き込む。桁は百万単位の
+ * まま — 文章の中の数字であって、表の数字ではない。
+ */
+export function renderLegacySimpleOps(baseline: PerfBaseline): string {
+  const record = findLegacy(baseline, "multiField");
+  if (record.legacyOpsPerSecond === null) return "no comparable figure";
+  return `${(record.legacyOpsPerSecond / 1_000_000).toFixed(2)}M`;
+}
+
 /** 「on these ten it is 2.9–8.6%」の数字。丸めは表示と同じ小数第1位。 */
 export function renderSpreadRange(baseline: PerfBaseline): string {
   const spreads = baseline.throughput.map(
