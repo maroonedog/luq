@@ -51,7 +51,7 @@ export function runField(
   subject: unknown,
   context: FieldRunContext
 ): FieldRunOutcome {
-  const path = context.indices.renderFieldPath(field.template);
+  const path = context.indices.renderFieldPath(field.renderedPath);
   const ruleContext: RuleContext = {
     root: context.root,
     path,

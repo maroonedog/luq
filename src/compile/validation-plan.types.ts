@@ -91,6 +91,17 @@ export interface RecursionPolicy {
 
 export interface CompiledField {
   readonly template: readonly PathSegment[];
+  /**
+   * この フィールド自身のパスを、配列の添字を除いて描画したもの。
+   *
+   * コンパイル時に一度だけ作る。実行時に組み直していたのは、テンプレートが
+   * 固定なので **毎回同じ文字列を作る** ことを意味していた: 50要素・3
+   * フィールドの配列なら、1回の validate で 150 回、issue が1件も出なくても
+   * である。実測でそれが要素あたりの費用の 35% を占めていた。
+   *
+   * 実行時に残るのは、開いている添字の接頭辞と繋ぐ連結ひとつだけになる。
+   */
+  readonly renderedPath: string;
   readonly read: (subject: unknown) => unknown;
   /**
    * null unless the field declared a transform or a default — the runtime then

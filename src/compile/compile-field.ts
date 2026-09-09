@@ -13,6 +13,7 @@
 // ===========================================================================
 import type { PathSegment } from "../path/path-segment.types";
 import { createValueReader } from "../path/create-value-reader";
+import { formatIssuePath } from "../path/format-issue-path";
 import { createValueWriter } from "../path/create-value-writer";
 import { parseFieldPath } from "../path/parse-field-path";
 import type { CompositeRule, Rule } from "../plugin-kit/compiled-rule";
@@ -50,14 +51,23 @@ export interface FieldCompileRequest {
   readonly eraseComposite: CompositeEraser;
 }
 
+/** 添字はここでは入らない。開いている添字は実行時に接頭辞が持つ。 */
+const NO_INDICES: readonly number[] = Object.freeze([]);
+
 export function compileField(request: FieldCompileRequest): CompiledField {
   const byKind = splitRulesByKind(request.rules);
   const hasDefault = request.defaultOf !== null;
   const needsWriter = byKind.transforms.length > 0 || hasDefault;
   const template = Object.freeze(request.template);
+  // read を先に作る。ワイルドカードを含むテンプレートを拒むのは
+  // createValueReader の役目で、それより先に formatIssuePath を呼ぶと
+  // 「添字が足りない」という RangeError が、本来の PathSyntaxError を
+  // 追い越して出てしまう (テストがそれを捕まえた)。
+  const read = createValueReader(template);
   const field: CompiledField = {
     template,
-    read: createValueReader(template),
+    renderedPath: formatIssuePath(template, NO_INDICES),
+    read,
     write: needsWriter ? createValueWriter(template) : null,
     defaultOf: request.defaultOf,
     applyDefaultToNull: request.applyDefaultToNull,
