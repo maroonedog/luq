@@ -18,10 +18,14 @@
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
-import { BENCH_SHAPES } from "../shapes/index";
 import { COMPETITORS } from "./index";
 import { measureAllAgreement } from "./measure-agreement";
-import { measureCompetitorRatio } from "./measure-competitor-ratio";
+import {
+  measureAllRatios,
+  summariseAgreement,
+  writeCompetitorReport,
+} from "./report-competitors";
+import type { MeasuredRatio } from "./report-competitors";
 
 const BASELINE = path.join(
   __dirname,
@@ -58,7 +62,10 @@ function keyOf(shape: string, competitor: string): string {
 }
 
 /** 一致だけを見る。ここが違えば、比較そのものが別物になっている。 */
-function checkAgreement(baseline: Baseline): readonly string[] {
+function checkAgreement(
+  baseline: Baseline,
+  measuredAgreement: ReturnType<typeof measureAllAgreement>
+): readonly string[] {
   const recorded = new Map(
     baseline.agreement.map((entry) => [
       keyOf(entry.shape, entry.competitor),
@@ -67,7 +74,7 @@ function checkAgreement(baseline: Baseline): readonly string[] {
   );
   const problems: string[] = [];
 
-  for (const measured of measureAllAgreement(COMPETITORS)) {
+  for (const measured of measuredAgreement) {
     const key = keyOf(measured.shape, measured.competitor);
     const before = recorded.get(key);
     if (before === undefined) {
@@ -100,7 +107,13 @@ function run(): void {
     ])
   );
 
-  const problems = checkAgreement(baseline);
+  // 測るのはここ一度だけ。判定にも、--write の書き出しにも、同じ測定を使う。
+  // 以前は check と report がそれぞれ測っていて、CI の competitors ジョブは
+  // 16対戦をまるごと二度測っていた — ジョブ時間の約半分が二度目だった。
+  const measuredAgreement = measureAllAgreement(COMPETITORS);
+  const measuredRatios: readonly MeasuredRatio[] = measureAllRatios();
+
+  const problems = checkAgreement(baseline, measuredAgreement);
   const disagreementsOnly = problems.every((line) => line.startsWith("  "));
 
   process.stdout.write("競合との判定一致:\n");
@@ -111,16 +124,12 @@ function run(): void {
   }
 
   process.stdout.write("\n速度比 (このランナー / 記録された値):\n");
-  for (const shape of BENCH_SHAPES) {
-    for (const competitor of COMPETITORS) {
-      const measured = measureCompetitorRatio(shape, competitor);
-      if (measured === undefined) continue;
-      const key = keyOf(shape.name, competitor.name);
-      const before = recordedRatios.get(key) ?? 0;
-      process.stdout.write(
-        `  ${key.padEnd(24)} ×${measured.ratio.toFixed(2)} / ×${before.toFixed(2)}\n`
-      );
-    }
+  for (const measured of measuredRatios) {
+    const key = keyOf(measured.shape, measured.competitor);
+    const before = recordedRatios.get(key) ?? 0;
+    process.stdout.write(
+      `  ${key.padEnd(24)} ×${measured.ratio.toFixed(2)} / ×${before.toFixed(2)}\n`
+    );
   }
   process.stdout.write(
     "\n比率は落としの条件ではない。ランナーが変われば動く数だからで、" +
@@ -131,6 +140,16 @@ function run(): void {
   // あれば正常なので、その行だけなら通す。
   if (problems.length > 0 && !disagreementsOnly) {
     process.exitCode = 1;
+  }
+
+  // --write: 判定に使ったその測定を、そのまま config/ に書き出す。CI はこれで
+  // artifact を上げる。判定と記録が別々の測定だと、artifact の数字が「落ちな
+  // かった数字」であるとは限らなくなる。
+  if (process.argv.includes("--write")) {
+    writeCompetitorReport(
+      summariseAgreement(measuredAgreement),
+      measuredRatios
+    );
   }
 }
 

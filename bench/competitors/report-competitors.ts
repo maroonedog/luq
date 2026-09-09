@@ -25,8 +25,15 @@ const OUTPUT = path.join(
   "competitor-baseline.json"
 );
 
-function run(): void {
-  const agreement = measureAllAgreement(COMPETITORS).map((entry) => ({
+/**
+ * 測り終えた一致を、報告書に入る形へ整える。**測らない** — 測定を引数で
+ * 受けるのは、呼び出し側が判定に使ったのと同じ測定を書き出せるようにする
+ * ためである。ここで測り直すと、判定した数字と記録した数字が別物になる。
+ */
+export function summariseAgreement(
+  measured: ReturnType<typeof measureAllAgreement>
+): readonly unknown[] {
+  return measured.map((entry) => ({
     shape: entry.shape,
     competitor: entry.competitor,
     agreedValues: entry.agreedValues.length,
@@ -35,15 +42,37 @@ function run(): void {
       value: JSON.stringify(one.value)?.slice(0, 200) ?? String(one.value),
     })),
   }));
+}
 
-  const measured = [];
+/** 全形状 x 全競合の比。undefined を返した組は落とす。 */
+export function measureAllRatios(): readonly MeasuredRatio[] {
+  const measured: MeasuredRatio[] = [];
   for (const shape of BENCH_SHAPES) {
     for (const competitor of COMPETITORS) {
       const ratio = measureCompetitorRatio(shape, competitor);
       if (ratio !== undefined) measured.push(ratio);
     }
   }
+  return measured;
+}
 
+export interface MeasuredRatio {
+  readonly shape: string;
+  readonly competitor: string;
+  readonly ratio: number;
+}
+
+/**
+ * 測り終えたものから報告書を組んで書く。
+ *
+ * 測定と書き出しを割ってあるのは、check-competitors が同じ測定を必要とする
+ * からである。以前は両方が独立に測っていて、CI の competitors ジョブは
+ * 16対戦をまるごと二度測っていた — ジョブ時間の約半分が二度目だった。
+ */
+export function writeCompetitorReport(
+  agreement: readonly unknown[],
+  measured: readonly MeasuredRatio[]
+): void {
   const report = {
     note: [
       "Luq と競合ライブラリを同一プロセスで交互に測ったもの。bench/competitors/ が生成する。",
@@ -72,4 +101,17 @@ function run(): void {
   );
 }
 
-run();
+function run(): void {
+  writeCompetitorReport(
+    summariseAgreement(measureAllAgreement(COMPETITORS)),
+    measureAllRatios()
+  );
+}
+
+// **入口としてのときだけ走る。** この門が無いと、check-competitors が
+// measureAllRatios を import した瞬間にここが実行され、全部測り直した上で
+// config/ を上書きする — 直そうとしていた二重計測そのものになる。
+// scripts/check-*.ts が同じ書き方をしている。
+if (require.main === module) {
+  run();
+}

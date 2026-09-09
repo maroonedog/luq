@@ -1,0 +1,73 @@
+# ===========================================================================
+# .github/workflows/competitors.yml — zod / valibot / ajv / yup との比較を、
+# 中立なランナーで回す。
+#
+# **何を見ているか**: 判定の一致だけをゲートする。決定的で機械に依らないので、
+# 例えば zod がメールの厳しさを版で変えれば落ちて気づける。package-lock.json を
+# 監視対象に入れているのはそのためで、競合の版が動くのはそこである。
+#
+# 速度比は印字するが落とさない。比率がランナーを相殺するという前提は、この
+# リポジトリで一度反証されている。CI の数字は記録された数字と並べて出るので、
+# 桁が違えば人間が気づく。
+#
+# 測定結果は artifact として上げる。config/ にはコミットしない — CI が勝手に
+# 書き換えると、公開値がどの実行のものか分からなくなる。
+# ===========================================================================
+name: competitors
+
+on:
+  # push はトランクだけ。以前は branches: ["**"] と pull_request の両方だったので、
+  # PR ブランチへの1コミットが **2回** 全ジョブを回していた (run 34408561896 と
+  # 34408566222 は同じコミットである)。CI 時間のちょうど半分がそれだった。
+  # 作業ブランチの結果が欲しいときは PR を開く (draft でよい) か、
+  # workflow_dispatch を使う。
+  push:
+    branches: [master, develop]
+    paths:
+      - "src/**"
+      - "bench/competitors/**"
+      - "bench/shapes/**"
+      - "bench/hand-written/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/competitors.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "bench/competitors/**"
+      - "bench/shapes/**"
+      - "bench/hand-written/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/competitors.yml"
+  workflow_dispatch:
+
+concurrency:
+  # PR 番号で束ねる。ref で束ねていたときは、同じ PR の push イベントと
+  # pull_request イベントが別 ref を持つので互いに打ち消せなかった。
+  group: competitors-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  competitors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # 一度だけ測る。以前は check と report を続けて走らせていて、16対戦を
+      # まるごと二度測っていた — ジョブ時間の約半分が二度目だった。--write を
+      # 付けると、判定に使ったその測定結果をそのまま書き出す。
+      - run: npm run bench:competitors:check -- --write
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: competitor-baseline-${{ github.run_id }}
+          path: config/competitor-baseline.json
