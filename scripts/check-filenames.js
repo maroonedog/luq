@@ -23,12 +23,15 @@ const violations = [];
 for (const filePath of collectTypeScriptFiles(SOURCE_ROOT)) {
   const fileName = path.basename(filePath);
   const relativePath = path.relative(path.join(__dirname, ".."), filePath);
-  if (relativePath.includes("__tests__") || fileName.endsWith(".test.ts")) continue;
+  if (relativePath.includes("__tests__") || fileName.endsWith(".test.ts"))
+    continue;
   if (!KEBAB_CASE.test(fileName)) {
     violations.push(`${relativePath}: ファイル名が kebab-case ではありません`);
   }
   if (ABSTRACT_NAMES.test(fileName)) {
-    violations.push(`${relativePath}: 抽象的な語をファイル名に含めないでください`);
+    violations.push(
+      `${relativePath}: 抽象的な語をファイル名に含めないでください`
+    );
   }
 }
 

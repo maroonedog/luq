@@ -19,7 +19,7 @@ export type BagEntry<P> =
     : never;
 
 export type SlotPlugins<B extends PluginBag, S extends TypeName> = {
-  [K in keyof B as S extends B[K]["slots"][number]
-    ? B[K]["method"]
-    : never]: B[K];
+  [
+    K in keyof B as S extends B[K]["slots"][number] ? B[K]["method"] : never
+  ]: B[K];
 };

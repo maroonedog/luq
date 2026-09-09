@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn"],
+  "env": { "es2022": true, "node": true },
+  "categories": { "correctness": "error" },
+  "rules": {
+    "max-lines": ["error", { "max": 200, "skipBlankLines": false, "skipComments": false }],
+    "max-classes-per-file": ["error", 1],
+    "prefer-const": "error",
+    "no-var": "error",
+    "eqeqeq": ["error", "smart"],
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "typescript/consistent-type-assertions": [
+      "error",
+      { "assertionStyle": "as", "objectLiteralTypeAssertions": "never" }
+    ],
+    "typescript/no-empty-object-type": "error",
+    "typescript/no-unsafe-function-type": "error",
+    "typescript/no-wrapper-object-types": "error",
+
+    // Draft-07 の if/then/else の then はキーワードであって Promise ではない。
+    // unicorn のこのルールは前者を後者と取り違えるので外す。
+    "unicorn/no-thenable": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "test/**/*.ts"],
+      "rules": {
+        "max-lines": "off",
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off"
+      }
+    }
+  ]
+}
