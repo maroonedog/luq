@@ -56,6 +56,15 @@ rewrite is the one about the next one.
 7. confirm: `npm view @maroonedog/luq version`
 8. the push to `master` deploys the docs site; confirm the run went green
 
+## What CI covers
+
+Four jobs on every push and every pull request: `verify` (the command above),
+`bench` (the throughput ratio gate), `docs` (the site build), and
+`competitors` (zod / valibot / ajv / yup — agreement gated, speed recorded and
+uploaded as an artifact). The competitor numbers from a neutral runner are
+therefore available for every commit, not only the ones measured on the author's
+machine.
+
 ## Known weaknesses in this process
 
 **Publishing is manual.** Steps 6 and 7 are typed by a human with a 2FA code.

@@ -483,7 +483,9 @@
     "check:docs": "npm run check:generated-docs && npm run check:doc-examples && npm run check:doc-imports && npm run check:conformance-figures",
     "bench:record": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --record",
     "bench:gate": "npx ts-node --project scripts/tsconfig.json scripts/run-bench.ts --gate",
-    "check:conformance-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-conformance-figures.ts"
+    "check:conformance-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-conformance-figures.ts",
+    "bench:competitors": "npx ts-node --project bench/tsconfig.json bench/competitors/report-competitors.ts",
+    "bench:competitors:check": "npx ts-node --project bench/tsconfig.json bench/competitors/check-competitors.ts"
   },
   "repository": {
     "type": "git",
