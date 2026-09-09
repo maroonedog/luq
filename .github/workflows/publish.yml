@@ -67,9 +67,19 @@ jobs:
 
       # Node 20 が同梱する npm は 10.x で、OIDC を知らない。trusted publishing
       # には 11.5.1 以降が要る。
+      #
+      # **@latest ではなく 11 系に留める。** 最初にこれを @latest で書いて、
+      # v2.2.0 のタグで落とした: npm@latest は 12.0.2 になっていて
+      # ^22.22.2 || ^24.15.0 || >=26 を要求する。このランナーの Node は 20 で、
+      # npm 11 の要求は ^20.17.0 || >=22.9.0 なので通る。
+      #
+      # つまり下限は「OIDC を知っていること」で、上限は「ランナーの Node が
+      # 支えられること」である。Node を上げるなら、ここも一緒に見ること —
+      # 公開ジョブは prepublishOnly 経由で verify を回すので、Node を変えると
+      # 何を検証したかが他の CI と変わる。
       - name: Use an npm that knows about trusted publishing
         run: |
-          npm install -g npm@latest
+          npm install -g npm@11
           npm --version
 
       # タグと package.json が食い違ったまま公開すると、v2.2.0 というタグで
