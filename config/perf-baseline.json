@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-09T14:26:07.916Z",
+  "recordedAt": "2026-09-09T15:50:20.550Z",
   "machine": {
     "cpuModel": "AMD Ryzen 7 5825U with Radeon Graphics",
     "logicalCores": 16,
@@ -43,113 +43,113 @@
     {
       "shape": "singleField",
       "operation": "validate",
-      "opsPerSecond": 4253927,
-      "relativeSpreadPercent": 9,
+      "opsPerSecond": 5832278,
+      "relativeSpreadPercent": 15.5,
       "isQuiet": true
     },
     {
       "shape": "singleField",
       "operation": "parse",
-      "opsPerSecond": 4127004,
-      "relativeSpreadPercent": 3.5,
-      "isQuiet": true
-    },
-    {
-      "shape": "multiField",
-      "operation": "validate",
-      "opsPerSecond": 1821697,
-      "relativeSpreadPercent": 3.7,
-      "isQuiet": true
-    },
-    {
-      "shape": "multiField",
-      "operation": "parse",
-      "opsPerSecond": 1784646,
-      "relativeSpreadPercent": 4.6,
-      "isQuiet": true
-    },
-    {
-      "shape": "nested",
-      "operation": "validate",
-      "opsPerSecond": 1375016,
+      "opsPerSecond": 5646070,
       "relativeSpreadPercent": 4,
       "isQuiet": true
     },
     {
-      "shape": "nested",
-      "operation": "parse",
-      "opsPerSecond": 1301871,
-      "relativeSpreadPercent": 12.1,
+      "shape": "multiField",
+      "operation": "validate",
+      "opsPerSecond": 2246229,
+      "relativeSpreadPercent": 2.8,
       "isQuiet": true
     },
     {
-      "shape": "array",
-      "operation": "validate",
-      "opsPerSecond": 49005,
+      "shape": "multiField",
+      "operation": "parse",
+      "opsPerSecond": 2245799,
       "relativeSpreadPercent": 5.1,
       "isQuiet": true
     },
     {
+      "shape": "nested",
+      "operation": "validate",
+      "opsPerSecond": 1636844,
+      "relativeSpreadPercent": 3.9,
+      "isQuiet": true
+    },
+    {
+      "shape": "nested",
+      "operation": "parse",
+      "opsPerSecond": 1614237,
+      "relativeSpreadPercent": 3.8,
+      "isQuiet": true
+    },
+    {
+      "shape": "array",
+      "operation": "validate",
+      "opsPerSecond": 56760,
+      "relativeSpreadPercent": 6.3,
+      "isQuiet": true
+    },
+    {
       "shape": "array",
       "operation": "parse",
-      "opsPerSecond": 50062,
-      "relativeSpreadPercent": 6.6,
+      "opsPerSecond": 56841,
+      "relativeSpreadPercent": 9,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "validate",
-      "opsPerSecond": 253057,
-      "relativeSpreadPercent": 7.1,
+      "opsPerSecond": 271755,
+      "relativeSpreadPercent": 11.6,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "parse",
-      "opsPerSecond": 258664,
-      "relativeSpreadPercent": 5.5,
+      "opsPerSecond": 272314,
+      "relativeSpreadPercent": 2.5,
       "isQuiet": true
     }
   ],
   "buildCost": [
     {
       "shape": "singleField",
-      "buildsPerSecond": 73994,
-      "microsecondsPerBuild": 13.51,
-      "validateCallsPerBuild": 52,
-      "costRatioSpreadPercent": 13.1,
+      "buildsPerSecond": 64848,
+      "microsecondsPerBuild": 15.42,
+      "validateCallsPerBuild": 87,
+      "costRatioSpreadPercent": 6.9,
       "isQuiet": true
     },
     {
       "shape": "multiField",
-      "buildsPerSecond": 21897,
-      "microsecondsPerBuild": 45.67,
-      "validateCallsPerBuild": 78,
-      "costRatioSpreadPercent": 12.6,
+      "buildsPerSecond": 20454,
+      "microsecondsPerBuild": 48.89,
+      "validateCallsPerBuild": 103,
+      "costRatioSpreadPercent": 15.3,
       "isQuiet": true
     },
     {
       "shape": "nested",
-      "buildsPerSecond": 15489,
-      "microsecondsPerBuild": 64.56,
-      "validateCallsPerBuild": 76,
-      "costRatioSpreadPercent": 19.4,
+      "buildsPerSecond": 15015,
+      "microsecondsPerBuild": 66.6,
+      "validateCallsPerBuild": 105,
+      "costRatioSpreadPercent": 8.1,
       "isQuiet": true
     },
     {
       "shape": "array",
-      "buildsPerSecond": 13698,
-      "microsecondsPerBuild": 73,
+      "buildsPerSecond": 13186,
+      "microsecondsPerBuild": 75.84,
       "validateCallsPerBuild": 4,
-      "costRatioSpreadPercent": 10.8,
+      "costRatioSpreadPercent": 9.5,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
-      "buildsPerSecond": 1354,
-      "microsecondsPerBuild": 738.41,
-      "validateCallsPerBuild": 188,
-      "costRatioSpreadPercent": 10.6,
+      "buildsPerSecond": 1242,
+      "microsecondsPerBuild": 805.22,
+      "validateCallsPerBuild": 204,
+      "costRatioSpreadPercent": 12.8,
       "isQuiet": true
     }
   ],
@@ -158,156 +158,156 @@
       "shape": "multiField",
       "operation": "validate",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 1672001,
-      "referenceOpsPerSecond": 13287556,
-      "ratio": 0.1252,
+      "luqOpsPerSecond": 1750866,
+      "referenceOpsPerSecond": 12721116,
+      "ratio": 0.1382,
       "ratioFloor": 0.0547,
-      "luqSpreadPercent": 2.6,
-      "referenceSpreadPercent": 1.6,
-      "ratioSpreadPercent": 2.8,
-      "isQuiet": true
-    },
-    {
-      "shape": "multiField",
-      "operation": "parse",
-      "inputIsAccepted": true,
-      "luqOpsPerSecond": 1656651,
-      "referenceOpsPerSecond": 13321772,
-      "ratio": 0.1242,
-      "ratioFloor": 0.0548,
-      "luqSpreadPercent": 3.4,
+      "luqSpreadPercent": 6.2,
       "referenceSpreadPercent": 2.2,
-      "ratioSpreadPercent": 1.8,
+      "ratioSpreadPercent": 7.6,
+      "isQuiet": true
+    },
+    {
+      "shape": "multiField",
+      "operation": "parse",
+      "inputIsAccepted": true,
+      "luqOpsPerSecond": 1828005,
+      "referenceOpsPerSecond": 12914187,
+      "ratio": 0.1398,
+      "ratioFloor": 0.0548,
+      "luqSpreadPercent": 3.7,
+      "referenceSpreadPercent": 6.7,
+      "ratioSpreadPercent": 8.3,
       "isQuiet": true
     },
     {
       "shape": "multiField",
       "operation": "validate",
       "inputIsAccepted": false,
-      "luqOpsPerSecond": 1426733,
-      "referenceOpsPerSecond": 18164131,
-      "ratio": 0.0803,
+      "luqOpsPerSecond": 1516817,
+      "referenceOpsPerSecond": 17066285,
+      "ratio": 0.0888,
       "ratioFloor": 0.0434,
-      "luqSpreadPercent": 5.9,
-      "referenceSpreadPercent": 6.8,
-      "ratioSpreadPercent": 9.8,
+      "luqSpreadPercent": 11.4,
+      "referenceSpreadPercent": 8.5,
+      "ratioSpreadPercent": 15.3,
       "isQuiet": true
     },
     {
       "shape": "nested",
       "operation": "validate",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 1200794,
-      "referenceOpsPerSecond": 26694954,
-      "ratio": 0.045,
+      "luqOpsPerSecond": 1394888,
+      "referenceOpsPerSecond": 25479116,
+      "ratio": 0.0547,
       "ratioFloor": 0.0169,
-      "luqSpreadPercent": 3.7,
-      "referenceSpreadPercent": 5.3,
-      "ratioSpreadPercent": 4,
+      "luqSpreadPercent": 5.5,
+      "referenceSpreadPercent": 5.2,
+      "ratioSpreadPercent": 8.6,
       "isQuiet": true
     },
     {
       "shape": "nested",
       "operation": "parse",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 1220467,
-      "referenceOpsPerSecond": 26528232,
-      "ratio": 0.0461,
+      "luqOpsPerSecond": 1405751,
+      "referenceOpsPerSecond": 24663841,
+      "ratio": 0.0572,
       "ratioFloor": 0.0174,
-      "luqSpreadPercent": 2.7,
-      "referenceSpreadPercent": 3.5,
-      "ratioSpreadPercent": 1.5,
+      "luqSpreadPercent": 5.5,
+      "referenceSpreadPercent": 3,
+      "ratioSpreadPercent": 7.8,
       "isQuiet": true
     },
     {
       "shape": "nested",
       "operation": "validate",
       "inputIsAccepted": false,
-      "luqOpsPerSecond": 1230035,
-      "referenceOpsPerSecond": 30318264,
-      "ratio": 0.0402,
+      "luqOpsPerSecond": 1349507,
+      "referenceOpsPerSecond": 28105049,
+      "ratio": 0.0479,
       "ratioFloor": 0.0168,
-      "luqSpreadPercent": 12.8,
-      "referenceSpreadPercent": 6.9,
-      "ratioSpreadPercent": 16.1,
+      "luqSpreadPercent": 3,
+      "referenceSpreadPercent": 3.1,
+      "ratioSpreadPercent": 5.9,
       "isQuiet": true
     },
     {
       "shape": "array",
       "operation": "validate",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 48846,
-      "referenceOpsPerSecond": 920691,
-      "ratio": 0.053,
+      "luqOpsPerSecond": 54684,
+      "referenceOpsPerSecond": 854125,
+      "ratio": 0.0636,
       "ratioFloor": 0.0227,
-      "luqSpreadPercent": 4.6,
-      "referenceSpreadPercent": 3.4,
-      "ratioSpreadPercent": 3.9,
+      "luqSpreadPercent": 6.4,
+      "referenceSpreadPercent": 7.7,
+      "ratioSpreadPercent": 11.9,
       "isQuiet": true
     },
     {
       "shape": "array",
       "operation": "parse",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 48868,
-      "referenceOpsPerSecond": 920436,
-      "ratio": 0.0536,
+      "luqOpsPerSecond": 54475,
+      "referenceOpsPerSecond": 869512,
+      "ratio": 0.0625,
       "ratioFloor": 0.0226,
-      "luqSpreadPercent": 4.4,
-      "referenceSpreadPercent": 6.6,
-      "ratioSpreadPercent": 8.2,
+      "luqSpreadPercent": 3.8,
+      "referenceSpreadPercent": 9.9,
+      "ratioSpreadPercent": 11.8,
       "isQuiet": true
     },
     {
       "shape": "array",
       "operation": "validate",
       "inputIsAccepted": false,
-      "luqOpsPerSecond": 61918,
-      "referenceOpsPerSecond": 1189894,
-      "ratio": 0.0521,
+      "luqOpsPerSecond": 70723,
+      "referenceOpsPerSecond": 1136642,
+      "ratio": 0.062,
       "ratioFloor": 0.022,
-      "luqSpreadPercent": 3.8,
-      "referenceSpreadPercent": 7.6,
-      "ratioSpreadPercent": 6.6,
+      "luqSpreadPercent": 7.3,
+      "referenceSpreadPercent": 4,
+      "ratioSpreadPercent": 8.6,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "validate",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 250370,
-      "referenceOpsPerSecond": 916871,
-      "ratio": 0.2723,
+      "luqOpsPerSecond": 253473,
+      "referenceOpsPerSecond": 903479,
+      "ratio": 0.2812,
       "ratioFloor": 0.1194,
-      "luqSpreadPercent": 2.4,
-      "referenceSpreadPercent": 1.6,
-      "ratioSpreadPercent": 3.4,
+      "luqSpreadPercent": 1.8,
+      "referenceSpreadPercent": 4,
+      "ratioSpreadPercent": 3.1,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "parse",
       "inputIsAccepted": true,
-      "luqOpsPerSecond": 249815,
-      "referenceOpsPerSecond": 916720,
-      "ratio": 0.2693,
+      "luqOpsPerSecond": 256588,
+      "referenceOpsPerSecond": 894831,
+      "ratio": 0.2866,
       "ratioFloor": 0.1182,
-      "luqSpreadPercent": 4.8,
-      "referenceSpreadPercent": 4.1,
-      "ratioSpreadPercent": 3.7,
+      "luqSpreadPercent": 4.9,
+      "referenceSpreadPercent": 3.9,
+      "ratioSpreadPercent": 5.2,
       "isQuiet": true
     },
     {
       "shape": "jsonSchema",
       "operation": "validate",
       "inputIsAccepted": false,
-      "luqOpsPerSecond": 470162,
-      "referenceOpsPerSecond": 1449934,
-      "ratio": 0.3242,
+      "luqOpsPerSecond": 472934,
+      "referenceOpsPerSecond": 1377994,
+      "ratio": 0.343,
       "ratioFloor": 0.1537,
-      "luqSpreadPercent": 2.2,
-      "referenceSpreadPercent": 1.5,
-      "ratioSpreadPercent": 2.1,
+      "luqSpreadPercent": 3.5,
+      "referenceSpreadPercent": 3.4,
+      "ratioSpreadPercent": 6,
       "isQuiet": true
     }
   ],
@@ -315,82 +315,82 @@
     {
       "shape": "singleField",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 94934928,
-      "referenceOpsPerSecond": 57487870,
-      "shareOfFloor": 0.608,
-      "netNanosecondsPerCall": 6.86
+      "harnessFloorOpsPerSecond": 93157984,
+      "referenceOpsPerSecond": 55425762,
+      "shareOfFloor": 0.598,
+      "netNanosecondsPerCall": 7.31
     },
     {
       "shape": "singleField",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 97384278,
-      "referenceOpsPerSecond": 56986106,
-      "shareOfFloor": 0.594,
-      "netNanosecondsPerCall": 7.28
+      "harnessFloorOpsPerSecond": 84590730,
+      "referenceOpsPerSecond": 49020963,
+      "shareOfFloor": 0.597,
+      "netNanosecondsPerCall": 8.58
     },
     {
       "shape": "multiField",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 95304200,
-      "referenceOpsPerSecond": 13937177,
-      "shareOfFloor": 0.146,
-      "netNanosecondsPerCall": 61.26
+      "harnessFloorOpsPerSecond": 90358436,
+      "referenceOpsPerSecond": 13022254,
+      "shareOfFloor": 0.144,
+      "netNanosecondsPerCall": 65.72
     },
     {
       "shape": "multiField",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 91682239,
-      "referenceOpsPerSecond": 18049733,
-      "shareOfFloor": 0.196,
-      "netNanosecondsPerCall": 44.5
+      "harnessFloorOpsPerSecond": 90497711,
+      "referenceOpsPerSecond": 17360904,
+      "shareOfFloor": 0.194,
+      "netNanosecondsPerCall": 46.55
     },
     {
       "shape": "nested",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 96428712,
-      "referenceOpsPerSecond": 27595679,
-      "shareOfFloor": 0.286,
-      "netNanosecondsPerCall": 25.87
+      "harnessFloorOpsPerSecond": 89933189,
+      "referenceOpsPerSecond": 25522486,
+      "shareOfFloor": 0.284,
+      "netNanosecondsPerCall": 28.06
     },
     {
       "shape": "nested",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 92974901,
-      "referenceOpsPerSecond": 30510468,
-      "shareOfFloor": 0.329,
-      "netNanosecondsPerCall": 22.02
+      "harnessFloorOpsPerSecond": 91011338,
+      "referenceOpsPerSecond": 28219188,
+      "shareOfFloor": 0.316,
+      "netNanosecondsPerCall": 24.45
     },
     {
       "shape": "array",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 92577306,
-      "referenceOpsPerSecond": 891065,
+      "harnessFloorOpsPerSecond": 90396397,
+      "referenceOpsPerSecond": 870094,
       "shareOfFloor": 0.01,
-      "netNanosecondsPerCall": 1111.45
+      "netNanosecondsPerCall": 1138.24
     },
     {
       "shape": "array",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 94138495,
-      "referenceOpsPerSecond": 1193935,
+      "harnessFloorOpsPerSecond": 93441859,
+      "referenceOpsPerSecond": 1163660,
       "shareOfFloor": 0.013,
-      "netNanosecondsPerCall": 826.94
+      "netNanosecondsPerCall": 848.66
     },
     {
       "shape": "jsonSchema",
       "inputIsAccepted": true,
-      "harnessFloorOpsPerSecond": 93012686,
-      "referenceOpsPerSecond": 925721,
+      "harnessFloorOpsPerSecond": 91614212,
+      "referenceOpsPerSecond": 886834,
       "shareOfFloor": 0.01,
-      "netNanosecondsPerCall": 1069.49
+      "netNanosecondsPerCall": 1116.69
     },
     {
       "shape": "jsonSchema",
       "inputIsAccepted": false,
-      "harnessFloorOpsPerSecond": 93881420,
-      "referenceOpsPerSecond": 1446714,
+      "harnessFloorOpsPerSecond": 92228338,
+      "referenceOpsPerSecond": 1385660,
       "shareOfFloor": 0.015,
-      "netNanosecondsPerCall": 680.57
+      "netNanosecondsPerCall": 710.84
     }
   ],
   "gateSensitivity": {
@@ -410,37 +410,37 @@
   "legacyComparison": [
     {
       "shape": "singleField",
-      "legacyOpsPerSecond": 25678058,
-      "currentOpsPerSecond": 4090411,
-      "speedup": 0.16,
+      "legacyOpsPerSecond": 24516003,
+      "currentOpsPerSecond": 5576257,
+      "speedup": 0.23,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "multiField",
-      "legacyOpsPerSecond": 2968134,
-      "currentOpsPerSecond": 1876015,
-      "speedup": 0.63,
+      "legacyOpsPerSecond": 2823708,
+      "currentOpsPerSecond": 2285467,
+      "speedup": 0.81,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "nested",
-      "legacyOpsPerSecond": 2203441,
-      "currentOpsPerSecond": 1371768,
-      "speedup": 0.63,
+      "legacyOpsPerSecond": 2135910,
+      "currentOpsPerSecond": 1700673,
+      "speedup": 0.8,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "array",
-      "legacyOpsPerSecond": 19720,
-      "currentOpsPerSecond": 52503,
-      "speedup": 2.71,
+      "legacyOpsPerSecond": 18600,
+      "currentOpsPerSecond": 59033,
+      "speedup": 3.19,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     },
     {
       "shape": "jsonSchema",
-      "legacyOpsPerSecond": 144981,
-      "currentOpsPerSecond": 264324,
-      "speedup": 1.83,
+      "legacyOpsPerSecond": 134374,
+      "currentOpsPerSecond": 264779,
+      "speedup": 1.97,
       "note": "1.x src and rewritten src, both ts-node transpiled, interleaved sample by sample in one process on one machine"
     }
   ]

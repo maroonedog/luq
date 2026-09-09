@@ -508,16 +508,16 @@ skipped. Every subject rotates over a pool of at least four distinct values —
 one frozen input let V8 delete a subject outright, which is the artefact
 described below. Each figure is the median of the fastest half of 9 samples; the
 spread quoted alongside is the full range over that figure, and on these ten it
-is <!-- generated:perf-spread -->3.5–12.1%<!-- /generated:perf-spread -->.
+is <!-- generated:perf-spread -->2.5–15.5%<!-- /generated:perf-spread -->.
 
 | Shape | `validate` ops/sec | `parse` ops/sec |
 |---|---:|---:|
 <!-- generated:perf-throughput -->
-| 1 field, 1 check | 4,253,927 | 4,127,004 |
-| 3 fields, 6 plugins | 1,821,697 | 1,784,646 |
-| nested, depth 2–3 | 1,375,016 | 1,301,871 |
-| array of 50 elements | 49,005 | 50,062 |
-| JSON Schema document | 253,057 | 258,664 |
+| 1 field, 1 check | 5,832,278 | 5,646,070 |
+| 3 fields, 6 plugins | 2,246,229 | 2,245,799 |
+| nested, depth 2–3 | 1,636,844 | 1,614,237 |
+| array of 50 elements | 56,760 | 56,841 |
+| JSON Schema document | 271,755 | 272,314 |
 <!-- /generated:perf-throughput -->
 
 **This rewrite is slower than 1.x on flat and nested shapes.** Measured side by
@@ -527,11 +527,11 @@ sample interleaved so a drift in the machine hits both halves of every ratio:
 | Shape | 1.x | this | ratio |
 |---|---:|---:|---:|
 <!-- generated:perf-legacy -->
-| 1 field | 25,678,058 | 4,090,411 | **×0.16** |
-| 3 fields | 2,968,134 | 1,876,015 | **×0.63** |
-| nested | 2,203,441 | 1,371,768 | **×0.63** |
-| array of 50 | 19,720 | 52,503 | ×2.71 |
-| JSON Schema | 144,981 | 264,324 | ×1.83 |
+| 1 field | 24,516,003 | 5,576,257 | **×0.23** |
+| 3 fields | 2,823,708 | 2,285,467 | **×0.81** |
+| nested | 2,135,910 | 1,700,673 | **×0.80** |
+| array of 50 | 18,600 | 59,033 | ×3.19 |
+| JSON Schema | 134,374 | 264,779 | ×1.97 |
 <!-- /generated:perf-legacy -->
 
 1.x carried a directory of specialised fast paths that this implementation has
@@ -542,7 +542,7 @@ reject the rejected pool before either is timed.
 
 Also worth stating plainly: **neither figure 1.x's README published reproduces
 here.** It claimed 1.2M ops/sec simple and 43K complex; on this machine 1.x
-itself does <!-- generated:perf-legacy-simple -->2.97M<!-- /generated:perf-legacy-simple -->
+itself does <!-- generated:perf-legacy-simple -->2.82M<!-- /generated:perf-legacy-simple -->
 on the shape rebuilt from its own "simple" benchmark source, and "complex" has
 no reproducible definition to measure.
 
