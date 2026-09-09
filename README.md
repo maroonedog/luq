@@ -320,7 +320,7 @@ const draftValidator = Builder()
 export const isTitled = draftValidator.validate({ title: "x" }).valid;
 ```
 
-77 plugin objects ship across 76 subpaths, plus one deprecated alias kept from
+78 plugin objects ship across 77 subpaths, plus one deprecated alias kept from
 1.x. The complete table — subpath, symbol, chain method, slots — is generated
 from the built package: **[docs/guide/plugin-reference.md](docs/guide/plugin-reference.md)**.
 
@@ -421,7 +421,7 @@ Three decisions the spec leaves open, made explicit here:
 - `InferInput` is the type you wrote in `.for<T>()`, not a type inferred back
   out of a schema value.
 
-It is a subpath, not part of `build()`. Measured: the core gzips to 7,420 B and
+It is a subpath, not part of `build()`. Measured on the 2.0.0 core (7,420 B) and
 carrying `~standard` on every validator adds 312 B — 4.2% charged to everyone,
 including the people who never pass a validator to tRPC. Importing the subpath
 costs those 312 B only when you import it, and nothing when you don't.
@@ -473,22 +473,22 @@ so the two columns are comparable. Recorded in
 
 | Entry | gzip | 1.x, same method |
 |---|---:|---:|
-| `Builder` only, zero plugins | **7,420 B** | 17,423 B |
-| + 6 plugins (1.x's "simple" set) | **8,373 B** | 19,562 B |
-| all 76 plugins | **24,040 B** | — |
+| `Builder` only, zero plugins | **7,590 B** | 17,423 B |
+| + 6 plugins (1.x's "simple" set) | **8,475 B** | 19,562 B |
+| all 77 plugins | **25,607 B** | — |
 | core + `jsonSchema`, plugin alone (not usable) | **18,992 B** | — |
 | core + `jsonSchema` + a working 49-plugin bag | **21,371 B** | 26.06–29.08 KB |
 | core + `jsonSchemaFullFeature` | **21,383 B** | 31.75–32.31 KB |
 
 1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
 core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
-figure. Here the core is 30.9% of the all-plugins build (7,420 of 24,040 B), and
+figure. Here the core is 29.6% of the all-plugins build (7,590 of 25,607 B), and
 adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
 the difference is where the bytes sit, not which README is right.
 
 Two lines that are **not** wins:
 
-- "all 76 plugins at 24,040 B" is larger than the 23,015 B 1.x published for its
+- "all 77 plugins at 25,607 B" is larger than the 23,015 B 1.x published for its
   `complex` case. The two are not comparable — 1.x's figure was one schema's
   plugin set, not its whole catalogue — so it is not counted either way here.
 - The 18,992 B for `jsonSchema` measures the plugin **without a bag**, which is
@@ -584,14 +584,15 @@ every build rather than a sentence asserting it.
 
 ### Package
 
-84 keys in `exports`, every one resolving to files that exist: 7 fixed keys
+86 keys in `exports`, every one resolving to files that exist: 8 fixed keys
 (`.`, `./package.json`, `./result`, `./plugin-kit`, `./field-rule`, `./async`,
-`./plugins`) and 77 under `./plugins/` — 76 plugins plus one deprecated alias.
-`npm pack --dry-run`: 1,149 files, 322,079 B packed, 1,216,371 B unpacked —
-`LICENSE`, `README.md`, `package.json` and `dist/` (382 `.d.ts` + 382 `.js` +
-382 `.mjs`), with nothing from `src/`, `test/`, `scripts/`, `bench/` or `docs/`,
+`./plugins`, `./standard-schema`) and 78 under `./plugins/` — 77 plugins plus one
+deprecated alias.
+`npm pack --dry-run`: 1,197 files, 376.9 kB packed, 1.4 MB unpacked —
+`LICENSE`, `README.md`, `package.json` and `dist/` (398 `.d.ts` + 398 `.js` +
+398 `.mjs`), with nothing from `src/`, `test/`, `scripts/`, `bench/` or `docs/`,
 no raw `.ts` and no source maps. A scratch consumer typechecks **every one of
-the 84 keys** against the published declarations under **both** `node16` and
+the 86 keys** against the published declarations under **both** `node16` and
 `bundler` resolution, and an unpublished subpath is proven to fail.
 
 1.x's `createPluginRegistry` / `useField` / `createFieldRule` are published at

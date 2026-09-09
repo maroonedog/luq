@@ -1,5 +1,5 @@
 {
-  "pluginCount": 76,
+  "pluginCount": 77,
   "plugins": [
     {
       "subpath": "./plugins/arrayContains",
@@ -209,6 +209,11 @@
     {
       "subpath": "./plugins/stitch",
       "directory": "src/plugins/stitch",
+      "tier": "isolated"
+    },
+    {
+      "subpath": "./plugins/stitchWith",
+      "directory": "src/plugins/stitch-with",
       "tier": "isolated"
     },
     {
@@ -433,6 +438,7 @@
     "./plugins/requiredIf",
     "./plugins/skip",
     "./plugins/stitch",
+    "./plugins/stitchWith",
     "./plugins/stringAlphanumeric",
     "./plugins/stringBase64",
     "./plugins/stringContentEncoding",

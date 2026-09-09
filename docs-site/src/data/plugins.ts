@@ -50,7 +50,7 @@ export interface PluginInfo {
 /** Every field type a plugin may be offered on. */
 export const PLUGIN_SLOTS = ["string","number","boolean","date","array","tuple","object","union","any"] as const;
 
-/** 77 plugin objects across 76 subpaths. */
+/** 78 plugin objects across 77 subpaths. */
 export const plugins: readonly PluginInfo[] = [
   {
     "name": "arrayContains",
@@ -1491,6 +1491,50 @@ export const plugins: readonly PluginInfo[] = [
     }
   },
   {
+    "name": "stitchWith",
+    "symbol": "stitchWithPlugin",
+    "subpath": "@maroonedog/luq/plugins/stitchWith",
+    "method": "stitchWith",
+    "slots": [
+      "string",
+      "number",
+      "boolean",
+      "date",
+      "object",
+      "array",
+      "tuple",
+      "union"
+    ],
+    "tier": "isolated",
+    "parameters": [
+      {
+        "name": "fields",
+        "type": "BundleAliasMap",
+        "optional": false
+      },
+      {
+        "name": "define",
+        "type": "NarrowedChain",
+        "optional": false
+      }
+    ],
+    "description": "EXPERIMENTAL. The typed successor to stitch: name the paths you need, then declare rules for each one instead of hand-writing a predicate. The bundle is typed, so a wrong slot or a misspelt name is a compile error.",
+    "example": {
+      "declarations": [
+        "price: number;",
+        "total: number;"
+      ],
+      "field": "total",
+      "uses": [
+        "requiredPlugin",
+        "numberMinPlugin"
+      ],
+      "chain": "number.required().stitchWith({ cost: \"price\" }, { cost: (x) => x.number.min(10) })",
+      "imports": [],
+      "prelude": []
+    }
+  },
+  {
     "name": "stringAlphanumeric",
     "symbol": "stringAlphanumericPlugin",
     "subpath": "@maroonedog/luq/plugins/stringAlphanumeric",
@@ -2459,5 +2503,5 @@ export const plugins: readonly PluginInfo[] = [
   }
 ];
 
-export const pluginObjectCount = 77;
-export const pluginSubpathCount = 76;
+export const pluginObjectCount = 78;
+export const pluginSubpathCount = 77;

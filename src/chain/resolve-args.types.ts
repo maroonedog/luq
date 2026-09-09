@@ -14,6 +14,7 @@ import type {
   SelfGuard,
   SelfReader,
   SelfValue,
+  StitchOut,
   TransformOut,
   Unchanged,
 } from "../plugin-kit/marker.types";
@@ -121,12 +122,15 @@ export type ResolveOut<O, TValue, TState extends ChainState> = [O] extends [
     ? [unknown, TState]
     : [O] extends [GuardOut]
       ? [TValue, TState]
-      : [O] extends [PresenceShift<"excludeMissing">]
-        ? [TValue, ExcludeMissing<TState>]
-        : [O] extends [PresenceShift<"excludeUndefined">]
-          ? [TValue, ExcludeUndefined<TState>]
-          : [O] extends [PresenceShift<"excludeNull">]
-            ? [TValue, ExcludeNull<TState>]
-            : [O] extends [PresenceShift<"allowNull">]
-              ? [TValue | null, AllowNull<TState>]
-              : [O, TState];
+      : // 束の判定は主体の値も状態も動かさない。読むだけである。
+        [O] extends [StitchOut]
+        ? [TValue, TState]
+        : [O] extends [PresenceShift<"excludeMissing">]
+          ? [TValue, ExcludeMissing<TState>]
+          : [O] extends [PresenceShift<"excludeUndefined">]
+            ? [TValue, ExcludeUndefined<TState>]
+            : [O] extends [PresenceShift<"excludeNull">]
+              ? [TValue, ExcludeNull<TState>]
+              : [O] extends [PresenceShift<"allowNull">]
+                ? [TValue | null, AllowNull<TState>]
+                : [O, TState];

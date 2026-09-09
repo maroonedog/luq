@@ -470,6 +470,17 @@ export const PLUGIN_COPY = {
         'number.required().stitch(["price", "quantity"], (fieldValues, value) => ({ valid: typeof fieldValues.price === "number" && typeof fieldValues.quantity === "number" && value === fieldValues.price * fieldValues.quantity }))',
     },
   },
+  stitchWithPlugin: {
+    description:
+      "EXPERIMENTAL. The typed successor to stitch: name the paths you need, then declare rules for each one instead of hand-writing a predicate. The bundle is typed, so a wrong slot or a misspelt name is a compile error.",
+    example: {
+      declarations: ["price: number;", "total: number;"],
+      field: "total",
+      uses: ["requiredPlugin", "numberMinPlugin"],
+      chain:
+        'number.required().stitchWith({ cost: "price" }, { cost: (x) => x.number.min(10) })',
+    },
+  },
   stringAlphanumericPlugin: {
     description:
       "ASCII letters and digits only. The empty string fails; pass `true` to allow spaces.",

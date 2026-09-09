@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { bundleSize } from '../data/bundle-size';
 import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
@@ -39,9 +40,9 @@ const shipped = [
   },
   {
     icon: 'compress',
-    headline: 'A 7,420 B gzipped floor',
+    headline: `A ${bundleSize.coreOnly.gzip} gzipped floor`,
     detail:
-      'That is Builder with zero plugins. 1.x charged 17,423 B before you used anything. Adding the first six plugins costs about 159 B each.',
+      `That is Builder with zero plugins. 1.x charged ${bundleSize.legacyCoreGzip.toLocaleString('en-US')} B before you used anything. Adding the first six plugins costs about 148 B each.`,
     href: '/benchmarks#bundle-size',
     linkLabel: 'See the measurements',
   },

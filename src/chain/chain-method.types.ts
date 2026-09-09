@@ -1,4 +1,9 @@
-import type { GuardOut, TransformOut } from "../plugin-kit/marker.types";
+import type {
+  GuardOut,
+  StitchOut,
+  TransformOut,
+} from "../plugin-kit/marker.types";
+import type { BundleChain, BundlePaths } from "./bundle-paths.types";
 import type {
   PluginDefinition,
   PluginSignature,
@@ -36,15 +41,29 @@ export type ChainMethod<
             define: (b: FieldSlots<TRoot, B, X>) => AnyChain,
             options?: RuleOptions<Sig["context"]>
           ) => FieldChain<B, S, TRoot, TValue, CoverWith<TState, X>>
-        : (
-            ...args: [
-              ...ResolveArgs<Sig["args"], B, TRoot, TValue, TState>,
-              options?: RuleOptions<Sig["context"]>,
+        : // 引数2の型が引数1で決まる、という形はここでしか書けない。
+          // ResolveArgs は各引数を固定の TRoot/TValue に対して独立に解決する
+          // ので、引数どうしの依存を表せない。GuardOut と同じ扉である。
+          //
+          // `const M` が対応表をリテラルで捕まえ、BundleOf がそこから束の型を
+          // 組む。別名を経由するのは飾りではない: 束をパス文字列でキーすると
+          // `.v("user.name")` がパスとして構造解釈され、束の中を探しに行って
+          // 見つからない。別名は素の識別子なので、その衝突が起きない。
+          [Sig["out"]] extends [StitchOut]
+          ? <const M extends BundlePaths<TRoot>>(
+              fields: M,
+              define: BundleChain<TRoot, M, B>,
+              options?: RuleOptions<Sig["context"]>
+            ) => FieldChain<B, S, TRoot, TValue, TState>
+          : (
+              ...args: [
+                ...ResolveArgs<Sig["args"], B, TRoot, TValue, TState>,
+                options?: RuleOptions<Sig["context"]>,
+              ]
+            ) => ResolveOut<Sig["out"], TValue, TState> extends [
+              infer V,
+              infer St extends ChainState,
             ]
-          ) => ResolveOut<Sig["out"], TValue, TState> extends [
-            infer V,
-            infer St extends ChainState,
-          ]
-            ? FieldChain<B, S, TRoot, V, St>
-            : never
+              ? FieldChain<B, S, TRoot, V, St>
+              : never
     : never;

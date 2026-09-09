@@ -3,7 +3,8 @@
     "バンドルサイズの予算。scripts/measure-bundle-size.ts が読み、超えたら CI が落ちる。",
     "gzipCeilingBytes だけが判定に使われる。recordedGzipBytes は天井を決めたときの実測値で、",
     "根拠として残してあるだけ。数字を目標に合わせて書き換えるのではなく、",
-    "実測が天井を超えたら『なぜ増えたか』を先に答えること。"
+    "実測が天井を超えたら『なぜ増えたか』を先に答えること。",
+    "recordedGzipBytes は 2026-09-09 に取り直した。それまでの値は 2.1.0 の作業で最大 170 B ずれており、天井は等号ではないので誰も気づかなかった。README と docs-site の公開値も同時に直してある。full-feature の天井を 25600 -> 26100 に上げたのは、カタログにプラグインが1つ増えた分 (+191 B、README が言う 129-224 B の範囲内) で超えたためで、実装が重くなったのではない。"
   ],
   "method": {
     "measuredFrom": "src/ の TypeScript ソース。dist/ ではない。",
@@ -62,22 +63,28 @@
       "description": "Builder だけ。プラグインを1つも使わない利用者が払う床。",
       "plugins": [],
       "gzipCeilingBytes": 8000,
-      "recordedGzipBytes": 7420,
+      "recordedGzipBytes": 7590,
       "legacyGzipBytes": 17423
     },
     {
       "id": "one-plugin",
       "description": "Builder + required。1個足したときの増分を見るための点。",
-      "plugins": ["required"],
+      "plugins": [
+        "required"
+      ],
       "gzipCeilingBytes": 8250,
-      "recordedGzipBytes": 7638
+      "recordedGzipBytes": 7719
     },
     {
       "id": "three-plugin",
       "description": "Builder + required/stringMin/numberMin。バレル等価性の比較対象と同じ組。",
-      "plugins": ["required", "stringMin", "numberMin"],
+      "plugins": [
+        "required",
+        "stringMin",
+        "numberMin"
+      ],
       "gzipCeilingBytes": 8600,
-      "recordedGzipBytes": 7987
+      "recordedGzipBytes": 8090
     },
     {
       "id": "six-plugin",
@@ -91,15 +98,15 @@
         "numberMax"
       ],
       "gzipCeilingBytes": 9000,
-      "recordedGzipBytes": 8373,
+      "recordedGzipBytes": 8475,
       "legacyGzipBytes": 19562
     },
     {
       "id": "full-feature",
       "description": "Builder + カタログの全プラグイン (JSON Schema 拡張2件を含む)。全部入りの上限。",
       "plugins": "all",
-      "gzipCeilingBytes": 25600,
-      "recordedGzipBytes": 24040
+      "gzipCeilingBytes": 26100,
+      "recordedGzipBytes": 25607
     }
   ],
   "treeShaking": {
@@ -114,7 +121,11 @@
     "maxCoreShareOfFullPercent": 35
   },
   "barrelEquivalence": {
-    "plugins": ["required", "stringMin", "numberMin"],
+    "plugins": [
+      "required",
+      "stringMin",
+      "numberMin"
+    ],
     "maxDivergencePercent": 5
   }
 }

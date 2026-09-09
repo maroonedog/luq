@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { bundleSize } from '../../data/bundle-size';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
@@ -784,7 +785,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                   <tbody class="md-body-medium text-on-surface-variant">
                     <tr class="border-b border-outline-variant">
                       <td class="py-2 pr-4"><code>Builder</code> only, zero plugins</td>
-                      <td class="py-2 text-right">7,420 B</td>
+                      <td class="py-2 text-right">{bundleSize.coreOnly.gzip}</td>
                     </tr>
                     <tr class="border-b border-outline-variant">
                       <td class="py-2 pr-4">+ 1 plugin</td>
@@ -796,11 +797,11 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                     </tr>
                     <tr class="border-b border-outline-variant">
                       <td class="py-2 pr-4">+ 6 plugins</td>
-                      <td class="py-2 text-right">8,373 B</td>
+                      <td class="py-2 text-right">{bundleSize.sixPlugin.gzip}</td>
                     </tr>
                     <tr>
                       <td class="py-2 pr-4">all 76 plugins</td>
-                      <td class="py-2 text-right">24,040 B</td>
+                      <td class="py-2 text-right">{bundleSize.fullFeature.gzip}</td>
                     </tr>
                   </tbody>
                 </table>

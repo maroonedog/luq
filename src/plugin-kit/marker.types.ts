@@ -57,6 +57,16 @@ export interface TransformOut {
 export interface GuardOut {
   readonly [MARKER]: "guardOut";
 }
+/**
+ * Like GuardOut, this exists so ChainMethod can give the method a call-site
+ * type parameter — here the alias-to-path map, which the sub-builder's subject
+ * is computed from. ResolveArgs resolves each argument against a FIXED
+ * TRoot/TValue and cannot make argument 2 depend on argument 1, so a plugin
+ * whose second argument is typed by its first has to come through this door.
+ */
+export interface StitchOut {
+  readonly [MARKER]: "stitchOut";
+}
 export type PresenceShiftKind =
   | "excludeMissing"
   | "excludeUndefined"
@@ -94,6 +104,7 @@ export interface OutputMarkerRegistry {
   readonly unchanged: Unchanged;
   readonly transformOut: TransformOut;
   readonly guardOut: GuardOut;
+  readonly stitchOut: StitchOut;
   readonly excludeMissing: PresenceShift<"excludeMissing">;
   readonly excludeUndefined: PresenceShift<"excludeUndefined">;
   readonly excludeNull: PresenceShift<"excludeNull">;

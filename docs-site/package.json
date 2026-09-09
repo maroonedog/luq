@@ -14,9 +14,10 @@
     "generate-plugin-data": "node scripts/generate-plugin-data.mjs",
     "verify-plugin-examples": "node scripts/verify-plugin-examples.mjs",
     "check-built-pages": "node scripts/check-built-pages.mjs",
-    "generate-all": "npm run generate-plugin-data && npm run generate-conformance-data && npm run generate-package-data && npm run verify-plugin-examples",
+    "generate-all": "npm run generate-plugin-data && npm run generate-conformance-data && npm run generate-package-data && npm run generate-size-data && npm run verify-plugin-examples",
     "generate-package-data": "node scripts/generate-package-data.mjs",
-    "generate-conformance-data": "node scripts/generate-conformance-data.mjs"
+    "generate-conformance-data": "node scripts/generate-conformance-data.mjs",
+    "generate-size-data": "node scripts/generate-size-data.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
