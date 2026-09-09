@@ -39,7 +39,7 @@ import { branch, composite } from "../../plugin-kit/create-rule";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
 import { createValueReader, parseFieldPath } from "../../path/index";
 import type { ValueReader } from "../../path/index";
-import type { NarrowedChain, StitchOut } from "../../plugin-kit/marker.types";
+import type { BundleOut, NarrowedChain } from "../../plugin-kit/marker.types";
 
 /** 別名 -> ルートのパス。実行時はただの文字列の対応表である。 */
 export type BundleAliasMap = Readonly<Record<string, string>>;
@@ -87,7 +87,7 @@ function collectBundle(
 
 export const stitchWithPlugin = /*#__PURE__*/ definePlugin<{
   args: readonly [fields: BundleAliasMap, define: NarrowedChain];
-  out: StitchOut;
+  out: BundleOut;
   context: StitchWithExtra;
 }>()({
   name: "stitchWith",

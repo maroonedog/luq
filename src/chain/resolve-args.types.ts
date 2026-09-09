@@ -14,6 +14,7 @@ import type {
   SelfGuard,
   SelfReader,
   SelfValue,
+  BundleOut,
   StitchOut,
   TransformOut,
   Unchanged,
@@ -122,15 +123,17 @@ export type ResolveOut<O, TValue, TState extends ChainState> = [O] extends [
     ? [unknown, TState]
     : [O] extends [GuardOut]
       ? [TValue, TState]
-      : // 束の判定は主体の値も状態も動かさない。読むだけである。
+      : // クロスフィールドの判定は主体の値も状態も動かさない。読むだけである。
         [O] extends [StitchOut]
         ? [TValue, TState]
-        : [O] extends [PresenceShift<"excludeMissing">]
-          ? [TValue, ExcludeMissing<TState>]
-          : [O] extends [PresenceShift<"excludeUndefined">]
-            ? [TValue, ExcludeUndefined<TState>]
-            : [O] extends [PresenceShift<"excludeNull">]
-              ? [TValue, ExcludeNull<TState>]
-              : [O] extends [PresenceShift<"allowNull">]
-                ? [TValue | null, AllowNull<TState>]
-                : [O, TState];
+        : [O] extends [BundleOut]
+          ? [TValue, TState]
+          : [O] extends [PresenceShift<"excludeMissing">]
+            ? [TValue, ExcludeMissing<TState>]
+            : [O] extends [PresenceShift<"excludeUndefined">]
+              ? [TValue, ExcludeUndefined<TState>]
+              : [O] extends [PresenceShift<"excludeNull">]
+                ? [TValue, ExcludeNull<TState>]
+                : [O] extends [PresenceShift<"allowNull">]
+                  ? [TValue | null, AllowNull<TState>]
+                  : [O, TState];

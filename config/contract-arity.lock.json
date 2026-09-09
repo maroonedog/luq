@@ -48,6 +48,7 @@
       "transformOut",
       "guardOut",
       "stitchOut",
+      "bundleOut",
       "excludeMissing",
       "excludeUndefined",
       "excludeNull",
@@ -58,6 +59,7 @@
       "TransformOut",
       "GuardOut",
       "StitchOut",
+      "BundleOut",
       "PresenceShift"
     ],
     "presenceShiftKinds": [
