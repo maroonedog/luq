@@ -90,6 +90,18 @@ allowed to publish:
 Until that exists the workflow fails at the publish step with npm's own error,
 and **nothing is published** — a failed release, not a wrong one.
 
+The same is true of every earlier step. The first run of this workflow, on the
+`v2.2.0` tag, failed while upgrading npm: `npm@latest` had moved to a major
+that requires a newer Node than the runner has. Nothing reached npm, the tag
+stayed where it was, and the fix was to pin npm rather than to undo anything.
+That is the shape a release failure should have.
+
+**To retry a tag that failed**, do not delete and re-push it. Run the workflow
+by hand from `master` — Actions → publish → Run workflow — and give it the tag
+name. `workflow_dispatch` takes the *workflow definition* from the branch you
+run it on and the *code* from the tag you name, so a fixed workflow can publish
+an unchanged tag.
+
 If trusted publishing is ever unavailable, the fallback is an automation token
 (`NPM_TOKEN` secret, and `registry-url` on `setup-node`). It works, and it is
 worse: it is a long-lived credential that publishes as you, stored in a place
