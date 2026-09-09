@@ -297,6 +297,40 @@ A path that does not exist on the type is a compile error, not a silent no-op.
 So is choosing a slot the field's type cannot be: `b.number` on a `string`
 field fails to compile.
 
+**Cross-field rules read those paths back with their types intact.** `stitch`
+takes the paths it needs and hands them over as a bundle keyed by the path
+string — each one typed from your type, nested paths included. There is no
+`unknown` to narrow and no cast to write.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { stitchPlugin } from "@maroonedog/luq/plugins/stitch";
+
+type Booking = { seats: number; venue: { capacity: number } };
+
+const bookingValidator = Builder()
+  .use(requiredPlugin)
+  .use(numberMinPlugin)
+  .use(stitchPlugin)
+  .for<Booking>()
+  .v("venue.capacity", (b) => b.number.required().min(1))
+  .v("seats", (b) =>
+    b.number.required().stitch(["venue.capacity"], (fieldValues, value) => ({
+      // fieldValues["venue.capacity"] is number, and value is number.
+      valid: value <= fieldValues["venue.capacity"],
+      message: "seats must fit the venue",
+    }))
+  )
+  .build();
+```
+
+Asking for a path the type does not have is a compile error, and so is using a
+bundled value at the wrong type. 1.x passed this bundle as
+`Record<string, unknown>`, which meant every cross-field rule opened with a
+cast; the paths were already declared, so the types were always knowable.
+
 ## Plugins are imports
 
 There is no plugin registry to populate and no barrel you have to pay for.
@@ -622,7 +656,8 @@ the 86 keys** against the published declarations under **both** `node16` and
 - **[Field paths](docs/guide/field-paths.md)** — what a path may be, and what
   changed from 1.x
 - **[Presence and conditionals](docs/guide/presence-and-conditionals.md)** —
-  `required` / `optional` / `nullable` / `requiredIf` and the order rules run in
+  `required` / `optional` / `nullable` / `requiredIf`, the order rules run
+  in, and the cross-field rules (`compareField` / `stitch` / `stitchWith`)
 - **[JSON Schema](docs/guide/json-schema.md)** — the two front doors, and the
   keywords that are not supported
 - **[Writing a plugin](docs/guide/writing-a-plugin.md)** — markers, `out`,

@@ -6,30 +6,38 @@
 # README whose first example did not compile, a dist whose types and runtime
 # disagreed, and 65 filename violations all reached npm.
 #
-# Two jobs, deliberately split:
-#   verify — everything deterministic. Fails on any difference, on any machine.
-#   bench  — the throughput RATIO gate. luq と手書き参照を同一プロセスで測る。
-#            当初は「だからランナーの速度は比率で相殺される」と書いていたが、
-#            その前提は PR #14 の最初の CI 実行で反証された。両者は性能プロ
-#            ファイルが違う (luq は割り当てを伴い、参照は割り当てゼロの密ループ)
-#            ので、コア数やメモリ帯域が変われば同じようには落ちない。比率が
-#            相殺するのは CPU クロックだけ。したがって床は環境別に持ち、CI では
-#            config/perf-baseline.ci.json を読む。It is NOT part of
-#            `npm run verify`: it costs about a minute per shape and verify is
-#            run interactively. It never gates on an absolute ops/sec figure —
-#            that flakes unconditionally on a shared runner
-#            (docs/design/test-strategy.md).
+# **何を見ているか**: 決定的なものすべて。どの機械でも同じ答えが出るものだけを
+# ここに置き、差があれば落とす。
+#
+# **path フィルタを掛けていない唯一の workflow である。** 掛けたくなるが、
+# 掛けられない: README を一行変えると check:doc-examples がその例を
+# コンパイルし直し、config/*.json を触ると check:perf-figures が公開値との
+# ずれを見る。「コードを触っていないから安全」が成り立たない設計に、意図して
+# してある。
+#
+# 揺れるものは別の workflow に分けた。それぞれ自分が見ているものを冒頭に
+# 書いてある:
+#   bench.yml       — スループット比。src/ か bench/ が動いたときだけ
+#   docs.yml        — サイトがビルドできるか。docs-site/ と、それが読むもの
+#   competitors.yml — 競合との判定一致。src/ と競合の版が動いたときだけ
 # ===========================================================================
 name: verify
 
 on:
+  # push はトランクだけ。以前は branches: ["**"] と pull_request の両方だったので、
+  # PR ブランチへの1コミットが **2回** 全ジョブを回していた (run 34408561896 と
+  # 34408566222 は同じコミットである)。CI 時間のちょうど半分がそれだった。
+  # 作業ブランチの結果が欲しいときは PR を開く (draft でよい) か、
+  # workflow_dispatch を使う。
   push:
-    branches: ["**"]
+    branches: [master, develop]
   pull_request:
   workflow_dispatch:
 
 concurrency:
-  group: verify-${{ github.ref }}
+  # PR 番号で束ねる。ref で束ねていたときは、同じ PR の push イベントと
+  # pull_request イベントが別 ref を持つので互いに打ち消せなかった。
+  group: verify-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -59,91 +67,3 @@ jobs:
       # The published artefact, listed. A file that should not ship shows up in
       # the log of the run that would have published it.
       - run: npm pack --dry-run
-
-  bench:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      # Ratio only. config/perf-baseline.json's absolute figures are recorded
-      # on a named machine with `npm run bench:record`; they are never a
-      # pass/fail condition here.
-      - run: npm run bench:gate
-
-  # docs — the site build, run on every branch rather than only after a merge.
-  # It was NOT here, and that is how luq.dev went stale: deploy-docs.yml runs
-  # only on push to master, so the first signal that docs-site could not build
-  # was a red run AFTER the merge, with the previous site still being served.
-  # Two merges failed that way (2026-09-07) and nobody was blocked by either.
-  # The break itself: docs-site reads src/plugins/manifest.generated.ts, which
-  # is a gitignored derivative, and neither workflow ran `generate:sources`.
-  docs:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      # docs-site reads the generated plugin manifest, so it has to exist.
-      - run: npm run generate:sources
-
-      - run: npm run build
-
-      - working-directory: ./docs-site
-        run: npm ci
-
-      - working-directory: ./docs-site
-        run: npm run build
-
-  # competitors — zod / valibot / ajv / yup との比較を、中立なランナーで回す。
-  #
-  # ゲートするのは **判定の一致だけ** である。決定的で機械に依らないので、
-  # 例えば zod がメールの厳しさを版で変えれば、ここが落ちて気づける。
-  #
-  # 速度比は印字するが落とさない。config/perf-baseline.ci.json が存在するのと
-  # 同じ理由で、比率がランナーを相殺するという前提はこのリポジトリで一度
-  # 反証されている。CI の数字は記録された数字と並べて出るので、桁が違えば
-  # 人間が気づく。
-  #
-  # 測定結果は artifact として上げる。作者の機械で測った数字だけが公開値で
-  # あり続けるより、中立なランナーの数字がいつでも取り出せるほうがよい。
-  competitors:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      - run: npm run bench:competitors:check
-
-      # 記録し直したものを取り出せるようにする。コミットは戻さない —
-      # CI が勝手に config/ を書き換えると、公開値がどの実行のものか
-      # 分からなくなる。
-      - run: npm run bench:competitors
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: competitor-baseline-${{ github.run_id }}
-          path: config/competitor-baseline.json

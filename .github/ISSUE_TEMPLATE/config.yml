@@ -1,0 +1,13 @@
+# Blank issues are off so every report arrives with a reproduction and a
+# version. A report without those two costs more to triage than it saves the
+# reporter, and the template asks for nothing that is hard to supply.
+#
+# There is no Discussions link here because Discussions is not enabled on this
+# repository. A contact link that leads nowhere is worse than no link.
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/maroonedog/luq/security/advisories/new
+    about: >-
+      Report privately, not as a public issue. If advisories are unavailable to
+      you, email the address on the npm package page. See SECURITY.md.
