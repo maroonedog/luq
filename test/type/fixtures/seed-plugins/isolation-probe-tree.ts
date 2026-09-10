@@ -1,8 +1,8 @@
 import { SEED_PLUGIN_TREE, type SeedFileTree } from "./seed-plugin-tree";
 
 /**
- * 隔離検査をわざと破るプラグイン。1ディレクトリ1違反にしてあるので、
- * 検出漏れがあれば「どの違反が消えたか」が名前で分かる。
+ * Plugins that break the isolation rules on purpose, one violation per
+ * directory, so a missed detection is identifiable by name.
  */
 const LEAKY_PLUGINS: SeedFileTree = {
   "src/plugins/leaks-to-sibling/index.ts": [
@@ -42,13 +42,13 @@ const LEAKY_PLUGINS: SeedFileTree = {
   ].join("\n"),
 };
 
-/** 健全なツリーに違反プラグインを重ねたもの。 */
+/** The healthy tree with the violating plugins laid over it. */
 export const ISOLATION_PROBE_TREE: SeedFileTree = {
   ...SEED_PLUGIN_TREE,
   ...LEAKY_PLUGINS,
 };
 
-/** 違反プラグインのディレクトリ名。すべて検出されなければならない。 */
+/** The violating directories. Every one must be detected. */
 export const LEAKY_PLUGIN_DIRECTORIES: readonly string[] = [
   "src/plugins/leaks-to-chain",
   "src/plugins/leaks-to-external",
@@ -60,8 +60,8 @@ export const LEAKY_PLUGIN_DIRECTORIES: readonly string[] = [
 ];
 
 /**
- * extension 段では許される import だけを持つプラグイン。
- * isolated 段で同じ import が落ちることの対照群になる。
+ * A plugin whose imports are all permitted at the extension tier: the control
+ * group for the same imports failing at the isolated tier.
  */
 export const EXTENSION_ONLY_IMPORTS: readonly string[] = [
   "../../keyword-map",

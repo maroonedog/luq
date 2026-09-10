@@ -12,7 +12,7 @@ import {
 import { withSeedTree } from "../../../type/fixtures/seed-plugins/write-seed-tree";
 
 describe("buildPackageExportMap", () => {
-  it("固定キーは9件で、この順に出る", () => {
+  it("emits the nine fixed keys, in this order", () => {
     expect(FIXED_EXPORT_KEYS).toEqual([
       ".",
       "./package.json",
@@ -26,19 +26,19 @@ describe("buildPackageExportMap", () => {
     ]);
   });
 
-  it("カタログが空なら固定キー8件だけ", () => {
+  it("emits the fixed keys alone for an empty catalog", () => {
     const exportMap = buildPackageExportMap({ entries: [] }, []);
     expect(Object.keys(exportMap)).toEqual([...FIXED_EXPORT_KEYS]);
   });
 
-  it("./package.json だけは条件オブジェクトではなく直接指す", () => {
+  it("points ./package.json straight at the file rather than at a conditions object", () => {
     const exportMap = buildPackageExportMap({ entries: [] }, []);
     expect(exportMap["./package.json"]).toBe("./package.json");
     expect(exportMap["."]).toEqual(toDistConditions("index"));
     expect(exportMap["./plugins"]).toEqual(toDistConditions("plugins/index"));
   });
 
-  it("プラグインごとに ./plugins/<camel> を1件ずつ足す", () => {
+  it("adds one ./plugins/<camel> per plugin", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const exportMap = buildPackageExportMap(buildPluginCatalog(root), []);
       expect(Object.keys(exportMap)).toEqual([
@@ -57,7 +57,7 @@ describe("buildPackageExportMap", () => {
 });
 
 describe("buildRepositoryExportMap", () => {
-  it("互換エイリアスは転送先モジュールが実在するときだけ公開される", () => {
+  it("publishes a compatibility alias only when its target module exists", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(Object.keys(buildRepositoryExportMap(root))).toContain(
         "./plugins/readOnlyWriteOnly"
@@ -70,7 +70,7 @@ describe("buildRepositoryExportMap", () => {
     });
   });
 
-  it("エイリアスはプラグイン群の後ろに並ぶ", () => {
+  it("places the aliases after the plugins", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const keys = Object.keys(buildRepositoryExportMap(root));
       expect(keys[keys.length - 1]).toBe("./plugins/readOnlyWriteOnly");

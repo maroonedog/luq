@@ -105,7 +105,7 @@ describe("createValueWriter — vivification", () => {
 });
 
 describe("createValueWriter — prototype safety", () => {
-  it("__proto__ を含むパスでも書ける（汚染しないことは prototype-pollution.test.ts）", () => {
+  it("writes through a path containing __proto__; prototype-pollution.test.ts covers the safety", () => {
     expect(() => writerFor("__proto__.polluted")).not.toThrow();
     expect(() =>
       createValueWriter([{ kind: "key", key: "constructor" }])

@@ -1,11 +1,11 @@
 // ===========================================================================
-// PLUGIN_KEYWORDS はプラグイン名を文字列で持っている。バンドルに 30 個の
-// プラグインを引き込まないためだが、その代償として綴りずれをコンパイラが
-// 見てくれない。ここが実物と突き合わせる。
+// The keyword table holds plugin names as strings, so that emitting a schema
+// does not drag every plugin into the bundle. The cost is that the compiler
+// does not watch those spellings. This is what cross-checks them.
 //
-// 実物は config/plugin-catalog.lock.json が数えている全プラグインで、
-// テストなのでバイト数を気にせず全部読み込める。名前を1つ変えれば
-// このテストが落ちる — 費用を払わずに漂流を止める側に寄せている。
+// Being a test, it can load every plugin in the catalog without caring about
+// bytes. Rename one and this fails — the drift is stopped without paying for
+// it in the shipped artefact.
 // ===========================================================================
 import catalog from "../../../config/plugin-catalog.lock.json";
 import { PLUGIN_KEYWORDS } from "../../../src/standard-schema/plugin-keyword-map";
@@ -23,7 +23,7 @@ function isNamedPlugin(value: unknown): value is { readonly name: string } {
   );
 }
 
-/** 全プラグインの `name`。カタログが数えている実物から集める。 */
+/** Every plugin's `name`, collected from the real catalog. */
 function everyPluginName(): ReadonlySet<string> {
   const names = new Set<string>();
   for (const entry of catalog.plugins as readonly CatalogEntry[]) {
@@ -52,8 +52,8 @@ describe("PLUGIN_KEYWORDS names real plugins", () => {
 
 describe("the argument shapes each entry expects", () => {
   it("reads the exclusive flag of .min() / .max() the way the reader writes it", () => {
-    // keyword-map-number.ts が exclusiveMinimum を [v, true] に写している。
-    // 逆向きがその境目を取り違えると、境界が 1 つずれたスキーマが出る。
+    // The reading direction maps exclusiveMinimum onto a flag. Get that
+    // boundary wrong here and the emitted schema is off by one.
     expect(PLUGIN_KEYWORDS["numberMin"]?.([5])).toEqual({ minimum: 5 });
     expect(PLUGIN_KEYWORDS["numberMin"]?.([5, true])).toEqual({
       exclusiveMinimum: 5,

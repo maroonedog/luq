@@ -6,7 +6,7 @@ import {
 } from "../../../../scripts/catalog/subpath-name";
 
 describe("SUBPATH_NAME_OVERRIDES", () => {
-  it("上書き表はちょうど3件である", () => {
+  it("has exactly three overrides", () => {
     expect(Object.keys(SUBPATH_NAME_OVERRIDES).sort()).toEqual([
       "json-schema",
       "json-schema-full-feature",
@@ -14,12 +14,12 @@ describe("SUBPATH_NAME_OVERRIDES", () => {
     ]);
   });
 
-  it("uuid は意図的に上書き表に無い", () => {
+  it("deliberately leaves uuid out of the override table", () => {
     expect(Object.keys(SUBPATH_NAME_OVERRIDES)).not.toContain("uuid");
     expect(Object.values(SUBPATH_NAME_OVERRIDES)).not.toContain("uuid");
   });
 
-  it("uuid は機械変換だけで uuid に往復する", () => {
+  it("round-trips uuid mechanically", () => {
     expect(toSubpathName("uuid")).toBe("uuid");
     expect(toKebabCase("uuid")).toBe("uuid");
   });
@@ -41,9 +41,12 @@ describe("toSubpathName", () => {
     expect(toSubpathName(directoryName)).toBe(subpathName);
   });
 
-  it.each(regularPairs)("%s は camel から kebab に戻る", (directoryName) => {
-    expect(toKebabCase(toSubpathName(directoryName))).toBe(directoryName);
-  });
+  it.each(regularPairs)(
+    "brings %s back from camel to kebab",
+    (directoryName) => {
+      expect(toKebabCase(toSubpathName(directoryName))).toBe(directoryName);
+    }
+  );
 
   const irregularNames: readonly string[] = [
     "not_kebab",
@@ -55,20 +58,23 @@ describe("toSubpathName", () => {
     "1-leading-digit",
   ];
 
-  it.each(irregularNames)("%s は往復に失敗して落ちる", (directoryName) => {
-    expect(() => toSubpathName(directoryName)).toThrow(
-      IrregularDirectoryNameError
-    );
-  });
+  it.each(irregularNames)(
+    "fails %s, whose round trip does not come back",
+    (directoryName) => {
+      expect(() => toSubpathName(directoryName)).toThrow(
+        IrregularDirectoryNameError
+      );
+    }
+  );
 
-  it("camel が同じ kebab に戻らない名前は落ちる", () => {
-    // "string-base-64" -> "stringBase64" -> "string-base64" (元と違う)
+  it("fails a name whose camel form does not return to the same kebab", () => {
+    // "string-base-64" -> "stringBase64" -> "string-base64", which differs.
     expect(() => toSubpathName("string-base-64")).toThrow(
       /round trip does not come back identical/
     );
   });
 
-  it("extension 段は上書き表に宣言されていなければ落ちる", () => {
+  it("fails an extension that is not declared in the override table", () => {
     expect(toSubpathName("json-schema", "extension")).toBe("jsonSchema");
     expect(toSubpathName("json-schema-full-feature", "extension")).toBe(
       "jsonSchemaFullFeature"

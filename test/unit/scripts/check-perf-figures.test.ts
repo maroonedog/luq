@@ -1,7 +1,8 @@
-// 性能表の表記検査そのものを検査する。
+// Checks the performance-figure check itself.
 //
-// ゲートを外す一番簡単な方法は、印を消して「一致している」と言わせることで
-// ある。だからここで一番大事なのは、印が欠けたときに黙って通らないことである。
+// The easiest way to remove a gate is to delete a marker and have it report a
+// match, so what matters most here is that a missing marker does not pass in
+// silence.
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -87,7 +88,7 @@ const MARKED_README = [
   "",
 ].join("\n");
 
-/** 実際の config/ を読ませないため、出所も readme も差し替えた根で回す。 */
+/** Run against a root with its own sources and README, so the real config is never read. */
 function withRepository(
   readme: string,
   run: (root: string) => void,

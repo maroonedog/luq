@@ -12,7 +12,7 @@ import {
   writeSeedFile,
 } from "../../type/fixtures/seed-plugins/write-seed-tree";
 
-/** 先に SEED ツリーでロックを作り、その本文だけを持ち出す。 */
+/** Builds the lock from the seed tree first and takes only its text. */
 function recordSeedLock(): string {
   return withSeedTree(SEED_PLUGIN_TREE, (root) => {
     generatePluginCatalogLock(root);
@@ -21,21 +21,21 @@ function recordSeedLock(): string {
 }
 
 describe("findCatalogLockMismatches", () => {
-  it("生成直後のロックは一致する", () => {
+  it("matches straight after generating", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginCatalogLock(root);
       expect(findCatalogLockMismatches(root)).toEqual([]);
     });
   });
 
-  it("プラグイン0件のロックでも一致する", () => {
+  it("matches for a lock covering no plugins at all", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       generatePluginCatalogLock(root);
       expect(findCatalogLockMismatches(root)).toEqual([]);
     });
   });
 
-  it("ロックが無ければ落ちる", () => {
+  it("fails when the lock is missing", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const mismatches = findCatalogLockMismatches(root);
       expect(mismatches).toHaveLength(1);
@@ -43,14 +43,14 @@ describe("findCatalogLockMismatches", () => {
     });
   });
 
-  it("ロックの形が壊れていれば落ちる", () => {
+  it("fails when the lock's shape is broken", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       writeSeedFile(root, PLUGIN_CATALOG_LOCK_OUTPUT, '{ "pluginCount": 5 }\n');
       expect(findCatalogLockMismatches(root)[0]?.kind).toBe("absent");
     });
   });
 
-  it("プラグインが増えたら数とリストの両方が不一致になる", () => {
+  it("disagrees on both the count and the list when a plugin is added", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginCatalogLock(root);
       writeSeedFile(
@@ -67,7 +67,7 @@ describe("findCatalogLockMismatches", () => {
     });
   });
 
-  it("公開済みプラグインが消えたら落ちる", () => {
+  it("fails when a published plugin disappears", () => {
     const lockText = recordSeedLock();
     const withoutUuid = {
       ...omitSeedPaths(SEED_PLUGIN_TREE, "src/plugins/uuid/"),
@@ -82,7 +82,7 @@ describe("findCatalogLockMismatches", () => {
     });
   });
 
-  it("数が同じでもディレクトリが入れ替われば落ちる", () => {
+  it("fails when the directories are swapped, count unchanged", () => {
     const lockText = recordSeedLock();
     const swapped = {
       ...omitSeedPaths(SEED_PLUGIN_TREE, "src/plugins/uuid/"),
@@ -99,7 +99,7 @@ describe("findCatalogLockMismatches", () => {
     });
   });
 
-  it("ロックを手で書き換えたら落ちる", () => {
+  it("fails when the lock is edited by hand", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginCatalogLock(root);
       const tampered = readSeedFile(root, PLUGIN_CATALOG_LOCK_OUTPUT).replace(

@@ -1,4 +1,5 @@
-// optional は「無くてよい」であって「null でよい」ではない。その区別を実挙動で見る。
+// optional means "may be absent", not "may be null". The distinction is
+// checked by running it.
 import { Builder } from "../../../../src/index";
 import { optionalPlugin } from "../../../../src/plugins/optional";
 import { stringMinPlugin } from "../../../../src/plugins/string-min";
@@ -13,11 +14,11 @@ const validateNickname = Builder()
   .build();
 
 describe("optional", () => {
-  it("欠損を通す", () => {
+  it("accepts a missing value", () => {
     expect(validateNickname.validate({ bio: "b" } as Profile).valid).toBe(true);
   });
 
-  it("null を拒否し、既定メッセージで理由を説明する", () => {
+  it("rejects null, explaining why in the default message", () => {
     const result = validateNickname.validate({
       nickname: null,
       bio: "b",
@@ -32,7 +33,7 @@ describe("optional", () => {
     });
   });
 
-  it("値があれば後続のチェックが走る", () => {
+  it("runs the later checks when a value is present", () => {
     const result = validateNickname.validate({
       nickname: "ab",
       bio: "b",
@@ -42,12 +43,12 @@ describe("optional", () => {
     expect(result.issues[0]?.code).toBe("stringMin");
   });
 
-  it("欠損なら後続のチェックは走らない", () => {
+  it("runs none of them when the value is missing", () => {
     expect(validateNickname.validate({ bio: "b" } as Profile).valid).toBe(true);
   });
 
-  // optional の emptyStringIsMissing は false。空文字は「値がある」。
-  it("空文字は欠損ではないので後続チェックにかかる", () => {
+  // optional does not count the empty string as missing: it is a value.
+  it("puts the empty string through the later checks, absence it is not", () => {
     const result = validateNickname.validate({
       nickname: "",
       bio: "b",
@@ -57,14 +58,14 @@ describe("optional", () => {
     expect(result.issues[0]?.code).toBe("stringMin");
   });
 
-  it("options.code と options.messageFactory を尊重する", () => {
+  it("honours options.code and options.messageFactory", () => {
     const validator = Builder()
       .use(optionalPlugin)
       .for<Profile>()
       .v("nickname", (b) =>
         b.string.optional({
           code: "NO_NULL",
-          messageFactory: (context) => `${context.path} は null 不可`,
+          messageFactory: (context) => `${context.path} may not be null`,
         })
       )
       .build();
@@ -75,6 +76,6 @@ describe("optional", () => {
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("NO_NULL");
-    expect(result.issues[0]?.message).toBe("nickname は null 不可");
+    expect(result.issues[0]?.message).toBe("nickname may not be null");
   });
 });

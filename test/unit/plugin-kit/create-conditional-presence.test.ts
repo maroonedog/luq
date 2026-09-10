@@ -1,6 +1,6 @@
-// 条件付き presence ルールのコンストラクタ。
-// 検証したいのは「述語を再ラップしないこと」と「メッセージ経路が
-// 他のルール種別と完全に同じであること」の2点。
+// The constructor for a conditional presence rule. Two things: that it wraps
+// the predicate in nothing, and that its message path is identical to every
+// other rule kind's.
 import {
   PERMITS_ABSENCE,
   REQUIRES_A_VALUE,
@@ -25,11 +25,11 @@ function makeRule(
 }
 
 describe("conditionalPresence", () => {
-  it("kind は conditionalPresence で、split がそれを見て振り分ける", () => {
+  it("carries the conditionalPresence kind, which is what sorts it", () => {
     expect(makeRule().kind).toBe("conditionalPresence");
   });
 
-  it("述語は同一性のまま保持される", () => {
+  it("keeps the predicate by identity", () => {
     const when = (): boolean => true;
     const rule = conditionalPresence({
       code: "requiredIf",
@@ -43,26 +43,26 @@ describe("conditionalPresence", () => {
     expect(rule.when).toBe(when);
   });
 
-  it("messageFactory が無ければ describe の文字列がそのまま出る", () => {
+  it("emits describe's own string when there is no messageFactory", () => {
     expect(makeRule().describe(MESSAGE_CONTEXT)).toBe(
       "Field is optional when condition is met"
     );
   });
 
-  it("messageFactory には MessageContext と追加文脈が合流して渡る", () => {
+  it("hands messageFactory the message context merged with the extra one", () => {
     const rule = makeRule(
       (context) => `${context.path} condition=${String(context.condition)}`
     );
     expect(rule.describe(MESSAGE_CONTEXT)).toBe("email condition=false");
   });
 
-  it("両側の allowance はそのまま持ち回られる", () => {
+  it("carries both sides' allowances through unchanged", () => {
     const rule = makeRule();
     expect(rule.whenMet).toBe(PERMITS_ABSENCE);
     expect(rule.whenUnmet).toBe(REQUIRES_A_VALUE);
   });
 
-  it("REQUIRES_A_VALUE は undefined / null / 空文字を不在とみなす", () => {
+  it("has REQUIRES_A_VALUE count undefined, null and the empty string as absent", () => {
     expect(REQUIRES_A_VALUE).toEqual({
       allowUndefined: false,
       allowNull: false,
@@ -70,7 +70,7 @@ describe("conditionalPresence", () => {
     });
   });
 
-  it("PERMITS_ABSENCE では空文字は「値がある」側に残る", () => {
+  it("has PERMITS_ABSENCE leave the empty string counting as present", () => {
     expect(PERMITS_ABSENCE).toEqual({
       allowUndefined: true,
       allowNull: true,
@@ -78,7 +78,7 @@ describe("conditionalPresence", () => {
     });
   });
 
-  it("共有される allowance は凍結されている", () => {
+  it("freezes the shared allowances", () => {
     expect(Object.isFrozen(REQUIRES_A_VALUE)).toBe(true);
     expect(Object.isFrozen(PERMITS_ABSENCE)).toBe(true);
   });

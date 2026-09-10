@@ -71,10 +71,9 @@ describe("local pointers resolve", () => {
     expect(resolveRef("#", withDefinitions)).toBe(withDefinitions);
   });
 
-  it("#/ はルートではなく空文字キーのメンバーを指す (RFC 6901)", () => {
-    // 旧テストは #/ をルートとして固定していたが、それは誤り。
-    // "" というキーを持つ文書を指せなくなり、スイートの
-    // "empty tokens in $ref json-pointer" が通らなかった。
+  it("has #/ name the empty-string key's member, not the root (RFC 6901)", () => {
+    // Pinned as the root, a document with an "" key becomes unreachable and
+    // the suite's empty-token cases fail.
     expect(() => resolveRef("#/", withDefinitions)).toThrow(RefResolutionError);
     const withEmptyKey = JSON.parse(
       String.raw`{"": {"type": "number"}}`
@@ -199,9 +198,10 @@ describe("a cycle is an error, and a fast one", () => {
 });
 
 describe("what the resolver refuses", () => {
-  // resolveRef は「呼び出し側が何も渡していない」入口なので、外部参照は
-  // 必ず失敗する。失敗の理由は「対応していない」ではなく「渡されていない」
-  // であり、その区別が Luq が取りに行かないという設計そのものを言っている。
+  // This entry point is the one where the caller passed nothing, so an
+  // external reference always fails. It fails because nothing was passed, not
+  // because it is unsupported — and that distinction is the design: nothing is
+  // ever fetched.
   it("refuses an external reference nobody supplied", () => {
     expect(() =>
       resolveRef("https://example.com/s.json", withDefinitions)

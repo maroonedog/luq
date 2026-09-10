@@ -1,5 +1,5 @@
-// writeOnly: 「読み出しでは値を持ってはいけない」。readOnly の対等な相方で、
-// 旧実装では公開されておらず到達不能だった。
+// writeOnly: a field must carry no value on a read. The equal counterpart of
+// readOnly, which a previous release left unpublished and unreachable.
 import { Builder } from "../../../../src/index";
 import { writeOnlyPlugin } from "../../../../src/plugins/write-only/index";
 
@@ -17,18 +17,18 @@ const validator = Builder()
   .build();
 
 describe("writeOnly", () => {
-  it("外部コンテキストが無ければ通る", () => {
+  it("passes when there is no external context", () => {
     expect(validator.validate(CREDENTIALS).valid).toBe(true);
   });
 
-  it("書き込みでは値を持っていて構わない", () => {
+  it("permits a value on a write", () => {
     expect(
       validator.validate(CREDENTIALS, { external: { operation: "write" } })
         .valid
     ).toBe(true);
   });
 
-  it("読み出しで値を持っていれば落ちる", () => {
+  it("fails when a read carries a value", () => {
     const result = validator.validate(CREDENTIALS, {
       external: { operation: "read" },
     });
@@ -41,7 +41,7 @@ describe("writeOnly", () => {
     );
   });
 
-  it("読み出しでも値が無ければ通る", () => {
+  it("passes a read carrying no value", () => {
     const result = validator.validate(
       { user: "ada" } as unknown as Credentials,
       {
@@ -51,7 +51,7 @@ describe("writeOnly", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("readOnly とは独立した symbol / method である", () => {
+  it("is a separate symbol and method from readOnly", () => {
     expect(writeOnlyPlugin.name).toBe("writeOnly");
     expect(writeOnlyPlugin.method).toBe("writeOnly");
   });

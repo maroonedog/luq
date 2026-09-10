@@ -39,10 +39,10 @@ describe("joinDeclaredPath", () => {
     expect(() => joinDeclaredPath("a", "b[0]")).toThrow(PathSyntaxError);
   });
 
-  it("__proto__ という名前のプロパティを宣言パスにできる", () => {
+  it("makes a property actually named __proto__ a declared path", () => {
     // JSON.parse gives a real OWN "__proto__" key; an object literal would
     // only have set the prototype, which is not what a document does.
-    // 名前での拒否はやめた。汚染は書き込み側 (defineProperty) で閉じている。
+    // Refusing by name was dropped; pollution is closed on the writing side.
     const document: unknown = JSON.parse(
       String.raw`{"properties":{"__proto__":{"type":"string"}}}`
     );

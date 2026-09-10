@@ -28,7 +28,7 @@ const catalog: PluginCatalog = {
 };
 
 describe("createCoreEntrySource", () => {
-  it("Builder だけを再 export する。ここが「使わなくても払う床」の定義", () => {
+  it("re-exports Builder alone, which is the definition of the floor", () => {
     expect(createCoreEntrySource()).toBe(
       'export { Builder } from "./src/index";\n'
     );
@@ -36,11 +36,11 @@ describe("createCoreEntrySource", () => {
 });
 
 describe("selectCatalogEntries", () => {
-  it('"all" はカタログ全件', () => {
+  it('resolves "all" to every catalog entry', () => {
     expect(selectCatalogEntries(catalog, "all")).toHaveLength(2);
   });
 
-  it("名前を挙げた順に解決する", () => {
+  it("resolves the names in the order given", () => {
     expect(
       selectCatalogEntries(catalog, ["readOnly", "required"]).map(
         (one) => one.subpathName
@@ -48,7 +48,7 @@ describe("selectCatalogEntries", () => {
     ).toEqual(["readOnly", "required"]);
   });
 
-  it("カタログに無い名前は綴りの誤りとして落とす", () => {
+  it("fails a name absent from the catalog, as a misspelling", () => {
     expect(() => selectCatalogEntries(catalog, ["stringMni"])).toThrow(
       /stringMni/
     );
@@ -56,7 +56,7 @@ describe("selectCatalogEntries", () => {
 });
 
 describe("createSubpathEntrySource", () => {
-  it("深いサブパスの実体ファイルを直接指し、拡張子は落とす", () => {
+  it("points straight at a deep subpath's real file, without the extension", () => {
     const source = createSubpathEntrySource(catalog, ["required"]);
     expect(source).toContain(
       'export { requiredPlugin } from "./src/plugins/required/index";'
@@ -64,13 +64,13 @@ describe("createSubpathEntrySource", () => {
     expect(source).not.toContain("index.ts");
   });
 
-  it("1エントリが複数 symbol を出す場合はまとめて挙げる", () => {
+  it("lists them together when one entry exports several symbols", () => {
     expect(createSubpathEntrySource(catalog, ["readOnly"])).toContain(
       "export { readOnlyPlugin, writeOnlyPlugin } from"
     );
   });
 
-  it("プラグイン0件でも中核だけの入口として成立する", () => {
+  it("still forms a core-only entry with no plugins at all", () => {
     expect(createSubpathEntrySource(catalog, [])).toBe(
       `${createCoreEntrySource()}\n`
     );
@@ -78,7 +78,7 @@ describe("createSubpathEntrySource", () => {
 });
 
 describe("createBarrelEntrySource", () => {
-  it("同じ symbol をバレル1本から取る形になる", () => {
+  it("takes the same symbols through the single barrel", () => {
     const source = createBarrelEntrySource(catalog, "all");
     expect(source).toContain(
       "export { requiredPlugin, readOnlyPlugin, writeOnlyPlugin } from " +
@@ -86,7 +86,7 @@ describe("createBarrelEntrySource", () => {
     );
   });
 
-  it("バレル経由とサブパス経由は同じ symbol 集合を挙げる", () => {
+  it("lists the same set of symbols through the barrel and the subpaths", () => {
     const viaBarrel = createBarrelEntrySource(catalog, "all");
     const viaSubpath = createSubpathEntrySource(catalog, "all");
     for (const symbol of catalog.entries.flatMap(

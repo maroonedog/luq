@@ -158,7 +158,7 @@ describe("compileField rejects a malformed path at BUILD time", () => {
     expect(() => compileAt("profile..name", [])).toThrow(/profile\.\.name/);
   });
 
-  it("__proto__ を含むパスも受け付ける（汚染は書き込み側で閉じている）", () => {
+  it("accepts a path containing __proto__, pollution being closed on the writing side", () => {
     expect(() => compileAt("__proto__.polluted", [])).not.toThrow();
   });
 

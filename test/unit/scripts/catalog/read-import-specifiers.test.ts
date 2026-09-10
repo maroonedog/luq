@@ -1,7 +1,7 @@
 import { readImportSpecifiers } from "../../../../scripts/catalog/read-import-specifiers";
 
 describe("readImportSpecifiers", () => {
-  it("static import / default / namespace を拾う", () => {
+  it("collects static, default and namespace imports", () => {
     const source = [
       'import { a } from "./a";',
       'import b from "./b";',
@@ -11,7 +11,7 @@ describe("readImportSpecifiers", () => {
     expect(readImportSpecifiers(source)).toEqual(["./a", "./b", "./c", "./d"]);
   });
 
-  it("import type も1件として数える (型 import も隔離の対象)", () => {
+  it("counts a type import too, isolation applying to types as well", () => {
     const source = [
       'import type { A } from "./a";',
       'import { type B } from "./b";',
@@ -19,7 +19,7 @@ describe("readImportSpecifiers", () => {
     expect(readImportSpecifiers(source)).toEqual(["./a", "./b"]);
   });
 
-  it("export ... from を拾い、from の無い export は拾わない", () => {
+  it("collects export ... from and not an export without a from", () => {
     const source = [
       'export { a } from "./a";',
       'export * from "./b";',
@@ -30,7 +30,7 @@ describe("readImportSpecifiers", () => {
     expect(readImportSpecifiers(source)).toEqual(["./a", "./b", "./c"]);
   });
 
-  it("dynamic import と require を拾う", () => {
+  it("collects dynamic imports and requires", () => {
     const source = [
       'const a = await import("./a");',
       'const b = require("./b");',
@@ -39,7 +39,7 @@ describe("readImportSpecifiers", () => {
     expect(readImportSpecifiers(source)).toEqual(["./a", "./b", "./c"]);
   });
 
-  it("関数の中に隠された import も拾う", () => {
+  it("collects an import hidden inside a function", () => {
     const source = [
       "export function load() {",
       '  return import("../../runtime/run-plan");',
@@ -48,7 +48,7 @@ describe("readImportSpecifiers", () => {
     expect(readImportSpecifiers(source)).toEqual(["../../runtime/run-plan"]);
   });
 
-  it("文字列リテラルは import でなければ拾わない", () => {
+  it("collects a string literal only when it is an import", () => {
     expect(readImportSpecifiers('const name = "./not-an-import";')).toEqual([]);
   });
 });

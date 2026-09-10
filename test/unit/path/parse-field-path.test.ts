@@ -67,10 +67,9 @@ describe("parseFieldPath — rejections", () => {
     }
   );
 
-  // 名前による拒否はやめた。JSON Schema が "__proto__" というキーを持つ
-  // オブジェクトを検証できる必要があり、かつ書き込み側を defineProperty に
-  // 移したことで汚染経路が閉じたため。安全性は
-  // test/unit/path/prototype-pollution.test.ts が守る。
+  // Refusing by name was dropped: validating an object with a "__proto__" key
+  // has to be possible, and writing through defineProperty closes the
+  // pollution route. See prototype-pollution.test.ts for the safety.
   it.each([
     "__proto__",
     "constructor",
@@ -79,14 +78,14 @@ describe("parseFieldPath — rejections", () => {
     "a.constructor",
     "items[*].__proto__",
     "__proto__[*]",
-  ])("%s は宣言パスとして受け付ける", (path) => {
+  ])("accepts %s as a declared path", (path) => {
     expect(() => parseFieldPath(path)).not.toThrow();
   });
 
   it("names the offending path on the error", () => {
     let caught: unknown = null;
     try {
-      // 文法として表現できないものは今も拒否する。
+      // What the grammar cannot express is still refused.
       parseFieldPath("a..b");
     } catch (error) {
       caught = error;

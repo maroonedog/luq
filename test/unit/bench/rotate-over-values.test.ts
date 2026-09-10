@@ -1,6 +1,8 @@
-// プール回転は、参照実装が「何もしない」より速く見えた消去への構造的な対策で
-// あり、比率ゲート全体がこの上に乗っている。回転が実際に全要素を順に回すこと、
-// 両辺が同じ形で包まれることを固定する。
+// Rotating over a pool is the structural answer to the engine eliminating the
+// reference implementation so thoroughly that it measured faster than doing
+// nothing, and the whole ratio gate rests on it. This pins that the rotation
+// really visits every element in turn and that both sides are wrapped the same
+// way.
 import {
   rotateOverNothing,
   rotateOverValues,
@@ -10,7 +12,7 @@ import {
 const POOL: ValuePool = ["a", "b", "c", "d"];
 
 describe("rotateOverValues", () => {
-  it("プールを順に一巡し、末尾の次で先頭へ戻る", () => {
+  it("goes through the pool in order and wraps from the end to the start", () => {
     const seen: unknown[] = [];
     const subject = rotateOverValues(POOL, (value) => {
       seen.push(value);
@@ -20,7 +22,7 @@ describe("rotateOverValues", () => {
     expect(seen).toEqual(["a", "b", "c", "d", "a", "b"]);
   });
 
-  it("consume の答えをそのまま返す — 受理数の表明がこれに依る", () => {
+  it("returns what consume answered, the accepted-count assertion resting on it", () => {
     const subject = rotateOverValues(POOL, (value) => value === "a");
     expect([subject(), subject(), subject(), subject()]).toEqual([
       true,
@@ -30,7 +32,7 @@ describe("rotateOverValues", () => {
     ]);
   });
 
-  it("プールに undefined があれば consume を呼ばず false を返す", () => {
+  it("answers false without calling consume when the pool holds undefined", () => {
     const calls: unknown[] = [];
     const subject = rotateOverValues(["a", undefined] as ValuePool, (value) => {
       calls.push(value);
@@ -41,7 +43,7 @@ describe("rotateOverValues", () => {
     expect(calls).toEqual(["a"]);
   });
 
-  it("2つの subject は互いの位置を進めない", () => {
+  it("keeps two subjects from advancing each other's position", () => {
     const first: unknown[] = [];
     const second: unknown[] = [];
     const one = rotateOverValues(POOL, (value) => {
@@ -61,7 +63,7 @@ describe("rotateOverValues", () => {
 });
 
 describe("rotateOverNothing", () => {
-  it("同じ回転を通しながら常に true を返す — 回転そのものの費用を測る床", () => {
+  it("always answers true through the same rotation, measuring the rotation's own cost", () => {
     const subject = rotateOverNothing(POOL);
     expect([subject(), subject(), subject(), subject(), subject()]).toEqual([
       true,

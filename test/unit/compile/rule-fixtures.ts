@@ -98,7 +98,7 @@ export const ALLOWS_ABSENCE: PresenceAllowance = Object.freeze({
   emptyStringIsMissing: false,
 });
 
-/** 既定は「条件が真なら値が要る、偽なら何も言わない」= requiredIf の形。 */
+/** Defaults to the requiredIf shape: demanding when true, silent when false. */
 export function makeConditionalPresence(
   code: string,
   when: (root: unknown, arrayContext?: ArrayItemContext) => boolean,

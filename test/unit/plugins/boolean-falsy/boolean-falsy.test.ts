@@ -10,11 +10,11 @@ const falsy = Builder()
   .build();
 
 describe("booleanFalsy", () => {
-  it("false を通す", () => {
+  it("accepts false", () => {
     expect(falsy.validate({ archived: false }).valid).toBe(true);
   });
 
-  it("true を弾き、既定文言を出す", () => {
+  it("rejects true, with the default wording", () => {
     const validationResult = falsy.validate({ archived: true });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues).toEqual([
@@ -27,8 +27,8 @@ describe("booleanFalsy", () => {
     ]);
   });
 
-  // 旧実装で実測済みの振る舞い: null / undefined / 欠損はすべて通る。
-  it("boolean 以外は素通しする", () => {
+  // Inherited behaviour: null, undefined and a missing value all pass.
+  it("passes anything that is not a boolean straight through", () => {
     const loose = falsy as unknown as {
       validate(input: unknown): { valid: boolean };
     };
@@ -38,7 +38,7 @@ describe("booleanFalsy", () => {
     expect(loose.validate({ archived: "yes" }).valid).toBe(true);
   });
 
-  it("severity はオプションで下げられる", () => {
+  it("lets an option lower the severity", () => {
     const warning = Builder()
       .use(booleanFalsyPlugin)
       .for<Flags>()

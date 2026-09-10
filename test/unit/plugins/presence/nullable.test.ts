@@ -1,4 +1,4 @@
-// nullable は optional の鏡像: null を許し、欠損を拒否する。
+// nullable mirrors optional: it permits null and refuses absence.
 import { Builder } from "../../../../src/index";
 import { nullablePlugin } from "../../../../src/plugins/nullable";
 import { stringMinPlugin } from "../../../../src/plugins/string-min";
@@ -13,7 +13,7 @@ const validateNote = Builder()
   .build();
 
 describe("nullable", () => {
-  it("null を通し、後続のチェックを走らせない", () => {
+  it("accepts null and runs none of the later checks", () => {
     const result = validateNote.validate({
       note: null,
       id: "x",
@@ -21,7 +21,7 @@ describe("nullable", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("欠損を拒否する", () => {
+  it("rejects a missing value", () => {
     const result = validateNote.validate({ id: "x" } as Row);
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -33,14 +33,14 @@ describe("nullable", () => {
     });
   });
 
-  it("値があれば後続のチェックが走る", () => {
+  it("runs the later checks when a value is present", () => {
     const result = validateNote.validate({ note: "ab", id: "x" } as Row);
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("stringMin");
   });
 
-  it("options.code を尊重する", () => {
+  it("honours options.code", () => {
     const validator = Builder()
       .use(nullablePlugin)
       .for<Row>()

@@ -1,4 +1,5 @@
-// oneOf は「許可された値の集合」。JSON Schema の合成キーワード oneOf とは別物。
+// This oneOf is a set of permitted values, and is a different thing from JSON
+// Schema's composition keyword of the same name.
 import { Builder } from "../../../../src/index";
 import { oneOfPlugin } from "../../../../src/plugins/one-of";
 import { PluginArgumentError } from "../../../../src/plugin-kit/plugin-definition";
@@ -12,13 +13,13 @@ const validateStatus = Builder()
   .build();
 
 describe("oneOf", () => {
-  it("集合に含まれる値を通す", () => {
+  it("accepts a value in the set", () => {
     expect(validateStatus.validate({ status: "open", priority: 1 }).valid).toBe(
       true
     );
   });
 
-  it("含まれない値を弾き、既定メッセージに候補を並べる", () => {
+  it("rejects one that is not, listing the candidates in the default message", () => {
     const result = validateStatus.validate({ status: "draft", priority: 1 });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -30,7 +31,7 @@ describe("oneOf", () => {
     });
   });
 
-  it("厳密等価で判定する (数値の集合に文字列は入らない)", () => {
+  it("judges by strict equality, so a string is not in a set of numbers", () => {
     const validator = Builder()
       .use(oneOfPlugin)
       .for<Ticket>()
@@ -40,8 +41,8 @@ describe("oneOf", () => {
     expect(validator.validate({ status: "s", priority: 4 }).valid).toBe(false);
   });
 
-  // 8件を超えると Set 経路に切り替わる。どちらの経路でも答えは同じでなければならない。
-  it("候補が8件を超えても判定は変わらない", () => {
+  // Past a certain size it switches to a Set. Both routes must answer alike.
+  it("judges the same past that size", () => {
     const many = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
     const validator = Builder()
       .use(oneOfPlugin)
@@ -52,7 +53,7 @@ describe("oneOf", () => {
     expect(validator.validate({ status: "z", priority: 1 }).valid).toBe(false);
   });
 
-  it("空配列は build 時に PluginArgumentError で落ちる", () => {
+  it("fails an empty candidate list at build time, with PluginArgumentError", () => {
     expect(() =>
       Builder()
         .use(oneOfPlugin)
@@ -62,7 +63,7 @@ describe("oneOf", () => {
     ).toThrow(PluginArgumentError);
   });
 
-  it("options.messageFactory を尊重する", () => {
+  it("honours options.messageFactory", () => {
     const validator = Builder()
       .use(oneOfPlugin)
       .for<Ticket>()

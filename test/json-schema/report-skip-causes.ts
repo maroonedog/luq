@@ -1,14 +1,14 @@
 // ===========================================================================
 // test/json-schema/report-skip-causes.ts
 //
-// docs/json-schema-conformance.md の表と config/json-schema-suite.json の数を
-// 数えるための出力口。テストではなく、記録を更新するときに実行するもの。
+// The output used to count the conformance tables and the recorded figures.
+// Not a test: it is run when the record is being updated.
 //
 //   npx ts-node --project scripts/tsconfig.json test/json-schema/report-skip-causes.ts
 //
-// 手で数えていた頃、「失敗のしかた」と「原因別」は 101件 / 53エントリのまま
-// 残り、実際の 74件 / 44エントリとずれていた。原因が4つ丸ごと解消したのに表が
-// それを言わない、という状態である。数えるのは機械の仕事にする。
+// Counted by hand, the failure and cause tables stayed at their old totals
+// while several causes had been resolved outright and the tables said nothing
+// about it. Counting is a machine's job.
 // ===========================================================================
 import { runSuiteCase, tryBuildSuiteValidator } from "./build-suite-validator";
 import { readSuiteCorpus, readSuitePin } from "./read-suite-corpus";
@@ -91,7 +91,7 @@ function run(): void {
     "TOTAL\t" + String(tally.failingCases) + "\t" + String(SUITE_SKIPS.length)
   );
 
-  // config/json-schema-suite.json に写す行。手で足し算しないための出力。
+  // The lines to copy into the recorded figures, so nothing is added up by hand.
   const pin = {
     caseCount: tally.caseCount,
     passingCases: tally.passingValidCases + tally.passingInvalidCases,

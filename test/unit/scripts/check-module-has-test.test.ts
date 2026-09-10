@@ -32,7 +32,7 @@ const MODULE_TREE: SeedFileTree = {
 };
 
 describe("isTestExemptModule", () => {
-  it("index.ts と *.types.ts と *.generated.ts だけを免除する", () => {
+  it("exempts index, .types and .generated files and nothing else", () => {
     expect(isTestExemptModule("index.ts")).toBe(true);
     expect(isTestExemptModule("field-path.types.ts")).toBe(true);
     expect(isTestExemptModule("manifest.generated.ts")).toBe(true);
@@ -42,7 +42,7 @@ describe("isTestExemptModule", () => {
 });
 
 describe("toSiblingTestPath", () => {
-  it("違反を報告するときの推奨置き場を src の位置から作る", () => {
+  it("derives the suggested test location from the module's own", () => {
     expect(toSiblingTestPath("src/path/parse-field-path.ts")).toBe(
       "test/unit/path/parse-field-path.test.ts"
     );
@@ -53,19 +53,19 @@ describe("toSiblingTestPath", () => {
 });
 
 describe("findModulesWithoutTest", () => {
-  it("テストが import しているモジュールは違反にならない", () => {
+  it("does not report a module some test imports", () => {
     withSeedTree(MODULE_TREE, (root) => {
       expect(findModulesWithoutTest(root)).toEqual([]);
     });
   });
 
-  it("src が無ければ違反なし", () => {
+  it("reports nothing when src is missing", () => {
     withSeedTree({ "package.json": "{}\n" }, (root) => {
       expect(findModulesWithoutTest(root)).toEqual([]);
     });
   });
 
-  it("バレル越しの import でも到達とみなす (index.ts は再 export のみ)", () => {
+  it("counts an import through a barrel as reaching, an index being re-exports only", () => {
     const throughBarrel: SeedFileTree = {
       ...MODULE_TREE,
       "test/unit/path/parse-field-path.test.ts":
@@ -77,7 +77,7 @@ describe("findModulesWithoutTest", () => {
     });
   });
 
-  it("同じディレクトリの私的ヘルパは、親モジュールが到達していれば到達扱い", () => {
+  it("counts a private neighbour as reached when its parent module is", () => {
     const withHelper: SeedFileTree = {
       ...MODULE_TREE,
       "src/path/parse-field-path.ts":
@@ -90,7 +90,7 @@ describe("findModulesWithoutTest", () => {
     });
   });
 
-  it("別ディレクトリのモジュールは、到達したモジュールが import していても私的ヘルパではない", () => {
+  it("does not call a module in another directory a private neighbour, imported or not", () => {
     const acrossDirectories: SeedFileTree = {
       ...MODULE_TREE,
       "src/path/parse-field-path.ts":
@@ -106,7 +106,7 @@ describe("findModulesWithoutTest", () => {
     });
   });
 
-  it("型テストは種にならない (実行されないので実行時テストではない)", () => {
+  it("does not seed from a type test, which never runs", () => {
     const typeTestOnly: SeedFileTree = {
       "src/path/parse-field-path.ts": "export const a = 1;\n",
       "test/type/path/parse-field-path.type-test.ts":
@@ -119,7 +119,7 @@ describe("findModulesWithoutTest", () => {
     });
   });
 
-  it("どのテストも import していないモジュールを名指しで落とす", () => {
+  it("names and fails a module no test imports", () => {
     const withoutTest: SeedFileTree = {
       ...MODULE_TREE,
       "src/runtime/run-plan.ts": "export const runPlan = () => null;\n",
@@ -134,7 +134,7 @@ describe("findModulesWithoutTest", () => {
     });
   });
 
-  it("名前だけ合っていて中身が空のテストでは通らない (旧規則との差)", () => {
+  it("does not pass on an empty test that merely has the right name", () => {
     const emptyStub: SeedFileTree = {
       "src/runtime/run-plan.ts": "export const runPlan = () => null;\n",
       "test/unit/runtime/run-plan.test.ts": "it.todo('run-plan');\n",

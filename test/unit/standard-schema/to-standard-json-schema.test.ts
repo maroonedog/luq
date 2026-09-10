@@ -69,7 +69,7 @@ describe("what the emitted schema says", () => {
   it("puts required on the OBJECT that owns the key, not on the key", () => {
     const schema = emit("draft-07");
     expect(schema["required"]).toEqual(["title", "email", "age", "employees"]);
-    // `.optional()` を宣言した note は並びに入らない。
+    // A field declaring `.optional()` does not join the required list.
     expect(schema["required"]).not.toContain("note");
   });
 
@@ -162,15 +162,16 @@ describe("the target", () => {
   });
 
   it("refuses a target it does not support instead of guessing", () => {
-    // 仕様が「支えていない target には throw せよ」と定めている。黙って
-    // draft-07 を返すと、受け取った側は 3.0 だと思って読む。
+    // The spec says to throw on an unsupported target. Returning draft-07
+    // quietly hands the caller a document they read under the wrong rules.
     expect(() => emit("openapi-3.0")).toThrow(UnsupportedJsonSchemaTargetError);
     expect(() => emit("draft-4")).toThrow(UnsupportedJsonSchemaTargetError);
   });
 
   it("checks the target before the declarations, so a typo is not masked", () => {
-    // 宣言を持たないバリデータでも、target の誤りのほうが先に出る。
-    // 順序が逆だと「宣言が無い」で断られ、綴り間違いに気づけない。
+    // Even for a validator carrying no declarations, the wrong target is
+    // reported first. The other order refuses with "no declarations" and the
+    // misspelling goes unnoticed.
     const fromSchema = fromJsonSchema(jsonSchemaBagFixture, {
       type: "object",
       properties: { a: { type: "string" } },
@@ -219,7 +220,7 @@ describe("declarations JSON Schema cannot express", () => {
   });
 
   it("treats an unknown libraryOptions value as the strict side", () => {
-    // 綴りを間違えた "omitt" が黙って緩い側に落ちるのは事故になる。
+    // A misspelled "omitt" falling quietly to the lax side is an incident.
     expect(() =>
       toStandardJsonSchema(withCustom)["~standard"].jsonSchema.input({
         target: "draft-07",
@@ -229,10 +230,10 @@ describe("declarations JSON Schema cannot express", () => {
   });
 
   it("says so when the validator carries no declarations at all", () => {
-    // fromJsonSchema はルールを直接組み立てる。連鎖を通っていないので
-    // 宣言が無い。空のスキーマを返すと「制約が無い」と読めてしまうので、
-    // 「持っていない」と言い切る。omit を頼まれていても黙らない: 落とす
-    // 対象すら分かっていない。
+    // A validator built from a document assembles rules directly and goes
+    // through no chain, so it carries no declarations. An empty schema would
+    // read as "no constraints", so this says "not known" instead — and says it
+    // even when omit was asked for: what would be omitted is unknown too.
     const fromSchema = fromJsonSchema(jsonSchemaBagFixture, {
       type: "object",
       properties: { a: { type: "string", minLength: 2 } },

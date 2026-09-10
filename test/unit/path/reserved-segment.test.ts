@@ -52,12 +52,11 @@ describe("assertDeclarableKey — the gate fromJsonSchema must call", () => {
     expect(() => assertDeclarableKey(key, "x")).toThrow(PathSyntaxError);
   });
 
-  // 以前はこの3つを名前で拒否していた。その拒否は過剰だったので外した。
-  // 危険なのは書き込みだけで、create-value-writer が defineProperty に移した
-  // ことで経路が閉じている。詳しくは reserved-segment.ts のコメントと
-  // test/unit/path/prototype-pollution.test.ts を参照。
+  // These three used to be refused by name. That was over-broad: only writing
+  // is dangerous, and writing through defineProperty closes the route. See
+  // reserved-segment.ts.
   it.each(["__proto__", "constructor", "prototype"])(
-    "%s はもう名前で拒否しない（書き込み側で安全にした）",
+    "%s is no longer refused by name, writing having been made safe",
     (key) => {
       expect(() => assertDeclarableKey(key, "x")).not.toThrow();
     }
@@ -66,9 +65,9 @@ describe("assertDeclarableKey — the gate fromJsonSchema must call", () => {
   it("carries the source path so a regression names the offender", () => {
     let caught: unknown = null;
     try {
-      // 文法として表現できないキーは今も拒否する。拒否する理由が
-      // 「プロトタイプ汚染」から「文法が "." で割るのでエスケープが無い」に
-      // 変わっただけで、source path を載せる約束は変わらない。
+      // A key the grammar cannot express is still refused. The reason moved
+      // from prototype pollution to the grammar splitting on "." with no
+      // escape; the promise to carry the source path did not.
       assertDeclarableKey("a.b", "payload.a.b");
     } catch (error) {
       caught = error;

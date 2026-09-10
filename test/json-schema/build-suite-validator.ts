@@ -60,10 +60,10 @@ export function documentPermitsNull(document: unknown): boolean {
  * swallowing it.
  */
 /**
- * スイートが localhost:1234 で配る文書を、ディスクから読んで一度だけ地図に
- * する。Luq は取りに行かないので、外部 `$ref` はここで渡した分だけ解ける。
- * 読み込みが一度なのは、929ケースごとに remotes/ を走査すると測定が遅く
- * なるからで、意味は変わらない。
+ * Reads the documents the suite serves over HTTP from disk, into a map, once.
+ * Nothing is ever fetched, so an external `$ref` resolves against exactly what
+ * is passed here. Reading once rather than per case is a speed decision and
+ * changes no meaning.
  */
 let remoteDocuments: Readonly<Record<string, unknown>> | undefined;
 

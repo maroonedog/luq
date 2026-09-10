@@ -1,8 +1,8 @@
-// `$id` の索引。どの URI がどのスキーマを指すか。
+// The `$id` index: which URI names which schema.
 //
-// ここで確かめたいのは三つ。ベースを立てる `$id` と名前を付ける `$id` を
-// 取り違えないこと、入れ子の `$id` が外側のベースの上で解決されること、
-// そして「取得した URI」が文書自身の `$id` に優先すること。
+// Three things. That the `$id` establishing a base and the `$id` giving a
+// name are not confused; that a nested `$id` resolves against the outer base;
+// and that the URI a document was retrieved from outranks its own `$id`.
 import { createSchemaRegistry } from "../../../../src/json-schema/schema-registry";
 import type { Draft07SchemaObject } from "../../../../src/json-schema/draft07.types";
 
@@ -30,8 +30,8 @@ describe("createSchemaRegistry", () => {
   });
 
   it("indexes an anchor $id WITHOUT moving the base", () => {
-    // §8.2.3: `#name` は名前であってベースではない。ベース扱いすると、その
-    // 隣に書かれた相対 `$ref` が黙って別の場所を指す。
+    // §8.2.3: `#name` is a name, not a base. Treated as a base, a relative
+    // `$ref` written beside it quietly points somewhere else.
     const anchored: Draft07SchemaObject = { $id: "#inner", type: "string" };
     const root: Draft07SchemaObject = {
       $id: "http://x/a.json",
@@ -80,8 +80,7 @@ describe("createSchemaRegistry", () => {
   });
 
   it("lets the RETRIEVAL uri win over the document's own $id", () => {
-    // スイートの "retrieved nested refs resolve relative to their URI not $id"
-    // がこれを突く。取得した場所が身元である。
+    // Where a document was retrieved from is its identity.
     const remote: Draft07SchemaObject = {
       $id: "http://elsewhere/other.json",
       type: "integer",

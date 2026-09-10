@@ -4,8 +4,8 @@ import * as path from "path";
 import type { SeedFileTree } from "./seed-plugin-tree";
 
 /**
- * 種ツリーを一時ディレクトリに実体化する。
- * 実 src/ を一切触らないので、他ステップのエージェントと衝突しない。
+ * Materialises the seed tree in a temporary directory. It touches the real
+ * source tree at no point, so it can collide with nothing there.
  */
 export function writeSeedTree(tree: SeedFileTree): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "luq-seed-"));
@@ -30,7 +30,7 @@ export function readSeedFile(root: string, relativePath: string): string {
   return fs.readFileSync(path.join(root, ...relativePath.split("/")), "utf8");
 }
 
-/** 一時ツリーを作って run に渡し、必ず片付ける。 */
+/** Builds the temporary tree, hands it to run, and always cleans it up. */
 export function withSeedTree<T>(
   tree: SeedFileTree,
   run: (root: string) => T

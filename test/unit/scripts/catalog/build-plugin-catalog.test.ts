@@ -17,19 +17,19 @@ import {
 } from "../../../type/fixtures/seed-plugins/write-seed-tree";
 
 describe("buildPluginCatalog", () => {
-  it("プラグインが1件も無くても空のカタログを返す", () => {
+  it("answers an empty catalog when there are no plugins", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       expect(buildPluginCatalog(root).entries).toEqual([]);
     });
   });
 
-  it("src が丸ごと無くても落ちない", () => {
+  it("does not fail when src is missing entirely", () => {
     withSeedTree({ "package.json": "{}\n" }, (root) => {
       expect(buildPluginCatalog(root).entries).toEqual([]);
     });
   });
 
-  it("2つの走査根からプラグインを集め、サブパス名で並べる", () => {
+  it("gathers plugins from both scan roots and orders them by subpath name", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const catalog = buildPluginCatalog(root);
       expect(catalog.entries.map((entry) => entry.subpathName)).toEqual([
@@ -49,7 +49,7 @@ describe("buildPluginCatalog", () => {
     });
   });
 
-  it("エントリが実際に export しているシンボルだけを記録する", () => {
+  it("records only the symbols an entry actually exports", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const byName = new Map(
         buildPluginCatalog(root).entries.map((entry) => [
@@ -67,7 +67,7 @@ describe("buildPluginCatalog", () => {
     });
   });
 
-  it("src/json-schema/** のうち extensions/ の外はプラグインではない", () => {
+  it("does not treat anything outside the extensions directory as a plugin", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const directories = buildPluginCatalog(root).entries.map(
         (entry) => entry.directory
@@ -78,7 +78,7 @@ describe("buildPluginCatalog", () => {
     });
   });
 
-  it("src/subpath-aliases はプラグインディレクトリではない", () => {
+  it("does not treat the subpath aliases as a plugin directory", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const directories = buildPluginCatalog(root).entries.map(
         (entry) => entry.directory
@@ -91,20 +91,20 @@ describe("buildPluginCatalog", () => {
     });
   });
 
-  it("index.ts の無いディレクトリは落ちる", () => {
+  it("fails on a directory with no index.ts", () => {
     withSeedTree(MISSING_ENTRY_TREE, (root) => {
       expect(() => buildPluginCatalog(root)).toThrow(PluginCatalogError);
       expect(() => buildPluginCatalog(root)).toThrow(/no index\.ts/);
     });
   });
 
-  it("Plugin シンボルを export しないエントリは落ちる", () => {
+  it("fails on an entry exporting no Plugin symbol", () => {
     withSeedTree(NO_PLUGIN_SYMBOL_TREE, (root) => {
       expect(() => buildPluginCatalog(root)).toThrow(PluginCatalogError);
     });
   });
 
-  it("不正なディレクトリ名は落ちる", () => {
+  it("fails on an invalid directory name", () => {
     withSeedTree(IRREGULAR_DIRECTORY_TREE, (root) => {
       expect(() => buildPluginCatalog(root)).toThrow(
         IrregularDirectoryNameError
@@ -112,7 +112,7 @@ describe("buildPluginCatalog", () => {
     });
   });
 
-  it("上書き表に無い extension ディレクトリは落ちる", () => {
+  it("fails on an extension directory missing from the override table", () => {
     withSeedTree(UNDECLARED_EXTENSION_TREE, (root) => {
       expect(() => buildPluginCatalog(root)).toThrow(
         IrregularDirectoryNameError
@@ -120,7 +120,7 @@ describe("buildPluginCatalog", () => {
     });
   });
 
-  it("同じ公開サブパスが2つできたら落ちる", () => {
+  it("fails when two directories claim one published subpath", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       writeSeedFile(
         root,

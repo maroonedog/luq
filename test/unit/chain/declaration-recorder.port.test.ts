@@ -67,8 +67,8 @@ function spyRecorder(): DeclarationRecorder & {
   };
 }
 
-// 据えたものは process 全体に残る。一件ずつ元に戻さないと、あとに走る
-// 検査が「据わっていない」を見られなくなる。
+// What is installed stays installed for the process. Restoring it after each
+// case is what lets a later one still observe "nothing installed".
 function withRecorder<T>(
   recorder: DeclarationRecorder | null,
   body: () => T
@@ -98,8 +98,8 @@ describe("DeclarationRecorder, with nothing installed", () => {
     expect(ruleCodes(outcome.rules)).toEqual(["required", "stringMin"]);
   });
 
-  // null と空配列は別物である。空配列を返すと、書き出す側が「制約が無い」
-  // と読んで、何でも通すスキーマを自信満々に出す。
+  // null and the empty list are different answers. The empty list reads as
+  // "no constraints", and a writer then emits a schema admitting everything.
   it("reports the declarations as null, NOT as an empty list", () => {
     const outcome = withRecorder(null, () =>
       collectFieldRules<Model, typeof bag, string>(bag, chainContext, (b) =>
@@ -133,7 +133,8 @@ describe("DeclarationRecorder, once installed", () => {
     ]);
   });
 
-  // ルールと宣言は本数が揃わない。揃えて読む実装を書かせないための一件。
+  // The rules and the declarations are not the same length. This is what
+  // stops an implementation being written that reads them in step.
   it("counts calls, not rules", () => {
     const recorder = spyRecorder();
     const outcome = withRecorder(recorder, () =>
@@ -156,8 +157,8 @@ describe("DeclarationRecorder, once installed", () => {
     });
   });
 
-  // refine はスロットを移すだけで、呼び出しを足さない。足すと JSON Schema に
-  // 出所の無い制約が生える。
+  // A refine step moves slot and adds no call. Adding one grows a constraint
+  // in the emitted schema that nothing declared.
   it("inherits across a refine step instead of appending", () => {
     const recorder = spyRecorder();
     withRecorder(recorder, () => {
@@ -181,8 +182,9 @@ describe("DeclarationRecorder, once installed", () => {
     });
   });
 
-  // 据わっているのに一度も呼ばれていないノードは「宣言が無い」であって
-  // 「控えていない」ではない。ここで null に落ちると上の区別が壊れる。
+  // A node reached with a recorder installed and no call made means "nothing
+  // was declared", not "no record was kept". Falling to null here breaks the
+  // distinction above.
   it("turns an unrecorded chain into an empty list, not null", () => {
     const recorder = spyRecorder();
     const outcome = withRecorder(recorder, () =>

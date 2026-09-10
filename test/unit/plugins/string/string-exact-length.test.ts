@@ -23,7 +23,7 @@ describe("stringExactLength", () => {
     expect(isAccepted(exactlyFour, value)).toBe(expected);
   });
 
-  it("コードポイントで数えるので、絵文字2つは2文字（4ではない）", () => {
+  it("counts by code point, so two emoji are two characters and not four", () => {
     expect(isAccepted(exactlyFour, "\u{1F600}\u{1F601}")).toBe(false);
     expect(
       isAccepted(exactlyFour, "\u{1F600}\u{1F601}\u{1F602}\u{1F603}")

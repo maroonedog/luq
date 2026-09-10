@@ -1,4 +1,4 @@
-// literal は厳密等価。ただし expected が NaN のときだけ NaN 同士を一致とみなす。
+// literal is strict equality, with one exception: an expected NaN matches NaN.
 import { Builder } from "../../../../src/index";
 import { literalPlugin } from "../../../../src/plugins/literal";
 
@@ -13,7 +13,7 @@ function buildKind(expected: string) {
 }
 
 describe("literal", () => {
-  it("一致すれば通す", () => {
+  it("accepts a match", () => {
     const result = buildKind("user").validate({
       kind: "user",
       version: 1,
@@ -22,7 +22,7 @@ describe("literal", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("不一致なら既定メッセージで期待値を二重引用符付きで示す", () => {
+  it("shows the expected value in double quotes in the default message", () => {
     const result = buildKind("user").validate({
       kind: "admin",
       version: 1,
@@ -38,7 +38,7 @@ describe("literal", () => {
     });
   });
 
-  it("数値と真偽値は引用符なしで示す", () => {
+  it("shows a number or a boolean without quotes", () => {
     const numberValidator = Builder()
       .use(literalPlugin)
       .for<Doc>()
@@ -68,8 +68,9 @@ describe("literal", () => {
     expect(booleanResult.issues[0]?.message).toBe("Value must be true");
   });
 
-  // 旧実装の NaN 特例をそのまま引き継ぐ。=== では NaN は自分自身と等しくない。
-  it("expected が NaN なら NaN を一致とみなす", () => {
+  // The NaN exception is inherited as it was. Under === NaN does not equal
+  // itself.
+  it("counts NaN as matching when NaN is expected", () => {
     const validator = Builder()
       .use(literalPlugin)
       .for<Doc>()
@@ -83,7 +84,7 @@ describe("literal", () => {
     ).toBe(false);
   });
 
-  it("options.code を尊重する", () => {
+  it("honours options.code", () => {
     const validator = Builder()
       .use(literalPlugin)
       .for<Doc>()

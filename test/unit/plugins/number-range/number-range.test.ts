@@ -11,13 +11,13 @@ const between = Builder()
   .build();
 
 describe("numberRange", () => {
-  it("両端を包含する", () => {
+  it("includes both ends", () => {
     expect(between.validate({ value: 1 }).valid).toBe(true);
     expect(between.validate({ value: 10 }).valid).toBe(true);
     expect(between.validate({ value: 5.5 }).valid).toBe(true);
   });
 
-  it("範囲外を弾き、既定文言を出す", () => {
+  it("rejects anything outside, with the default wording", () => {
     const validationResult = between.validate({ value: 11 });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues).toEqual([
@@ -31,7 +31,7 @@ describe("numberRange", () => {
     expect(between.validate({ value: 0 }).valid).toBe(false);
   });
 
-  it("messageFactory は min / max / actual を受け取る", () => {
+  it("hands messageFactory the minimum, the maximum and the actual value", () => {
     const custom = Builder()
       .use(numberRangePlugin)
       .for<Score>()
@@ -45,9 +45,9 @@ describe("numberRange", () => {
     expect(custom.validate({ value: 42 }).issues[0]?.message).toBe("1-10:42");
   });
 
-  // 旧実装は min > max を実行時まで持ち越し、全ての値を失敗させたうえで
-  // 設定ミスの文言をエンドユーザーに出していた。build 時に落とす。
-  it("min > max は build 時に PluginArgumentError で落ちる", () => {
+  // Carried to run time, min > max fails every value and shows a
+  // configuration mistake to an end user. It fails at build time instead.
+  it("fails min > max at build time, with PluginArgumentError", () => {
     expect(() =>
       Builder()
         .use(numberRangePlugin)
@@ -57,7 +57,7 @@ describe("numberRange", () => {
     ).toThrow(PluginArgumentError);
   });
 
-  it("NaN の境界は build 時に PluginArgumentError で落ちる", () => {
+  it("fails a NaN boundary at build time, with PluginArgumentError", () => {
     expect(() =>
       Builder()
         .use(numberRangePlugin)
@@ -74,7 +74,7 @@ describe("numberRange", () => {
     ).toThrow(PluginArgumentError);
   });
 
-  it("min === max の一点範囲は成立する", () => {
+  it("accepts a single-point range where min equals max", () => {
     const exact = Builder()
       .use(numberRangePlugin)
       .for<Score>()

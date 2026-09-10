@@ -4,28 +4,29 @@ import type {
   SizeBudget,
 } from "../../../scripts/bundle-size/size-budget.types";
 
-// 判定は純関数なので、実ツリーを束ねずに種データだけで検査できる。
-// esbuild を回す経路は npm run check:size がリポジトリ全体に対して回す。
+// The judgement is a pure function, so it can be checked with seed data
+// without bundling a real tree. The path that actually runs esbuild is
+// exercised by npm run check:size over the whole repository.
 
 const budget: SizeBudget = {
   budgets: [
     {
       id: "core-only",
-      description: "中核のみ",
+      description: "the core alone",
       plugins: [],
       gzipCeilingBytes: 8000,
       recordedGzipBytes: 7420,
     },
     {
       id: "one-plugin",
-      description: "中核 + 1",
+      description: "the core plus one",
       plugins: ["required"],
       gzipCeilingBytes: 8250,
       recordedGzipBytes: 7638,
     },
     {
       id: "full-feature",
-      description: "全部入り",
+      description: "everything",
       plugins: "all",
       gzipCeilingBytes: 25600,
       recordedGzipBytes: 24040,
@@ -54,11 +55,11 @@ const cleanMeasurements: readonly BundleMeasurement[] = [
 ];
 
 describe("findSizeViolations", () => {
-  it("実測が全て天井の内側なら違反なし", () => {
+  it("reports nothing when every measurement is inside its ceiling", () => {
     expect(findSizeViolations(budget, cleanMeasurements)).toEqual([]);
   });
 
-  it("天井を1バイト超えたら over-budget を出す", () => {
+  it("reports over-budget when a ceiling is exceeded by one byte", () => {
     const violations = findSizeViolations(budget, [
       measure("core-only", 0, 8001),
       measure("one-plugin", 1, 8100),
@@ -68,7 +69,7 @@ describe("findSizeViolations", () => {
     expect(violations[0]?.detail).toContain("is 1 B over the 8000 B ceiling");
   });
 
-  it("プラグイン1個の増分が下限を割ったら weak-increment を出す", () => {
+  it("reports weak-increment when one plugin adds less than its floor", () => {
     const violations = findSizeViolations(budget, [
       measure("core-only", 0, 7420),
       measure("one-plugin", 1, 7429),
@@ -78,7 +79,7 @@ describe("findSizeViolations", () => {
     expect(violations[0]?.detail).toContain("gzip grew only 9 B");
   });
 
-  it("増分の下限は足したプラグイン数に比例する", () => {
+  it("scales the increment floor with the number of plugins added", () => {
     const barelyEnough = findSizeViolations(budget, [
       measure("core-only", 0, 7420),
       measure("one-plugin", 1, 7470),
@@ -95,7 +96,7 @@ describe("findSizeViolations", () => {
     );
   });
 
-  it("中核が全部入りの大半を占めたら core-share を出す", () => {
+  it("reports core-share when the core dominates the everything build", () => {
     const violations = findSizeViolations(budget, [
       measure("core-only", 0, 7420),
       measure("one-plugin", 1, 7638),
@@ -104,7 +105,7 @@ describe("findSizeViolations", () => {
     expect(violations.map((one) => one.kind)).toContain("core-share");
   });
 
-  it("知らない id を指した予算は例外で落ちる", () => {
+  it("throws on a budget naming an unknown id", () => {
     expect(() =>
       findSizeViolations(budget, [measure("core-only", 0, 7420)])
     ).toThrow(/one-plugin/);
