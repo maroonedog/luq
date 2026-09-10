@@ -170,6 +170,7 @@ describe("compileField rejects a malformed path at BUILD time", () => {
         fieldPath: "items[*]",
         defaultOf: null,
         applyDefaultToNull: true,
+        normalize: null,
         planRef: unresolvablePlanRef(),
         eraseComposite: refuseComposite(),
       })

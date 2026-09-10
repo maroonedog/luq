@@ -18,15 +18,31 @@ import type { GlobalConfig } from "../types/global-config";
 import type {
   ErasedFieldDefine,
   FieldBuilderSurface,
+  PlanBackedValidator,
 } from "./builder-surface.types";
 import { compileDeclarations } from "./compile-declarations";
 import { createPlanBackedValidator } from "./create-plan-validator";
+import { rememberDeclaredCalls } from "./declared-calls-store";
 import type { FieldEntry } from "./field-entry.types";
 import type { FieldOptions } from "./field-options.types";
 import { resolveFieldDefault } from "./resolve-field-default";
 
 /** No declaration yet: shared and frozen, so `.for<T>()` allocates nothing. */
 const NO_ENTRIES: readonly FieldEntry[] = Object.freeze([]);
+
+/**
+ * 計画を作り、同じ一度で控えた宣言をバリデータに結び付ける。
+ * 結び付け先は WeakMap なので、Validator のメンバーは増えない。
+ */
+function buildValidator(
+  entries: readonly FieldEntry[],
+  configOverride: GlobalConfig | undefined
+): PlanBackedValidator {
+  const compiled = compileDeclarations(entries, configOverride);
+  const validator = createPlanBackedValidator(compiled.plan);
+  rememberDeclaredCalls(validator, compiled.declaredCalls);
+  return validator;
+}
 
 export function createFieldBuilderSurface(
   bag: PluginBag,
@@ -40,8 +56,7 @@ export function createFieldBuilderSurface(
         toFieldEntry(bag, path, define, options),
       ]),
     strict: () => surface,
-    build: () =>
-      createPlanBackedValidator(compileDeclarations(entries, configOverride)),
+    build: () => buildValidator(entries, configOverride),
   };
   return Object.freeze(surface);
 }
@@ -62,6 +77,7 @@ function toFieldEntry(
     path,
     defaultOf: policy.defaultOf,
     applyDefaultToNull: policy.applyDefaultToNull,
+    normalize: options?.normalize ?? null,
     collectRules: (context: ChainBuildContext) =>
       collectFieldRules<unknown, PluginBag, unknown>(bag, context, define),
   };

@@ -47,6 +47,7 @@ export interface FieldCompileRequest {
   readonly fieldPath: string;
   readonly defaultOf: ((root: unknown) => unknown) | null;
   readonly applyDefaultToNull: boolean;
+  readonly normalize: ((value: unknown) => unknown) | null;
   readonly planRef: PlanRef;
   readonly eraseComposite: CompositeEraser;
 }
@@ -57,7 +58,9 @@ const NO_INDICES: readonly number[] = Object.freeze([]);
 export function compileField(request: FieldCompileRequest): CompiledField {
   const byKind = splitRulesByKind(request.rules);
   const hasDefault = request.defaultOf !== null;
-  const needsWriter = byKind.transforms.length > 0 || hasDefault;
+  // 整形も値を差し替えるので、ライタが要る条件は default と同じである。
+  const needsWriter =
+    byKind.transforms.length > 0 || hasDefault || request.normalize !== null;
   const template = Object.freeze(request.template);
   // read を先に作る。ワイルドカードを含むテンプレートを拒むのは
   // createValueReader の役目で、それより先に formatIssuePath を呼ぶと
@@ -71,6 +74,7 @@ export function compileField(request: FieldCompileRequest): CompiledField {
     write: needsWriter ? createValueWriter(template) : null,
     defaultOf: request.defaultOf,
     applyDefaultToNull: request.applyDefaultToNull,
+    normalize: request.normalize,
     presence: resolvePresence(byKind.presences),
     presenceOverrides: resolveConditionalPresence(byKind.conditionalPresences),
     gates: byKind.gates,
@@ -103,6 +107,7 @@ export function compileFieldDeclaration(
     defaultOf: declaration.defaultOf ?? null,
     applyDefaultToNull:
       declaration.applyDefaultToNull ?? APPLIES_DEFAULT_TO_NULL_BY_DEFAULT,
+    normalize: declaration.normalize ?? null,
     planRef,
     eraseComposite,
   });

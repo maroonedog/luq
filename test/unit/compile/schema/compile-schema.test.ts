@@ -228,6 +228,7 @@ function collectCompiledParts(plan: ValidationPlan): readonly unknown[] {
         arrays: node.nested,
         hasTransforms: false,
         hasDefaults: false,
+        hasNormalizers: false,
       })
     );
   }

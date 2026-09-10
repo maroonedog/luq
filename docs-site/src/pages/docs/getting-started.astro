@@ -277,6 +277,35 @@ if (outcome.issues === undefined) {
   }
 }`;
 
+const normalizeExample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+
+type Signup = { email: string; age: number };
+
+const signupValidator = Builder()
+  .use(requiredPlugin)
+  .use(stringEmailPlugin)
+  .use(numberMinPlugin)
+  .for<Signup>()
+  // A form posts "  Ada@Example.com  " — judge the tidied value.
+  .v("email", (b) => b.string.required().email(), {
+    normalize: (value) =>
+      typeof value === "string" ? value.trim().toLowerCase() : value,
+  })
+  // A number input still hands over a string.
+  .v("age", (b) => b.number.required().min(18), {
+    normalize: (value) => (value === "" ? value : Number(value)),
+  })
+  .build();
+
+// true — the rules saw "ada@example.com" and 30
+signupValidator.validate({ email: "  Ada@Example.com  ", age: "30" } as never).valid;
+
+// parse() writes the tidied values back; validate() leaves your object alone.
+signupValidator.parse({ email: "  Ada@Example.com  ", age: "30" } as never);`;
+
 const tableOfContents = [
   { id: 'installation', title: 'Installation', level: 2 },
   { id: 'typescript-configuration', title: 'TypeScript configuration', level: 3 },
@@ -286,6 +315,7 @@ const tableOfContents = [
   { id: 'validate-vs-parse', title: 'validate() vs parse()', level: 2 },
   { id: 'options', title: 'Options', level: 2 },
   { id: 'defaults', title: 'Defaults', level: 2 },
+  { id: 'normalize', title: 'Normalising before the rules run', level: 2 },
   { id: 'nested-fields-and-arrays', title: 'Nested fields and arrays', level: 2 },
   { id: 'messages-codes-and-severity', title: 'Messages, codes and severity', level: 2 },
   { id: 'importing-plugins', title: 'Importing plugins', level: 2 },
@@ -530,6 +560,36 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           <code>applyDefaultToNull</code> defaults to <code>true</code>.
+        </p>
+
+        <h2 id="normalize" class="mt-12 text-headline-small">
+          Normalising before the rules run
+        </h2>
+
+        <p class="mt-3 text-body-large">
+          A form gives you a string in a number field and spaces around a name.
+          <code>normalize</code> sits beside <code>default</code> in the same options object
+          and tidies the value <em>before</em> anything judges it, so
+          <code>validate()</code> and <code>parse()</code> never disagree about what they
+          looked at.
+        </p>
+
+        <CodeBlock code={normalizeExample} language="typescript" />
+
+        <p class="mt-4 text-body-large">
+          It takes and returns <code>unknown</code> on purpose: the value has not been
+          validated yet, and <code>"42"</code>&nbsp;→&nbsp;<code>42</code> is the point.
+          <strong>It is never called with <code>undefined</code> or <code>null</code></strong>
+          — so <code>(v) =&gt; String(v).trim()</code> cannot turn a missing field into the
+          string <code>"undefined"</code> and sneak it past <code>required</code>. Absence is
+          <code>default</code>'s job; <code>normalize</code> only sees a value that is there.
+        </p>
+
+        <p class="mt-4 text-body-large">
+          The order is what makes the common case work:
+          <code>"&nbsp;&nbsp;"</code>&nbsp;→ trim →
+          <code>""</code>&nbsp;→ presence reads an empty string as missing →
+          <code>required</code> fires.
         </p>
 
         <h2 id="nested-fields-and-arrays" class="mt-12 text-headline-small">

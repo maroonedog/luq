@@ -8,7 +8,9 @@
     "2026-09-10: RuleContext を遅延させる FieldRuleContext を足した分、全エントリが gzip で 75-125 B 増えた。受理パスで +26% の代価である (bench/ の比で 0.0480 -> 0.0605、4巡すべてで四分位が分離)。天井を動かしたのは preset-presence の 1件だけで、8200 B を 3 B 超えたため 8300 B にした。他の6件は据え置きで、余裕が縮んだことがそのまま残る。",
     "同じ機能を `#` private で書くと 302 B 増えて全エントリが天井を割る。ES2020 では TypeScript が `#` を WeakMap 3本と __classPrivateFieldGet/Set に落とすためで、配布物では要素ごとに WeakMap 参照が増える。ベンチは esbuild で変換していて `#` がそのまま残るため、計測では差が見えなかった — 測る対象と配る対象が違うと数字が転移しない、という例として残す。",
     "2026-09-10: JSON Schema の2エントリを足した。これらの数値は README・docs-site の troubleshooting・json-schema の3ページに手書きで散っていて、一度きりの手測定のまま誰も測り直していなかった。ここに入れれば毎ビルド測られ、benchmarks の表に載り、他の場所はそこを見るだけで済む。",
-    "「core + jsonSchema + 動く49プラグインの束」という行は落とした。どの49個かの記録が残っておらず再現できない。再現できない数字を載せ続けるより、落とすほうが正しい。"
+    "「core + jsonSchema + 動く49プラグインの束」という行は落とした。どの49個かの記録が残っておらず再現できない。再現できない数字を載せ続けるより、落とすほうが正しい。",
+    "2026-09-10: 全9エントリが 226-236 B 増えた。原因は二つの機能で、どちらもコアに載る。normalize は run-field に一分岐と CompiledField に一枠を足すだけだが、toStandardJsonSchema のために **連鎖が呼ばれたメソッドと引数を控える** 仕組み (chain-node-store / declared-calls-store) が入り、これは JSON Schema を一度も書き出さない利用者のビルダーでも走る。core-only が 7,954 -> 8,190 B なのはそのためである。",
+    "これは意図した交換である: `.min(3)` の 3 はプラグインが build(ctx, min) でクロージャに閉じ込めた時点で消えるので、書き出す側が必要とする値を残すには宣言の時点で控えるしかない。払うのは全員で、使うのは一部、という形になっているのは記録しておく。"
   ],
   "method": {
     "measuredFrom": "src/ の TypeScript ソース。dist/ ではない。",
@@ -66,8 +68,8 @@
       "id": "core-only",
       "description": "Builder だけ。プラグインを1つも使わない利用者が払う床。",
       "plugins": [],
-      "gzipCeilingBytes": 8000,
-      "recordedGzipBytes": 7954,
+      "gzipCeilingBytes": 8340,
+      "recordedGzipBytes": 8190,
       "legacyGzipBytes": 17423
     },
     {
@@ -76,8 +78,8 @@
       "plugins": [
         "required"
       ],
-      "gzipCeilingBytes": 8250,
-      "recordedGzipBytes": 8087
+      "gzipCeilingBytes": 8470,
+      "recordedGzipBytes": 8316
     },
     {
       "id": "three-plugin",
@@ -87,8 +89,8 @@
         "stringMin",
         "numberMin"
       ],
-      "gzipCeilingBytes": 8600,
-      "recordedGzipBytes": 8466
+      "gzipCeilingBytes": 8850,
+      "recordedGzipBytes": 8696
     },
     {
       "id": "six-plugin",
@@ -101,8 +103,8 @@
         "numberMin",
         "numberMax"
       ],
-      "gzipCeilingBytes": 9000,
-      "recordedGzipBytes": 8879,
+      "gzipCeilingBytes": 9270,
+      "recordedGzipBytes": 9111,
       "legacyGzipBytes": 19562
     },
     {
@@ -113,8 +115,8 @@
         "optional",
         "nullable"
       ],
-      "gzipCeilingBytes": 8300,
-      "recordedGzipBytes": 8203
+      "gzipCeilingBytes": 8590,
+      "recordedGzipBytes": 8434
     },
     {
       "id": "preset-everyday",
@@ -134,8 +136,8 @@
         "arrayMaxLength",
         "arrayEach"
       ],
-      "gzipCeilingBytes": 9600,
-      "recordedGzipBytes": 9437
+      "gzipCeilingBytes": 9810,
+      "recordedGzipBytes": 9660
     },
     {
       "id": "jsonschema-plugin",
@@ -143,8 +145,8 @@
       "plugins": [
         "jsonSchema"
       ],
-      "gzipCeilingBytes": 21000,
-      "recordedGzipBytes": 20848
+      "gzipCeilingBytes": 21280,
+      "recordedGzipBytes": 21122
     },
     {
       "id": "jsonschema-full-feature",
@@ -152,15 +154,15 @@
       "plugins": [
         "jsonSchemaFullFeature"
       ],
-      "gzipCeilingBytes": 23400,
-      "recordedGzipBytes": 23242
+      "gzipCeilingBytes": 23660,
+      "recordedGzipBytes": 23502
     },
     {
       "id": "full-feature",
       "description": "Builder + カタログの全プラグイン (JSON Schema 拡張2件を含む)。全部入りの上限。",
       "plugins": "all",
-      "gzipCeilingBytes": 26100,
-      "recordedGzipBytes": 25991
+      "gzipCeilingBytes": 26360,
+      "recordedGzipBytes": 26207
     }
   ],
   "treeShaking": {

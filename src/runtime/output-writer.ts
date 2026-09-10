@@ -63,7 +63,11 @@ export function createArrayWriteTargets(
 export function createPlanWriteTargets(
   plan: ValidationPlan
 ): readonly ArrayWriteTarget[] | null {
-  if (!plan.hasTransforms && !plan.hasDefaults) return null;
+  // 整形だけを宣言したフィールドも parse() では書き戻る。ここに
+  // hasNormalizers を足さないと、ライタが作られず黙って読んだ値が返る。
+  if (!plan.hasTransforms && !plan.hasDefaults && !plan.hasNormalizers) {
+    return null;
+  }
   return createArrayWriteTargets(plan.arrays);
 }
 

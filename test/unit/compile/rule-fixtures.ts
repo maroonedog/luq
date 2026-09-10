@@ -28,6 +28,7 @@ export const EMPTY_PLAN: ValidationPlan = Object.freeze({
   arrays: Object.freeze([]),
   hasTransforms: false,
   hasDefaults: false,
+  hasNormalizers: false,
 });
 
 export function planRefTo(plan: ValidationPlan): PlanRef {

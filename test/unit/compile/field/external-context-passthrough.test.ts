@@ -59,6 +59,7 @@ function compile(rules: Parameters<typeof compileField>[0]["rules"]) {
     fieldPath: "name",
     defaultOf: null,
     applyDefaultToNull: true,
+    normalize: null,
     planRef: unresolvablePlanRef(),
     eraseComposite: refuseComposite(),
   });
@@ -119,6 +120,7 @@ describe("ValidateOptions.external reaches RuleContext.external", () => {
       fieldPath: "name",
       defaultOf: null,
       applyDefaultToNull: true,
+      normalize: null,
       planRef: unresolvablePlanRef(),
       eraseComposite: (rule) => ({
         ...eraseCompositeToCheck(rule),

@@ -6,6 +6,11 @@
 // so this file reads arrays and calls what it finds. The subject is what the
 // field READS from (the root, or one array element); `context.root` stays the
 // real root, because cross-field rules are written against the root.
+//
+// 二つ。**ループは添字である** — 凍結配列の for-of はイテレータが消去されず、
+// 配列シェイプの全ゴミの 45〜54% がそれだった。**このファイルは割らない** —
+// applyDefault / applyNormalize を別モジュールに出すと実測 -27% (0.0597 →
+// 0.0432)。跨いだ呼び出しはインライン化されない。縮めるならコメントを削る。
 // ===========================================================================
 import type { ArrayItemContext, IssueDetail, RuleContext } from "../types";
 import type {
@@ -60,7 +65,7 @@ export function runField(
     context.external
   );
   const read = field.read(subject);
-  const value = applyDefault(field, read, context.root);
+  const value = applyNormalize(field, applyDefault(field, read, context.root));
   if (!decidePresence(field, value, ruleContext, context.sink)) {
     return FIELD_VALUE_UNCHANGED;
   }
@@ -89,19 +94,26 @@ function applyDefault(
   return value;
 }
 
+/**
+ * 判定より前に値を整える。default の直後、presence の直前。
+ *
+ * undefined と null には呼ばない。`(v) => String(v).trim()` と書いた利用者の
+ * undefined が `"undefined"` になって `.required()` を通り抜ける、という
+ * 事故を仕組みで塞いでいる。不在を扱うのは default の仕事である。
+ */
+function applyNormalize(field: CompiledField, value: unknown): unknown {
+  if (field.normalize === null || value === undefined || value === null) {
+    return value;
+  }
+  return field.normalize(value);
+}
+
 /** A closed gate ends the field successfully: no check, no transform. */
 function openGates(
   field: CompiledField,
   value: unknown,
   ruleContext: RuleContext
 ): boolean {
-  // 添字ループである。for-of ではない。ここが回るのはコンパイル済みの
-  // 凍結配列で、凍結配列は V8 では PACKED_FROZEN_ELEMENTS になり、配列
-  // イテレータの高速化パスから外れる — イテレータと IteratorResult が
-  // 消去されず、要素×フィールドの回数だけ確保される。配列シェイプでは
-  // それだけで全ゴミの 45〜54% を占めていた (独立に5通りの改変で -45%
-  // 〜 -54%)。凍結は落とさない: コンパイル層の不変条件であり、凍結を
-  // 外しても添字ループより速くはならない。
   const gates = field.gates;
   for (let i = 0; i < gates.length; i += 1) {
     const gate = gates[i];
@@ -112,17 +124,10 @@ function openGates(
 }
 
 /**
- * 失敗したときだけ通る側。ループ本体から出してある。
- *
- * runChecks はバイトコードで 302 バイトあり、TurboFan の呼び出し先
- * インライン予算 (既定で累計 920 バイト) の最大の落選候補として
- * --trace-turbo-inlining に名指しされていた。その 302 バイトの大半が、
- * 受理された値では一度も走らない issue の組み立てである。ここへ出すと
- * 残るループ本体が縮み、受理パスで 6.4% 速くなった。
- *
- * 中断の判定はここに含めない。issue を足したあとに shouldStopField を
- * 見るという順序が abortEarlyOnEachField の意味そのものなので、呼び出し側に
- * 並べて置いておく。
+ * 失敗したときだけ通る側。ループ本体から出したのは、runChecks の 302 バイトが
+ * TurboFan のインライン予算の最大の落選候補で、その大半が受理された値では走らない
+ * issue の組み立てだったからである (受理パスで 6.4%)。中断の判定は含めない —
+ * issue を足してから shouldStopField を見る順序が abortEarlyOnEachField である。
  */
 function reportCheckFailure(
   check: CompiledField["checks"][number],

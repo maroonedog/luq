@@ -414,6 +414,45 @@ against the 7,954 B floor, and `everydayRules` to 9,437 B — both are in the
 size budget and re-measured on every build, because a convenience that quietly
 costs a kilobyte is not a convenience.
 
+## Normalising before the rules run
+
+A form gives you a string in a number field and spaces around a name. `normalize`
+sits beside `default` in `.v()`'s third argument and tidies the value **before**
+anything judges it, so `validate()` and `parse()` never disagree about what they
+looked at — and only `parse()` writes the tidied value back.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+
+type Signup = { name: string; age: number };
+
+const signupValidator = Builder()
+  .use(requiredPlugin)
+  .use(numberMinPlugin)
+  .for<Signup>()
+  .v("name", (b) => b.string.required(), {
+    normalize: (value) => (typeof value === "string" ? value.trim() : value),
+  })
+  // A number input still hands over a string.
+  .v("age", (b) => b.number.required().min(18), {
+    normalize: (value) => (value === "" ? value : Number(value)),
+  })
+  .build();
+```
+
+It takes and returns `unknown` on purpose: the value has not been validated yet,
+and `"42"` → `42` is the point — typing it `(value: T) => T` would be a lie.
+
+**It is never called with `undefined` or `null`.** So `(v) => String(v).trim()`
+cannot turn a missing field into the string `"undefined"` and sneak it past
+`required`. Absence is `default`'s job; `normalize` only sees a value that is
+there, which is also why you never write a null check inside one.
+
+The order is what makes the common case work: `"  "` → trim → `""` → presence
+reads an empty string as missing → `required` fires.
+
 ## JSON Schema
 
 ```ts
@@ -559,16 +598,16 @@ so the two columns are comparable. Recorded in
 | Entry | gzip | 1.x, same method |
 |---|---:|---:|
 <!-- generated:bundle-size -->
-| `Builder` only, zero plugins | **7,954 B** | 17,423 B |
-| + 6 plugins (1.x's "simple" set) | **8,879 B** | 19,562 B |
-| core + `jsonSchema`, the plugin alone | **20,848 B** | — |
-| core + `jsonSchemaFullFeature` | **23,242 B** | — |
-| all 77 plugins | **25,991 B** | — |
+| `Builder` only, zero plugins | **8,190 B** | 17,423 B |
+| + 6 plugins (1.x's "simple" set) | **9,111 B** | 19,562 B |
+| core + `jsonSchema`, the plugin alone | **21,122 B** | — |
+| core + `jsonSchemaFullFeature` | **23,502 B** | — |
+| all 77 plugins | **26,207 B** | — |
 <!-- /generated:bundle-size -->
 
 1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
 core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
-figure. Here the core is <!-- generated:bundle-core-share -->30.6% of the all-plugins build (7,954 of 25,991 B)<!-- /generated:bundle-core-share -->,
+figure. Here the core is <!-- generated:bundle-core-share -->31.3% of the all-plugins build (8,190 of 26,207 B)<!-- /generated:bundle-core-share -->,
 and adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
 the difference is where the bytes sit, not which README is right.
 

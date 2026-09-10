@@ -114,6 +114,11 @@ export interface CompiledField {
   readonly write: ValueWriter | null;
   readonly defaultOf: ((root: unknown) => unknown) | null;
   readonly applyDefaultToNull: boolean;
+  /**
+   * null unless the field declared one. Runs after the default and BEFORE
+   * presence, on a value that is neither undefined nor null.
+   */
+  readonly normalize: ((value: unknown) => unknown) | null;
   readonly presence: PresencePolicy;
   /**
    * The conditional overrides of `presence`, in declaration order, and the
@@ -155,6 +160,12 @@ export interface ValidationPlan {
   readonly arrays: readonly ArrayNode[];
   readonly hasTransforms: boolean;
   readonly hasDefaults: boolean;
+  /**
+   * A normalizer substitutes a value the same way a default does, so the
+   * writer must exist for it too. Kept as its own flag rather than folded
+   * into hasDefaults, which would make that name say something it does not.
+   */
+  readonly hasNormalizers: boolean;
 }
 
 /**
@@ -172,4 +183,5 @@ export interface FieldDeclaration {
   readonly rules: readonly Rule[];
   readonly defaultOf?: (root: unknown) => unknown;
   readonly applyDefaultToNull?: boolean;
+  readonly normalize?: (value: unknown) => unknown;
 }

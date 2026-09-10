@@ -87,6 +87,7 @@ function asPlan(node: ArrayNode): ValidationPlan {
     arrays: node.nested,
     hasTransforms: false,
     hasDefaults: false,
+    hasNormalizers: false,
   };
 }
 

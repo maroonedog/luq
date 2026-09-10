@@ -34,7 +34,8 @@ function entryOf(path: string, rules: readonly Rule[]): FieldEntry {
     path,
     defaultOf: null,
     applyDefaultToNull: true,
-    collectRules: () => rules,
+    normalize: null,
+    collectRules: () => ({ rules, calls: [] }),
   };
 }
 
@@ -46,7 +47,7 @@ const planOf = (): ValidationPlan =>
       entryOf("employees[*].name", [requiredRule(), nonEmptyRule()]),
     ],
     undefined
-  );
+  ).plan;
 
 describe("createSubsetValidator", () => {
   it("carries a frozen copy of the paths it was asked for", () => {

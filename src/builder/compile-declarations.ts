@@ -25,25 +25,42 @@ import { createBranchExecutor } from "../runtime/run-branch";
 import { resolveGlobalConfig } from "../types/global-config";
 import type { GlobalConfig } from "../types/global-config";
 import type { FieldEntry } from "./field-entry.types";
+import type { FieldDeclaredCalls } from "./field-declared-calls.types";
 import { getGlobalConfig } from "./global-config-store";
+
+/** build() が一度で作るもの: 実行する計画と、書き出すための宣言。 */
+export interface CompiledDeclarations {
+  readonly plan: ValidationPlan;
+  readonly declaredCalls: readonly FieldDeclaredCalls[];
+}
 
 export function compileDeclarations(
   entries: readonly FieldEntry[],
   configOverride: GlobalConfig | undefined
-): ValidationPlan {
+): CompiledDeclarations {
   const config = resolveGlobalConfig(configOverride, getGlobalConfig());
   const childKeysOf = indexDeclaredChildKeys(
     entries.map((entry) => entry.path)
   );
-  const declarations: readonly FieldDeclaration[] = entries.map((entry) => ({
-    path: entry.path,
-    rules: entry.collectRules({
+  const declarations: FieldDeclaration[] = [];
+  const declaredCalls: FieldDeclaredCalls[] = [];
+  for (const entry of entries) {
+    const outcome = entry.collectRules({
       fieldPath: entry.path,
       declaredSiblingKeys: childKeysOf(entry.path),
       config,
-    }),
-    defaultOf: entry.defaultOf ?? undefined,
-    applyDefaultToNull: entry.applyDefaultToNull,
-  }));
-  return compileSchema(declarations, createBranchExecutor());
+    });
+    declarations.push({
+      path: entry.path,
+      rules: outcome.rules,
+      defaultOf: entry.defaultOf ?? undefined,
+      applyDefaultToNull: entry.applyDefaultToNull,
+      normalize: entry.normalize ?? undefined,
+    });
+    declaredCalls.push({ path: entry.path, calls: outcome.calls });
+  }
+  return {
+    plan: compileSchema(declarations, createBranchExecutor()),
+    declaredCalls,
+  };
 }
