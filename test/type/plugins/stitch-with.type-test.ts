@@ -1,12 +1,12 @@
-// EXPERIMENTAL な stitchWith の型。
+// The types of stitchWith, which is EXPERIMENTAL.
 //
-// このプラグインが存在する理由がそのまま検査対象である。stitch はクロス
-// フィールドの束を `Readonly<Record<string, unknown>>` として渡すので、束の
-// 中身について型が何も言わない — メンバー名を綴り違えても、型を取り違えても、
-// コンパイルは通る。ここでは対応表から束が組まれて型が付く。
+// What is checked here is the reason the plugin exists. stitch hands the
+// cross-field bundle over as `Readonly<Record<string, unknown>>`, so the type
+// says nothing about its contents: misspell a member, mistake its type, and it
+// still compiles. Here the bundle is assembled from a mapping and typed.
 //
-// 否定は expect-error のディレクティブで固定してある。使われなければ TS2578
-// になるので、typecheck が通ること自体が、それらが今も落ちる証明になっている。
+// The negatives are pinned with expect-error directives. An unused one is
+// itself an error, so the type check passing is the proof they still fail.
 import { Builder } from "../../../src/index";
 import { requiredPlugin } from "../../../src/plugins/required";
 import { customPlugin } from "../../../src/plugins/custom";
@@ -26,7 +26,7 @@ const kit = Builder()
   .use(numberMinPlugin)
   .use(stitchWithPlugin);
 
-// ---- POSITIVE: 複数フィールドが1つの判定にまとまる ------------------------
+// ---- POSITIVE: several fields come together in one judgement -------------
 export const crossField = kit
   .for<Order>()
   .v("total", (b) =>
@@ -38,8 +38,8 @@ export const crossField = kit
   )
   .build();
 
-// ネストしたパスが別名の下に入る。束をパス文字列でキーしていたら
-// `"user.name"` がパスとして解釈されてしまうため、この形は書けない。
+// A nested path sits under an alias. Keyed by path strings, `"user.name"`
+// would be read as a path and this form would be unwritable.
 export const nested = kit
   .for<Order>()
   .v("total", (b) =>
@@ -49,34 +49,34 @@ export const nested = kit
   )
   .build();
 
-// ---- NEGATIVE 1: ルートに無いパスは対応表に書けない -----------------------
+// ---- NEGATIVE 1: a path not on the root cannot go in the table -----------
 kit.for<Order>().v("total", (b) =>
   b.number.stitchWith(
-    // @ts-expect-error "nope" は Order のパスではない
+    // @ts-expect-error "nope" is not a path of Order
     { cost: "nope" },
     (f) => f.object.custom(() => true)
   )
 );
 
-// ---- NEGATIVE 2: 宣言していない別名は束に無い -----------------------------
+// ---- NEGATIVE 2: an undeclared alias is not in the bundle ----------------
 kit.for<Order>().v("total", (b) =>
   b.number.stitchWith({ cost: "price" }, (f) =>
     f.object.custom(
       (bundle) =>
-        // @ts-expect-error 束に "typo" は無い
+        // @ts-expect-error the bundle has no "typo"
         bundle.typo > 0
     )
   )
 );
 
-// ---- NEGATIVE 3: 束のメンバーの型は守られる -------------------------------
-// stitch との違いがここに出る。stitch の束は unknown なので、この誤りは
-// コンパイルを通ってしまう。
+// ---- NEGATIVE 3: the bundle members keep their types ---------------------
+// This is where it differs from stitch, whose bundle is unknown and lets this
+// mistake compile.
 kit.for<Order>().v("total", (b) =>
   b.number.stitchWith({ cost: "price" }, (f) =>
     f.object.custom(
       (bundle) =>
-        // @ts-expect-error cost は number なので string のメソッドは無い
+        // @ts-expect-error cost is a number and has no string method
         bundle.cost.toUpperCase() === "X"
     )
   )

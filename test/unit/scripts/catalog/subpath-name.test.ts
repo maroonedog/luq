@@ -63,7 +63,9 @@ describe("toSubpathName", () => {
 
   it("camel が同じ kebab に戻らない名前は落ちる", () => {
     // "string-base-64" -> "stringBase64" -> "string-base64" (元と違う)
-    expect(() => toSubpathName("string-base-64")).toThrow(/round trip does not come back identical/);
+    expect(() => toSubpathName("string-base-64")).toThrow(
+      /round trip does not come back identical/
+    );
   });
 
   it("extension 段は上書き表に宣言されていなければ落ちる", () => {

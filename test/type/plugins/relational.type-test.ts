@@ -1,8 +1,9 @@
 // ===========================================================================
 // test/type/plugins/relational.type-test.ts
-// 呼び出し側の型フィクスチャ。宣言だけを見ても分からない欠陥 —— 引数マーカーの
-// 主語違い、パス型が効いていない、transform の出力型が伝播していない —— は
-// ここでしか出ない。誤った引数が @ts-expect-error で弾かれることを示す。
+// Type fixtures from the caller's side. The defects a declaration cannot show
+// — an argument marker with the wrong subject, a path type that is not
+// actually applied, a transform's output type failing to propagate — surface
+// only here. Each wrong argument is shown being refused.
 // ===========================================================================
 import { Builder } from "../../../src/index";
 import { compareFieldPlugin } from "../../../src/plugins/compare-field/index";
@@ -38,28 +39,29 @@ const rb = Builder()
   .use(writeOnlyPlugin)
   .for<Invoice>();
 
-// ==================== compareField (混在マーカータプル) ====================
-// FieldRef -> FieldPath<Invoice> & string、その後ろは素の比較関数。
+// ============ compareField: a tuple mixing marker kinds ====================
+// A field reference resolves to a path of the model; what follows is a plain
+// comparison function.
 rb.v("confirm", (b) => b.string.compareField("password"));
 rb.v("confirm", (b) => b.string.compareField("customer.tier"));
 rb.v("total", (b) =>
   b.number.compareField("price", (value, target) => value === target)
 );
-// @ts-expect-error 第1引数はモデルに存在するパスでなければならない
+// @ts-expect-error the first argument must be a path that exists on the model
 rb.v("confirm", (b) => b.string.compareField("nope"));
-// @ts-expect-error 第2引数は比較関数。文字列は取らない
+// @ts-expect-error the second argument is a comparison function, not a string
 rb.v("confirm", (b) => b.string.compareField("password", "eq"));
-// @ts-expect-error compareField は any スロットを許していない
+// @ts-expect-error compareField does not permit the any slot
 rb.v("confirm", (b) => b.any.compareField("password"));
 
 // ==================== stitch =============================================
-// 素の呼び出し形 (旧 stitchSimple 相当): 値は unknown なので絞ってから使う。
+// The plain call form: the values are unknown, so they get narrowed first.
 rb.v("total", (b) =>
   b.number.stitch(["price", "quantity"], (values, value) => ({
     valid: values["price"] !== undefined && value !== undefined,
   }))
 );
-// PickPaths が組み立てた型に、呼び出し側のガードで絞る形。
+// The type assembled from the declared paths, narrowed by a caller's guard.
 type PriceAndQuantity = StitchFieldsOf<Invoice, ["price", "quantity"]>;
 const isPriceAndQuantity = (
   values: StitchFieldValues
@@ -72,25 +74,25 @@ rb.v("total", (b) =>
       : { valid: false }
   )
 );
-// @ts-expect-error 宣言するパスはモデルのパスでなければならない
+// @ts-expect-error a declared path must be a path of the model
 rb.v("total", (b) => b.number.stitch(["nope"], () => ({ valid: true })));
-// @ts-expect-error check は { valid, message? } を返す。boolean ではない
+// @ts-expect-error check returns { valid, message? }, not a boolean
 rb.v("total", (b) => b.number.stitch(["price"], () => true));
 
-// ==================== transform (出力型がチェーンに伝播する) ==============
+// ============ transform: the output type propagates along the chain ========
 rb.v("note", (b) => b.string.transform((value) => value.trim()));
-// 後段は前段の出力型 (number) を見る: toFixed が生えていることが証拠。
+// The later step sees the earlier step's output type; toFixed being available is the proof.
 rb.v("note", (b) =>
   b.string
     .transform((value) => value.length)
     .transform((length) => length.toFixed(2))
 );
-// @ts-expect-error 入力は string。number を宣言した map は取れない
+// @ts-expect-error the input is a string, so a map declared over number does not fit
 rb.v("note", (b) => b.string.transform((value: number) => value));
 rb.v("note", (b) =>
   b.string
     .transform((v) => v.length)
-    // @ts-expect-error 変換後は number なので trim() は無い
+    // @ts-expect-error after the transform it is a number, which has no trim()
     .transform((n) => n.trim())
 );
 
@@ -101,25 +103,25 @@ rb.v("password", (b) =>
     required: true,
   })
 );
-// @ts-expect-error check は必須のオプション
+// @ts-expect-error check is a required option
 rb.v("password", (b) => b.string.fromContext({ required: true }));
 rb.v("password", (b) =>
   b.string.fromContext({
     check: () => ({ valid: true }),
-    // @ts-expect-error 知らないオプションは受け付けない
+    // @ts-expect-error an unrecognised option is not accepted
     retries: 3,
   })
 );
 
-// ==================== readOnly / writeOnly (2つの別シンボル) ==============
+// ============ readOnly / writeOnly: two separate symbols ==================
 rb.v("id", (b) => b.string.readOnly());
 rb.v("token", (b) => b.string.writeOnly());
 rb.v("id", (b) => b.string.readOnly({ code: "READ_ONLY" }));
-// @ts-expect-error 引数は RuleOptions だけ。位置引数は取らない
+// @ts-expect-error the only argument is RuleOptions; there are no positional ones
 rb.v("id", (b) => b.string.readOnly("write"));
 rb.v("price", (b) => b.number.writeOnly());
-// @ts-expect-error readOnly / writeOnly は tuple スロットを許していない
+// @ts-expect-error readOnly and writeOnly do not permit the tuple slot
 rb.v("pair", (b) => b.tuple.writeOnly());
 
-// ビルダーは終端まで到達する (どの .v() もエラーオブジェクトを返していない)。
+// The builder reaches its end, meaning no .v() returned an error object.
 export const invoiceValidator = rb.build();

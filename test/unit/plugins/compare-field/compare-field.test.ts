@@ -1,5 +1,6 @@
-// compareField を「利用者が書くとおり」に組み立てて実際に検証を走らせる。
-// 型が通ることではなく valid / issues の中身を見る。
+// Assembles compareField the way a user writes it and actually runs the
+// validation, watching the verdict and the issues rather than whether it
+// type-checks.
 import { Builder } from "../../../../src/index";
 import { compareFieldPlugin } from "../../../../src/plugins/compare-field/index";
 
@@ -24,18 +25,18 @@ function makeSignup(overrides: Partial<Signup> = {}): Signup {
   };
 }
 
-describe("compareField: 既定は厳密等価", () => {
+describe("compareField: strict equality by default", () => {
   const validator = Builder()
     .use(compareFieldPlugin)
     .for<Signup>()
     .v("confirm", (b) => b.string.compareField("password"))
     .build();
 
-  it("一致すれば通る", () => {
+  it("passes when the two match", () => {
     expect(validator.validate(makeSignup()).valid).toBe(true);
   });
 
-  it("不一致なら落ち、path と code と既定メッセージが出る", () => {
+  it("fails when they do not, reporting the path, the code and the default message", () => {
     const result = validator.validate(makeSignup({ confirm: "other" }));
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -47,7 +48,7 @@ describe("compareField: 既定は厳密等価", () => {
   });
 });
 
-describe("compareField: 混在マーカータプル (FieldRef + 後続の素の引数)", () => {
+describe("compareField: a tuple mixing a field reference with plain arguments", () => {
   const validator = Builder()
     .use(compareFieldPlugin)
     .for<Signup>()
@@ -62,11 +63,11 @@ describe("compareField: 混在マーカータプル (FieldRef + 後続の素の�
     )
     .build();
 
-  it("比較関数が真なら通る", () => {
+  it("passes when the comparison answers true", () => {
     expect(validator.validate(makeSignup({ age: 18 })).valid).toBe(true);
   });
 
-  it("比較関数が偽なら落ちる", () => {
+  it("fails when it answers false", () => {
     const result = validator.validate(makeSignup({ age: 17 }));
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -74,19 +75,19 @@ describe("compareField: 混在マーカータプル (FieldRef + 後続の素の�
   });
 });
 
-describe("compareField: ドット記法の参照先", () => {
+describe("compareField: a dotted reference", () => {
   const validator = Builder()
     .use(compareFieldPlugin)
     .for<Signup>()
     .v("handle", (b) => b.string.compareField("profile.nickname"))
     .build();
 
-  it("ネストした相手フィールドを読む", () => {
+  it("reads a nested counterpart field", () => {
     expect(validator.validate(makeSignup()).valid).toBe(true);
     expect(validator.validate(makeSignup({ handle: "zzz" })).valid).toBe(false);
   });
 
-  it("参照先が欠けていれば undefined として比較する", () => {
+  it("compares against undefined when the counterpart is absent", () => {
     const result = validator.validate({
       password: "p",
       confirm: "p",
@@ -98,7 +99,7 @@ describe("compareField: ドット記法の参照先", () => {
   });
 });
 
-describe("compareField: options.code と messageFactory", () => {
+describe("compareField: options.code and messageFactory", () => {
   const validator = Builder()
     .use(compareFieldPlugin)
     .for<Signup>()
@@ -106,25 +107,25 @@ describe("compareField: options.code と messageFactory", () => {
       b.string.compareField("password", undefined, {
         code: "PASSWORD_MISMATCH",
         messageFactory: (msgCtx) =>
-          `${msgCtx.path}: ${msgCtx.fieldPath} は ${String(
+          `${msgCtx.path}: ${msgCtx.fieldPath} is ${String(
             msgCtx.targetValue
           )} (code=${msgCtx.code})`,
       })
     )
     .build();
 
-  it("code を上書きし、messageFactory に fieldPath / targetValue を渡す", () => {
+  it("overrides the code and hands messageFactory the field path and target value", () => {
     const result = validator.validate(makeSignup({ confirm: "x" }));
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("PASSWORD_MISMATCH");
     expect(result.issues[0]?.message).toBe(
-      "confirm: password は hunter2 (code=PASSWORD_MISMATCH)"
+      "confirm: password is hunter2 (code=PASSWORD_MISMATCH)"
     );
   });
 });
 
-describe("compareField: severity の上書き", () => {
+describe("compareField: overriding the severity", () => {
   const validator = Builder()
     .use(compareFieldPlugin)
     .for<Signup>()
@@ -133,7 +134,7 @@ describe("compareField: severity の上書き", () => {
     )
     .build();
 
-  it("warning は issue を出すが valid のまま", () => {
+  it("has a warning report an issue while staying valid", () => {
     const result = validator.validate(makeSignup({ confirm: "x" }));
     expect(result.valid).toBe(true);
     expect(result.issues[0]?.severity).toBe("warning");

@@ -15,7 +15,7 @@ import { readAstroExamples } from "../../../scripts/doc-examples/read-astro-exam
 
 const BACKTICK = "`";
 
-/** 1つの .astro を書いて読み、後片付けする。 */
+/** Writes one .astro file, reads it, and cleans up. */
 function withAstroFile<T>(body: string, read: (root: string) => T): T {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "luq-astro-examples-"));
   try {
@@ -33,26 +33,26 @@ function readOne(body: string) {
 }
 
 describe("unescapeTemplateLiteral", () => {
-  it("backtick と $ のエスケープを実行時の文字に戻す", () => {
+  it("turns escaped backticks and dollars back into their characters", () => {
     expect(unescapeTemplateLiteral("a \\` b \\${x} c")).toBe("a ` b ${x} c");
   });
 
-  it("\\\\n は backslash + n のまま、単独の \\n は改行になる", () => {
+  it("keeps an escaped backslash-n literal and makes a lone \\n a newline", () => {
     expect(unescapeTemplateLiteral("\\\\n")).toBe("\\n");
     expect(unescapeTemplateLiteral("\\n")).toBe("\n");
   });
 
-  it("未知のエスケープは文字そのものになる (JavaScript の規則)", () => {
+  it("turns an unknown escape into the character itself, as JavaScript does", () => {
     expect(unescapeTemplateLiteral("\\d")).toBe("d");
   });
 });
 
 describe("hasUnescapedInterpolation", () => {
-  it("エスケープされた ${ は補間ではない", () => {
+  it("does not treat an escaped ${ as interpolation", () => {
     expect(hasUnescapedInterpolation("\\${issue.path}")).toBe(false);
   });
 
-  it("生の ${ は補間である", () => {
+  it("treats a raw ${ as interpolation", () => {
     expect(hasUnescapedInterpolation("import { ${symbol} } from 'x';")).toBe(
       true
     );
@@ -60,7 +60,7 @@ describe("hasUnescapedInterpolation", () => {
 });
 
 describe("findTemplateLiteralConstants", () => {
-  it("宣言の名前・開始行・中身を取り出す", () => {
+  it("extracts a declaration's name, start line and contents", () => {
     const source = ["const first = " + BACKTICK + "a", "b" + BACKTICK + ";"];
     const found = findTemplateLiteralConstants(source.join("\n"));
     expect(found).toHaveLength(1);
@@ -72,7 +72,7 @@ describe("findTemplateLiteralConstants", () => {
     });
   });
 
-  it("補間の内側の backtick で閉じたことにしない", () => {
+  it("does not close on a backtick inside an interpolation", () => {
     const source =
       "const a = " +
       BACKTICK +
@@ -95,14 +95,14 @@ describe("findTemplateLiteralConstants", () => {
 });
 
 describe("findCodeBlockLanguages", () => {
-  it("language を書いた CodeBlock からその言語を読む", () => {
+  it("reads the language from a code block that states one", () => {
     const languages = findCodeBlockLanguages(
       '<CodeBlock code={install} language="bash" />'
     );
     expect(languages.get("install")).toBe("bash");
   });
 
-  it("language 省略時は CodeBlock の既定値になる", () => {
+  it("falls back to the component's default when none is stated", () => {
     const languages = findCodeBlockLanguages("<CodeBlock code={shown} />");
     expect(languages.get("shown")).toBe(DEFAULT_CODE_BLOCK_LANGUAGE);
   });
@@ -110,19 +110,19 @@ describe("findCodeBlockLanguages", () => {
 
 describe("readAstroExampleDirectives", () => {
   const lines = [
-    "// luq-example: with base — 前のブロックを使う",
-    "// luq-example: must-fail — 通ってはならない",
+    "// luq-example: with base — uses the previous block",
+    "// luq-example: must-fail — this must not compile",
     "const example = 1;",
   ];
 
-  it("宣言の上に積んだディレクティブをまとめて読む", () => {
+  it("reads the directives stacked above a declaration together", () => {
     const directives = readAstroExampleDirectives(lines, 3);
     expect(directives.expectation).toBe("must-fail");
     expect(directives.preludeNames).toEqual(["base"]);
     expect(directives.problems).toEqual([]);
   });
 
-  it("理由の無いディレクティブは違反になる", () => {
+  it("makes a directive with no reason a violation", () => {
     const directives = readAstroExampleDirectives(
       ["// luq-example: skip", "const example = 1;"],
       2
@@ -132,9 +132,12 @@ describe("readAstroExampleDirectives", () => {
     ]);
   });
 
-  it("未知の語は違反になる", () => {
+  it("makes an unknown word a violation", () => {
     const directives = readAstroExampleDirectives(
-      ["// luq-example: maybe — なんとなく", "const example = 1;"],
+      [
+        "// luq-example: maybe — for no particular reason",
+        "const example = 1;",
+      ],
       2
     );
     expect(directives.problems.map((one) => one.kind)).toEqual([
@@ -156,7 +159,7 @@ describe("readAstroExamples", () => {
     ].join("\n");
   }
 
-  it("typescript として表示される定数だけを検査対象にする", () => {
+  it("checks only the constants displayed as typescript", () => {
     const scan = readOne(
       page(
         "const shown = " + BACKTICK + "const a = 1;" + BACKTICK + ";",
@@ -167,11 +170,11 @@ describe("readAstroExamples", () => {
     expect(scan.examples.map((one) => one.code)).toEqual(["const a = 1;"]);
   });
 
-  it("with は指した定数のコードを前置きし、その行数を記録する", () => {
+  it("prepends the named constant's code and records how many lines that was", () => {
     const scan = readOne(
       page(
         "const base = " + BACKTICK + "const a = 1;" + BACKTICK + ";",
-        "// luq-example: with base — 前のブロックで宣言した a を読む",
+        "// luq-example: with base — reads the a declared in the previous block",
         "const shown = " + BACKTICK + "const b = a;" + BACKTICK + ";"
       )
     );
@@ -180,10 +183,10 @@ describe("readAstroExamples", () => {
     expect(withPrelude?.preludeLineCount).toBe(2);
   });
 
-  it("with が存在しない定数を指したら違反になる", () => {
+  it("makes with naming a constant that does not exist a violation", () => {
     const scan = readOne(
       page(
-        "// luq-example: with missing — 存在しない定数",
+        "// luq-example: with missing — a constant that does not exist",
         "const shown = " + BACKTICK + "const b = 2;" + BACKTICK + ";"
       )
     );
@@ -193,7 +196,7 @@ describe("readAstroExamples", () => {
     ]);
   });
 
-  it("補間を含む例はディレクティブ無しでも skip になる", () => {
+  it("skips an example containing interpolation, directive or not", () => {
     const scan = readOne(
       page(
         "const shown = " +

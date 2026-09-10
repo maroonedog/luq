@@ -90,11 +90,16 @@ describe("the requiredIf shape: demanding when true, silent when false", () => {
   it.each([
     ["undefined", undefined],
     ["null", null],
-  ])("ends silently, treating %s as absent, when the condition is false", (_label, value) => {
-    const sink = createSink();
-    expect(decide(field, value, sink, contextFor({ flag: false }))).toBe(false);
-    expect(sink.issues).toHaveLength(0);
-  });
+  ])(
+    "ends silently, treating %s as absent, when the condition is false",
+    (_label, value) => {
+      const sink = createSink();
+      expect(decide(field, value, sink, contextFor({ flag: false }))).toBe(
+        false
+      );
+      expect(sink.issues).toHaveLength(0);
+    }
+  );
 
   // With a false condition requiredIf is silent, so the empty string goes
   // back to counting as present.

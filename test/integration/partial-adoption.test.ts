@@ -1,19 +1,19 @@
 // ===========================================================================
 // test/integration/partial-adoption.test.ts
 //
-// README と docs-site が「既存の型に部分的にパッチできる」と主張している。
-// その主張を実行時に固定する。主張だけあってゲートが無いと、実装が変わった
-// ときに黙って嘘になる — この種の誇張こそ、このリポジトリが 1.x から
-// 引き継がないと決めたものである。
+// The documentation claims an existing type can be patched partially. This
+// pins that claim by running it. A claim with no gate behind it becomes a lie
+// the moment the implementation changes, and that kind of overstatement is
+// exactly what this repository decided not to inherit.
 //
-// 固定するのは4つ:
-//   1. 未宣言のパスは READ すらされない (getter を仕込んで確かめる)
-//   2. parse() は未宣言のフィールドをそのまま返す
-//   3. pick() は1フィールドだけを判定する
-//   4. 型定義には手を入れない (.for<T>() は T をそのまま受ける)
+// Four things:
+//   1. an undeclared path is not even READ (checked by installing a getter)
+//   2. parse() returns an undeclared field unchanged
+//   3. pick() judges one field and no more
+//   4. the type definitions are untouched: .for<T>() takes T as it is
 //
-// 4つ目は型の話なので実行時テストには乗らない。test/type/ に置かれた
-// 否定の型テスト群がその役目を持つ。ここでは 1-3 を見る。
+// The fourth is a statement about types and cannot ride on a run-time test;
+// the negative type tests carry it. This file covers the first three.
 // ===========================================================================
 import { Builder } from "../../src/index";
 import { requiredPlugin } from "../../src/plugins/required";
@@ -42,15 +42,16 @@ describe("a type may be covered one field at a time", () => {
   });
 
   it("does not require the fields it was not given rules for", () => {
-    // README: 「宣言していないパスは検証されず、必須にもならない」
+    // The claim: an undeclared path is neither validated nor made required.
     expect(buildPartialValidator().validate({ id: "abc" } as Order).valid).toBe(
       true
     );
   });
 
   it("does not even READ an undeclared field", () => {
-    // 「読まれない」は「検証されない」より強い主張なので、強いほうを測る。
-    // getter を踏んだら記録される。踏まなければ配列は空のまま。
+    // "not read" is a stronger claim than "not validated", so the stronger
+    // one is what gets measured: the getter records being touched, and the
+    // list stays empty if it never is.
     const touched: string[] = [];
     const subject = {
       id: "abc",

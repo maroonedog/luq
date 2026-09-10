@@ -1,12 +1,13 @@
 // ===========================================================================
-// 遅延する RuleContext。
+// The lazily built rule context.
 //
-// 見るのは三つ。**いつ組むか**、**何度組むか**、そして **何が見えなくなるか**。
+// Three things: **when** it is assembled, **how many times**, and **what stops
+// being visible**.
 //
-// 三つ目が要る理由は、これが公開型の実装だからである。RuleContext は
-// interface なので約束しているのはプロパティアクセスだけだが、`path` が own
-// プロパティでなくなるのは観測できる差で、黙って持っていてよい差ではない。
-// ここに書いてあるものが、この形で失われるものの全部である。
+// The third matters because this implements a public type. RuleContext is an
+// interface and promises only property access, but `path` no longer being an
+// own property is an observable difference, and not one to hold quietly. What
+// is written here is everything this shape gives up.
 // ===========================================================================
 import { FieldRuleContext } from "../../../src/runtime/field-rule-context";
 import { IndexStack } from "../../../src/runtime/index-stack";
@@ -52,8 +53,8 @@ describe("the path is built when it is asked for, and not before", () => {
     expect(renders).toBe(1);
   });
 
-  // スタックは可変で、要素が終われば畳まれる。掴んだ path が畳みに追随して
-  // 変わるようでは、規則が受け取ったものと発行された issue が食い違う。
+  // The stack is mutable and pops when an element ends. A path already taken
+  // that follows the pop would disagree with the issue that gets emitted.
   it("pins the path it built, even after the stack has moved on", () => {
     const stack = new IndexStack();
     stack.push("lines", 0);
@@ -69,9 +70,9 @@ describe("the path is built when it is asked for, and not before", () => {
     stack.push("lines", 2);
     const context = contextAt(stack, "sku");
     stack.pop();
-    // 一度も読まないまま畳まれた場合は、畳んだ後の位置で組まれる。規則が
-    // 自分の呼び出しの中で読むかぎり起きないが、起きたときに何が返るかは
-    // 決めておく。
+    // Never read before the pop, it is assembled at the popped position.
+    // That cannot happen while a rule reads it within its own call, but what
+    // it answers if it does is decided rather than left open.
     expect(context.path).toBe("sku");
   });
 
@@ -112,10 +113,10 @@ describe("what this shape gives up, stated exactly", () => {
     expect(Object.keys(context)).not.toContain("path");
   });
 
-  // spread は path を落とす。ただし **TypeScript がそれを知っている** —
-  // `{ ...context }.path` は tsc がエラーにするので、型を通している利用者に
-  // とってこの差は静かではない。ここで Record に落としているのは、その
-  // コンパイルエラーを避けて実行時の姿を見るためである。
+  // Spreading drops path — but **the compiler knows that**: reading path off
+  // the spread is an error, so for anyone type-checking their code this
+  // difference is not silent. The cast to a Record here exists only to get
+  // past that error and look at the run-time shape.
   it("loses path through a spread, which the type system already says", () => {
     const stack = new IndexStack();
     stack.push("lines", 0);
@@ -126,7 +127,7 @@ describe("what this shape gives up, stated exactly", () => {
     expect(spread["root"]).toEqual({ lines: [] });
   });
 
-  // ログに流すのは現実にある使い方なので、そこだけは形を固定してある。
+  // Logging one is a real use, so that shape at least is pinned.
   it("keeps JSON to the four declared members, internals included nowhere", () => {
     const stack = new IndexStack();
     stack.push("lines", 4);

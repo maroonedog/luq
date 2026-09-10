@@ -1,14 +1,15 @@
 // ===========================================================================
-// 書き出したスキーマを、読む側で読み戻して、同じ値に同じ判定が出るかを見る。
+// Reads an emitted schema back in and checks the same values get the same
+// verdicts.
 //
-// 単体テストは「このキーワードが出る」を確かめているが、それは私が期待した
-// 綴りと一致することしか言っていない。綴りが正しくても意味がずれていれば、
-// 受け取った側は違う判定をする。読む側 (fromJsonSchema) はこのリポジトリで
-// 既に JSON-Schema-Test-Suite の 828 ケースに通っているので、そこを鏡に
-// 使えば「出した意味」を確かめられる。
+// The unit tests confirm that a given keyword is emitted, which only says the
+// spelling matches what was expected. Spelled right but meaning something
+// else, a recipient judges differently. The reading direction already passes
+// the conformance suite, so using it as a mirror is what checks the MEANING of
+// what was written.
 //
-// 一致を見るのは valid / invalid の判定だけである。メッセージは別物で、
-// 一致する理由が無い。
+// Only the valid/invalid verdict is compared. Messages are a different thing
+// and have no reason to match.
 // ===========================================================================
 import { fromJsonSchema } from "../../src/json-schema/index";
 import { Builder } from "../../src/builder/field-builder.types";
@@ -63,16 +64,16 @@ const valid = {
   employees: [{ name: "Ada" }],
 };
 
-/** 一つずつ壊した値。壊し方の名前は、どのキーワードを試したかを言う。 */
+/** Values broken one at a time. Each name says which keyword it exercises. */
 const broken: readonly (readonly [string, unknown])[] = [
-  ["title が短すぎる", { ...valid, title: "ab" }],
-  ["title が長すぎる", { ...valid, title: "a".repeat(51) }],
-  ["title が無い", { ...valid, title: undefined }],
-  ["email の書式が違う", { ...valid, email: "not-an-email" }],
-  ["age が下限を割る", { ...valid, age: -1 }],
-  ["employees が空", { ...valid, employees: [] }],
-  ["要素の name が空", { ...valid, employees: [{ name: "" }] }],
-  ["要素の name が無い", { ...valid, employees: [{}] }],
+  ["title too short", { ...valid, title: "ab" }],
+  ["title too long", { ...valid, title: "a".repeat(51) }],
+  ["title missing", { ...valid, title: undefined }],
+  ["email in the wrong format", { ...valid, email: "not-an-email" }],
+  ["age below the minimum", { ...valid, age: -1 }],
+  ["employees empty", { ...valid, employees: [] }],
+  ["an element's name empty", { ...valid, employees: [{ name: "" }] }],
+  ["an element's name missing", { ...valid, employees: [{}] }],
 ];
 
 describe("emitted schema, read back", () => {
@@ -93,16 +94,16 @@ describe("emitted schema, read back", () => {
   });
 
   it("agrees that an absent optional field is fine", () => {
-    // note は `.optional()` なので required の並びに入っていない。
-    // 入っていれば、読み戻した側だけが落とす。
+    // note is `.optional()`, so it is not in the required list. Were it
+    // there, only the read-back side would reject.
     const withoutNote = { ...valid };
     expect(declared.validate(withoutNote).valid).toBe(true);
     expect(readBack.validate(withoutNote).valid).toBe(true);
   });
 
   it("emits a schema the reader accepts as a schema at all", () => {
-    // fromJsonSchema は知らないキーワードで build 時に throw する。
-    // ここまで来ている時点で、出した語彙は読む側の語彙の中にある。
+    // The reading direction throws at build time on a keyword it does not
+    // know. Getting this far means the emitted vocabulary is inside its own.
     expect(emitted["$schema"]).toBe("http://json-schema.org/draft-07/schema#");
   });
 });
