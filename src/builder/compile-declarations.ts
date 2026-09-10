@@ -28,7 +28,7 @@ import type { FieldEntry } from "./field-entry.types";
 import type { FieldDeclaredCalls } from "./field-declared-calls.types";
 import { getGlobalConfig } from "./global-config-store";
 
-/** build() が一度で作るもの: 実行する計画と、書き出すための宣言。 */
+/** What build() makes in one pass: the plan to run, and what was declared. */
 export interface CompiledDeclarations {
   readonly plan: ValidationPlan;
   readonly declaredCalls: readonly FieldDeclaredCalls[];

@@ -1,23 +1,22 @@
 // ===========================================================================
 // L10 src/standard-schema/plugin-keyword-map.ts
 //
-// 「このプラグインが、この引数で呼ばれたら、この JSON Schema キーワード」。
-// src/json-schema/keyword-map-*.ts の逆向きで、対応そのものはあちらが
-// 一度決めたものをそのまま使っている (二つ目の対応表を作らない)。
+// "This plugin, called with these arguments, means this JSON Schema keyword."
+// The reading direction of keyword-map-*.ts, reusing the correspondence those
+// files already settled rather than inventing a second one.
 //
-// プラグイン名を**文字列で**書いているのは、プラグイン本体を import すると
-// 書き出しを使う人が 20 個のプラグインを丸ごと抱き込むからで、それは
-// 「使った分しか入らない」という約束と噛み合わない。名前の綴りずれは
-// test/unit/standard-schema/plugin-keyword-map.test.ts が実物の
-// `plugin.name` と突き合わせて落とす — 費用を払わずに漂流を止める側に
-// 寄せている。
+// Plugin names are written as STRINGS. Importing the plugins themselves would
+// drag every one of them into the bundle of anyone who emits a schema, which
+// does not fit "you only ship what you used". A test cross-checks each string
+// against the real `plugin.name`, so the names cannot drift without the cost.
 //
-// ここに無いプラグインは書けない。利用者が自分で書いたプラグインは
-// 必ずここに無いので、必ず書けない。それは仕組み上そうなるという話で、
-// 隠さずに UnrepresentableRuleError として出る。
+// A plugin that is not listed here cannot be written out. A plugin the user
+// wrote themselves is never listed, so it never can. That is a consequence of
+// the design rather than an oversight, and it surfaces as
+// UnrepresentableRuleError instead of being hidden.
 // ===========================================================================
 
-/** 引数から作るキーワード片。null は「型や必須の側で扱う」の意味。 */
+/** A keyword fragment made from the arguments; null means type or presence handles it. */
 export type ToKeywords = (
   args: readonly unknown[]
 ) => Record<string, unknown> | null;
@@ -26,8 +25,8 @@ const numberAt = (args: readonly unknown[], index: number): number =>
   typeof args[index] === "number" ? args[index] : Number.NaN;
 
 /**
- * `.min(n)` は第2引数で排他になる。読む側 (keyword-map-number.ts) が
- * `exclusiveMinimum` を `[v, true]` に写しているのと同じ境目である。
+ * A second argument makes `.min(n)` exclusive. The same boundary the
+ * reading direction draws when it maps `exclusiveMinimum`.
  */
 const boundOf =
   (inclusive: string, exclusive: string): ToKeywords =>
@@ -35,29 +34,29 @@ const boundOf =
     [args[1] === true ? exclusive : inclusive]: numberAt(args, 0),
   });
 
-/** 引数を持たない書式。名前がそのまま `format` の値になる。 */
+/** A format with no arguments: the name is the `format` value verbatim. */
 const format =
   (name: string): ToKeywords =>
   () => ({ format: name });
 
 export const PLUGIN_KEYWORDS: Readonly<Record<string, ToKeywords>> =
   Object.freeze({
-    // --- 文字列 -----------------------------------------------------------
+    // --- strings ----------------------------------------------------------
     stringMin: (args) => ({ minLength: numberAt(args, 0) }),
     stringMax: (args) => ({ maxLength: numberAt(args, 0) }),
     stringExactLength: (args) => ({
       minLength: numberAt(args, 0),
       maxLength: numberAt(args, 0),
     }),
-    // Draft-07 の `pattern` は ECMA-262 の SOURCE 文字列。フラグは綴れないが、
-    // 落とすと意味が変わるので、フラグ付きは書けないものとして扱う
-    // (emit-field-schema.ts が null 以外の欠落を検出する余地を残す)。
+    // Draft-07's `pattern` is an ECMA-262 SOURCE string. Flags cannot be
+    // spelled there, and dropping them changes the meaning, so a flagged
+    // RegExp counts as unwritable rather than being silently narrowed.
     stringPattern: (args) =>
       args[0] instanceof RegExp ? { pattern: args[0].source } : null,
     stringContentEncoding: (args) => ({ contentEncoding: args[0] }),
     stringContentMediaType: (args) => ({ contentMediaType: args[0] }),
 
-    // --- 書式 (format-map.ts の名前をそのまま使う) -------------------------
+    // --- formats (names taken verbatim from the format map) ---------------
     stringDatetime: format("date-time"),
     stringDate: format("date"),
     stringTime: format("time"),
@@ -68,9 +67,9 @@ export const PLUGIN_KEYWORDS: Readonly<Record<string, ToKeywords>> =
     stringIdnHostname: format("idn-hostname"),
     stringIpv4: format("ipv4"),
     stringIpv6: format("ipv6"),
-    // `url` は JSON Schema に登録された書式名ではない。format-map.ts は
-    // `uri` と `url` の両方をこのプラグインに寄せているが、書き出す側は
-    // 一つ選ばねばならないので、登録されている `uri` を選ぶ。
+    // `url` is not a registered JSON Schema format name. Both spellings map
+    // to this plugin on the reading side, but a writer has to pick one, so it
+    // picks the registered `uri`.
     stringUrl: format("uri"),
     stringUriReference: format("uri-reference"),
     stringIri: format("iri"),
@@ -81,7 +80,7 @@ export const PLUGIN_KEYWORDS: Readonly<Record<string, ToKeywords>> =
     stringRegex: format("regex"),
     uuid: format("uuid"),
 
-    // --- 数値 -------------------------------------------------------------
+    // --- numbers ----------------------------------------------------------
     numberMin: boundOf("minimum", "exclusiveMinimum"),
     numberMax: boundOf("maximum", "exclusiveMaximum"),
     numberMultipleOf: (args) => ({ multipleOf: numberAt(args, 0) }),
@@ -92,21 +91,21 @@ export const PLUGIN_KEYWORDS: Readonly<Record<string, ToKeywords>> =
     numberPositive: () => ({ exclusiveMinimum: 0 }),
     numberNegative: () => ({ exclusiveMaximum: 0 }),
 
-    // --- 配列 -------------------------------------------------------------
+    // --- arrays -----------------------------------------------------------
     arrayMinLength: (args) => ({ minItems: numberAt(args, 0) }),
     arrayMaxLength: (args) => ({ maxItems: numberAt(args, 0) }),
     arrayUnique: () => ({ uniqueItems: true }),
 
-    // --- 値 ---------------------------------------------------------------
+    // --- values -----------------------------------------------------------
     literal: (args) => ({ const: args[0] }),
     oneOf: (args) => (Array.isArray(args[0]) ? { enum: args[0] } : null),
 
-    // --- 型と必須の側で扱うもの (キーワードを足さない) ---------------------
-    // numberInteger は `type: "integer"` になるので型の決定に混ぜる。
+    // --- handled by type or presence, adding no keyword -------------------
+    // numberInteger becomes `type: "integer"`, so it feeds the type decision.
     numberInteger: () => null,
     required: () => null,
     optional: () => null,
     nullable: () => null,
-    // 実行順を変えるだけで、値の集合を変えない。
+    // Changes the order things run in, not the set of accepted values.
     skip: () => null,
   });

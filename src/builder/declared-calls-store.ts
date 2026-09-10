@@ -1,14 +1,12 @@
 // ===========================================================================
 // L6  src/builder/declared-calls-store.ts
 //
-// build() が控えた宣言を、バリデータの外で持つ。
+// What build() recorded, held outside the validator.
 //
-// Validator に生やさない理由は2つある。ひとつは公開インターフェースで、
-// メンバーを増やすと to-standard-schema.ts が明示的に写している一覧も、
-// 利用者が書いた実装も、同時に増やさなければならなくなる。もうひとつは
-// 費用で、書き出しを使わない利用者にメンバー1つ分を払わせることになる。
-//
-// 連鎖ノードが同じ手を使っている (chain/chain-node-store.ts)。同じ理由である。
+// Not a member on the validator, for two reasons. One is the public interface:
+// every member added there is a member everyone who copies or reimplements the
+// interface has to add too. The other is cost — a member nobody reads is still
+// a member everybody carries.
 // ===========================================================================
 import type { FieldDeclaredCalls } from "./field-declared-calls.types";
 
@@ -17,7 +15,7 @@ const declaredCallsByValidator = new WeakMap<
   readonly FieldDeclaredCalls[]
 >();
 
-/** build() だけが呼ぶ。凍結済みのバリデータに後から結び付ける。 */
+/** Called only by build(), attaching to an already frozen validator. */
 export function rememberDeclaredCalls(
   validator: object,
   calls: readonly FieldDeclaredCalls[]
@@ -26,9 +24,9 @@ export function rememberDeclaredCalls(
 }
 
 /**
- * undefined は「このバリデータは build() が作ったものではない」を意味する。
- * 空配列と区別できる形で返すのが肝で、書き出す側はこの差で
- * 「制約が無い」と「宣言を持っていない」を言い分けられる。
+ * undefined means this validator did not come from build(). Keeping it
+ * distinct from the empty list is the point: it lets a writer tell "no
+ * constraints were declared" from "what was declared is not known".
  */
 export function readDeclaredCalls(
   validator: unknown

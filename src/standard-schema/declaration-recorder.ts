@@ -1,17 +1,13 @@
 // ===========================================================================
-// L10 src/standard-schema/declaration-recorder.ts — PORT の実装。
+// L10 src/standard-schema/declaration-recorder.ts — keeps the declared calls.
 //
-// L3 が declaration-recorder.port.ts で宣言した相手が、ここにいる。据える
-// のはモジュールの読み込みで、`toStandardJsonSchema` を取り込んだ時点で
-// 済んでいる (to-standard-json-schema.ts の先頭)。
+// The record is held per node in a WeakMap, so it lives exactly as long as the
+// node does and adds no member to anything.
 //
-// 控えはノードごとに WeakMap で持つ。連鎖ノードと同じ寿命になり、中核の
-// メンバーは一つも増えない。これは chain/chain-node-store.ts と同じ手で、
-// 理由も同じである。
-//
-// **足すのであって、書き換えない。** 親の控えは読むだけで、子には新しい
-// 配列を結び付ける。だから同じ `b` から枝分かれした二本の連鎖は互いを
-// 汚さないし、組み立て済みのノードを別の場所で使い回しても控えは動かない。
+// **It appends; it never rewrites.** The parent's record is only read, and the
+// child gets a new array. Two chains branched from one node therefore cannot
+// contaminate each other, and reusing an assembled node somewhere else cannot
+// move what was already recorded for it.
 // ===========================================================================
 import type { TypeName } from "../types";
 import type { AnyPlugin } from "../plugin-kit/plugin-definition";
@@ -48,9 +44,9 @@ const recorder: DeclarationRecorder = {
 };
 
 /**
- * 一度呼べば据わる。冪等 — 同じ実装を同じ場所に置き直すだけである。
- * 呼び出しはモジュールの先頭に置く: build() が走るより前に据わっている
- * 必要があるので、関数の中に隠してはならない。
+ * Idempotent. Call it at module scope, never from inside a function: the
+ * recorder has to be in place before any chain runs, and hiding the call
+ * behind a function makes that ordering depend on who calls it first.
  */
 export function installJsonSchemaDeclarationRecorder(): void {
   installDeclarationRecorder(recorder);

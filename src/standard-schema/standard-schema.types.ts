@@ -1,16 +1,16 @@
 // ===========================================================================
 // L10 src/standard-schema/standard-schema.types.ts
 //
-// Standard Schema v1 の型を自前で宣言する。@standard-schema/spec に依存しない。
-// 仕様が「型だけのパッケージなので inline してよい」と明示しており、依存を
-// 足せば利用者の node_modules に1つ増える一方で、得るものは何も無いため。
-// 形が仕様からずれていないことは test/type/standard-schema/ が固定する。
+// Declares the Standard Schema v1 types here rather than depending on the
+// spec package. The spec explicitly permits inlining, being types only, and a
+// dependency would add an entry to every user's node_modules for nothing.
+// Type tests pin the shape against the spec so it cannot drift.
 //
-// この層が L10 なのは、Validator (L6) の上に載る変換であり、コアの誰も
-// これを import しないから。import の向きは L6 -> L10 ではなく L10 -> L6。
+// This is the outermost layer because it is a view laid over the validator and
+// nothing in the core imports it. The import direction runs inwards only.
 // ===========================================================================
 
-/** 仕様の StandardSchemaV1。Input と Output を型として運ぶ。 */
+/** The spec's StandardSchemaV1, carrying Input and Output as types. */
 export interface StandardSchemaV1<Input = unknown, Output = Input> {
   readonly "~standard": StandardSchemaProps<Input, Output>;
 }
@@ -23,8 +23,8 @@ export interface StandardSchemaProps<Input = unknown, Output = Input> {
     options?: StandardSchemaOptions | undefined
   ) => StandardSchemaResult<Output> | Promise<StandardSchemaResult<Output>>;
   /**
-   * 実行時には存在しない。型を運ぶためだけのメンバーで、仕様がそう定めている。
-   * InferInput / InferOutput はここから読む。
+   * Absent at run time. The spec defines it as a type-only member, and it is
+   * what InferInput / InferOutput read.
    */
   readonly types?: StandardSchemaTypes<Input, Output> | undefined;
 }
@@ -48,8 +48,9 @@ export interface StandardSchemaFailure {
 }
 
 /**
- * path は仕様上 optional。Luq は必ず入れる (root への issue は空配列)。
- * 省略と「ルートを指す」を呼び出し側が区別できるようにするため。
+ * The spec makes path optional; it is always present here, with an issue on
+ * the root carrying the empty list. That keeps "omitted" distinguishable from
+ * "points at the root" on the consuming side.
  */
 export interface StandardSchemaIssue {
   readonly message: string;
@@ -71,8 +72,8 @@ export type InferStandardOutput<Schema extends StandardSchemaV1> = NonNullable<
 >["output"];
 
 /**
- * validate の第2引数。仕様が定めているので受ける。
- * libraryOptions はベンダーごとの追加パラメータで、Luq はまだ何も定義していない。
+ * validate's second parameter, declared because the spec defines it.
+ * libraryOptions is the per-vendor extension point, and none is defined yet.
  */
 export interface StandardSchemaOptions {
   readonly libraryOptions?: Record<string, unknown> | undefined;

@@ -1,13 +1,13 @@
 // ===========================================================================
 // L10 src/standard-schema/emit-field-schema.ts
 //
-// 一つのフィールドの宣言列を、一つの JSON Schema オブジェクトにする。
+// Turns one field's declared calls into one JSON Schema object.
 //
-// 型は宣言そのものからは分からない。分かるのは連鎖がどのスロットに
-// いたかで、それは DeclaredCall.slot が持っている。`.string.required()` の
-// 二つの呼び出しはどちらも slot が "string" なので、そこから `type` を決める。
-// スロットが混ざったフィールド (union など) は型を一つに決められないので、
-// 書けないものとして扱う。
+// The type is not readable from a declaration on its own. What IS readable is
+// which slot the chain stood in, which each call carries — every call in
+// `.string.required()` stands in the string slot, and that decides `type`.
+// A field whose calls span more than one slot has no single type, so it counts
+// as unwritable.
 // ===========================================================================
 import type { DeclaredCall } from "../chain/declared-call.types";
 import type { TypeName } from "../types";
@@ -17,13 +17,13 @@ import {
   type UnrepresentablePolicy,
 } from "./unrepresentable-rule-error";
 
-/** 書き出した一つのフィールド。`required` は親が組み立てるので外に出す。 */
+/** One emitted field. `required` is separate: the parent assembles it. */
 export interface EmittedField {
   readonly schema: Record<string, unknown>;
   readonly isRequired: boolean;
 }
 
-/** スロットから JSON Schema の型名へ。決められないものは undefined。 */
+/** Slot to JSON Schema type name; undefined when it cannot be decided. */
 const TYPE_OF_SLOT: Readonly<Partial<Record<TypeName, string>>> = Object.freeze(
   {
     string: "string",
@@ -31,10 +31,9 @@ const TYPE_OF_SLOT: Readonly<Partial<Record<TypeName, string>>> = Object.freeze(
     boolean: "boolean",
     array: "array",
     object: "object",
-    // date は JSON の型ではない。`format: "date-time"` を持つ文字列として
-    // 書き出すのが Draft-07 の慣習だが、Luq の date スロットは Date
-    // インスタンスを判定しており、JSON の値ではない。混同を避けて書けない
-    // ものにする。
+    // date is not a JSON type. Draft-07 convention writes it as a string with
+    // `format: "date-time"`, but the date slot judges Date instances, which
+    // are not JSON values. Counted as unwritable rather than conflated.
   }
 );
 
@@ -47,9 +46,9 @@ function typeOf(calls: readonly DeclaredCall[]): string | undefined {
 }
 
 /**
- * `type` をどう書くか。`.nullable()` は Draft-07 では型の並びで表す
- * (`{"type": ["string", "null"]}`)。`{"nullable": true}` は OpenAPI 3.0 の
- * 綴りで、JSON Schema の語彙には無い。
+ * How `type` is spelled. Draft-07 expresses `.nullable()` as a list of
+ * types (`{"type": ["string", "null"]}`). `{"nullable": true}` is the
+ * OpenAPI 3.0 spelling and is not in the JSON Schema vocabulary.
  */
 function typeKeyword(
   calls: readonly DeclaredCall[],
@@ -72,7 +71,7 @@ function typeKeyword(
   return { type: isNullable ? [base, "null"] : base };
 }
 
-/** 一つのフィールドの宣言列から、そのフィールドのスキーマを作る。 */
+/** Makes one field's schema from that field's declared calls. */
 export function emitFieldSchema(
   fieldPath: string,
   calls: readonly DeclaredCall[],
@@ -105,7 +104,7 @@ export function emitFieldSchema(
   }
   return {
     schema,
-    // `.optional()` は後から書いても効く。宣言のどこかにあれば任意である。
+    // `.optional()` counts wherever it appears in the chain, not only first.
     isRequired:
       calls.some((call) => call.pluginName === "required") &&
       !calls.some((call) => call.pluginName === "optional"),

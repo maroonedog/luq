@@ -1,9 +1,9 @@
 // ===========================================================================
 // L8  src/json-schema/ref-resolution-error.ts
 //
-// `$ref` が解けなかったことを表す例外。呼び出し側が **identity で捕まえられる**
-// ことが要件なので、独立したクラスであり、独立したモジュールである
-// (resolve-ref.ts から import すると、その巨大な依存を一緒に引く)。
+// Raised when a `$ref` cannot be resolved. Callers must be able to catch it
+// **by identity**, so it is its own class — and its own module, so catching it
+// does not drag in the resolver's dependencies.
 // ===========================================================================
 
 export class RefResolutionError extends Error {

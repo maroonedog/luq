@@ -14,15 +14,12 @@
 export type DefaultFactory<TValue> = (root: unknown) => TValue;
 
 /**
- * 判定より前に値を整える。
+ * Tidies a value before anything judges it. See `normalize` below.
  *
- * 引数も返り値も `unknown` である。整形の入力は**まだ検証されていない値**で、
- * フォームは数値の欄にも文字列を寄こす — `"42"` → `42` はこの層の主用途
- * なので、`(value: TValue) => TValue` と型を付けるのは嘘になる。返り値を
- * 判定するのは規則の側であり、型ではない。
- *
- * undefined と null には**呼ばれない**。理由は field-options.types.ts の
- * `normalize` の項に書いた。
+ * Both sides are `unknown` on purpose: the input has not been validated yet,
+ * and a form puts a string in a numeric field, so `"42"` → `42` is the main
+ * use of this layer. Typing it `(value: TValue) => TValue` would be a lie.
+ * What comes back out is judged by the rules, not by the type.
  */
 export type FieldNormalizer = (value: unknown) => unknown;
 
@@ -35,20 +32,20 @@ export interface FieldOptions<TValue> {
   /** Defaults to true — a declared null is replaced, matching 1.x. */
   readonly applyDefaultToNull?: boolean;
   /**
-   * 判定より前に値を整える。default の直後、presence の直前に走る。
+   * Tidies the value before anything judges it. Runs straight after
+   * `default` and before presence is decided.
    *
-   * `default` と同じ約束を持つ: validate() と parse() は同じ値を判定し、
-   * 書き戻すのは parse() だけである。だから validate() の結果と parse() の
-   * 結果が食い違うことはない。
+   * Same promise as `default`: validate() and parse() judge the same value,
+   * and only parse() writes it back, so the two can never disagree.
    *
-   * **undefined と null には呼ばれない。** `(v) => String(v).trim()` と書いた
-   * ときに undefined が `"undefined"` になり、それが `.required()` を
-   * 通ってしまうのを防ぐため。不在を扱うのは `default` の仕事で、
-   * normalize が扱うのは**在る値**である。この分担があるので、利用者は
-   * 整形関数の中で null 検査を書かなくてよい。
+   * **Never called for undefined or null.** Otherwise
+   * `(v) => String(v).trim()` would turn a missing field into the string
+   * `"undefined"` and let it past `.required()`. Absence is `default`'s
+   * business; this one only ever sees a value that is there, which is why a
+   * normalizer needs no null check of its own.
    *
-   * 空白だけの文字列を落とす用途はこの順序で成り立つ:
-   * `"  "` → trim → `""` → presence が空文字を不在とみなす → required が鳴る。
+   * That ordering is what makes the common case work: `"  "` → trim → `""`
+   * → presence reads the empty string as missing → required reports it.
    */
   readonly normalize?: FieldNormalizer;
 }

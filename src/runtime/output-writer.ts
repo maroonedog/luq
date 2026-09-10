@@ -63,8 +63,9 @@ export function createArrayWriteTargets(
 export function createPlanWriteTargets(
   plan: ValidationPlan
 ): readonly ArrayWriteTarget[] | null {
-  // 整形だけを宣言したフィールドも parse() では書き戻る。ここに
-  // hasNormalizers を足さないと、ライタが作られず黙って読んだ値が返る。
+  // A field declaring only a normalizer is still written back by parse().
+  // Leave it out of this condition and no writer is made, so the value read
+  // comes back unchanged and in silence.
   if (!plan.hasTransforms && !plan.hasDefaults && !plan.hasNormalizers) {
     return null;
   }

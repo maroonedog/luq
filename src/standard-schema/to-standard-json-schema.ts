@@ -1,28 +1,27 @@
 // ===========================================================================
 // L10 src/standard-schema/to-standard-json-schema.ts
 //
-// build() が返した Validator を Standard JSON Schema v1 に見せる。
+// Shows a built Validator as a Standard JSON Schema v1.
 //
-// 仕様 (@standard-schema/spec) では StandardJSONSchemaV1 は
-// StandardSchemaV1 の**兄弟**で、どちらも StandardTypedV1 を基底に持つ。
-// version / vendor / types は共通の持ち物なので、`~standard` 一つに
-// validate と jsonSchema の両方を載せれば、両方の顔で通る。ここが返す物は
-// StandardSchemaV1 でもある。
+// In the spec, StandardJSONSchemaV1 is a SIBLING of StandardSchemaV1 and both
+// derive from StandardTypedV1. version / vendor / types belong to both, so
+// putting validate and jsonSchema on one `~standard` satisfies both faces at
+// once — what this returns is a StandardSchemaV1 as well.
 //
-// 決めたこと2つ。
+// Two decisions.
 //
-// 1. input と output は同じスキーマを返す。仕様は入力型と出力型を別に
-//    尋ねる形をしていて、transform を持つ検証器では本来違う。Luq の宣言は
-//    transform の**結果の型**を持っておらず (関数の返り値は実行しないと
-//    分からない)、推測で別の形を返すのは嘘になる。同じ物を返し、
-//    transform を宣言したフィールドは書けないものとして扱う。
+// 1. input and output return the SAME schema. The spec asks for the input type
+//    and the output type separately, and for a validator with a transform they
+//    genuinely differ. A Luq declaration does not carry a transform's RESULT
+//    type — a function's return value is unknowable without running it — so
+//    inventing a second shape would be a lie. Both return the same thing, and
+//    a field declaring a transform counts as unwritable.
 //
-// 2. 書けない宣言に出会ったら既定で throw する。理由は
-//    unrepresentable-rule-error.ts に書いた。
+// 2. An unwritable declaration throws by default. See
+//    unrepresentable-rule-error.ts.
 //
-// このモジュールを読み込むことが、連鎖に「宣言を控えよ」と伝えることでも
-// ある (declaration-recorder.ts)。控えは実行時が一度も読まないので、中核は
-// 頼まれない限り作らない。
+// Importing this module is also what asks the chain to keep a record of the
+// declared calls, which it does not do on its own.
 // ===========================================================================
 import type { Validator } from "../builder/validator.types";
 import { readDeclaredCalls } from "../builder/declared-calls-store";
@@ -33,11 +32,11 @@ import { readUnrepresentablePolicy } from "./unrepresentable-rule-error";
 import { toStandardSchema, type StandardLuqSchema } from "./to-standard-schema";
 import { installJsonSchemaDeclarationRecorder } from "./declaration-recorder";
 
-// 連鎖は既定では宣言を控えない。控える相手を、ここで据える。この行は
-// build() より前に走らなければならないので、モジュールの先頭にある。
+// At module scope, not inside the export: this has to be in place before any
+// build() runs, and a chain that already ran cannot be asked again.
 installJsonSchemaDeclarationRecorder();
 
-/** 仕様の Options。target は必須で、libraryOptions はベンダー独自。 */
+/** The spec's Options: target is required, libraryOptions is vendor-defined. */
 export interface JsonSchemaOptions {
   readonly target: string;
   readonly libraryOptions?: Record<string, unknown> | undefined;
@@ -48,7 +47,7 @@ interface JsonSchemaConverter {
   readonly output: (options: JsonSchemaOptions) => Record<string, unknown>;
 }
 
-/** validate と jsonSchema の両方を持つ `~standard`。 */
+/** A `~standard` carrying both validate and jsonSchema. */
 export type StandardJsonSchemaLuqSchema<
   T extends object,
   TParsed = T,
@@ -63,8 +62,9 @@ export function toStandardJsonSchema<T extends object, TParsed = T>(
 ): StandardJsonSchemaLuqSchema<T, TParsed> {
   const declared = readDeclaredCalls(validator);
   const emit = (options: JsonSchemaOptions): Record<string, unknown> => {
-    // 支えていない target は、書き出す前に断る。宣言が空でも同じ順で
-    // 断らないと、target の誤りが「空のスキーマ」として通ってしまう。
+    // Refuse an unsupported target before writing anything. Same order even
+    // when there is nothing to write, or a wrong target passes as an empty
+    // schema instead of an error.
     const schemaUri = resolveJsonSchemaTarget(options.target);
     if (declared === undefined) throw new DeclarationsUnavailableError();
     return {

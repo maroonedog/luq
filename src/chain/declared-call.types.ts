@@ -1,29 +1,29 @@
 // ===========================================================================
-// L3  src/chain/declared-call.types.ts — 何が呼ばれたかを、値のまま控える。
+// L3  src/chain/declared-call.types.ts — one chain method call, kept as values.
 //
-// THE DEFECT THIS FILE EXISTS TO KILL: `.min(3)` の 3 は、プラグインの
-// `build(ctx, min)` がクロージャに閉じ込めて Rule を返した時点で消える。
-// コンパイル済みのルールに残るのは `code` と関数だけで、3 はどこにも無い。
-// JSON Schema を**書き出す**側はその 3 を必要とするので、連鎖がメソッドを
-// 呼んだその場で控える。
+// THE DEFECT THIS TYPE EXISTS TO KILL: a plugin turns its arguments into a
+// closure and returns a rule, so `.min(3)`'s 3 survives only inside that
+// closure. A compiled rule carries a code and a function; the 3 is nowhere to
+// be read. Anything that has to WRITE the constraint back out — a JSON Schema,
+// a form descriptor — needs the value, so it is kept as the call happens.
 //
-// 実行時は一切読まない。build() が一度作り、書き出しを頼まれたときだけ
-// 読まれる。ルール列とは本数が揃わない (judgesNull なプラグインは
-// ルールを2本足すが、呼ばれたメソッドは1つである)。
+// Nothing at validation time reads this. It is made once and read only when
+// asked for. Its length does not match the rule list: one method call can add
+// more than one rule.
 // ===========================================================================
 import type { TypeName } from "../types";
 
-/** 連鎖メソッドが一度呼ばれたこと。 */
+/** One call of one chain method. */
 export interface DeclaredCall {
   readonly pluginName: string;
   readonly method: string;
   readonly slot: TypeName;
   /**
-   * `resolveArguments` を通したあとの値。
+   * The arguments as declared, after argument resolution and nothing else.
    *
-   * 宣言時の値そのものであって、正規化はしない。`pattern` は RegExp のまま
-   * 入る。JSON Schema がどう書くかは書き出す側の仕事で、ここで文字列に
-   * しておくと、書き出さない利用者にその変換を払わせることになる。
+   * They are not converted: a RegExp stays a RegExp. How a given output format
+   * spells a value is that writer's business, and converting here would make
+   * everyone pay for a conversion only some of them want.
    */
   readonly args: readonly unknown[];
 }

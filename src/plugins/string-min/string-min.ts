@@ -35,16 +35,14 @@ export const stringMinPlugin = /*#__PURE__*/ definePlugin<{
       code: ctx.code,
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
-      // min に届いた時点で止める。全長を数える必要があるのは**落ちる**
-      // ときだけで、そのときは値が min より短いのだから走査も短い。
-      // 元は countCodePoints を最大二度呼び、どちらも文字列を最後まで
-      // 歩いていた。符号位置で数えるのは変えない (UTF-16 単位ではない) —
-      // 変えているのは、いつ止めるかだけである。受理パスで 12.7%。
+      // Stops as soon as min is reached. The full length is only needed to
+      // REPORT a failure, and a failing value is shorter than min, so that
+      // walk is short too. Counting is still by code point, not UTF-16 unit;
+      // the only thing that changed is when it stops.
       run: (value) => {
         if (!isString(value)) return PASS;
-        // min が 0 なら空文字列も通る。ループは空文字列で一度も回らないので、
-        // この行が無いと `""` が actual 0 で落ちる — 早期脱出に書き換えた
-        // ときに実際に開いた穴で、既存のテストは一件も気づかなかった。
+        // min of 0 admits the empty string. The loop body never runs on an
+        // empty string, so without this line the empty string fails with 0.
         if (min === 0) return PASS;
         let count = 0;
         for (const _character of value) {

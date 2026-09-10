@@ -52,20 +52,19 @@ export interface FieldCompileRequest {
   readonly eraseComposite: CompositeEraser;
 }
 
-/** 添字はここでは入らない。開いている添字は実行時に接頭辞が持つ。 */
+/** No indices here: an open index is carried by the run-time prefix. */
 const NO_INDICES: readonly number[] = Object.freeze([]);
 
 export function compileField(request: FieldCompileRequest): CompiledField {
   const byKind = splitRulesByKind(request.rules);
   const hasDefault = request.defaultOf !== null;
-  // 整形も値を差し替えるので、ライタが要る条件は default と同じである。
+  // Normalizing replaces the value too, so it needs a writer just as default does.
   const needsWriter =
     byKind.transforms.length > 0 || hasDefault || request.normalize !== null;
   const template = Object.freeze(request.template);
-  // read を先に作る。ワイルドカードを含むテンプレートを拒むのは
-  // createValueReader の役目で、それより先に formatIssuePath を呼ぶと
-  // 「添字が足りない」という RangeError が、本来の PathSyntaxError を
-  // 追い越して出てしまう (テストがそれを捕まえた)。
+  // The reader is made first. Refusing a template that still holds a wildcard
+  // is the reader's job; formatting the path before that raises a "not enough
+  // indices" RangeError which overtakes the PathSyntaxError that should win.
   const read = createValueReader(template);
   const field: CompiledField = {
     template,

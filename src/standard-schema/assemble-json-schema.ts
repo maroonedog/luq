@@ -1,15 +1,15 @@
 // ===========================================================================
 // L10 src/standard-schema/assemble-json-schema.ts
 //
-// パスの並びから、入れ子のオブジェクト／配列スキーマを組み立てる。
+// Builds the nested object and array schema from a list of paths.
 //
-// `"owner.name"` は `properties.owner.properties.name` に、
-// `"employees[*].name"` は `properties.employees.items.properties.name` に
-// なる。パスの解釈は parseFieldPath が一度決めているものをそのまま使う
-// (二つ目のパス文法を作らない)。
+// `"owner.name"` becomes `properties.owner.properties.name`, and
+// `"employees[*].name"` becomes
+// `properties.employees.items.properties.name`. Paths are read with the
+// existing path parser rather than a second grammar written here.
 //
-// `required` は**親が**持つ。JSON Schema の required は「この オブジェクトが
-// この鍵を持たねばならない」であって、鍵の側の性質ではない。
+// `required` belongs to the PARENT. In JSON Schema it says "this object must
+// carry this key", which is a fact about the object, not about the key.
 // ===========================================================================
 import { parseFieldPath } from "../path/parse-field-path";
 import type { PathSegment } from "../path/path-segment.types";
@@ -18,13 +18,13 @@ import { emitFieldSchema } from "./emit-field-schema";
 import { DeclarationsUnavailableError } from "./declarations-unavailable-error";
 import type { UnrepresentablePolicy } from "./unrepresentable-rule-error";
 
-/** 組み立て中の節。JSON にする直前に固める。 */
+/** A node under construction, frozen just before it becomes JSON. */
 interface SchemaNode {
   readonly properties: Map<string, SchemaNode>;
   readonly required: Set<string>;
-  /** 配列の要素側。`[*]` を一つ降りるごとに作られる。 */
+  /** The element side of an array, made on each descent through `[*]`. */
   element: SchemaNode | null;
-  /** 葉に着いたときに置かれる、そのフィールド自身のスキーマ。 */
+  /** The field's own schema, placed on arrival at a leaf. */
   leaf: Record<string, unknown> | null;
 }
 
@@ -35,7 +35,7 @@ const newNode = (): SchemaNode => ({
   leaf: null,
 });
 
-/** `key` を降りる。無ければ作る。 */
+/** Descends through `key`, creating it when absent. */
 function descend(node: SchemaNode, key: string): SchemaNode {
   const existing = node.properties.get(key);
   if (existing !== undefined) return existing;
@@ -44,7 +44,7 @@ function descend(node: SchemaNode, key: string): SchemaNode {
   return created;
 }
 
-/** 一本のパスを木に置く。葉に着いたところで schema を据える。 */
+/** Places one path in the tree, setting the schema where the leaf lands. */
 function place(
   root: SchemaNode,
   segments: readonly PathSegment[],
@@ -70,11 +70,11 @@ function place(
 }
 
 /**
- * 節を JSON Schema に固める。
+ * Freezes a node into a JSON Schema.
  *
- * 葉のスキーマは、子を持つ節では**土台**として使う。`.object.required()` と
- * `"user.name"` の両方が宣言されていれば、前者の `type: "object"` の上に
- * 後者の `properties` が乗る。
+ * On a node that has children, the leaf schema is the FOUNDATION. When both
+ * `.object.required()` and `"user.name"` are declared, the properties from
+ * the latter sit on top of the `type: "object"` from the former.
  */
 function freeze(node: SchemaNode): Record<string, unknown> {
   const schema: Record<string, unknown> = { ...node.leaf };
@@ -94,25 +94,22 @@ function freeze(node: SchemaNode): Record<string, unknown> {
   return schema;
 }
 
-/** 宣言の一覧から、根のスキーマを組み立てる。 */
+/** Assembles the root schema from the list of declarations. */
 export function assembleJsonSchema(
   fields: readonly FieldDeclaredCalls[],
   policy: UnrepresentablePolicy
 ): Record<string, unknown> {
   const root = newNode();
   for (const field of fields) {
-    // 控えていないフィールドが一つでもあれば、方針に関わらず断る。
-    // omit は「書けない宣言を落としてよい」という許しであって、
-    // 「何が宣言されていたか知らないまま出してよい」ではない。
+    // One field with no record is enough to refuse, whatever the policy says.
     if (field.calls === null)
       throw new DeclarationsUnavailableError(field.path);
     const emitted = emitFieldSchema(field.path, field.calls, policy);
     place(root, parseFieldPath(field.path), emitted.schema, emitted.isRequired);
   }
   const schema = freeze(root);
-  // 宣言が一つも無い、あるいはすべて落とされたときでも、根がオブジェクトで
-  // あることは builder が `.for<T extends object>()` を要求している時点で
-  // 決まっている。
+  // Even with nothing declared, or everything dropped, the root is an object:
+  // the builder only accepts an object type in the first place.
   schema["type"] ??= "object";
   return schema;
 }

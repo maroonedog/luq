@@ -1,25 +1,24 @@
 // ===========================================================================
-// L3  src/chain/chain-node-store.ts — ノードに紐づくものを、ノードの外に持つ。
+// L3  src/chain/chain-node-store.ts — what a node knows, kept outside the node.
 //
-// ノードへ直接生やさないのは create-chain-node.ts の元からの判断で、理由も
-// そこに書いてある: ノードは型が宣言したメンバーだけを持ち、読み戻すのに
-// アサーションも実行時の形検査も要らない。
+// A node's rules live in a WeakMap keyed by the node instead of on the node, so
+// the node carries exactly the members its type declares. Reading the rules
+// back then needs no assertion and no runtime shape check, and the rules cannot
+// be reached by anyone holding only the node's public surface.
 //
-// 持つのはルール列だけである。以前は宣言 (DeclaredCall) も同じ表に入れて
-// いたが、宣言は declaration-recorder.port.ts へ委譲した。実行時が一度も
-// 読まないものを中核に置かない、というのが分けた理由で、表を2つにした分の
-// 費用は書き出しを使う側だけが払う。
+// Rules are the only thing kept here. Anything the runtime never reads belongs
+// to whoever does read it, not to the chain.
 // ===========================================================================
 import type { Rule } from "../plugin-kit/compiled-rule";
 
 const rulesByNode = new WeakMap<object, readonly Rule[]>();
 
-/** ノードを作った側だけが呼ぶ。凍結の直前に一度だけ。 */
+/** Called only by whoever made the node, once, just before freezing it. */
 export function rememberChainNode(node: object, rules: readonly Rule[]): void {
   rulesByNode.set(node, rules);
 }
 
-/** 連鎖から出る唯一の道: ノードでない値には undefined。 */
+/** The one way back out of a chain: undefined for anything that is not a node. */
 export function readChainNode(candidate: unknown): readonly Rule[] | undefined {
   if (typeof candidate !== "object" || candidate === null) return undefined;
   return rulesByNode.get(candidate);

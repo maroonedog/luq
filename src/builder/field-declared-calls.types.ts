@@ -1,16 +1,16 @@
 // ===========================================================================
 // L6  src/builder/field-declared-calls.types.ts
 //
-// build() が計画と一緒に持ち帰る、パスごとの宣言。
+// What was declared, per field path, carried back alongside the plan.
 //
-// 計画 (L4 の ValidationPlan) には通していない。計画は実行時が読むものであり、
-// 実行時はこの列を一度も読まない。通せば、書き出しを使わない利用者にも
-// 計画を太らせる費用を払わせることになる。
+// Deliberately not part of the plan. The plan is what validation time reads,
+// and validation time never reads this — putting it there would fatten the
+// plan for everyone to serve the few who ask for it.
 // ===========================================================================
 import type { DeclaredCall } from "../chain/declared-call.types";
 
 export interface FieldDeclaredCalls {
   readonly path: string;
-  /** null は「控えていない」。空配列の「宣言が無い」とは別。 */
+  /** null means no record was kept; the empty list means nothing was declared. */
   readonly calls: readonly DeclaredCall[] | null;
 }

@@ -7,10 +7,10 @@
 // field READS from (the root, or one array element); `context.root` stays the
 // real root, because cross-field rules are written against the root.
 //
-// 二つ。**ループは添字である** — 凍結配列の for-of はイテレータが消去されず、
-// 配列シェイプの全ゴミの 45〜54% がそれだった。**このファイルは割らない** —
-// applyDefault / applyNormalize を別モジュールに出すと実測 -27% (0.0597 →
-// 0.0432)。跨いだ呼び出しはインライン化されない。縮めるならコメントを削る。
+// Two things. **Loops here are indexed**: for-of over a frozen array does not
+// get its iterator elided, and that alone was about half the garbage on array
+// shapes. **This file is not split**: moving the default and normalize helpers
+// into a module measured 27% slower, calls across modules not being inlined.
 // ===========================================================================
 import type { ArrayItemContext, IssueDetail, RuleContext } from "../types";
 import type {
@@ -95,11 +95,11 @@ function applyDefault(
 }
 
 /**
- * 判定より前に値を整える。default の直後、presence の直前。
+ * Tidies the value before anything judges it: after default, before presence.
  *
- * undefined と null には呼ばない。`(v) => String(v).trim()` と書いた利用者の
- * undefined が `"undefined"` になって `.required()` を通り抜ける、という
- * 事故を仕組みで塞いでいる。不在を扱うのは default の仕事である。
+ * Never called for undefined or null. That closes the accident where a
+ * caller's `(v) => String(v).trim()` turns a missing field into the string
+ * `"undefined"` and walks it past `.required()`. Absence is default's job.
  */
 function applyNormalize(field: CompiledField, value: unknown): unknown {
   if (field.normalize === null || value === undefined || value === null) {
@@ -124,10 +124,10 @@ function openGates(
 }
 
 /**
- * 失敗したときだけ通る側。ループ本体から出したのは、runChecks の 302 バイトが
- * TurboFan のインライン予算の最大の落選候補で、その大半が受理された値では走らない
- * issue の組み立てだったからである (受理パスで 6.4%)。中断の判定は含めない —
- * issue を足してから shouldStopField を見る順序が abortEarlyOnEachField である。
+ * The side taken only on failure. Lifted out of the loop body because most of
+ * that body was issue construction an accepted value never runs, and its size
+ * was what pushed the check loop past the inlining budget. Stopping is not
+ * decided here: add the issue, then ask — that order is what abortEarly means.
  */
 function reportCheckFailure(
   check: CompiledField["checks"][number],

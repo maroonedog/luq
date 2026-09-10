@@ -86,10 +86,9 @@ export function buildFieldEntries(
     defaultOf: null,
     applyDefaultToNull: false,
     normalize: null,
-    // 宣言は控えない。ここが組み立てるのは JSON Schema から起こした
-    // ルールで、利用者が連鎖メソッドを呼んだわけではない。空配列ではなく
-    // null にしておくと、書き出す側が「制約が無い」ではなく
-    // 「宣言を持っていない」と言い切れる。
+    // No record of declared calls: what is assembled here comes from a
+    // document, and nobody called a chain method. null rather than the empty
+    // list is what lets a writer say "not known" instead of "none".
     collectRules: (chain: ChainBuildContext) => ({
       rules: collectDeclaredRules(declaration, bag, schema, chain),
       calls: null,

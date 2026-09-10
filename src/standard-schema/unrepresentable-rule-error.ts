@@ -1,18 +1,19 @@
 // ===========================================================================
 // L10 src/standard-schema/unrepresentable-rule-error.ts
 //
-// JSON Schema に書けない宣言に出会ったときの既定の答えは、throw である。
+// Meeting a declaration that cannot be written as JSON Schema throws, by
+// default.
 //
-// 黙って落とす選択肢は取らない。書き出した JSON Schema は受け取った側が
-// **検証に使う**。`.custom()` を落とした結果は、通ってはいけない値を通す
-// スキーマであり、しかも落としたことがどこにも出ない。制約が減ったことに
-// 気づけるのは、それで事故が起きたあとになる。
+// Dropping it silently is not on offer. What comes out of here gets USED FOR
+// VALIDATION by whoever receives it, so dropping a `.custom()` produces a
+// schema that admits values it must not — with no trace of the omission. The
+// missing constraint is discovered by the incident it causes.
 //
-// 落として構わない利用者 — 書き出し先が人間向けの文書やフォームの見た目で、
-// 検証には使わない — は libraryOptions で明示的に頼める。仕様が
-// libraryOptions をベンダー独自の引数の置き場として用意しているのは、
-// まさにこういう取り決めのためである。既定を緩い側に置かないのが肝で、
-// 緩いほうを選んだことが呼び出し側のコードに残る。
+// Anyone for whom dropping is fine — emitting for documentation or for a form
+// layout rather than for validation — can ask for it explicitly through
+// libraryOptions, which the spec provides for exactly this kind of agreement.
+// The point is that the lax choice is never the default, and that having made
+// it stays visible in the caller's code.
 // ===========================================================================
 
 export class UnrepresentableRuleError extends Error {
@@ -31,14 +32,14 @@ export class UnrepresentableRuleError extends Error {
   }
 }
 
-/** 書けない宣言に出会ったときの振る舞い。既定は "throw"。 */
+/** What to do with an unwritable declaration. Defaults to "throw". */
 export type UnrepresentablePolicy = "throw" | "omit";
 
 /**
- * `libraryOptions` から方針を読む。
+ * Reads the policy out of `libraryOptions`.
  *
- * 知らない値は throw に倒す。綴りを間違えた `omit` が黙って厳しい側に
- * 落ちるのは正しいが、黙って緩い側に落ちるのは事故になる。
+ * An unrecognised value falls to throw. A misspelled `omit` landing on the
+ * strict side is correct; landing on the lax side is an incident.
  */
 export function readUnrepresentablePolicy(
   libraryOptions: Record<string, unknown> | undefined

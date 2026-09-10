@@ -31,8 +31,8 @@ import { resolveFieldDefault } from "./resolve-field-default";
 const NO_ENTRIES: readonly FieldEntry[] = Object.freeze([]);
 
 /**
- * 計画を作り、同じ一度で控えた宣言をバリデータに結び付ける。
- * 結び付け先は WeakMap なので、Validator のメンバーは増えない。
+ * Builds the plan and attaches whatever was recorded during that same single
+ * pass. The attachment is external, so the validator gains no member.
  */
 function buildValidator(
   entries: readonly FieldEntry[],

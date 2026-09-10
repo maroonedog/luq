@@ -6,10 +6,10 @@
 // frozen and handed on to L4. Nothing downstream ever calls it again, so a
 // callback with a side effect cannot fire twice.
 //
-// 宣言 (何が何の引数で呼ばれたか) も同じ一度から取る。二度目を走らせれば
-// 副作用が二度起きるので、読むならここしかない。控えているのは連鎖ではなく
-// 据えられた記録係で (declaration-recorder.port.ts)、据わっていなければ
-// 宣言は null になる。
+// What was called with what comes from that same single run, for the same
+// reason: running the callback twice would fire its side effects twice, so
+// this is the only place it can be read. The chain does not keep that record
+// itself — see declaration-recorder.port.ts.
 // ===========================================================================
 import type { Rule } from "../plugin-kit/compiled-rule";
 import type { PluginBag } from "./plugin-bag.types";
@@ -21,14 +21,13 @@ import { declarationRecorder } from "./declaration-recorder.port";
 import type { DeclaredCall } from "./declared-call.types";
 import { createFieldSlots } from "./create-field-slots";
 
-/** 一度きりの実行が生んだもの。ルールは実行時が、宣言は書き出す側が読む。 */
+/** What the single run produced: rules for the runtime, calls for a writer. */
 export interface FieldChainOutcome {
   readonly rules: readonly Rule[];
   /**
-   * null は「宣言を控えていない」で、空配列の「宣言が無い」とは別である。
-   * null になるのは二通り: 連鎖を通らずにルールを組み立てた (fromJsonSchema)
-   * か、記録係が据わっていない (./standard-schema を読み込んでいない) か。
-   * 一つにすると、書き出す側が「制約の無いスキーマ」を自信満々に返す。
+   * null means no record was kept, which is not the empty list's "nothing was
+   * declared". Collapsing the two lets a writer return a schema with no
+   * constraints and no idea that it is missing them.
    */
   readonly calls: readonly DeclaredCall[] | null;
 }

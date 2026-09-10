@@ -1,6 +1,6 @@
 // ===========================================================================
-// L10 src/standard-schema/index.ts — 公開サブパス ./standard-schema。
-// re-export のみ。
+// L10 src/standard-schema/index.ts — the public ./standard-schema subpath.
+// Re-exports only.
 // ===========================================================================
 export type {
   InferStandardInput,

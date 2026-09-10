@@ -16,11 +16,9 @@
 // carries exactly the members its type declares and reading the rules back
 // needs no assertion and no runtime shape check.
 //
-// A node does NOT carry what was called with what. A compiled rule keeps the
-// closure and not the argument, and the JSON Schema writer needs the argument
-// (declared-call.types.ts) — but the runtime never reads it, so this file
-// builds nothing and only NOTIFIES a delegate. With no delegate installed the
-// notification is one null check per chain step. See
+// A node does NOT carry what was called with what. This file builds no record
+// of the call; it only notifies whoever asked to be told, and with nobody
+// asking that is one null check per chain step. See
 // declaration-recorder.port.ts.
 // ===========================================================================
 import { isPlainObject, isString } from "../types";
