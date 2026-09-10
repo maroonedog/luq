@@ -1,14 +1,14 @@
 // ===========================================================================
 // scripts/check-perf-figures.ts
 //
-// Checks the README's performance tables against the recorded baseline, and
-// writes them back with `--write`.
+// Checks the performance tables in docs/measurements.md against the recorded
+// baseline, and writes them back with `--write`.
 //
 //   npm run generate:perf-figures    write them back
 //   npm run check:perf-figures       exit 1 if they differ (for CI)
 //
 // Why a check is needed. Same failure as with the conformance figures: the
-// numbers in the README are **self-consistent**. Every one of them was true
+// numbers in the document are **self-consistent**. Every one of them was true
 // when it was written. No check for contradiction catches that; catching it
 // takes knowing what the current value is, and only the recorded baseline
 // knows — written by the benchmark and by nothing else.
@@ -34,7 +34,7 @@ import type {
   SizeBudget,
 } from "./perf-figures/render-perf-tables";
 
-export const README = "README.md";
+export const FIGURES_FILE = path.join("docs", "measurements.md");
 const BASELINE = path.join("config", "perf-baseline.json");
 const SIZE_BUDGET = path.join("config", "size-budget.json");
 
@@ -107,7 +107,7 @@ function replaceBlock(
   const from = contents.indexOf(open);
   const to = contents.indexOf(close);
   if (from === -1 || to === -1 || to < from) {
-    throw new Error(`${README} has no matching ${open} … ${close} pair`);
+    throw new Error(`${FIGURES_FILE} has no matching ${open} … ${close} pair`);
   }
   const head = contents.slice(0, from + open.length);
   const tail = contents.slice(to);
@@ -117,7 +117,7 @@ function replaceBlock(
 }
 
 export function renderReadme(repositoryRoot: string, sources: Sources): string {
-  const file = path.join(repositoryRoot, README);
+  const file = path.join(repositoryRoot, FIGURES_FILE);
   let contents = fs.readFileSync(file, "utf8");
   for (const block of BLOCKS) {
     contents = replaceBlock(
@@ -132,13 +132,18 @@ export function renderReadme(repositoryRoot: string, sources: Sources): string {
 
 export function checkPerfFigures(repositoryRoot: string): number {
   const expected = renderReadme(repositoryRoot, readSources(repositoryRoot));
-  const actual = fs.readFileSync(path.join(repositoryRoot, README), "utf8");
+  const actual = fs.readFileSync(
+    path.join(repositoryRoot, FIGURES_FILE),
+    "utf8"
+  );
   if (expected === actual) {
-    console.error(`Performance figures: ${README} matches the measurements`);
+    console.error(
+      `Performance figures: ${FIGURES_FILE} matches the measurements`
+    );
     return 0;
   }
   console.error(
-    `${README} disagrees with ${BASELINE} / ${SIZE_BUDGET}. ` +
+    `${FIGURES_FILE} disagrees with ${BASELINE} / ${SIZE_BUDGET}. ` +
       "Run npm run generate:perf-figures to write it back."
   );
   return 1;
@@ -146,11 +151,11 @@ export function checkPerfFigures(repositoryRoot: string): number {
 
 export function writePerfFigures(repositoryRoot: string): number {
   fs.writeFileSync(
-    path.join(repositoryRoot, README),
+    path.join(repositoryRoot, FIGURES_FILE),
     renderReadme(repositoryRoot, readSources(repositoryRoot)),
     "utf8"
   );
-  console.error(`Generated: the performance tables in ${README}`);
+  console.error(`Generated: the performance tables in ${FIGURES_FILE}`);
   return 0;
 }
 
