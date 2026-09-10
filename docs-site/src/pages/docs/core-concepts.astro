@@ -28,7 +28,7 @@ const userValidator = Builder()
   .v('age', b => b.number.required().min(0))
   .build();`;
 
-// luq-example: skip — キャレットで一行を指すだけの断片で、単体では文にならない
+// luq-example: skip — a caret pointing at one line, not a statement on its own
 const slotExample = `.v('title', b => b.number.required().min(3))
 //              ^^^^^^^^
 // \`title\` is a string. Choosing b.number does not compile.`;
@@ -49,7 +49,7 @@ const validator = Builder()
   .v('age', b => b.number.required().min(18))
   .build();`;
 
-// luq-example: must-fail — .min() を bag に入れていないことを示す例なので、通ったらページの主張が嘘になる
+// luq-example: must-fail — shows .min() missing from the bag; compiling would make the page's claim false
 const unimportedExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 
@@ -119,7 +119,7 @@ const memberValidator = Builder()
   .v('closedAt', b => b.string.required().nullable())
   .build();`;
 
-// luq-example: with bagExample — 直前のブロックで組み立てた validator をそのまま読むところなので、宣言を繰り返さずに検査だけ前置きする
+// luq-example: with bagExample — reads the validator built in the block above, so only the check is shown rather than repeating the declaration
 const resultExample = `const result = validator.validate({ name: 'John', age: 25 });
 
 if (result.valid) {

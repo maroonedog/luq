@@ -3,9 +3,9 @@ import CodeBlock from './CodeBlock.astro';
 import { bundleSize } from '../data/bundle-size';
 import { conformance } from '../data/conformance';
 
-// 手書きにしない。ここは 7,590 / 8,475 / 25,607 B と書かれたまま実測が
-// 7,954 / 8,879 / 25,991 B になっていた。ページ本文は生成データを読んで
-// いたのに、コンポーネントの中のコード例だけが取り残されていた。
+// Read, never hand-written. These figures were once typed here and went
+// stale while the page body already read the generated data — the code
+// sample inside the component was the part left behind.
 const corePercent = (
   (bundleSize.coreOnly.bytes / bundleSize.fullFeature.bytes) *
   100

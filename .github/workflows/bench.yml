@@ -1,27 +1,28 @@
 # ===========================================================================
-# .github/workflows/bench.yml — スループット比のゲート。
+# .github/workflows/bench.yml — the throughput-ratio gate.
 #
-# **何を見ているか**: luq と手書き参照の比。src/ か bench/ が動いたときだけ
-# 意味がある。README の一行や issue テンプレートは、比を動かしようがない。
+# **What it gates**: the ratio between this library and a hand-written
+# reference. That only means anything when src/ or bench/ moved; a line of
+# README cannot shift it.
 #
-# 比が床を割ると落ちる。絶対値では落とさない — 共有ランナーの ops/sec は
-# 無条件に揺れる (docs/design/test-strategy.md)。床は環境別で、CI は
-# config/perf-baseline.ci.json を読む。「同一プロセスで測るからランナーは
-# 相殺される」という当初の前提は PR #14 の最初の CI 実行で反証されている:
-# luq は割り当てを伴い参照は割り当てゼロの密ループなので、コア数や
-# メモリ帯域が変われば同じようには落ちない。相殺するのは CPU クロックだけ。
+# A ratio below its floor fails. Absolute ops/sec never gates — on a shared
+# runner it fluctuates unconditionally. Floors are per environment, and CI
+# reads its own. The original assumption that measuring both in one process
+# cancels the runner out has been disproved here: this library allocates while
+# the reference is an allocation-free tight loop, so they do not slow down
+# together when core count or memory bandwidth changes. A ratio cancels out
+# clock speed and nothing else.
 #
-# verify から外してあるのは、形状あたり約1分かかり、verify は対話的に
-# 回すコマンドだからである。
+# Kept out of verify because it takes about a minute per shape and verify is a
+# command people run interactively.
 # ===========================================================================
 name: bench
 
 on:
-  # push はトランクだけ。以前は branches: ["**"] と pull_request の両方だったので、
-  # PR ブランチへの1コミットが **2回** 全ジョブを回していた (run 34408561896 と
-  # 34408566222 は同じコミットである)。CI 時間のちょうど半分がそれだった。
-  # 作業ブランチの結果が欲しいときは PR を開く (draft でよい) か、
-  # workflow_dispatch を使う。
+  # push watches the trunks only. Watching every branch as well as
+  # pull_request ran every job TWICE for one commit on a PR branch, which was
+  # half of all CI time. To get a result for a working branch, open a PR
+  # (draft is fine) or use workflow_dispatch.
   push:
     branches: [master, develop]
     paths:
@@ -42,8 +43,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # PR 番号で束ねる。ref で束ねていたときは、同じ PR の push イベントと
-  # pull_request イベントが別 ref を持つので互いに打ち消せなかった。
+  # Grouped by PR number. Grouped by ref, a PR's push event and its
+  # pull_request event carry different refs and cannot cancel each other.
   group: bench-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 

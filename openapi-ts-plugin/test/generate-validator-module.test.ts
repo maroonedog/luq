@@ -1,8 +1,9 @@
-// 生成器のテスト。
+// The generator's tests.
 //
-// 一番大事なのは「出た文字列が期待どおりか」ではなく「出たコードが本当に
-// コンパイルして動くか」なので、最後にそれを見る。文字列だけを見ていると、
-// 綺麗な文字列を出す壊れた生成器を作れてしまう。
+// What matters most is not whether the emitted string looks right but whether
+// the emitted code compiles and runs, which the companion suite checks. Watch
+// only the string and it is possible to build a broken generator that emits
+// beautiful strings.
 import { generateValidatorModule } from "../src/generate/generate-validator-module";
 import type { Draft07Schema } from "../../src/json-schema/draft07.types";
 
@@ -42,30 +43,30 @@ function generate(schema: Draft07Schema = ORDER_SCHEMA) {
 }
 
 describe("generateValidatorModule", () => {
-  it("Builder の連鎖を出す", () => {
+  it("emits a builder chain", () => {
     const { source } = generate();
     expect(source).toContain("export const validateOrder = Builder()");
     expect(source).toContain(".for<Order>()");
     expect(source).toContain(".build();");
   });
 
-  it("required なフィールドは required、そうでなければ optional", () => {
+  it("emits required for a required field and optional otherwise", () => {
     const { source } = generate();
     expect(source).toContain('.v("id", (b) => b.string.required()');
     expect(source).toContain('.v("customer.name", (b) => b.string.optional()');
   });
 
-  it("祖先がすべて必須なネストした required は required になる", () => {
-    // customer はルートの required にあるので、customer.email は
-    // 「親ごと不在」にならない。したがって .required() が実行時と一致する。
+  it("emits required for a nested field whose ancestors are all required", () => {
+    // customer is in the root's required set, so customer.email cannot be
+    // absent because its parent is. .required() then matches run time.
     const { source } = generate();
     expect(source).toContain('.v("customer.email", (b) => b.string.required()');
   });
 
-  it("祖先が必須でなければ optional にし、理由を報告する", () => {
-    // 実行時 (declare-required-properties.ts) は required をオブジェクト側の
-    // 規則にしている。子に .required() を書くと親ごと不在のときに誤って落ち、
-    // Draft-07 の「存在する値にしかサブスキーマを適用しない」に反する。
+  it("falls back to optional when an ancestor is not required, and says why", () => {
+    // At run time required is a rule on the object. Writing .required() on
+    // the child would wrongly reject a document missing the parent, against
+    // Draft-07 applying a subschema only to a value that exists.
     const { source, skipped } = generateValidatorModule(
       {
         type: "object",
@@ -83,16 +84,16 @@ describe("generateValidatorModule", () => {
     const reported = skipped.find(
       (entry) => entry.path === "profile.nickname" && entry.keyword === "required"
     );
-    expect(reported?.reason).toContain("親ごと不在");
+    expect(reported?.reason).toContain("missing that ancestor");
   });
 
-  it("format をメソッドに落とす", () => {
+  it("lowers format to a method", () => {
     const { source } = generate();
     expect(source).toContain(".uuid()");
     expect(source).toContain(".email()");
   });
 
-  it("数値・文字列・配列の制約をメソッドに落とす", () => {
+  it("lowers number, string and array constraints to methods", () => {
     const { source } = generate();
     expect(source).toContain(".min(2)");
     expect(source).toContain(".max(50)");
@@ -101,37 +102,37 @@ describe("generateValidatorModule", () => {
     expect(source).toContain(".minLength(1)");
   });
 
-  it("配列要素はワイルドカードのパスになる", () => {
+  it("gives array elements a wildcard path", () => {
     const { source } = generate();
     expect(source).toContain('.v("items[*].sku"');
     expect(source).toContain('.v("items[*].quantity"');
   });
 
-  it("integer は number スロットに寄せる", () => {
+  it("puts integer in the number slot", () => {
     const { source } = generate();
     expect(source).toContain('.v("items[*].quantity", (b) => b.number');
   });
 
-  it("使ったプラグインだけを import して use する", () => {
+  it("imports and uses only the plugins it actually used", () => {
     const { source, pluginExports } = generate();
     for (const name of pluginExports) {
       expect(source).toContain(`import { ${name} } from`);
       expect(source).toContain(`.use(${name})`);
     }
-    // 使っていないものは入らない。ここが緩むと生成物が全部入りになる。
+    // Nothing unused gets in. Loosen this and the output becomes everything.
     expect(source).not.toContain("stringIpv4Plugin");
     expect(source).not.toContain("arrayUniquePlugin");
   });
 
-  it("import は @maroonedog/luq のサブパスから引く", () => {
+  it("imports from the package's own subpaths", () => {
     const { source } = generate();
     expect(source).toContain('from "@maroonedog/luq/plugins/required"');
     expect(source).toContain('from "@maroonedog/luq/plugins/stringEmail"');
     expect(source).not.toContain('from "@maroonedog/luq/plugins"');
   });
 
-  it("キーワードの順序が変わっても出力は変わらない", () => {
-    // スキーマの書き方で差分がノイズになるのを防ぐ。
+  it("emits the same output whatever order the keywords were written in", () => {
+    // Stops how the schema was written from filling the diff with noise.
     const reordered: Draft07Schema = {
       properties: (ORDER_SCHEMA as { properties: unknown }).properties,
       required: ["id", "customer"],
@@ -140,13 +141,13 @@ describe("generateValidatorModule", () => {
     expect(generate(reordered).source).toBe(generate().source);
   });
 
-  it("同じ入力なら同じ出力（冪等）", () => {
+  it("is idempotent: the same input gives the same output", () => {
     expect(generate().source).toBe(generate().source);
   });
 });
 
-describe("落としたキーワードを黙らせない", () => {
-  it("対応が無いキーワードを skipped で返す", () => {
+describe("a dropped keyword is never silent", () => {
+  it("returns an unmapped keyword as skipped", () => {
     const { skipped } = generateValidatorModule(
       {
         type: "object",
@@ -156,10 +157,10 @@ describe("落としたキーワードを黙らせない", () => {
     );
     const encodings = skipped.filter((entry) => entry.keyword === "contentEncoding");
     expect(encodings).toHaveLength(1);
-    expect(encodings[0]?.reason).toContain("対応するチェーンメソッドが無い");
+    expect(encodings[0]?.reason).toContain("no chain method");
   });
 
-  it("落としたものを生成物のコメントにも書く", () => {
+  it("also writes what was dropped into a comment in the output", () => {
     const { source } = generateValidatorModule(
       {
         type: "object",
@@ -167,11 +168,11 @@ describe("落としたキーワードを黙らせない", () => {
       },
       { validatorName: "v", typeExpression: "T" }
     );
-    expect(source).toContain("規則にしなかったキーワード");
+    expect(source).toContain("did not become rules");
     expect(source).toContain("contentEncoding");
   });
 
-  it("注釈キーワードは落とすが、理由は「検証しない」と書く", () => {
+  it("drops an annotation keyword, giving 'not validated' as the reason", () => {
     const { skipped } = generateValidatorModule(
       {
         type: "object",
@@ -180,10 +181,10 @@ describe("落としたキーワードを黙らせない", () => {
       { validatorName: "v", typeExpression: "T" }
     );
     const described = skipped.find((entry) => entry.keyword === "description");
-    expect(described?.reason).toContain("検証しない");
+    expect(described?.reason).toContain("not validated");
   });
 
-  it("uniqueItems: false は制約として出さない", () => {
+  it("does not emit uniqueItems: false as a constraint", () => {
     const { source, skipped } = generateValidatorModule(
       {
         type: "object",

@@ -1,27 +1,39 @@
 {
   "note": [
-    "バンドルサイズの予算。scripts/measure-bundle-size.ts が読み、超えたら CI が落ちる。",
-    "gzipCeilingBytes だけが判定に使われる。recordedGzipBytes は天井を決めたときの実測値で、",
-    "根拠として残してあるだけ。数字を目標に合わせて書き換えるのではなく、",
-    "実測が天井を超えたら『なぜ増えたか』を先に答えること。",
-    "recordedGzipBytes は 2026-09-09 に取り直した。それまでの値は 2.1.0 の作業で最大 170 B ずれており、天井は等号ではないので誰も気づかなかった。README と docs-site の公開値も同時に直してある。full-feature の天井を 25600 -> 26100 に上げたのは、カタログにプラグインが1つ増えた分 (+191 B、README が言う 129-224 B の範囲内) で超えたためで、実装が重くなったのではない。",
-    "2026-09-10: RuleContext を遅延させる FieldRuleContext を足した分、全エントリが gzip で 75-125 B 増えた。受理パスで +26% の代価である (bench/ の比で 0.0480 -> 0.0605、4巡すべてで四分位が分離)。天井を動かしたのは preset-presence の 1件だけで、8200 B を 3 B 超えたため 8300 B にした。他の6件は据え置きで、余裕が縮んだことがそのまま残る。",
-    "同じ機能を `#` private で書くと 302 B 増えて全エントリが天井を割る。ES2020 では TypeScript が `#` を WeakMap 3本と __classPrivateFieldGet/Set に落とすためで、配布物では要素ごとに WeakMap 参照が増える。ベンチは esbuild で変換していて `#` がそのまま残るため、計測では差が見えなかった — 測る対象と配る対象が違うと数字が転移しない、という例として残す。",
-    "2026-09-10: JSON Schema の2エントリを足した。これらの数値は README・docs-site の troubleshooting・json-schema の3ページに手書きで散っていて、一度きりの手測定のまま誰も測り直していなかった。ここに入れれば毎ビルド測られ、benchmarks の表に載り、他の場所はそこを見るだけで済む。",
-    "「core + jsonSchema + 動く49プラグインの束」という行は落とした。どの49個かの記録が残っておらず再現できない。再現できない数字を載せ続けるより、落とすほうが正しい。",
-    "2026-09-10: 全9エントリが 226-236 B 増えた。原因は二つの機能で、どちらもコアに載る。normalize は run-field に一分岐と CompiledField に一枠を足すだけだが、toStandardJsonSchema のために **連鎖が呼ばれたメソッドと引数を控える** 仕組み (chain-node-store / declared-calls-store) が入り、これは JSON Schema を一度も書き出さない利用者のビルダーでも走る。core-only が 7,954 -> 8,190 B なのはそのためである。",
-    "これは意図した交換である: `.min(3)` の 3 はプラグインが build(ctx, min) でクロージャに閉じ込めた時点で消えるので、書き出す側が必要とする値を残すには宣言の時点で控えるしかない。控える場所は選べるので、そこは下で直した。",
-    "2026-09-10: その控えを記録係に委譲した (chain/declaration-recorder.port.ts)。L3 が PORT を宣言し、L10 の standard-schema が実装して据える。据わっていない = ./standard-schema を読み込んでいない利用者のビルダーでは、連鎖1段につき null 検査が1つ通るだけで、オブジェクトも配列も作らない。**バイトは減っていない**: core-only は 8,190 -> 8,208 B。生の量は 25,285 -> 25,264 B と減っているので、増えた 18 B は量ではなく圧縮率である — 消えたオブジェクトリテラルのキー名 (pluginName/method/slot/args) は配布物の他所にも出るぶん gzip がよく効いていて、代わりに入った let と null 検査は効かない。委譲の理由はバイトではなく、中核が書き出しのための帳簿を持たないことと、その割り当てが頼まれない限り起きないことである。",
-    "getter を挟むか束縛を直に出すかも測った (8,211 対 8,208 B)。束縛のほうを採ったが、esbuild は据える関数を落としたあとも let を null に畳まないので、これ以上は小さくならない。"
+    "The bundle-size budget. scripts/measure-bundle-size.ts reads it, and CI fails when a ceiling is exceeded.",
+    "",
+    "Only gzipCeilingBytes is judged against. recordedGzipBytes is what was actually measured when the",
+    "ceiling was set, kept as the evidence for it. When a measurement passes its ceiling, answer WHY it grew",
+    "before touching either number — never edit a figure to fit a target.",
+    "A ceiling is an inequality, not an equality, so a recorded figure can drift for a long time without",
+    "anything failing. It has. Re-record them together with the published figures that quote them.",
+    "",
+    "Lessons worth keeping, as opposed to the history of each change, which is in git:",
+    "",
+    "Measure what you SHIP, not what you test. Writing the same feature with `#` private fields cost 302 B",
+    "across every entry, because at the ES2020 target TypeScript lowers `#` to WeakMaps and accessor helpers.",
+    "The benchmark transpiles with esbuild, which leaves `#` intact, so the measurement showed no difference",
+    "at all. A figure taken on a different artefact than the one distributed does not transfer.",
+    "",
+    "Bytes and speed are separate questions and can move in opposite directions. Delegating the record of",
+    "declared calls out of the chain removed an object and an array copy per chain step and still made the",
+    "gzipped core 18 B LARGER, while the raw bundle got smaller: the object-literal keys that disappeared",
+    "compressed well against the rest of the bundle, and the null checks that replaced them do not.",
+    "Decide such a change on its design, and record the measurement either way.",
+    "",
+    "Do not publish a figure that cannot be reproduced. A row measuring \"core plus a bundle of 49 plugins\"",
+    "was dropped because no record of WHICH 49 survived. An unreproducible number is worse than a missing one.",
+    "",
+    "Anything published elsewhere should be read from here rather than copied. Every figure that was written",
+    "by hand into the README or the site has, at some point, been wrong."
   ],
   "method": {
-    "measuredFrom": "src/ の TypeScript ソース。dist/ ではない。",
+    "measuredFrom": "The TypeScript sources under src/, not dist/.",
     "whyNotDist": [
-      "公開物は未束ねの ESM (1ソース = 1モジュール) で配るので、実際に木を歩いて",
-      "捨てるのは利用者のバンドラであり、ここで esbuild に歩かせる木と同じもの。",
-      "加えて、リポジトリに残っている dist/ は旧実装の生成物である。"
+      "The package ships unbundled ESM, one module per source file, so the tree actually walked and",
+      "pruned is the user's bundler's — the same tree esbuild walks here."
     ],
-    "entryShape": "名前を挙げたシンボルだけを再 export する合成モジュール。挙げた名前から到達できるコードだけが残る。",
+    "entryShape": "A synthetic module re-exporting only the named symbols, so only code reachable from those names survives.",
     "bundler": "esbuild 0.25.5",
     "bundlerOptions": {
       "bundle": true,
@@ -32,8 +44,8 @@
       "treeShaking": true,
       "legalComments": "none"
     },
-    "compression": "node:zlib gzipSync (既定レベル)",
-    "sameAsLegacy": "オプションは旧実装の bundle-size-comparison/build-all.js と同一。そうしないと旧実装の主張と比較できない。"
+    "compression": "node:zlib gzipSync at the default level",
+    "sameAsLegacy": "The options match the legacy implementation's own comparison build, without which its published claim cannot be compared against."
   },
   "recorded": {
     "date": "2026-09-07",
@@ -41,21 +53,21 @@
     "esbuild": "0.25.5",
     "catalogPluginCount": 76,
     "ceilingRationale": [
-      "天井 = 実測値 + 約8%。プラグイン1個の追加コストは gzip で約 200-950 B なので、",
-      "余裕はそれより小さく取ってある。プラグインを1つ足したのに予算内に収まる、",
-      "という抜け道が無いようにするため。"
+      "Ceiling = measured + about 8%. One added plugin costs roughly 200-950 B gzipped, so the",
+      "headroom is deliberately smaller than that: adding a plugin must never fit inside the budget",
+      "unnoticed."
     ]
   },
   "crossCheckAgainstDist": {
-    "why": "src から測るのが公正かどうかを、実際にビルドした dist を同じ条件で束ねて確かめた記録。ゲートではない。",
+    "why": "A record of checking that measuring from src is fair, by bundling a real dist under identical options. Not a gate.",
     "date": "2026-09-07",
     "coreOnlyGzipBytes": 7412,
     "sixPluginGzipBytes": 8373,
     "finding": [
-      "core-only は src 7420 B に対し dist 7412 B (差 8 B, 0.1%)、six-plugin は両者 8373 B で一致。",
-      "つまり src を測ることは、利用者のバンドラが dist を歩いた結果の代理として妥当である。",
-      "全部入りだけは dist 側が 25105 B と大きいが、これは dist 側の入口が公開サブパス77本を",
-      "export * で並べた形 (非推奨エイリアス readOnlyWriteOnly を含む) だからで、ビルドの差ではない。"
+      "core-only came out within 0.1% either way and six-plugin matched exactly, so measuring src is a",
+      "sound proxy for what a user's bundler gets out of dist.",
+      "Only the all-plugins entry was larger on the dist side, because that entry lists every public",
+      "subpath with export * (including a deprecated alias). That is the entry's shape, not the build's."
     ]
   },
   "legacyBaseline": {
@@ -63,12 +75,12 @@
     "coreOnlyGzipBytes": 17423,
     "sixPluginGzipBytes": 19562,
     "complexGzipBytes": 23015,
-    "claim": "README は 19-23KB gzipped と謳っていたが、その 17.4KB は使う前に払う中核の床だった。"
+    "claim": "The legacy README advertised 19-23KB gzipped; 17.4KB of that was the core floor, paid before using anything."
   },
   "budgets": [
     {
       "id": "core-only",
-      "description": "Builder だけ。プラグインを1つも使わない利用者が払う床。",
+      "description": "Builder alone: the floor paid by someone who uses no plugin at all.",
       "plugins": [],
       "gzipCeilingBytes": 8340,
       "recordedGzipBytes": 8208,
@@ -76,7 +88,7 @@
     },
     {
       "id": "one-plugin",
-      "description": "Builder + required。1個足したときの増分を見るための点。",
+      "description": "Builder + required: the point that shows what adding one plugin costs.",
       "plugins": [
         "required"
       ],
@@ -85,7 +97,7 @@
     },
     {
       "id": "three-plugin",
-      "description": "Builder + required/stringMin/numberMin。バレル等価性の比較対象と同じ組。",
+      "description": "Builder + required/stringMin/numberMin: the same set the barrel-equivalence check compares.",
       "plugins": [
         "required",
         "stringMin",
@@ -96,7 +108,7 @@
     },
     {
       "id": "six-plugin",
-      "description": "Builder + 旧 bundle-size-comparison の simple と同じ6プラグイン。19-23KB 主張の直接比較対象。",
+      "description": "Builder + the six plugins of the legacy 'simple' comparison: the direct counterpart to its 19-23KB claim.",
       "plugins": [
         "required",
         "stringMin",
@@ -111,7 +123,7 @@
     },
     {
       "id": "preset-presence",
-      "description": "Builder + presets の presence (required/optional/nullable)。プリセットの最小。",
+      "description": "Builder + the presence preset (required/optional/nullable): the smallest preset.",
       "plugins": [
         "required",
         "optional",
@@ -122,7 +134,7 @@
     },
     {
       "id": "preset-everyday",
-      "description": "Builder + presets の everydayRules (13プラグイン)。use() を並べる代わりに払う額。",
+      "description": "Builder + the everyday-rules preset: what a preset costs instead of listing use() calls.",
       "plugins": [
         "required",
         "optional",
@@ -143,7 +155,7 @@
     },
     {
       "id": "jsonschema-plugin",
-      "description": "Builder + jsonSchema プラグイン単体。チェーンメソッドだけを取るときの額。",
+      "description": "Builder + the jsonSchema plugin alone: the price of taking just the chain method.",
       "plugins": [
         "jsonSchema"
       ],
@@ -152,7 +164,7 @@
     },
     {
       "id": "jsonschema-full-feature",
-      "description": "Builder + jsonSchemaFullFeature。文書一つを丸ごと受けるときの額。",
+      "description": "Builder + jsonSchemaFullFeature: the price of accepting a whole document.",
       "plugins": [
         "jsonSchemaFullFeature"
       ],
@@ -161,7 +173,7 @@
     },
     {
       "id": "full-feature",
-      "description": "Builder + カタログの全プラグイン (JSON Schema 拡張2件を含む)。全部入りの上限。",
+      "description": "Builder + every plugin in the catalog, JSON Schema extensions included: the everything ceiling.",
       "plugins": "all",
       "gzipCeilingBytes": 26360,
       "recordedGzipBytes": 26253

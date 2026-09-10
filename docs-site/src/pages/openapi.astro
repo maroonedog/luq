@@ -73,8 +73,8 @@ export const validateOrder = Builder()
   .v("items[*].quantity", (b) => b.number.required().min(1))
   .build();`;
 
-// luq-example: must-fail — 「スペックが変わるとルールが落ちる」というこのページの主張そのもの。
-// luq-example: must-fail — これが通ったら主張が嘘になるので、ゲートが落とす。
+// luq-example: must-fail — this IS the page's claim: change the spec and the rules stop compiling.
+// luq-example: must-fail — compiling would make that claim false, so the gate fails it.
 const driftSample = `import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
 import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";

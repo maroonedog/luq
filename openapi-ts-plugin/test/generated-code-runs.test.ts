@@ -1,10 +1,12 @@
-// 生成器の本番テスト。
+// The generator's real test.
 //
-// 「文字列が期待どおりか」は前のファイルで見た。ここで見るのは
-// **出したコードが本当にコンパイルして、本当に検証するか**。
-// これが無いと、綺麗な文字列を出す壊れた生成器を作れてしまう。
+// Whether the string looks right is checked in the companion suite. What is
+// checked here is **whether the emitted code actually compiles and actually
+// validates**. Without this it is possible to build a broken generator that
+// emits beautiful strings.
 //
-// 生成物を一時ファイルに書き、本物の tsc に通し、本物の ts-node で実行する。
+// The output is written to a temporary file, put through the real compiler,
+// and run.
 import { execFileSync } from "child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -38,7 +40,7 @@ const SCHEMA: Draft07Schema = {
   },
 };
 
-/** 生成物が参照する型。実際は openapi-typescript が書くもの。 */
+/** The type the output refers to. In real use, openapi-typescript writes it. */
 const TYPE_SOURCE = `export type Order = {
   id: string;
   customer: { name?: string; email: string };
@@ -46,16 +48,16 @@ const TYPE_SOURCE = `export type Order = {
 };
 `;
 
-/** サブパス名 (stringMin) からディレクトリ名 (string-min) へ。 */
+/** From a subpath name (stringMin) to a directory name (string-min). */
 function toDirectoryName(subpathName: string): string {
   return subpathName.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }
 
 /**
- * 生成物の import 元を、公開サブパスからリポジトリの src へ向け直す。
- * 一時ディレクトリからは "@maroonedog/luq" を解決できないため。
- * **書き換えるのは import 元だけで、生成されたチェーンには一切触れない。**
- * 公開時は package.json の exports がこの対応を吸収する。
+ * Points the output's imports at this repository's src instead of the public
+ * subpaths, which a temporary directory cannot resolve.
+ * **Only the import sources are rewritten; the generated chain is untouched.**
+ * In a published package the exports map absorbs the same correspondence.
  */
 function rewireToSource(source: string): string {
   const root = REPOSITORY_ROOT.split("\\").join("/");
@@ -89,8 +91,8 @@ function withGeneratedProject<T>(
   }
 }
 
-describe("生成したコードは本当にコンパイルする", () => {
-  it("tsc --strict を通る", () => {
+describe("the generated code really compiles", () => {
+  it("passes tsc --strict", () => {
     withGeneratedProject((directory) => {
       const output = execFileSync(
         process.execPath,
@@ -114,10 +116,10 @@ describe("生成したコードは本当にコンパイルする", () => {
   }, 120_000);
 });
 
-describe("生成したコードは本当に検証する", () => {
-  it("有効な値を通し、無効な値を落とす", () => {
-    // 生成物をそのまま実行する。チェーンの組み立てが間違っていれば
-    // ここで例外になるか、判定が合わない。
+describe("the generated code really validates", () => {
+  it("accepts a valid value and rejects an invalid one", () => {
+    // Runs the output as it stands. A chain assembled wrongly either throws
+    // here or gives the wrong verdict.
     const { source } = generateValidatorModule(SCHEMA, {
       validatorName: "validateOrder",
       typeExpression: "Record<string, unknown>",

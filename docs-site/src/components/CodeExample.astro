@@ -37,7 +37,7 @@ const userValidator = Builder()
   .v("role", (b) => b.string.required().oneOf(["admin", "user"]))
   .build();`;
 
-// luq-example: with declareCode — 左のブロックで組み立てた userValidator を読むところなので、宣言は繰り返さずに検査だけ前置きする
+// luq-example: with declareCode — reads the userValidator built in the block on the left, so only the check is shown rather than repeating the declaration
 const readCode = `// build() returns an object, not a function.
 const result = userValidator.validate({
   name: "Jo",

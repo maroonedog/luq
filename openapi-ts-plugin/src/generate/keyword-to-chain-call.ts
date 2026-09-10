@@ -1,14 +1,16 @@
 // ===========================================================================
 // openapi-ts-plugin/src/generate/keyword-to-chain-call.ts
 //
-// JSON Schema のキーワード1つ → Luq のチェーン呼び出し1つ。
+// One JSON Schema keyword to one chain call.
 //
-// 対応表は本体の src/json-schema/keyword-map-*.ts が持っているが、あちらは
-// 「実行時にどのプラグインへ束縛するか」の表で、値は関数。こちらは「どの
-// ソースを出すか」なので別に持つ。二つが食い違うと生成コードと fromJsonSchema
-// の挙動がずれるため、test/keyword-parity.test.ts が両者を突き合わせる。
+// The library has its own keyword table, but that one answers "which plugin
+// does this bind to at run time" and its values are functions. This one
+// answers "what source do we emit", so it is held separately. A parity test
+// cross-checks the two, because if they disagree the generated code and the
+// run-time conversion behave differently.
 //
-// 出力しないキーワードは黙って捨てず、理由をつけて SkippedKeyword で返す。
+// A keyword that is not emitted is never dropped silently: it comes back as a
+// SkippedKeyword with a reason.
 // ===========================================================================
 import type { ChainCall, SkippedKeyword } from "./chain-call.types";
 
@@ -18,7 +20,7 @@ interface PluginBinding {
   readonly subpathName: string;
 }
 
-/** キーワード → 生やすメソッドと、そのメソッドを持つプラグイン。 */
+/** Keyword to the method it becomes, and the plugin carrying that method. */
 const BINDINGS: Readonly<Record<string, PluginBinding>> = {
   minLength: { method: "min", pluginExport: "stringMinPlugin", subpathName: "stringMin" },
   maxLength: { method: "max", pluginExport: "stringMaxPlugin", subpathName: "stringMax" },
@@ -35,7 +37,7 @@ const BINDINGS: Readonly<Record<string, PluginBinding>> = {
   enum: { method: "oneOf", pluginExport: "oneOfPlugin", subpathName: "oneOf" },
 };
 
-/** format の値 → メソッドとプラグイン。src/json-schema/format-map.ts と対にする。 */
+/** A format value to its method and plugin, paired with the library's format map. */
 const FORMAT_BINDINGS: Readonly<Record<string, PluginBinding>> = {
   email: { method: "email", pluginExport: "stringEmailPlugin", subpathName: "stringEmail" },
   uuid: { method: "uuid", pluginExport: "uuidPlugin", subpathName: "uuid" },
@@ -51,23 +53,23 @@ const FORMAT_BINDINGS: Readonly<Record<string, PluginBinding>> = {
   iri: { method: "iri", pluginExport: "stringIriPlugin", subpathName: "stringIri" },
 };
 
-/** 構造として扱うので、ここでチェーン呼び出しにはしないもの。 */
+/** Handled structurally, so never turned into a chain call here. */
 const STRUCTURAL: Readonly<Record<string, string>> = {
-  type: "スロットの選択に使う。メソッドではない",
-  properties: "子フィールドの宣言に展開される",
-  items: "配列要素の宣言に展開される",
-  required: "presence として親が持つ",
-  allOf: "平坦化の時点で畳まれる",
-  $ref: "平坦化の前に解決される",
-  title: "注釈。検証しない",
-  description: "注釈。検証しない",
-  default: "注釈。検証しない",
-  example: "注釈。検証しない",
-  examples: "注釈。検証しない",
-  deprecated: "注釈。検証しない",
-  readOnly: "OpenAPI の方向指定。検証には落とさない",
-  writeOnly: "OpenAPI の方向指定。検証には落とさない",
-  nullable: "presence として扱う",
+  type: "selects the slot; it is not a method",
+  properties: "expands into declarations for the child fields",
+  items: "expands into the declaration for array elements",
+  required: "held by the parent, as presence",
+  allOf: "folded away during flattening",
+  $ref: "resolved before flattening",
+  title: "annotation; not validated",
+  description: "annotation; not validated",
+  default: "annotation; not validated",
+  example: "annotation; not validated",
+  examples: "annotation; not validated",
+  deprecated: "annotation; not validated",
+  readOnly: "an OpenAPI direction marker; not lowered into validation",
+  writeOnly: "an OpenAPI direction marker; not lowered into validation",
+  nullable: "handled as presence",
 };
 
 export interface KeywordOutcome {
@@ -80,9 +82,9 @@ function subpathOf(name: string): string {
 }
 
 /**
- * 値はソースとして埋め込むので JSON.stringify で出す。正規表現リテラルには
- * しない。pattern の値は文字列として渡す約束で、リテラル化すると
- * エスケープの解釈が二重になる。
+ * Values are embedded as source, so they go through JSON.stringify. Never as
+ * a regular-expression literal: a pattern is passed as a string, and making it
+ * a literal would have the escapes interpreted twice.
  */
 function renderValue(value: unknown): string {
   return JSON.stringify(value);
@@ -99,12 +101,12 @@ export function keywordToChainCall(
 
   if (keyword === "format") {
     if (typeof value !== "string") {
-      return { skipped: { keyword, reason: "format の値が文字列ではない" } };
+      return { skipped: { keyword, reason: "the format value is not a string" } };
     }
     const binding = FORMAT_BINDINGS[value];
     if (binding === undefined) {
       return {
-        skipped: { keyword, reason: `format "${value}" に対応するプラグインが無い` },
+        skipped: { keyword, reason: `no plugin corresponds to format "${value}"` },
       };
     }
     return {
@@ -117,15 +119,15 @@ export function keywordToChainCall(
     };
   }
 
-  // uniqueItems: false は Draft-07 で無効化を意味するので、規則を出さない。
+  // In Draft-07 uniqueItems: false disables the constraint, so emit no rule.
   if (keyword === "uniqueItems" && value !== true) {
-    return { skipped: { keyword, reason: "uniqueItems: false は制約ではない" } };
+    return { skipped: { keyword, reason: "uniqueItems: false is not a constraint" } };
   }
 
   const binding = BINDINGS[keyword];
   if (binding === undefined) {
     return {
-      skipped: { keyword, reason: "対応するチェーンメソッドが無い" },
+      skipped: { keyword, reason: "no chain method corresponds to it" },
     };
   }
 
@@ -139,7 +141,7 @@ export function keywordToChainCall(
   };
 }
 
-/** テストが対応表そのものを見られるように出す。 */
+/** Exported so a test can inspect the table itself. */
 export const BOUND_KEYWORDS: readonly string[] = Object.keys(BINDINGS);
 export const BOUND_FORMATS: readonly string[] = Object.keys(FORMAT_BINDINGS);
 export const STRUCTURAL_KEYWORDS: readonly string[] = Object.keys(STRUCTURAL);

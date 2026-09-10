@@ -1,42 +1,36 @@
 # ===========================================================================
 # .github/workflows/verify.yml — the gate that has to be green before publish.
 #
-# 1.x had NO workflow for build or test (docs/legacy-spec/build-and-distribution.md
-# defect #9: .github/workflows held only deploy-docs.yml), which is how a
-# README whose first example did not compile, a dist whose types and runtime
-# disagreed, and 65 filename violations all reached npm.
+# There was once no workflow for build or test at all, which is how a README
+# whose first example did not compile, a dist whose types and runtime
+# disagreed, and dozens of filename violations all reached npm.
 #
-# **何を見ているか**: 決定的なものすべて。どの機械でも同じ答えが出るものだけを
-# ここに置き、差があれば落とす。
+# **What it gates**: everything deterministic. Only checks that give the same
+# answer on any machine belong here, and any difference fails the run.
 #
-# **path フィルタを掛けていない唯一の workflow である。** 掛けたくなるが、
-# 掛けられない: README を一行変えると check:doc-examples がその例を
-# コンパイルし直し、config/*.json を触ると check:perf-figures が公開値との
-# ずれを見る。「コードを触っていないから安全」が成り立たない設計に、意図して
-# してある。
+# **This is the one workflow with no path filter**, and it stays that way on
+# purpose. Changing one line of the README recompiles the examples in it;
+# touching a config file re-checks the published figures against it. "I did
+# not touch code, so this is safe" is designed not to hold.
 #
-# 揺れるものは別の workflow に分けた。それぞれ自分が見ているものを冒頭に
-# 書いてある:
-#   bench.yml       — スループット比。src/ か bench/ が動いたときだけ
-#   docs.yml        — サイトがビルドできるか。docs-site/ と、それが読むもの
-#   competitors.yml — 競合との判定一致。src/ と競合の版が動いたときだけ
+# Anything that fluctuates lives in its own workflow, each stating at the top
+# what it watches.
 # ===========================================================================
 name: verify
 
 on:
-  # push はトランクだけ。以前は branches: ["**"] と pull_request の両方だったので、
-  # PR ブランチへの1コミットが **2回** 全ジョブを回していた (run 34408561896 と
-  # 34408566222 は同じコミットである)。CI 時間のちょうど半分がそれだった。
-  # 作業ブランチの結果が欲しいときは PR を開く (draft でよい) か、
-  # workflow_dispatch を使う。
+  # push watches the trunks only. Watching every branch as well as
+  # pull_request ran every job TWICE for one commit on a PR branch, which was
+  # half of all CI time. To get a result for a working branch, open a PR
+  # (draft is fine) or use workflow_dispatch.
   push:
     branches: [master, develop]
   pull_request:
   workflow_dispatch:
 
 concurrency:
-  # PR 番号で束ねる。ref で束ねていたときは、同じ PR の push イベントと
-  # pull_request イベントが別 ref を持つので互いに打ち消せなかった。
+  # Grouped by PR number. Grouped by ref, a PR's push event and its
+  # pull_request event carry different refs and cannot cancel each other.
   group: verify-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 

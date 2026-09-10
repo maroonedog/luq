@@ -1,31 +1,30 @@
 # ===========================================================================
-# .github/workflows/publish.yml — npm への公開。
+# .github/workflows/publish.yml — publishing to npm.
 #
-# **何を見ているか**: `v*` のタグ。タグが押された commit をそのまま公開する。
-# ブランチへの push では動かない。公開は取り消せないので、起動する条件は
-# 「人がタグを押した」ただ一つにしてある。
+# **What it watches**: `v*` tags. It publishes the commit the tag points at,
+# and never runs on a push to a branch. Publishing cannot be undone, so there
+# is exactly one trigger: a person pushed a tag.
 #
-# 手作業だったときの手順 (docs/RELEASING.md の 6) は
-#   npm publish --access public --tag latest
-# で、OTP を打つ必要があった。OTP を打てるのは人間だけなので、公開だけが
-# 自動化から取り残されていた。ここでは **trusted publishing (OIDC)** を使う。
-# npm 側に「この repository のこの workflow からの公開を認める」と登録して
-# おけば、トークンも OTP も要らない。保存しておく資格情報がゼロになるので、
-# 漏れる資格情報もゼロになる。
+# It uses **trusted publishing (OIDC)**. Registering this repository and this
+# workflow with npm means neither a token nor an OTP is needed, so there is no
+# stored credential — and therefore no credential to leak. That is what let
+# publishing be automated at all: an OTP can only be typed by a human, which
+# is why this step used to be the one left manual.
 #
-# 一度だけの設定は docs/RELEASING.md に書いてある。未設定のまま走らせると
-# 公開の直前で落ちる — 何も公開されないまま、何をすればよいかが出る。
+# The one-time setup is in the release documentation. Run without it and the
+# job fails immediately before publishing: nothing goes out, and the log says
+# what to do.
 #
-# provenance は publishConfig で常に付く。どの commit の、どの workflow 実行が
-# その tarball を作ったかが npm 側で検証可能になる。
+# Provenance is always attached, through publishConfig. Which commit and which
+# workflow run produced a tarball becomes verifiable on npm.
 # ===========================================================================
 name: publish
 
 on:
   push:
     tags: ["v*"]
-  # 公開が途中で落ちたときの入口。押せるのは **既にあるタグ** だけで、
-  # そのタグの中身しか公開できない。ブランチ名は受け付けない。
+  # The way back in when a publish fails partway. It accepts **an existing
+  # tag** and publishes only what that tag points at. Branch names are refused.
   workflow_dispatch:
     inputs:
       tag:
@@ -34,14 +33,14 @@ on:
         type: string
 
 permissions:
-  # OIDC の身分証を貰うために要る。これが無いと trusted publishing も
-  # provenance も成立しない。
+  # Needed to obtain the OIDC identity. Without it neither trusted publishing
+  # nor provenance works.
   id-token: write
   contents: read
 
 concurrency:
-  # 同じ版を二重に走らせない。npm 側でも二度目は弾かれるが、弾かれる前に
-  # verify を丸ごと二度回すことになる。
+  # Never run the same version twice over. npm would refuse the second one
+  # anyway, but only after the whole verify had run again to reach it.
   group: publish-${{ github.event.inputs.tag || github.ref }}
   cancel-in-progress: false
 
@@ -53,8 +52,8 @@ jobs:
       name: npm
       url: https://www.npmjs.com/package/@maroonedog/luq
     steps:
-      # verify は JSON-Schema-Test-Suite のコーパスを読む。submodule が無いと
-      # 適合率が測れず、check:suite-pin が落ちる。
+      # verify reads the JSON-Schema-Test-Suite corpus. Without the submodule
+      # conformance cannot be measured and the suite pin check fails.
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
@@ -65,26 +64,24 @@ jobs:
           node-version: 20
           cache: npm
 
-      # Node 20 が同梱する npm は 10.x で、OIDC を知らない。trusted publishing
-      # には 11.5.1 以降が要る。
+      # The npm bundled with this runner's Node predates OIDC, so a newer one
+      # is installed. **Pinned to a major, not @latest.** Written as @latest
+      # this failed a real release: the newest npm required a Node newer than
+      # the runner's, so nothing was published.
       #
-      # **@latest ではなく 11 系に留める。** 最初にこれを @latest で書いて、
-      # v2.2.0 のタグで落とした: npm@latest は 12.0.2 になっていて
-      # ^22.22.2 || ^24.15.0 || >=26 を要求する。このランナーの Node は 20 で、
-      # npm 11 の要求は ^20.17.0 || >=22.9.0 なので通る。
-      #
-      # つまり下限は「OIDC を知っていること」で、上限は「ランナーの Node が
-      # 支えられること」である。Node を上げるなら、ここも一緒に見ること —
-      # 公開ジョブは prepublishOnly 経由で verify を回すので、Node を変えると
-      # 何を検証したかが他の CI と変わる。
+      # The lower bound is "knows about OIDC"; the upper bound is "runs on the
+      # runner's Node". Moving the Node version means revisiting this line —
+      # and note that publishing runs verify through prepublishOnly, so
+      # changing Node here changes what was verified relative to the other
+      # workflows.
       - name: Use an npm that knows about trusted publishing
         run: |
           npm install -g npm@11
           npm --version
 
-      # タグと package.json が食い違ったまま公開すると、v2.2.0 というタグで
-      # 別の版が npm に載る。押した人にしか直せない事故なので、押した直後に
-      # 落とす。
+      # Publishing with the tag and package.json out of step puts one version
+      # on npm under another version's tag. Only the person who pushed the tag
+      # can undo that, so it fails here instead.
       - name: Tag must match the version in package.json
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
@@ -95,8 +92,8 @@ jobs:
             exit 1
           fi
 
-      # 既に載っている版は上書きできない。npm も弾くが、弾かれるのは verify を
-      # 5分回したあとになる。先に見て、先に落とす。
+      # A published version cannot be overwritten. npm refuses it too, but
+      # only after several minutes of verify. Check first, fail first.
       - name: Version must not already be on npm
         run: |
           VERSION="$(node -p "require('./package.json').version")"
@@ -109,12 +106,11 @@ jobs:
 
       - run: npm ci
 
-      # `npm publish` が prepublishOnly を通るので、ここで verify が回る。
-      # 明示的に呼ばないのは、呼ぶと同じ verify を二度回すことになるからで、
-      # それは competitors ジョブで一度やった無駄と同じ形である。
+      # `npm publish` runs prepublishOnly, which is where verify happens.
+      # Calling it explicitly as well would run the same verify twice.
       #
-      # access と provenance は package.json の publishConfig にある。CLI の
-      # フラグにしないのは、手で publish したときにも同じ条件になるように。
+      # access and provenance live in publishConfig rather than as CLI flags,
+      # so a publish run by hand carries the same terms.
       - name: Publish
         run: npm publish
 

@@ -20,9 +20,9 @@ import { conformance as measured } from '../data/conformance';
  */
 
 const conformance = {
-  // Luq 自身の実測はすべて config/json-schema-suite.json から来る。
-  // ここに書き写していた頃、適合率が上がったあともこのページだけ
-  // 828/929 = 89.13% を表示し続けていた。
+  // Every figure for this library is read from the conformance measurement.
+  // Typed in by hand, this page once went on showing an old pass rate long
+  // after the real one had gone up.
   passed: measured.passingCases,
   total: measured.caseCount,
   percent: measured.percent,
@@ -34,7 +34,7 @@ const conformance = {
   validPercent: measured.validPercent,
   invalidPassed: measured.passingInvalidCases,
   invalidPercent: measured.invalidPercent,
-  // 1.x の実測。過去の記録なので動かない。
+  // Measured on the previous major. A historical record, so it does not move.
   legacyPassed: 536,
   legacyPercent: '57.70',
   legacyInvalidPassed: 24,
@@ -126,7 +126,7 @@ export async function loadValidator() {
   return fromJsonSchema(schema);
 }`;
 
-// luq-example: skip — .v() 呼び出し1行だけの断片で、単体では文にならない
+// luq-example: skip — a one-line .v() fragment, not a statement on its own
 const nullPresenceExample = `// A converted { "type": "string" } cannot itself reject null: absence is
 // settled before any rule runs, so nullability is the field's PRESENCE policy.
 // The converter writes .optional() for every non-required property; a
