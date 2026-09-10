@@ -17,40 +17,40 @@ Files read:
 - C:\projects\luq\src\core\builder\validator-factory.ts
 - C:\projects\luq\src\core\registry\plugin-registry.ts
 - C:\projects\luq\src\types\util.ts / index.ts / result.ts
-- C:\projects\luq\src\core\plugin\types.ts, global-config.ts, index.ts, 全プラグインファイル
+- C:\projects\luq\src\core\plugin\types.ts, global-config.ts, index.ts, and every plugin file
 - C:\projects\luq\src\core\plugin\jsonSchema\{index.ts,plugin.ts}, jsonSchemaFullFeature.ts
 - C:\projects\luq\package.json, exports-config.json, build.js, README.md
 
 ---
 
-## 1. 連鎖の正確なシグネチャと型引数の流れ
+## 1. Exact chain signatures and how the type arguments flow
 
 ### 1.1 `Builder()`
-実体は `builder.ts:111` の `createBuilder`:
+The real thing is `createBuilder` at `builder.ts:111`:
 ```ts
 function createBuilder<TInput = any>(): IChainableBuilder<TInput, {}, {}>
 export const Builder = createBuilder;
 ```
-型引数は 3 本立て（`types.ts:475`）:
+Three type arguments (`types.ts:475`):
 ```ts
 interface IChainableBuilder<TInput, TPlugins = {}, TAccumulatedExtensions extends object = {}>
   extends ChainableBuilder<TPlugins>
 ```
-- `TInput` … `Builder<T>()` で先に対象型を渡す用の枠。**実際には使われていない**（`for<TInputType>()` が対象型を上書きするため、`TInput` は BuilderExtension のメソッド型生成 `CreateMethodWithBuilder` からしか参照されない）。
-- `TPlugins` … プラグイン名 → プラグイン型 の **マップ型**。`use()` ごとに交差型で蓄積。
-- `TAccumulatedExtensions` … builder-extension プラグインが Builder 自身に生やすメソッドの蓄積。
+- `TInput` — a slot for passing the target type up front as `Builder<T>()`. **It is not actually used**: `for<TInputType>()` overwrites the target type, so `TInput` is only ever read by `CreateMethodWithBuilder` when generating builder-extension method types.
+- `TPlugins` — a **map type** from plugin name to plugin type, accumulated by intersection on every `use()`.
+- `TAccumulatedExtensions` — the methods that builder-extension plugins graft onto the Builder itself, accumulated.
 
-### 1.2 `.use(plugin)` — 型引数の流れ
-`IChainableBuilder.use` は **11 個のオーバーロード**（types.ts:481-675）。分類:
-1. `TypedPlugin<TName, TMethodName, TMethod, TAllowedTypes, TPluginType, TCategory>` 1個
-2. `ComposablePlugin<TName, TMethodName, TAllowedTypes>` 1個
-3. `ComposableConditionalPlugin<...>` 1個
-4. `ComposableDirectlyPlugin<...>` 1個
-5. `BuilderExtensionPlugin<TName, TMethodName, TMethodSignature>` 1個
-6. 可変長 2/3/4/5 個の固定アリティ版
-7. `...plugins: T` (`T extends readonly AnyPlugin[]`) の全称版
+### 1.2 `.use(plugin)` — how the type arguments flow
+`IChainableBuilder.use` has **11 overloads** (types.ts:481-675), in these groups:
+1. `TypedPlugin<TName, TMethodName, TMethod, TAllowedTypes, TPluginType, TCategory>` — 1
+2. `ComposablePlugin<TName, TMethodName, TAllowedTypes>` — 1
+3. `ComposableConditionalPlugin<...>` — 1
+4. `ComposableDirectlyPlugin<...>` — 1
+5. `BuilderExtensionPlugin<TName, TMethodName, TMethodSignature>` — 1
+6. fixed-arity variadic versions for 2/3/4/5 plugins
+7. the universally quantified `...plugins: T` (`T extends readonly AnyPlugin[]`)
 
-単数 TypedPlugin 版の返り型（これが正典）:
+The single-`TypedPlugin` return type is the canonical one:
 ```ts
 use<TName extends string, TMethodName extends string, TMethod extends Function,
     TAllowedTypes extends readonly TypeName[] | undefined,
@@ -62,9 +62,9 @@ use<TName extends string, TMethodName extends string, TMethod extends Function,
    & TPlugins
    & { [K in TMethodName]: TMethod };
 ```
-**型引数の流れの本質**: `use()` は「プラグインの `name` リテラルをキー、プラグイン型そのものを値」とする 1 エントリのレコードを作り、`TPlugins` に交差させて返す。これだけ。`TPlugins` は次段の `.for<T>()` に素通しされ、フィールド側で分解される。
+**The essence of the flow**: `use()` builds a one-entry record keyed by the plugin's `name` literal whose value is the plugin type itself, intersects it into `TPlugins`, and returns. That is all it does. `TPlugins` passes straight through to `.for<T>()` and is taken apart on the field side.
 
-`AnyPlugin`（types.ts:396）:
+`AnyPlugin` (types.ts:396):
 ```ts
 type AnyPlugin =
   | TypedPlugin<any, any, any, any, any, any>
@@ -73,11 +73,11 @@ type AnyPlugin =
   | ComposableDirectlyPlugin<any, any, any>
   | BuilderExtensionPlugin<any, any>;
 ```
-複数指定版は `PluginsToMap<T> = { [K in T[number] as ExtractPluginName<K>]: K }` で一括マップ化。
+The multi-plugin overloads map the whole list at once with `PluginsToMap<T> = { [K in T[number] as ExtractPluginName<K>]: K }`.
 
-`BuilderExtensionPlugin` 版だけは別扱いで、`TAccumulatedExtensions` に
-`{ [K in TMethodName]: CreateMethodWithBuilder<TMethodSignature, <その時点のBuilder型>> }`
-を交差させ、返り型にもそのメソッドを直接載せる。これにより `Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(...)` が **`.for<T>()` を経由せずに Builder 上で** 型的に生える。
+The `BuilderExtensionPlugin` overload is the one exception: it intersects
+`{ [K in TMethodName]: CreateMethodWithBuilder<TMethodSignature, <the Builder type at that point>> }`
+into `TAccumulatedExtensions` and also puts the method directly on the return type. That is what makes `Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(...)` type-check **on the Builder, without going through `.for<T>()`**.
 
 ### 1.3 `.for<T>()`
 ```ts
@@ -85,17 +85,17 @@ interface ChainableBuilder<TPlugins = {}> {
   for<TInputType extends object>(): FieldBuilder<TInputType, unknown, TPlugins, never>;
 }
 ```
-`FieldBuilder` の 4 型引数（plugin-types.ts:1240）:
+The four type arguments of `FieldBuilder` (plugin-types.ts:1240):
 ```ts
 interface FieldBuilder<TObject extends object, TMap = {}, TPlugins = {}, TDeclaredFields extends string = never>
 ```
-- `TObject` … 検証対象の既存 TS 型（**制約は `extends object` のみ**）
-- `TMap` … 「パス文字列 → transform 後の型」の平坦マップ。`.for()` は `unknown` で開始（`{}` ではない点に注意 — 実質バグだが `AddFieldTransform` の交差で救われている）
-- `TPlugins` … Builder から素通し
-- `TDeclaredFields` … 宣言済みフィールドパスの文字列ユニオン。`never` から開始し `.v()` ごとに `| Key`。`strict()` の網羅チェック専用。
+- `TObject` — the existing TS type being validated (**the only constraint is `extends object`**)
+- `TMap` — a flat map from path string to post-transform type. `.for()` starts it at `unknown`, not `{}` (effectively a bug, rescued by the intersection in `AddFieldTransform`)
+- `TPlugins` — passed straight through from the Builder
+- `TDeclaredFields` — the string union of declared field paths. Starts at `never` and gains `| Key` on every `.v()`. Used only by the exhaustiveness check in `strict()`.
 
 ### 1.4 `.v(path, definition, options?)`
-`field()` の別名（`field-builder.ts:124` の `const v = field;`）。`field` は `@deprecated`、`v` が正。
+An alias for `field()` (`const v = field;` at `field-builder.ts:124`). `field` is `@deprecated`; `v` is the real one.
 ```ts
 v<Key extends NestedKeyOf<TObject> & string, TFieldBuilder>(
   path: Key,
@@ -108,20 +108,20 @@ v<Key extends NestedKeyOf<TObject> & string, TFieldBuilder>(
      TDeclaredFields | Key
    >;
 ```
-補助型:
+Supporting types:
 ```ts
 type FieldDefinition<TObject, TPlugins, TFieldType, TFieldBuilder> =
   (context: FieldBuilderContext<TObject, TPlugins, TFieldType>) => TFieldBuilder;
 
 type AddFieldTransform<TMap, K extends string, TOriginal, TResult> =
-  TResult extends TOriginal ? TMap : TMap & Record<K, TResult>;   // 型が変わった時だけ記録
+  TResult extends TOriginal ? TMap : TMap & Record<K, TResult>;   // recorded only when the type changed
 
 type ExtractFieldType<T> =
   T extends ChainableFieldBuilder<any, any, any, infer TOutput> ? TOutput
   : T extends { build(): FieldValidator<any, infer TValue> } ? TValue
   : T extends FieldValidator<any, infer TValue> ? TValue : never;
 ```
-**流れ**: `path` のリテラル → `TypeOfPath<TObject, Key>` でフィールド型を算出 → その型で `FieldBuilderContext` を作り `b` として渡す → コールバックの戻り値（連鎖の終端ビルダー型）から `ExtractFieldType` で「最終出力型」を逆算 → 元型と違えば `TMap` に `{ [path]: 新型 }` を追記 → `TDeclaredFields` に `Key` を追加。
+**The flow**: the literal `path` → `TypeOfPath<TObject, Key>` computes the field type → a `FieldBuilderContext` is built with that type and passed in as `b` → `ExtractFieldType` works backwards from the callback's return value (the terminal builder type of the chain) to the final output type → if it differs from the original, `{ [path]: newType }` is appended to `TMap` → `Key` is added to `TDeclaredFields`.
 
 ### 1.5 `.build()`
 ```ts
@@ -136,28 +136,28 @@ interface TransformAwareValidator<T extends object, TTransformed = T> {
   parseRaw?(value: T, options?: ParseOptions): { valid: boolean; data?: TTransformed; error?: any };
 }
 ```
-**`build()` は関数を返さない。オブジェクトを返す。** validator-factory.ts:562/713/830 のいずれの経路も `{ validate, parse, pick, (validateRaw, parseRaw) }` のオブジェクトリテラル。README の `const validateUser = Builder()...build(); validateUser({...})` および `result.issues` は**実装に存在しない**（誤り）。
+**`build()` does not return a function. It returns an object.** All three paths in validator-factory.ts (562/713/830) return an object literal of `{ validate, parse, pick, (validateRaw, parseRaw) }`. The README's `const validateUser = Builder()...build(); validateUser({...})` and its `result.issues` **do not exist in the implementation** — they are wrong.
 
-`ApplyFieldTransforms<TObject, TMap>` = `ApplyNestedTransforms` = `DeepMerge<T, FlatMapToNested<TMap>>`。`"a.b.c"` を `{a:{b:{c:V}}}` に展開し（`PathToNested`/`Split`）、配列先頭キーは `BuildArrayTransform` で `{ key: Array<...> }` に。**`[*]` 記法はこの変換側では扱われていない**（`Split` は `.` のみ）。つまり transform 型の反映は配列要素パスに対して不完全。
+`ApplyFieldTransforms<TObject, TMap>` = `ApplyNestedTransforms` = `DeepMerge<T, FlatMapToNested<TMap>>`. It expands `"a.b.c"` into `{a:{b:{c:V}}}` (via `PathToNested`/`Split`), and a leading array key becomes `{ key: Array<...> }` via `BuildArrayTransform`. **The `[*]` notation is not handled on this conversion side** (`Split` only splits on `.`), so transform types are reflected incompletely for array-element paths.
 
-### 1.6 その他の FieldBuilder メソッド
-- `useField<Key>(path, fieldRule: FieldRule<TypeOfPath<TObject,Key>>): FieldBuilder<TObject, TMap, TPlugins, TDeclaredFields | Key>` — `createPluginRegistry()` 由来の再利用ルールを差し込む
-- `strict()` / `strictOnEditor()`（`strictOnEditor` は `strict` の別名、両方 `@deprecated` WIP）:
+### 1.6 The other FieldBuilder methods
+- `useField<Key>(path, fieldRule: FieldRule<TypeOfPath<TObject,Key>>): FieldBuilder<TObject, TMap, TPlugins, TDeclaredFields | Key>` — splices in a reusable rule that came from `createPluginRegistry()`
+- `strict()` / `strictOnEditor()` (`strictOnEditor` is an alias of `strict`; both are `@deprecated` WIP):
 ```ts
 strict(): MissingFields<TObject, TDeclaredFields> extends never
   ? FieldBuilder<TObject, TMap, TPlugins, TDeclaredFields>
   : { _error: `Missing field declarations in strict mode: ${...}`; _missingFields: ... };
 type MissingFields<TObject, TDeclared extends string> = Exclude<NestedKeyOf<TObject>, TDeclared>;
 ```
-未宣言フィールドがあると**返り型がエラーオブジェクト型に化けて `.build()` が消える**という「型でエラーを出す」手法。
+When a field is left undeclared, **the return type turns into an error-object type and `.build()` disappears** — the "report the error through the type" technique.
 
 ---
 
-## 2. `use()` → `b.string.xxx()` が生える型レベルの仕組み（意図された設計）
+## 2. How `use()` makes `b.string.xxx()` appear at the type level (the intended design)
 
-これが本ライブラリの核心。5 段のパイプライン。
+This is the heart of the library: a five-stage pipeline.
 
-**段0: プラグインの型が自己記述である**
+**Stage 0: a plugin's type is self-describing**
 ```ts
 interface TypedPlugin<TName extends string, TMethodName extends string, TMethod extends Function,
                       TAllowedTypes extends readonly TypeName[] | undefined = undefined,
@@ -167,56 +167,57 @@ interface TypedPlugin<TName extends string, TMethodName extends string, TMethod 
   allowedTypes?: TAllowedTypes; category: TCategory;
 }
 ```
-プラグインは値であると同時に「メソッド名・受け付ける型・カテゴリ・メソッドシグネチャ」を**リテラル型で**運ぶ。`plugin({...})` ファクトリが `as const` 由来のリテラルを保存する。
+A plugin is a value and at the same time carries its method name, accepted types, category and method signature **as literal types**. The `plugin({...})` factory preserves the literals that come from `as const`.
 
-**段1: 蓄積** — `use()` が `TPlugins & { [K in TName]: TypedPlugin<...> }`。
+**Stage 1: accumulation** — `use()` produces `TPlugins & { [K in TName]: TypedPlugin<...> }`.
 
-**段2: 型による絞り込み（`FilterPluginsByType`）**
+**Stage 2: narrowing by type (`FilterPluginsByType`)**
 ```ts
 type FilterPluginsByType<TPlugins, TType extends TypeName> = {
   [K in keyof TPlugins as TPlugins[K] extends TypedPlugin<any,any,any, infer TAllowedTypes, any,any>
     ? TAllowedTypes extends readonly TypeName[]
       ? TType extends TAllowedTypes[number] ? K : never
-      : K                                  // allowedTypes 未指定 = 全型許可
-    : (composable系の allowedTypes 判定)
+      : K                                  // allowedTypes omitted = every type allowed
+    : (the composable-family allowedTypes check)
     ]: TPlugins[K];
 };
 ```
-`b.string` に入った時点で `TType = "string"` が確定し、`allowedTypes` に `"string"` を含むプラグインだけが残る。**`b.number.email()` が型エラーになるのはここ。**
+Entering `b.string` fixes `TType = "string"`, and only plugins whose `allowedTypes` contains `"string"` survive. **This is where `b.number.email()` becomes a type error.**
 
-**段3: メソッド抽出（`ExtractPluginMethods` → `FlattenPluginMethods`）**
+**Stage 3: method extraction (`ExtractPluginMethods` → `FlattenPluginMethods`)**
 ```ts
 type ExtractPluginMethods<TPlugins,...> = { [K in keyof TPlugins]:
   TPlugins[K] extends TypedPlugin<any, infer TMethodName, infer TMethod, any,any,any>
     ? { [P in TMethodName]: TMethod } : ... }[keyof TPlugins];
 type FlattenPluginMethods<...> = UnionToIntersection<ExtractPluginMethods<...>>;
 ```
-プラグイン名キーのマップを **methodName キーのメソッド表**に張り替え、ユニオン→交差で 1 個のオブジェクト型に潰す。`stringMinPlugin`(name:`stringMin`) が `min` として生えるのはここ。
+The map keyed by plugin name is re-keyed into a **method table keyed by methodName**, then the union is collapsed to a single object type by intersection. This is where `stringMinPlugin` (name `stringMin`) shows up as `min`.
 
-**段4: 連鎖化（`MapPluginMethodsToChainable`）** — カテゴリで返り型と引数型を書き換える:
-| category | 生成されるメソッド型 |
+**Stage 4: chaining (`MapPluginMethodsToChainable`)** — the category rewrites the return type and the parameter types:
+
+| category | generated method type |
 |---|---|
-| `standard` | `(...args: Params) => ChainableFieldBuilder<同型状態>` |
-| `conditional` | `(condition: (allValues: TObject) => boolean, options?: ValidationOptions) => Chainable<同>` |
-| `fieldReference` | `(fieldPath: NestedKeyOf<TObject> & string, options?: ValidationOptions) => Chainable<同>` |
-| `multiFieldReference` | `<const TFields extends readonly (NestedKeyOf<TObject>&string)[]>(fields, validate(fieldValues: FieldsToObject<TObject,TFields>, currentValue, allValues), options?) => Chainable<同>` |
-| `transform` | `<TOutput>(fn: (value: ApplyTypeState<TCurrent,TState>) => TOutput) => ChainableFieldBuilder<..., TOutput, ...>` **←ここで TCurrentType が差し替わる** |
-| `composable-conditional` + methodName `guard` + TType `"union"` | `<TGuardType extends TCurrent>(condition: (v:unknown)=>v is TGuardType, builderFn) => ChainableFieldBuilderWithUnionTracking<..., TGuardType 追加>` |
-| methodName `required` / `optional` | 引数はプラグイン由来のまま、`TTypeState` に `excludeUndefined: true` |
-| methodName `nullable` | `TCurrentType \| null` にし `TTypeState.excludeNull: true` |
+| `standard` | `(...args: Params) => ChainableFieldBuilder<same type state>` |
+| `conditional` | `(condition: (allValues: TObject) => boolean, options?: ValidationOptions) => Chainable<same>` |
+| `fieldReference` | `(fieldPath: NestedKeyOf<TObject> & string, options?: ValidationOptions) => Chainable<same>` |
+| `multiFieldReference` | `<const TFields extends readonly (NestedKeyOf<TObject>&string)[]>(fields, validate(fieldValues: FieldsToObject<TObject,TFields>, currentValue, allValues), options?) => Chainable<same>` |
+| `transform` | `<TOutput>(fn: (value: ApplyTypeState<TCurrent,TState>) => TOutput) => ChainableFieldBuilder<..., TOutput, ...>` **← this is where TCurrentType is swapped** |
+| `composable-conditional` + methodName `guard` + TType `"union"` | `<TGuardType extends TCurrent>(condition: (v:unknown)=>v is TGuardType, builderFn) => ChainableFieldBuilderWithUnionTracking<..., TGuardType added>` |
+| methodName `required` / `optional` | arguments stay as the plugin declares them; `TTypeState` gets `excludeUndefined: true` |
+| methodName `nullable` | widens to `TCurrentType \| null` and sets `TTypeState.excludeNull: true` |
 
-**メソッド名によるハードコード分岐が型に埋め込まれている**（`required`/`optional`/`nullable`/`guard`）。設計意図は「型状態機械」。
+**Branching hardcoded on method names is baked into the types** (`required`/`optional`/`nullable`/`guard`). The design intent is a "type state machine".
 
-**段5: 型状態（TypeStateFlags）**
+**Stage 5: type state (TypeStateFlags)**
 ```ts
 interface TypeStateFlags { excludeUndefined?: boolean; excludeNull?: boolean; }
 type ApplyTypeState<T, S> = S["excludeUndefined"] extends true
   ? S["excludeNull"] extends true ? NonNullable<T> : Exclude<T, undefined>
   : S["excludeNull"] extends true ? Exclude<T, null> : T;
 ```
-`.required()` 後に `.transform(v => ...)` すると `v` が `string`（`string|undefined` ではなく）になる、というのが狙い。
+The point is that after `.required()`, a following `.transform(v => ...)` sees `v` as `string`, not `string | undefined`.
 
-**エントリポイント `FieldBuilderContext`**（`b` の型、plugin-types.ts:1090）:
+**The entry point `FieldBuilderContext`** (the type of `b`, plugin-types.ts:1090):
 ```ts
 type FieldBuilderContext<TObject extends object, TPlugins = {}, TFieldType = any> = {
   string:  ChainableFieldBuilder<TObject, TPlugins, "string",  string>;
@@ -225,17 +226,17 @@ type FieldBuilderContext<TObject extends object, TPlugins = {}, TFieldType = any
   date:    ChainableFieldBuilder<TObject, TPlugins, "date",    Date>;
   array:   ChainableFieldBuilder<TObject, TPlugins, "array",   any[]>;
   tuple:   ChainableFieldBuilder<TObject, TPlugins, "tuple",   readonly any[]>;
-  union:   <TFieldType がユニオンなら UnionFieldBuilderWithPlugins（guard 網羅チェック付き）、
-            Array<object> を含むユニオンなら UnionArrayObjectError というエラー型>;
+  union:   <UnionFieldBuilderWithPlugins (with the guard exhaustiveness check) when TFieldType is a
+            union; the error type UnionArrayObjectError when the union contains Array<object>>;
   object:  ChainableFieldBuilder<TObject, TPlugins, "object",  object>;
   any:     ChainableFieldBuilder<TObject, TPlugins, "any",     any>;
 };
 ```
-9 個の型入口（`TypeName` = `"string"|"number"|"date"|"array"|"union"|"tuple"|"object"|"boolean"|"null"|"any"` の 10 種のうち `null` を除く 9）。ランタイム（field-context.ts:514-522）も同じ 9 キーを持ち、`attachPluginMethods` が `plugin.allowedTypes.includes(type)` で実際に生やすメソッドを決める。**型と実行時が同じ 1 つのルール（allowedTypes）で駆動される**のが設計思想。
+Nine type entry points — the nine members of `TypeName` (`"string"|"number"|"date"|"array"|"union"|"tuple"|"object"|"boolean"|"null"|"any"`) other than `null`. The runtime (field-context.ts:514-522) has the same nine keys, and `attachPluginMethods` decides which methods actually appear using `plugin.allowedTypes.includes(type)`. **Types and runtime being driven by one and the same rule (allowedTypes)** is the design philosophy.
 
-**`refineXxx()`**: `refineString/refineNumber/refineBoolean/refineArray/refineObject/refineTuple/refineUnion/refineDate` の 8 個が全ビルダーに常在し、`TType` を差し替えて別型のメソッド群に乗り換える。
+**`refineXxx()`**: the eight methods `refineString/refineNumber/refineBoolean/refineArray/refineObject/refineTuple/refineUnion/refineDate` are present on every builder; they swap `TType` and move the chain onto another type's method set.
 
-**union 網羅チェック**:
+**Union exhaustiveness check**:
 ```ts
 interface UnionFieldBuilder<...> {
   build(): Exclude<TUnionType, TDeclaredTypes> extends never
@@ -243,40 +244,40 @@ interface UnionFieldBuilder<...> {
     : { _error: `Missing guard declarations for union types: ...`; _missingTypes: ... };
 }
 ```
-`.guard()` を呼ぶたび `TDeclaredTypes` にガード型が積まれ、全メンバーを網羅するまで `build()` の返り型がエラー型。
+Every `.guard()` call pushes a guard type onto `TDeclaredTypes`, and `build()` returns an error type until every member is covered.
 
 ---
 
-## 3. フィールドパス文字列の型付け
+## 3. Typing of field path strings
 
-`.v()` の第1引数は `Key extends NestedKeyOf<TObject> & string`。`NestedKeyOf`（src\types\util.ts:44-68、深さ上限 5、`Depth` カウンタ方式）が生成するパス形:
+The first argument of `.v()` is `Key extends NestedKeyOf<TObject> & string`. `NestedKeyOf` (src\types\util.ts:44-68, depth limit 5, `Depth` counter technique) generates these path shapes:
 
-| 形 | 生成条件 |
+| shape | condition |
 |---|---|
-| `"name"` | 直下キー |
-| `"user.address.street"` | `IsPlainObject<NonNullable<T[K]>> extends true` の再帰（`Function`/`Array`/`Date` は plain object でないので降りない） |
-| `"tags[*]"` | `T[K] extends Array<U>` の要素そのもの |
-| `"items[*].name"` | `U extends object` の再帰 |
-| `"matrix[*][*]"` | 2次元配列の要素 |
-| `"matrix[*][*].x"` | 2次元配列の要素オブジェクト |
-| `"shipping.addresses[*].street"` | 上記の組み合わせ（テストで実在） |
-| `"items[*].attributes.color"` | 配列要素内のネスト（テストで実在） |
-- オプショナル配列（`NonNullable<T[K]> extends Array<U>`）も同じ扱い。
-- `ExcludeArrayMethods` で `length`/`map`/`filter` 等の配列メソッド名をパス候補から除去。
+| `"name"` | a direct key |
+| `"user.address.street"` | recursion where `IsPlainObject<NonNullable<T[K]>> extends true` (`Function`/`Array`/`Date` are not plain objects, so recursion stops) |
+| `"tags[*]"` | the element itself, where `T[K] extends Array<U>` |
+| `"items[*].name"` | recursion where `U extends object` |
+| `"matrix[*][*]"` | the element of a two-dimensional array |
+| `"matrix[*][*].x"` | an object element of a two-dimensional array |
+| `"shipping.addresses[*].street"` | a combination of the above (exercised by tests) |
+| `"items[*].attributes.color"` | nesting inside an array element (exercised by tests) |
+- Optional arrays (`NonNullable<T[K]> extends Array<U>`) are treated the same way.
+- `ExcludeArrayMethods` strips array method names such as `length`/`map`/`filter` from the path candidates.
 
-対応する型解決は `TypeOfPath<T, Path>`（util.ts:70-131）。**テンプレートリテラル型のパターンマッチ**で、以下の順に判定:
-`${K}[*][*][*]` → `${K}[*][*]` → `${K}[*]` → `${K}.*` → `${K}[*][*][*].${Rest}` → `${K}[*][*].${Rest}` → `${K}[*].${Rest}` → `${K}.*.${Rest}` → `${K}.${Rest}`（このケースは `T[K]` が配列なら暗黙に要素へ降りる）→ `Path extends keyof T`。
-`.*` 記法（`"items.*"`, `"items.*.name"`）も型上は受理される。
+The matching type resolution is `TypeOfPath<T, Path>` (util.ts:70-131). It is **template-literal pattern matching**, tried in this order:
+`${K}[*][*][*]` → `${K}[*][*]` → `${K}[*]` → `${K}.*` → `${K}[*][*][*].${Rest}` → `${K}[*][*].${Rest}` → `${K}[*].${Rest}` → `${K}.*.${Rest}` → `${K}.${Rest}` (this case implicitly descends into the element when `T[K]` is an array) → `Path extends keyof T`.
+The `.*` notation (`"items.*"`, `"items.*.name"`) is also accepted at the type level.
 
-`useField` と `TransformAwareValidator.pick` も同じ `NestedKeyOf`/`TypeOfPath` を使う。ただし `pick("employees[*].name" as any)` とテストで `as any` が要る＝ `pick` の `K extends NestedKeyOf<T>` は配列要素パスで壊れている。
+`useField` and `TransformAwareValidator.pick` use the same `NestedKeyOf`/`TypeOfPath`. However, the tests need `pick("employees[*].name" as any)` — that is, `pick`'s `K extends NestedKeyOf<T>` is broken for array-element paths.
 
-**エラーの path 表現**: 実行時は `[*]` ではなく**実インデックスに解決**される（テスト: `result.errors[0].path === "items[2]"`）。
+**How paths appear in errors**: at runtime they are **resolved to real indices**, not `[*]` (test: `result.errors[0].path === "items[2]"`).
 
 ---
 
-## 4. 公開エクスポート — package.json `exports` 全 58 エントリ（全件）
+## 4. Public exports — all 58 entries of package.json `exports`
 
-各エントリは `{ types: ./dist/<X>.d.ts, import: ./dist/<X>.mjs, require: ./dist/<X>.js }` の 3 条件。`exports-config.json` は build.js が生成する同一内容の複製（キー完全一致・58）。`"sideEffects": false`、`"files": ["dist"]`。
+Every entry has the three conditions `{ types: ./dist/<X>.d.ts, import: ./dist/<X>.mjs, require: ./dist/<X>.js }`. `exports-config.json` is a duplicate of the same content generated by build.js (keys match exactly, 58 of them). `"sideEffects": false`, `"files": ["dist"]`.
 
 1. `.`
 2. `./plugins/required`
@@ -337,18 +338,16 @@ interface UnionFieldBuilder<...> {
 57. `./plugins/jsonSchema`
 58. `./plugins/jsonSchemaFullFeature`
 
-**存在しない（がREADMEが使っている）パス**: `@maroonedog/luq/plugins`（バレル）、`@maroonedog/luq/core/builder/plugins/plugin-creator`。README の Quick Start はそのままでは解決しない。
-**存在しない（が概念上ある）パス**: `./core`。ルート `.` が `core-entry.ts`（プラグインゼロ）からビルドされるため、実質 `.` が core エントリを兼ねている。
+**Paths that do not exist but the README uses**: `@maroonedog/luq/plugins` (a barrel) and `@maroonedog/luq/core/builder/plugins/plugin-creator`. The README's Quick Start does not resolve as written.
+**Paths that do not exist but conceptually do**: `./core`. The root `.` is built from `core-entry.ts` (zero plugins), so in practice `.` is also the core entry.
 
-**重要なズレ**: `src/index.ts`（全プラグイン re-export）は**出荷されていない**。build.js は `entryPoints: ["core-entry.ts"]` でルートを作る。したがって公開ルート API は core-entry.ts の内容＝ Builder + 型 + plugin ファクトリ + Result + GlobalConfig のみ。
+**An important mismatch**: `src/index.ts` (which re-exports every plugin) **is not shipped**. build.js builds the root from `entryPoints: ["core-entry.ts"]`. So the public root API is exactly the contents of core-entry.ts: Builder + types + the plugin factories + Result + GlobalConfig, and nothing else.
 
----
+## 5. Catalog of all 57 public plugins (export symbol / plugin.name / methodName / category / allowedTypes)
 
-## 5. 公開プラグイン全 57 件のカタログ（エクスポートシンボル / plugin.name / methodName / category / allowedTypes）
+allowedTypes shorthand: `ALL7` = `["string","number","boolean","array","object","date","union"]`
 
-allowedTypes 表記: `ALL7` = `["string","number","boolean","array","object","date","union"]`
-
-| # | export シンボル | name | methodName | category | allowedTypes |
+| # | export symbol | name | methodName | category | allowedTypes |
 |---|---|---|---|---|---|
 |1|`requiredPlugin`|required|`required`|standard|`["array","boolean","number","object","string","date","union","tuple"]`|
 |2|`optionalPlugin`|optional|`optional`|standard|ALL7|
@@ -408,13 +407,13 @@ allowedTypes 表記: `ALL7` = `["string","number","boolean","array","object","da
 |56|`jsonSchemaPlugin`|jsonSchema|`fromJsonSchema`|**builder-extension**|—|
 |57|`jsonSchemaFullFeaturePlugin`|jsonSchemaFullFeature|`fromJsonSchema`|**builder-extension**|—|
 
-注: `readOnlyWriteOnly.ts` は `writeOnlyPlugin`（name `writeOnly` / methodName `writeOnly` / context）も定義するが **公開エクスポートされていない**（`readOnly` しか届かない）。`uuidPlugin` は name が `stringUuid` なのに export 名・パスが `uuid` で不一致。
+Notes: `readOnlyWriteOnly.ts` also defines `writeOnlyPlugin` (name `writeOnly` / methodName `writeOnly` / context), but it is **not exported publicly** — only `readOnly` reaches users. `uuidPlugin` has the name `stringUuid` while its export name and path are `uuid`, so they disagree.
 
-**内部バレル `src/core/plugin/index.ts` にはあるが公開されていないプラグイン（13）**: `optionalIfPlugin`, `orFailPlugin`, `stitchPlugin`, `stringExactLengthPlugin`, `stringAlphanumericPlugin`, `stringStartsWithPlugin`, `stringEndsWithPlugin`, `numberFinitePlugin`, `numberRangePlugin`, `objectRecursivelyPlugin`(別名 `recursivelyPlugin`), `unionGuardPlugin`, `fromContextPlugin`, `conditionalSchemaPlugin`(ファイルのみ)。テストでは `finite()` 等が使われている。`unionGuardPlugin`（name `unionGuard` / methodName `guard` / composable-conditional / `["union"]`）は**型システムが特別扱いしている（`guard` ハードコード分岐、union 網羅チェック）のに公開されていない**。
+**Plugins present in the internal barrel `src/core/plugin/index.ts` but not published (13)**: `optionalIfPlugin`, `orFailPlugin`, `stitchPlugin`, `stringExactLengthPlugin`, `stringAlphanumericPlugin`, `stringStartsWithPlugin`, `stringEndsWithPlugin`, `numberFinitePlugin`, `numberRangePlugin`, `objectRecursivelyPlugin` (also `recursivelyPlugin`), `unionGuardPlugin`, `fromContextPlugin`, `conditionalSchemaPlugin` (file only). The tests use `finite()` and friends. `unionGuardPlugin` (name `unionGuard` / methodName `guard` / composable-conditional / `["union"]`) **is special-cased by the type system (the hardcoded `guard` branch and the union exhaustiveness check) yet is not published**.
 
 ---
 
-## 6. `fromJsonSchema` の意図
+## 6. The intent behind `fromJsonSchema`
 
 ```ts
 export const jsonSchemaFullFeaturePlugin: BuilderExtensionPlugin<
@@ -423,19 +422,19 @@ export const jsonSchemaFullFeaturePlugin: BuilderExtensionPlugin<
     schema: JSONSchema7 | unknown, options?: JsonSchemaOptions) => TBuilder
 >
 ```
-- `extendBuilder(builder)` が **必要な 43 プラグインを内部で `builder.use()` して**から `jsonSchemaPlugin` を use する（= ワンインポートで Draft-07 全対応）。
-- `impl` 本体は `this.for()` を呼んで FieldBuilder を作り、`convertJsonSchemaToLuqDSL(schema)` の DSL 配列を `fieldBuilder.v(dslField.path, definition)` に流すだけ。**`Builder().use(...).fromJsonSchema(schema).build()`（`.for<T>()` を挟まない）が正しい形**。
-- 型の `TBuilder extends FieldBuilder<any,any,any,any>` は全部 `any` — スキーマから TS 型を導く仕組みは**存在しない**。
-- CSP-safe の実現手段: `eval`/`new Function` を使わず、DSL→ビルダーメソッド呼び出しに変換して実行時に組み立てる。この方針は必ず引き継ぐ。
+- `extendBuilder(builder)` **calls `builder.use()` internally for the 43 plugins it needs** and then uses `jsonSchemaPlugin` — one import covers all of Draft-07.
+- The `impl` itself calls `this.for()` to make a FieldBuilder and simply feeds the DSL array from `convertJsonSchemaToLuqDSL(schema)` into `fieldBuilder.v(dslField.path, definition)`. **The correct form is `Builder().use(...).fromJsonSchema(schema).build()`, with no `.for<T>()` in between.**
+- In the type, `TBuilder extends FieldBuilder<any,any,any,any>` is all `any` — there is **no** mechanism for deriving TS types from a schema.
+- How CSP safety is achieved: no `eval`/`new Function`; the schema is converted into builder method calls and assembled at runtime. This policy must be carried forward.
 
 ---
 
-## 7. 型ユーティリティの公開面（core-entry.ts が実際に出荷する全シンボル）
+## 7. The public surface of the type utilities (every symbol core-entry.ts actually ships)
 
-値: `Builder`, `createPluginRegistry`, `ValidationResult`(型のみだが value export 扱い), `plugin`, `pluginPredefinedTransform`, `pluginConfigurableTransform`, `pluginBuilderExtension`, `Result`, `GlobalConfig`, `globalConfig`, `setGlobalConfig`, `getGlobalConfig`, `resetGlobalConfig`
-型: `PluginRegistry`, `FieldRule`, `ExtractFieldRuleType`, `FieldRuleDefinition`, `FieldBuilder`, `TransformAwareValidator`, `ApplyFieldTransforms`, `ExtractFieldType`, `TypedPlugin`, `PluginType`, `PluginCategory`, `TypeName`, `BuilderExtensionPlugin`, `BuilderExtensionMethod`, `ValidationOptions`, `MessageContext`, `SEVERITY`, `BasicValidationResult`(=`PluginValidationResult`), `StandardPluginImplementation`, `ConditionalPluginImplementation`, `TransformPluginImplementation`, `FieldReferencePluginImplementation`, `ArrayElementPluginImplementation`, `PluginImplementation`
+Values: `Builder`, `createPluginRegistry`, `ValidationResult` (a type only, but treated as a value export), `plugin`, `pluginPredefinedTransform`, `pluginConfigurableTransform`, `pluginBuilderExtension`, `Result`, `GlobalConfig`, `globalConfig`, `setGlobalConfig`, `getGlobalConfig`, `resetGlobalConfig`
+Types: `PluginRegistry`, `FieldRule`, `ExtractFieldRuleType`, `FieldRuleDefinition`, `FieldBuilder`, `TransformAwareValidator`, `ApplyFieldTransforms`, `ExtractFieldType`, `TypedPlugin`, `PluginType`, `PluginCategory`, `TypeName`, `BuilderExtensionPlugin`, `BuilderExtensionMethod`, `ValidationOptions`, `MessageContext`, `SEVERITY`, `BasicValidationResult` (= `PluginValidationResult`), `StandardPluginImplementation`, `ConditionalPluginImplementation`, `TransformPluginImplementation`, `FieldReferencePluginImplementation`, `ArrayElementPluginImplementation`, `PluginImplementation`
 
-（`src/index.ts` はこれに加えて全プラグインを re-export するが、前述の通り出荷対象外。）
+(`src/index.ts` re-exports every plugin on top of this, but as noted above it is not shipped.)
 
 ## Contracts to preserve (24)
 
@@ -444,183 +443,182 @@ export const jsonSchemaFullFeaturePlugin: BuilderExtensionPlugin<
 #### Builder
 - Source: `C:\projects\luq\src\core\builder\core\builder.ts:111-115`
 - Shape: function Builder<TInput = unknown>(): ChainableBuilder<TInput, {}, {}>
-- Meaning: 引数なしのファクトリ。プラグインゼロ・拡張ゼロの Builder を返す。new 不要。呼ぶたび独立インスタンス（実装は内部 pluginMethods レコードを閉じ込めたオブジェクト）。
+- Meaning: a factory taking no arguments. Returns a Builder with zero plugins and zero extensions. No `new`. Every call yields an independent instance (the implementation is an object closing over an internal pluginMethods record).
 
 #### .use(plugin)
 - Source: `C:\projects\luq\src\core\builder\types\types.ts:481-675 / core\builder.ts:41-101`
 - Shape: use<P extends AnyPlugin>(plugin: P): Builder<TInput, TPlugins & { [K in P['name']]: P }, TExtensions & ExtensionsOf<P>>
-- Meaning: プラグイン型を name リテラルをキーにして TPlugins マップに交差蓄積して返す。同名プラグインの2回目は無視（先勝ち）。可変長も受ける。実行時は plugin が object かつ name を持つことを検証し、違反時に `Invalid plugin at index N: plugin must be an object with a 'name' property` を throw、null/undefined はスキップ。
+- Meaning: accumulates the plugin type into the TPlugins map by intersection, keyed by the name literal, and returns. A second use of the same name is ignored (first one wins). Variadic calls are accepted. At runtime it checks that the plugin is an object with a name, throws `Invalid plugin at index N: plugin must be an object with a 'name' property` when it is not, and skips null/undefined.
 
 #### .for<T>()
 - Source: `C:\projects\luq\src\core\builder\types\types.ts:352-359 / core\builder.ts:27-39`
 - Shape: for<TInputType extends object>(): FieldBuilder<TInputType, {}, TPlugins, never>
-- Meaning: 検証対象の既存 TypeScript 型を型引数だけで指定する（値としてのスキーマは渡さない）。TPlugins をそのまま FieldBuilder に引き継ぐ。TMap は空、TDeclaredFields は never で開始。
+- Meaning: the type being validated is given purely as a type argument — no schema value is passed. TPlugins carries over to the FieldBuilder unchanged. TMap starts empty and TDeclaredFields starts at never.
 
 #### .v(path, definition, options?)
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:1284-1305 / core\field-builder.ts:67-124`
 - Shape: v<Key extends NestedKeyOf<TObject> & string, TFieldBuilder>(path: Key, definition: (b: FieldBuilderContext<TObject, TPlugins, TypeOfPath<TObject, Key>>) => TFieldBuilder, options?: FieldConfig<TypeOfPath<TObject, Key>>): FieldBuilder<TObject, AddFieldTransform<TMap, Key, TypeOfPath<TObject,Key>, ExtractFieldType<TFieldBuilder>>, TPlugins, TDeclaredFields | Key>
-- Meaning: 1フィールド1宣言。イミュータブル（毎回新しい FieldBuilder を返す）。definition は build() 時まで遅延実行される。path はリテラル型として保持され、それが TDeclaredFields と TMap のキーになる。
+- Meaning: one declaration per field. Immutable — each call returns a new FieldBuilder. The definition is deferred until build(). The path is retained as a literal type, and that literal becomes the key in TDeclaredFields and TMap.
 
 #### .build()
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:1133-1148, 1357-1360 / builder\validator-factory.ts:562,713,830`
 - Shape: build(): TransformAwareValidator<TObject, ApplyFieldTransforms<TObject, TMap>>
-- Meaning: オブジェクトを返す（関数ではない）。{ validate(value, options?): Result<T>; parse(value, options?): Result<TTransformed>; pick(key): FieldValidator<T, TypeOfPath<T,key>>; validateRaw?; parseRaw? }。validate は元型、parse は transform 適用後の型を返す。
+- Meaning: returns an object, not a function: { validate(value, options?): Result<T>; parse(value, options?): Result<TTransformed>; pick(key): FieldValidator<T, TypeOfPath<T,key>>; validateRaw?; parseRaw? }. validate returns the original type; parse returns the post-transform type.
 
-#### FieldBuilderContext（コールバック引数 b の型）
+#### FieldBuilderContext (the type of the callback argument b)
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:1090-1128 / builder\context\field-context.ts:514-522`
-- Shape: { string; number; boolean; date; array; tuple; union; object; any } の9キー。各値がその型に許可されたプラグインメソッドを持つ連鎖ビルダー
-- Meaning: b.<型名> で「この型として検証する」宣言を行い、そこから型に許された検証メソッドだけが連鎖する。union は TFieldType が実際にユニオンのときだけガード網羅チェック付きビルダーになる。実行時も同じ9キーで、attachPluginMethods が allowedTypes.includes(type) で生やすメソッドを決める。
+- Shape: the nine keys { string; number; boolean; date; array; tuple; union; object; any }, each a chaining builder carrying the plugin methods allowed for that type
+- Meaning: `b.<typeName>` is the act of declaring "validate this as this type", and from there only the validation methods permitted for that type can be chained. `union` becomes the builder with the guard exhaustiveness check only when TFieldType really is a union. The runtime has the same nine keys, and attachPluginMethods decides which methods to attach with allowedTypes.includes(type).
 
 #### TypedPlugin
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:63-76`
 - Shape: { name: TName; methodName: TMethodName; create(): TMethod; allowedTypes?: readonly TypeName[]; category: PluginCategory }
-- Meaning: プラグインの自己記述メタデータ。型レベルの絞り込み（FilterPluginsByType）と実行時のメソッド付与（attachPluginMethods）が同じ allowedTypes を読む。name はプラグインの識別子、methodName は連鎖上のメソッド名で、両者は別物（stringMin → .min()）。
+- Meaning: a plugin's self-describing metadata. Type-level narrowing (FilterPluginsByType) and runtime method attachment (attachPluginMethods) read the same allowedTypes. name is the plugin's identifier and methodName is the method name in the chain; the two are different things (stringMin → .min()).
 
 #### TypeName
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:105-115`
 - Shape: "string" | "number" | "date" | "array" | "union" | "tuple" | "object" | "boolean" | "null" | "any"
-- Meaning: allowedTypes の語彙。b の入口名でもある（null だけ入口がない）。
+- Meaning: the vocabulary of allowedTypes. It is also the set of entry names on b (only null has no entry).
 
 #### NestedKeyOf<T> / TypeOfPath<T, Path>
 - Source: `C:\projects\luq\src\types\util.ts:44-131`
-- Shape: パス文字列ユニオンの生成と、パス→型の解決。対応形: "a", "a.b.c", "a[*]", "a[*].b", "a[*][*]", "a[*][*].b", "a.b[*].c", "a[*].b.c"（深さ上限5）
-- Meaning: 型付きフィールドパスの心臓部。配列メソッド名（length/map 等）はパス候補から除外。オプショナル配列も NonNullable 経由で同じ形を生む。TypeOfPath は ".*" 記法も受理する。
+- Shape: generation of the path-string union, and path-to-type resolution. Supported shapes: "a", "a.b.c", "a[*]", "a[*].b", "a[*][*]", "a[*][*].b", "a.b[*].c", "a[*].b.c" (depth limit 5)
+- Meaning: the heart of typed field paths. Array method names (length/map/…) are excluded from the path candidates. Optional arrays produce the same shapes via NonNullable. TypeOfPath also accepts the ".*" notation.
 
-#### plugin() ファクトリ
+#### the plugin() factory
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-creator.ts:77-101`
 - Shape: plugin({ name, methodName, allowedTypes, category, impl }): TypedPlugin<name, methodName, impl, allowedTypes, "validator", category>
-- Meaning: ユーザー定義プラグインの唯一の入口。impl は ValidatorFormat（{ check, code, getErrorMessage, params }）を返す関数。返り値に pluginName が自動注入される。
+- Meaning: the one and only entry point for user-defined plugins. impl is a function returning a ValidatorFormat ({ check, code, getErrorMessage, params }). pluginName is injected into the return value automatically.
 
-#### ValidatorFormat（プラグイン impl の戻り値）
+#### ValidatorFormat (what a plugin impl returns)
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-interfaces.ts:26-68, 80-98`
 - Shape: { check(value, allValues?, arrayContext?): boolean; code: string; getErrorMessage(value, path, allValues?, arrayContext?): string; params: any[] }
-- Meaning: 検証1個の最小単位。check が false ならエラー。旧形式（(value, ctx) => { valid: boolean }）も受理される二重サポートがあるが、新実装では ValidatorFormat 一本に絞るべき。
+- Meaning: the smallest unit of a single validation. A false check is an error. The old form ((value, ctx) => { valid: boolean }) is also accepted — a dual support path — but a new implementation should settle on ValidatorFormat alone.
 
 #### pluginBuilderExtension() / BuilderExtensionPlugin
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-creator.ts:155-181 / plugin-types.ts:90-100`
 - Shape: pluginBuilderExtension({ name, methodName, impl: () => Method, extendBuilder: (builder) => void }): BuilderExtensionPlugin<TName, TMethodName, TMethodSignature>
-- Meaning: Builder 自身にメソッドを生やす仕組み。use() 時に extendBuilder(builder) が呼ばれ、builder[methodName] = impl が設定される。extendBuilder の中でさらに builder.use(otherPlugin) を呼べる（= プラグインバンドル）。fromJsonSchema はこの機構でのみ成立する。
+- Meaning: the mechanism for grafting a method onto the Builder itself. use() calls extendBuilder(builder), which sets builder[methodName] = impl. extendBuilder may itself call builder.use(otherPlugin), which is how plugin bundles work. fromJsonSchema exists only because of this mechanism.
 
 #### jsonSchemaFullFeaturePlugin / .fromJsonSchema()
 - Source: `C:\projects\luq\src\core\plugin\jsonSchemaFullFeature.ts:165-186 / jsonSchema\plugin.ts:42-112`
 - Shape: fromJsonSchema(schema: JSONSchema7 | unknown, options?: JsonSchemaOptions): FieldBuilder<any, any, any, any>
-- Meaning: Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build() が正しい形（.for<T>() を挟まない — impl が内部で this.for() を呼ぶ）。extendBuilder が Draft-07 に必要な43プラグインを自動 use する。CSP-safe（eval / new Function 不使用、DSL 変換 → ビルダーメソッド呼び出し）。
+- Meaning: the correct form is Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build(), with no .for<T>() in between — the impl calls this.for() internally. extendBuilder automatically uses the 43 plugins Draft-07 requires. CSP-safe: no eval / new Function, only DSL conversion into builder method calls.
 
-#### 型状態機械（required/optional/nullable/transform）
+#### the type state machine (required/optional/nullable/transform)
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:484-546, 906-923`
 - Shape: TypeStateFlags = { excludeUndefined?: boolean; excludeNull?: boolean }; ApplyTypeState<T,S>
-- Meaning: .required() 後の TCurrentType から undefined が除かれ、.nullable() で null が加わり excludeNull が立つ。.transform(fn) の fn 引数は ApplyTypeState 適用後の型、戻り値型が新しい TCurrentType になり TMap 経由で parse() の返り型に反映される。この「連鎖が型を変えていく」体験は最重要の思想。
+- Meaning: after .required(), undefined is removed from TCurrentType; .nullable() adds null and sets excludeNull. The fn argument of .transform(fn) is typed after ApplyTypeState, its return type becomes the new TCurrentType, and that flows through TMap into the return type of parse(). This experience of "the chain changing the type as it goes" is the most important idea in the library.
 
-#### package.json exports の形
+#### the shape of package.json exports
 - Source: `C:\projects\luq\package.json:8-... / exports-config.json / build.js:9-86,232-250`
-- Shape: "." は core のみ（Builder + 型 + plugin ファクトリ）。プラグインは1つ1パス "./plugins/<pluginFileName>"。全エントリ types/import/require の3条件。sideEffects: false。
-- Meaning: プラグイン単位 tree-shaking の実現手段。パス名 = ソースのファイル名 = エクスポートシンボルの Plugin 抜き（uuid だけ例外）。
+- Shape: "." is core only (Builder + types + the plugin factories). Every plugin gets its own path, "./plugins/<pluginFileName>". Every entry has the three conditions types/import/require. sideEffects: false.
+- Meaning: this is how per-plugin tree-shaking is achieved. The path name equals the source file name equals the export symbol without the Plugin suffix (uuid is the sole exception).
 
 ### should-preserve (6)
 
 #### PluginCategory
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:47-58`
 - Shape: "standard" | "conditional" | "transform" | "fieldReference" | "multiFieldReference" | "arrayElement" | "composable" | "composable-conditional" | "composable-directly" | "context" | "builder-extension"
-- Meaning: カテゴリが型レベルでメソッドの引数型と返り型を決める唯一のスイッチ。11種は多すぎる可能性があるが、standard/conditional/fieldReference/transform/builder-extension の5つは意味論として必須。
+- Meaning: the category is the single switch that decides a method's parameter and return types at the type level. Eleven values may well be too many, but five of them — standard/conditional/fieldReference/transform/builder-extension — are semantically necessary.
 
 #### Result<T>
 - Source: `C:\projects\luq\src\types\result.ts:82-233`
-- Shape: { isValid(): boolean; isError(): boolean; readonly valid: boolean; unwrap(): T; unwrapOr(d): T; unwrapOrElse(fn): T; map(fn); flatMap(fn); tap(fn); tapError(fn); data(): T|undefined; readonly errors: ValidationError[]; toPlainObject(): { valid; data?; errors } } + Result.ok / Result.error
-- Meaning: 検証結果は例外でなく Result で返す。valid プロパティと isValid() メソッドの両方を持つ（二重表現）。unwrap() は不正時に LuqValidationException を throw。
+- Shape: { isValid(): boolean; isError(): boolean; readonly valid: boolean; unwrap(): T; unwrapOr(d): T; unwrapOrElse(fn): T; map(fn); flatMap(fn); tap(fn); tapError(fn); data(): T|undefined; readonly errors: ValidationError[]; toPlainObject(): { valid; data?; errors } } plus Result.ok / Result.error
+- Meaning: validation results come back as a Result rather than as exceptions. Both a valid property and an isValid() method exist (the same thing expressed twice). unwrap() throws LuqValidationException when the result is invalid.
 
 #### ValidationError
 - Source: `C:\projects\luq\src\types\index.ts:26-31`
 - Shape: { path: string; message: string; code: string; paths(): string[] }
-- Meaning: エラー1の形。path は配列要素で実インデックスに解決される（"items[2]"）。code はプラグイン名（"required", "arrayMinLength" 等）。paths() というメソッドが型に混ざっている点は要再設計。
+- Meaning: the shape of one error. path is resolved to a real index for array elements ("items[2]"). code is the plugin name ("required", "arrayMinLength", …). The paths() method mixed into the type needs to be redesigned.
 
 #### ValidationOptions / ParseOptions
-- Source: `C:\projects\luq\src\types\index.ts:41-72 と C:\projects\luq\src\core\plugin\types.ts:41-47`
+- Source: `C:\projects\luq\src\types\index.ts:41-72 and C:\projects\luq\src\core\plugin\types.ts:41-47`
 - Shape: ValidationOptions = { abortEarly?; abortEarlyOnEachField?; messageFactory?; translate?; context? }; ParseOptions = ValidationOptions & { transforms?: Record<string,(v)=>any> }
-- Meaning: validate/parse の第2引数。注意: 同名の別物が src/core/plugin/types.ts にもあり（{ code?; fieldName?; severity?; messageFactory? }）、そちらはプラグインメソッドの第2引数（1のバリデータ設定）。2つの ValidationOptions は名前衝突しており、新実装では別名にすべき。
+- Meaning: the second argument of validate/parse. Careful: a different type with the same name lives in src/core/plugin/types.ts ({ code?; fieldName?; severity?; messageFactory? }) and is the second argument of a plugin method (the settings of one validator). The two ValidationOptions collide by name and should be renamed apart in a new implementation.
 
-#### FieldOptions / FieldConfig（.v の第3引数）
+#### FieldOptions / FieldConfig (the third argument of .v)
 - Source: `C:\projects\luq\src\core\builder\types\field-options.ts:5-100`
 - Shape: FieldOptions<T> = { default?: T | (() => T); applyDefaultToNull?: boolean; description?: string; deprecated?: boolean | string; metadata?: Record<string, unknown> }; FieldConfig<T> = T | (() => T) | FieldOptions<T>
-- Meaning: 検証ルールではないフィールド設定。ショートハンド（値そのもの＝default）とフルオプション形の2形態を normalizeFieldConfig が判別。default は undefined、および applyDefaultToNull !== false のとき null に適用される。
+- Meaning: field settings that are not validation rules. normalizeFieldConfig distinguishes the shorthand form (the value itself is the default) from the full options form. The default applies to undefined, and also to null when applyDefaultToNull !== false.
 
-#### union guard 網羅チェック
+#### the union guard exhaustiveness check
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:790-802, 1474-1482`
 - Shape: UnionFieldBuilder.build(): Exclude<TUnionType, TDeclaredTypes> extends never ? FieldValidator<...> : { _error: `Missing guard declarations for union types: ...`; _missingTypes }
-- Meaning: .guard(v => v is X, b => ...) を呼ぶたび TDeclaredTypes に X が積まれ、ユニオン全メンバーを網羅するまで build() の返り型がエラーオブジェクト型になる。ユニオンに Array<object> が含まれる場合は UnionArrayObjectError 型を返して b.union 自体を使わせない。
+- Meaning: every .guard(v => v is X, b => ...) pushes X onto TDeclaredTypes, and build() returns an error-object type until every union member is covered. When the union contains Array<object>, the UnionArrayObjectError type is returned so that b.union cannot be used at all.
 
 ### optional (3)
 
 #### .useField(path, fieldRule) / createPluginRegistry()
 - Source: `C:\projects\luq\src\core\registry\plugin-registry.ts:29-186`
-- Shape: createPluginRegistry(): PluginRegistry<{}>; registry.use(plugin) で蓄積; registry.for<T>() で TypedPluginRegistry; registry.createFieldRule(def, options) で FieldRule<T>; builder.useField(path, rule)
-- Meaning: 「フィールド単体で先に検証ルールを組み、後で複数の Builder に差し込む」再利用の思想。FieldRule<T> は単体で validate/parse できる。registry.toBuilder() で Builder に変換も可能。
+- Shape: createPluginRegistry(): PluginRegistry<{}>; accumulate with registry.use(plugin); registry.for<T>() gives a TypedPluginRegistry; registry.createFieldRule(def, options) gives a FieldRule<T>; builder.useField(path, rule)
+- Meaning: the reuse idea of "assemble a validation rule for one field up front, then splice it into several Builders later". A FieldRule<T> can validate/parse on its own. registry.toBuilder() can also convert it into a Builder.
 
 #### refineXxx()
 - Source: `C:\projects\luq\src\core\builder\plugins\plugin-types.ts:231-260, 722-785`
-- Shape: refineString/refineNumber/refineBoolean/refineArray/refineObject/refineTuple/refineUnion/refineDate: () => ChainableFieldBuilder<..., 新TType, ...>
-- Meaning: 連鎖の途中で扱う型カテゴリを切り替える。全ビルダーに常在。CanRefineToType による「同じ型への refine は never にする」実装も存在するが2系統ある（ChainableFieldBuilderTransformAware は使われていない死コード）。
+- Shape: refineString/refineNumber/refineBoolean/refineArray/refineObject/refineTuple/refineUnion/refineDate: () => ChainableFieldBuilder<..., new TType, ...>
+- Meaning: switches the type category handled mid-chain. Present on every builder. There is also a CanRefineToType implementation that makes "refining to the same type" never, but there are two parallel definitions (ChainableFieldBuilderTransformAware is unused dead code).
 
 #### GlobalConfig
 - Source: `C:\projects\luq\src\core\global-config.ts:1-96`
-- Shape: { messageKeyPrefix?; toBooleanTruthyValues?: string[]; numberFormat?: { decimalSeparator?; thousandSeparator? }; dateFormat?; trimStrings?; caseSensitive?; customTransforms?: Record<string,(v)=>any> } + globalConfig / setGlobalConfig / getGlobalConfig / resetGlobalConfig
-- Meaning: プロセス全体で共有されるミュータブルなグローバル設定。tree-shaking と副作用なしの原則に反する（モジュールレベルの可変状態）ので、新実装では引き継ぐか捨てるか判断が要る。
+- Shape: { messageKeyPrefix?; toBooleanTruthyValues?: string[]; numberFormat?: { decimalSeparator?; thousandSeparator? }; dateFormat?; trimStrings?; caseSensitive?; customTransforms?: Record<string,(v)=>any> } plus globalConfig / setGlobalConfig / getGlobalConfig / resetGlobalConfig
+- Meaning: mutable global settings shared across the whole process. It contradicts the tree-shaking and no-side-effects principles (mutable state at module level), so a new implementation has to decide whether to carry it forward or drop it.
 
 ## Behavioural rules
 
-- Builder() は引数なし。new を使わない。呼び出しごとに独立したインスタンスを返し、内部のプラグインレコードは共有されない。
-- 連鎖の順序は Builder() → .use()* → .for<T>() → .v()* → .build() で固定。.use() は .for() の前だけ、.v() は .for() の後だけ。
-- use() 済みのプラグインの型情報（name / methodName / allowedTypes / category）だけで、b.<型>.<メソッド>() の存在可否・引数型・返り型がすべて決まる。実行時の attachPluginMethods も同じ allowedTypes を読むので、型と実行時の可用メソッド集合は一致しなければならない。
-- プラグインの name（識別子・エラー code）と methodName（連鎖上のメソッド名）は別物。stringMin → .min()、arrayMinLength → .minLength()、stringUuid → .uuid()。異なる型カテゴリのプラグインが同じ methodName を持ってよい（stringMin と numberMin は両方 .min()、allowedTypes が排他なので衝突しない）。
-- 同じプラグインを2回 use() しても2回目は無視される（name をキーにした先勝ち）。
-- use() に object でない値や name を持たない値を渡すと throw する。null / undefined は無視される（現行実装）。
-- .for<T>() の T は制約 extends object のみ。ユーザーの既存 TypeScript 型をそのまま渡す。スキーマの再定義は要求しない。
-- フィールドパスは NestedKeyOf<T> で型チェックされ、リテラルとして保持される。対応形は "a" / "a.b.c" / "a[*]" / "a[*].b" / "a[*][*]" / "a[*][*].b" / "a.b[*].c" / "a[*].b.c"（ネスト深さ上限は現行 5）。配列の組み込みメソッド名（length, map, filter …）はパス候補から除外される。
-- [*] は「配列の全要素に適用」を意味する。実行時のエラー path は [*] ではなく実インデックスに解決される（"items[2]"）。
-- .v() のコールバックは build() まで遅延実行される（.v() 時点では呼ばれない）。FieldBuilder はイミュータブルで、.v() は毎回新しいインスタンスを返す。
-- b の入口は型カテゴリを宣言する行為。b.string に入った瞬間、allowedTypes に "string" を含むプラグインのメソッドだけが見える。
-- required / optional / nullable / transform は型状態を変える特別なメソッド名として型システムが認識する。required/optional で undefined が、nullable で null が扱いから外れ、transform の戻り値型が以降の連鎖の対象型になる。
-- transform を使ったフィールドは TMap に記録され、build() が返す parse() の戻り型に反映される。validate() は常に元の型を返す。
-- build() はオブジェクトを返す。{ validate, parse, pick } は必須、validateRaw / parseRaw は最適化経路がある場合のみ存在（型上は optional）。
-- validate() / parse() は例外を投げず Result<T> を返す。データ取り出しは unwrap()（不正時は throw）、unwrapOr()、data() のいずれか。
-- エラーは { path, message, code } の配列。code はプラグインの name。
-- プラグインは副作用のない独立モジュールで、1プラグイン1ファイル1エクスポート、静的に到達可能でなければならない（tree-shaking の前提）。
-- eval / new Function を一切使わない。JSON Schema の実行時読み込みも、スキーマ → 中間 DSL → ビルダーメソッド呼び出し という変換だけで行う。
-- jsonSchemaFullFeaturePlugin は「1つ use() すれば Draft-07 に必要なプラグインが全部入る」バンドルとして振る舞う。use() 直後に .fromJsonSchema(schema) を呼べ、.for<T>() は不要。
-- 公開エクスポートのパス名はソースのファイル名と一致させ、プラグイン1個につき1エントリ（./plugins/<name>）。ルート "." にはプラグインを含めない。
+- Builder() takes no arguments. No `new`. Each call returns an independent instance, and the internal plugin record is not shared.
+- The chain order is fixed: Builder() → .use()* → .for<T>() → .v()* → .build(). .use() only before .for(); .v() only after .for().
+- The type information of the plugins already passed to use() — name / methodName / allowedTypes / category — fully determines whether `b.<type>.<method>()` exists and what its parameter and return types are. The runtime's attachPluginMethods reads the same allowedTypes, so the set of available methods must agree between the types and the runtime.
+- A plugin's name (its identifier and error code) and its methodName (the method name in the chain) are different things: stringMin → .min(), arrayMinLength → .minLength(), stringUuid → .uuid(). Plugins in different type categories may share a methodName (stringMin and numberMin are both .min(); their allowedTypes are disjoint, so they never collide).
+- Passing the same plugin to use() twice ignores the second one (keyed by name, first one wins).
+- Passing a non-object, or a value without a name, to use() throws. null / undefined are ignored (current implementation).
+- The T in .for<T>() is constrained only by extends object. Users pass their existing TypeScript type directly; no re-declaration of the schema is required.
+- Field paths are type-checked by NestedKeyOf<T> and retained as literals. Supported shapes: "a" / "a.b.c" / "a[*]" / "a[*].b" / "a[*][*]" / "a[*][*].b" / "a.b[*].c" / "a[*].b.c" (current nesting depth limit is 5). Built-in array method names (length, map, filter, …) are excluded from the path candidates.
+- `[*]` means "apply to every element of the array". At runtime, error paths are resolved to real indices rather than `[*]` ("items[2]").
+- The .v() callback is deferred until build() — it is not called at .v() time. FieldBuilder is immutable, and .v() returns a new instance every time.
+- Entering b is the act of declaring a type category. The moment you enter b.string, only the methods of plugins whose allowedTypes contains "string" are visible.
+- required / optional / nullable / transform are recognized by the type system as special method names that change the type state. required/optional take undefined out of scope, nullable takes null out of scope, and the return type of transform becomes the target type for the rest of the chain.
+- A field that used transform is recorded in TMap and shows up in the return type of the parse() that build() produces. validate() always returns the original type.
+- build() returns an object. { validate, parse, pick } are required; validateRaw / parseRaw exist only when there is an optimized path (optional in the type).
+- validate() / parse() do not throw; they return Result<T>. Data is extracted with unwrap() (which throws when invalid), unwrapOr(), or data().
+- Errors are an array of { path, message, code }. code is the plugin's name.
+- Plugins must be side-effect-free, self-contained modules — one plugin, one file, one export — and statically reachable. That is the precondition for tree-shaking.
+- eval / new Function are never used. Loading a JSON Schema at runtime is done purely by the conversion schema → intermediate DSL → builder method calls.
+- jsonSchemaFullFeaturePlugin behaves as a bundle: one use() brings in every plugin Draft-07 needs. You can call .fromJsonSchema(schema) right after use(), and .for<T>() is unnecessary.
+- Public export path names match the source file names, one entry per plugin (./plugins/<name>). The root "." contains no plugins.
 
 ## Not carried forward
 
-- **IChainableBuilder.use() の 11 オーバーロード（TypedPlugin / ComposablePlugin / ComposableConditionalPlugin / ComposableDirectlyPlugin / BuilderExtensionPlugin の各1本 + 2/3/4/5個の固定アリティ4本 + 可変長1本）** — プラグイン型が5種に分裂しているせいでオーバーロードが爆発している。プラグイン表現を単一の判別可能ユニオン（category による discriminated union）に統一すれば、use は「単数版1本 + 可変長版1本」の2本で済む。固定アリティ 2/3/4/5 の4本は単なる TS 推論の力技で、意味論を何も足していない。
-- **IChainableBuilder の返り型に含まれる & TPlugins（プラグインマップそのものを Builder の構造に混ぜている）** — types.ts:512 等で返り型が `IChainableBuilder<...> & TAccumulatedExtensions & TPlugins & { [K in TMethodName]: TMethod }` になっており、Builder インスタンスに 'stringMin' や 'min' というプロパティが型上生えることになる。Builder に検証メソッドは生えるべきではない（生えるのは b の上だけ）。意図されていない漏れ。
-- **IChainableBuilder の TInput 型引数** — Builder<T>() で型を先に渡す設計の名残だが、実際には .for<T>() が対象型を決めるので二重。CreateMethodWithBuilder の中でしか参照されず、そこでも TInput extends object かどうかを見て any にフォールバックしている。捨てて .for<T>() 一本にすべき。
-- **builder.ts の実装本体（const builder: any = {...}, pluginMethods: Record<string, any>, args: any[], as any の連発、console.error / console.warn）** — 115行の中に any が10箇所以上。型定義（types.ts:475-676）と実装がまったく接続していない。ライブラリが console に出力するのも不適切。実装は型定義から作り直す。
-- **field() メソッドと strictOnEditor()** — field() は v() と完全に同一（const v = field）で @deprecated 済み。strictOnEditor() は strict() の別名（const strictOnEditor = strict）。利用者ゼロなので別名を残す理由がない。v() と strict() のみにする。
-- **strict() / strictOnEditor() の「エラー型を返す」実装（{ _error: `...`; _missingFields: ... }）** — 型エラーの出し方としては巧妙だが、返り型がエラーオブジェクトに化けるため IDE 上で .build() が消え、原因メッセージが型名の中に埋もれる。両メソッドとも @deprecated WIP と自己申告されている。strict の意味論（全フィールド宣言の強制）を残すなら、別の表現（never 返し＋専用のブランド型、あるいは実行時の additionalProperties）で設計し直す。
-- **createFieldBuilderImpl の chainableBuilder 引数（any 型で受け取り、一切使われない）** — field-builder.ts:39 で builder を渡しているが、createFieldBuilderImpl 内では保持して再帰的に渡すだけで参照されない。純粋な死んだ依存。
-- **ChainableFieldBuilderTransformAware と CanRefineToType（plugin-types.ts:192-260）** — refine メソッド群の定義が2系統ある。実際に使われるのは ChainableFieldBuilderBase 側（722-785）で、CanRefineToType による「同型への refine を never にする」精緻版は誰からも参照されない死コード。
-- **AsyncContext / AsyncAwareValidator / AsyncEnhancedBuilder / AsyncContextAwareValidation / AsyncPluginMethods / ExampleAsyncContext（types.ts:690-797）** — types.ts の末尾100行を占めるが、Builder / FieldBuilder のどこからも参照されていない。buildWithAsyncSupport() の実装も存在しない。AsyncPluginMethods に至っては checkDuplication / validateMx / checkQuota という具体的なドメイン名が型として置いてある（サンプルコードの残骸）。非同期検証をやるなら白紙から設計する。
-- **src/index.ts（163行、全プラグインを re-export するルートバレル）** — build.js が entryPoints: ["core-entry.ts"] でルートを作るため、src/index.ts は出荷されていない。存在しないエントリを保守している状態。ルートは core のみという方針（これは正しい）に合わせ、ルートバレルはプラグインを含めない1本にする。
-- **src/core/index.ts（89行、「ベンチマークで使うプラグインだけ」を選んで re-export）** — コメントに 'Export only plugins used in benchmarks (for optimal tree-shaking)' とあるとおり、公開APIの都合ではなくベンチマークの都合で作られたバレル。core-entry.ts / src/index.ts と合わせて同じことをする入口が3つある。
-- **core-entry.ts がリポジトリルートに置かれていること** — ビルドの実エントリがルート直下の1ファイルにあり、src/ の中の index.ts 群と役割が重複したまま両方生きている。エントリは src/ の中に1つ置き、build 設定がそれを指す形にする。
-- **build.js の .d.ts 文字列置換（14個の正規表現で import パスを書き換える処理、build.js:189-224）** — tsc が出した .d.ts の相対パスを正規表現で手当てしている。tsconfig の paths / rootDir を正しく設計するか、api-extractor / rollup-plugin-dts で型をバンドルすれば不要。この置換の存在自体が、ディレクトリ構成と出力構成が噛み合っていない証拠。
-- **exports-config.json（package.json の exports と完全同一の内容を持つ生成物がリポジトリにコミットされている）** — build.js が生成し、人間が package.json に手でコピーする運用。二重管理。生成スクリプトが package.json を直接更新するか、そもそもエントリを静的に書く。
-- **src/types/index.ts の Validator<T> と src/types/valitator.ts（ファイル名タイポ）の Validator<T1,T2> の並存** — 同名の別インターフェースが2つあり、util.ts は タイポしたファイル名の方から import している。InferType<T extends Validator<any,any>> も誰も使っていない。
-- **ValidationOptions という名前の型が2つ（src/types/index.ts の { abortEarly, messageFactory, translate, context } と src/core/plugin/types.ts の { code, fieldName, severity, messageFactory }）** — validate() の第2引数とプラグインメソッドの第2引数という完全に別の概念に同じ名前がついていて、index.ts では両方を re-export している。新実装では ValidateOptions / RuleOptions のように分ける。
-- **Result の valid プロパティと isValid() メソッドの二重提供、および data() / unwrap() / unwrapOr() / unwrapOrElse() の4系統** — 'Backward compatibility' と自己申告されたプロパティ（valid、errors がプロパティでもメソッドでもある混在）が残っている。利用者ゼロなので互換性の債務は不要。判別可能ユニオン（{ ok: true; value: T } | { ok: false; errors: readonly ValidationError[] }）に一本化するのが規約（as any 禁止 / 判別可能ユニオン推奨）にも合う。
-- **ValidationError.paths(): string[] というメソッドをエラーデータ型に持たせていること** — エラーは純粋なデータであるべきで、メソッドを持つとシリアライズ・構造化ログ・等価比較がすべて壊れる。実際 validator-factory は paths: () => [""] というダミーを毎回書いている。
-- **Result の実装（Object.create(successProto) + (this as any)._data のプロトタイプ最適化、ResultUtils namespace、LuqValidationException = createLuqValidationException as any as { new(...) }）** — result.ts 403行のうち大半が as any を伴う性能最適化。namespace は tree-shaking に不利。例外クラスをファクトリ関数に as any で new シグネチャを被せる手口は規約の as any 禁止に真正面から反する。
-- **createValidatorFactory / attachPluginMethods の 'Plugin error - ignore silently' な try-catch（field-context.ts:365-367、validator-factory.ts:111-116）** — プラグイン実行時の例外を握り潰し、検証が黙って通る。バグを不可視化する。
-- **TransformAwareValidator の validateRaw? / parseRaw?（optional な高速パス）** — 'Ultra-fast raw methods (1M+ ops/sec) - bypasses Result wrapper' とコメントされた性能用の別API。optional なので利用者は存在を確認してから呼ぶ必要があり、実質使えない。API を2本に割るのではなく、通常経路を速くするか、明示的に別ビルダーに分ける。
-- **PluginCategory の 11 値のうち composable / composable-conditional / composable-directly の3つ** — tupleBuilder（composable-directly）と unionGuard（composable-conditional）の2プラグインのためだけに、プラグイン型・use のオーバーロード・FilterPluginsByType・ExtractComposablePluginMethods・attachPluginMethods のすべてが3分岐している。しかも unionGuard は公開エクスポートされていない。'子ビルダーを引数に取る検証' という1つの概念に統合すべき。
-- **MapPluginMethodsToChainable のメソッド名ハードコード分岐（'required' / 'optional' / 'nullable' / 'guard' という文字列で型を分岐）** — 型状態の遷移をメソッド名の文字列一致で決めているため、利用者が methodName: 'required' のプラグインを自作すると勝手に型状態が変わる。遷移はカテゴリ（あるいはプラグイン側の宣言的なメタデータ）で表明させるべき。なお required と optional が同じ { excludeUndefined: true } を立てている（optional なのに undefined を除く）のは明確な型バグ。
-- **InferMethodParameters（plugin-types.ts:336-349）** — TMethod を受け取りながら実際には GetPluginMethodByName<TPlugins, TMethodName> で引き直しており、第1型引数 TMethod・TObject・TCurrentType が事実上無視されている。同じ methodName を複数プラグインが持つと {…}[keyof TPlugins] がユニオンになって推論が崩れる。
-- **.for() が FieldBuilder<TInputType, unknown, TPlugins, never> と TMap に unknown を渡していること** — TMap は Record であるべきところに unknown が初期値として入っている。AddFieldTransform の交差型でたまたま動いているだけ。初期値は {} でなければならない。
-- **README.md のコード例** — build() の戻り値を関数として呼び（validateUser({...})）、result.issues を参照し、存在しない '@maroonedog/luq/plugins' と '@maroonedog/luq/core/builder/plugins/plugin-creator' から import し、存在しない category: 'custom' を使っている。実装と一致する箇所がほぼない。仕様の出典として一切信用してはならない（本仕様書は README ではなくソースを根拠にしている）。
-- **uuidPlugin の name が 'stringUuid' なのにファイル名・エクスポート名・公開パスが 'uuid' であること** — 命名規約の唯一の例外で、エラー code も 'stringUuid' になる。新実装では stringUuidPlugin / ./plugins/string-uuid に揃えるか uuid に揃えるか、どちらかに統一する。
-- **readOnlyWriteOnly.ts が readOnlyWriteOnlyPlugin（methodName: readOnly）と writeOnlyPlugin（methodName: writeOnly）の2プラグインを1ファイルで定義し、後者を公開していないこと** — 1ファイル1責務に反し、readOnly を use しても writeOnly が使えない。JSON Schema の readOnly / writeOnly は対等な概念なので2ファイルに分けて両方公開する。
-- **内部バレル src/core/plugin/index.ts と、そこにしかない13プラグイン（optionalIf, orFail, stitch, stringExactLength, stringAlphanumeric, stringStartsWith, stringEndsWith, numberFinite, numberRange, objectRecursively/recursively, unionGuard, fromContext, conditionalSchema）** — package.json の exports に無いので利用者には届かない。にもかかわらずテストは finite() 等を使い、型システムは guard を特別扱いしている。'公開する / しない' の判断が一度もされていない状態。stitch に至っては stitch.ts / stitchSimple.ts / stitch-typed.ts の3実装が同じ name: 'stitch' で並存している。
+- **The 11 overloads of IChainableBuilder.use() (one each for TypedPlugin / ComposablePlugin / ComposableConditionalPlugin / ComposableDirectlyPlugin / BuilderExtensionPlugin, four fixed-arity ones for 2/3/4/5, and one variadic)** — the overloads explode because the plugin type is split into five kinds. Unify the plugin representation into a single discriminated union (discriminated by category) and use needs only two overloads: a single-plugin one and a variadic one. The four fixed-arity 2/3/4/5 overloads are brute force for TS inference and add no semantics.
+- **The `& TPlugins` in IChainableBuilder's return type (mixing the plugin map itself into the Builder's structure)** — at types.ts:512 and elsewhere the return type is `IChainableBuilder<...> & TAccumulatedExtensions & TPlugins & { [K in TMethodName]: TMethod }`, so the Builder instance grows properties like 'stringMin' and 'min' at the type level. A Builder should never grow validation methods (they belong on b only). This is an unintended leak.
+- **The TInput type argument of IChainableBuilder** — a leftover from a design where the type was supplied up front as Builder<T>(), but .for<T>() decides the target type, so it is redundant. It is only referenced inside CreateMethodWithBuilder, and even there it checks whether TInput extends object and falls back to any. Drop it and rely on .for<T>() alone.
+- **The implementation body of builder.ts (const builder: any = {...}, pluginMethods: Record<string, any>, args: any[], a stream of as any, console.error / console.warn)** — over ten uses of any within 115 lines. The type definitions (types.ts:475-676) and the implementation are not connected at all. A library writing to the console is also inappropriate. Rebuild the implementation from the type definitions.
+- **The field() method and strictOnEditor()** — field() is identical to v() (const v = field) and already @deprecated. strictOnEditor() is an alias of strict() (const strictOnEditor = strict). With zero users there is no reason to keep the aliases. Keep only v() and strict().
+- **The "return an error type" implementation of strict() / strictOnEditor() ({ _error: `...`; _missingFields: ... })** — clever as a way of reporting a type error, but because the return type turns into an error object, .build() disappears in the IDE and the reason is buried inside a type name. Both methods declare themselves @deprecated WIP. If the semantics of strict (forcing every field to be declared) are worth keeping, redesign the expression — returning never plus a dedicated branded type, or runtime additionalProperties.
+- **The chainableBuilder argument of createFieldBuilderImpl (taken as any and never used)** — field-builder.ts:39 passes the builder in, but createFieldBuilderImpl only holds it and passes it down recursively, never reading it. A purely dead dependency.
+- **ChainableFieldBuilderTransformAware and CanRefineToType (plugin-types.ts:192-260)** — there are two parallel definitions of the refine methods. The one actually used is on ChainableFieldBuilderBase (722-785); the refined version using CanRefineToType to make same-type refines never is referenced by nobody — dead code.
+- **AsyncContext / AsyncAwareValidator / AsyncEnhancedBuilder / AsyncContextAwareValidation / AsyncPluginMethods / ExampleAsyncContext (types.ts:690-797)** — they occupy the last 100 lines of types.ts and are referenced from neither Builder nor FieldBuilder. There is no implementation of buildWithAsyncSupport(). AsyncPluginMethods goes as far as putting concrete domain names — checkDuplication / validateMx / checkQuota — into the types (leftovers from sample code). If async validation is wanted, design it from a blank page.
+- **src/index.ts (163 lines, the root barrel re-exporting every plugin)** — build.js builds the root from entryPoints: ["core-entry.ts"], so src/index.ts is not shipped. It is an unshipped entry being maintained. In line with the (correct) policy that the root is core only, make the root barrel a single one that contains no plugins.
+- **src/core/index.ts (89 lines, re-exporting "only the plugins used in benchmarks")** — as its own comment says, 'Export only plugins used in benchmarks (for optimal tree-shaking)': a barrel created for the benefit of the benchmarks, not of the public API. Together with core-entry.ts and src/index.ts, that makes three entries doing the same job.
+- **core-entry.ts sitting at the repository root** — the real build entry is a single file at the top level, duplicating the role of the index.ts files inside src/ while both stay alive. Put one entry inside src/ and point the build configuration at it.
+- **The .d.ts string replacement in build.js (14 regexes rewriting import paths, build.js:189-224)** — the relative paths tsc emitted into .d.ts are patched up by regex. Design tsconfig's paths / rootDir correctly, or bundle the types with api-extractor / rollup-plugin-dts, and this disappears. The existence of the replacement is itself evidence that the directory layout and the output layout do not line up.
+- **exports-config.json (a generated file with content identical to package.json's exports, committed to the repository)** — build.js generates it and a human copies it into package.json by hand. Two things to keep in sync. Either have the generating script update package.json directly, or write the entries statically in the first place.
+- **The coexistence of Validator<T> in src/types/index.ts and Validator<T1,T2> in src/types/valitator.ts (a typo in the file name)** — two different interfaces share a name, and util.ts imports from the misspelled file. InferType<T extends Validator<any,any>> is used by nobody.
+- **Two types named ValidationOptions (the { abortEarly, messageFactory, translate, context } in src/types/index.ts and the { code, fieldName, severity, messageFactory } in src/core/plugin/types.ts)** — the second argument of validate() and the second argument of a plugin method are entirely different concepts wearing the same name, and index.ts re-exports both. Split them in a new implementation, e.g. ValidateOptions / RuleOptions.
+- **Result offering both a valid property and an isValid() method, plus four ways to get the data (data() / unwrap() / unwrapOr() / unwrapOrElse())** — properties self-declared as 'Backward compatibility' remain (valid, and errors being both a property and a method). With zero users there is no compatibility debt to service. Collapsing to a discriminated union ({ ok: true; value: T } | { ok: false; errors: readonly ValidationError[] }) also fits the coding standards (no as any, prefer discriminated unions).
+- **Giving the error data type a ValidationError.paths(): string[] method** — an error should be pure data; a method on it breaks serialization, structured logging and equality comparison all at once. In practice validator-factory writes a dummy paths: () => [""] every time.
+- **The implementation of Result (the Object.create(successProto) + (this as any)._data prototype optimization, the ResultUtils namespace, LuqValidationException = createLuqValidationException as any as { new(...) })** — most of result.ts's 403 lines are performance optimizations that come with as any. A namespace is bad for tree-shaking. Dressing a factory function as an exception class by casting a new signature over it with as any goes directly against the no-as-any standard.
+- **The 'Plugin error - ignore silently' try-catch in createValidatorFactory / attachPluginMethods (field-context.ts:365-367, validator-factory.ts:111-116)** — an exception thrown while running a plugin is swallowed and the validation silently passes. It makes bugs invisible.
+- **TransformAwareValidator's validateRaw? / parseRaw? (an optional fast path)** — a separate performance API commented as 'Ultra-fast raw methods (1M+ ops/sec) - bypasses Result wrapper'. Being optional, callers have to check it exists before calling it, which makes it effectively unusable. Rather than splitting the API in two, make the normal path fast, or separate it into an explicitly different builder.
+- **Three of PluginCategory's 11 values: composable / composable-conditional / composable-directly** — for the sake of exactly two plugins, tupleBuilder (composable-directly) and unionGuard (composable-conditional), the plugin types, the use overloads, FilterPluginsByType, ExtractComposablePluginMethods and attachPluginMethods all branch three ways. And unionGuard is not even published. They should be unified into the single concept "a validation that takes a child builder as an argument".
+- **The hardcoded method-name branching in MapPluginMethodsToChainable (branching the types on the strings 'required' / 'optional' / 'nullable' / 'guard')** — type-state transitions are decided by string matching on the method name, so a user who writes their own plugin with methodName: 'required' silently changes the type state. Transitions should be declared through the category (or through declarative metadata on the plugin). Note also that required and optional both set the same { excludeUndefined: true } — excluding undefined for optional is a plain type bug.
+- **InferMethodParameters (plugin-types.ts:336-349)** — it takes TMethod but then looks the method up again via GetPluginMethodByName<TPlugins, TMethodName>, so the first type argument TMethod, along with TObject and TCurrentType, is effectively ignored. When several plugins share a methodName, {…}[keyof TPlugins] becomes a union and inference breaks.
+- **.for() passing unknown for FieldBuilder<TInputType, unknown, TPlugins, never>'s TMap** — TMap should be a Record but gets unknown as its initial value. It only happens to work because of the intersection in AddFieldTransform. The initial value must be {}.
+- **The code examples in README.md** — they call build()'s return value as a function (validateUser({...})), reference result.issues, import from the nonexistent '@maroonedog/luq/plugins' and '@maroonedog/luq/core/builder/plugins/plugin-creator', and use a nonexistent category: 'custom'. Almost nothing in them matches the implementation. It must never be trusted as a source for the specification (this document is based on the source, not on the README).
+- **uuidPlugin having the name 'stringUuid' while its file name, export name and public path are 'uuid'** — the sole exception to the naming convention, and the error code becomes 'stringUuid' too. A new implementation should settle on either stringUuidPlugin / ./plugins/string-uuid or uuid throughout.
+- **readOnlyWriteOnly.ts defining two plugins in one file — readOnlyWriteOnlyPlugin (methodName: readOnly) and writeOnlyPlugin (methodName: writeOnly) — and publishing only the former** — this breaks one responsibility per file, and using readOnly does not give you writeOnly. readOnly and writeOnly are equal concepts in JSON Schema, so split them into two files and publish both.
+- **The internal barrel src/core/plugin/index.ts and the 13 plugins that exist only there (optionalIf, orFail, stitch, stringExactLength, stringAlphanumeric, stringStartsWith, stringEndsWith, numberFinite, numberRange, objectRecursively/recursively, unionGuard, fromContext, conditionalSchema)** — they are absent from package.json's exports, so they never reach users. And yet the tests use finite() and friends, and the type system special-cases guard. The "publish or don't" decision has never been made. stitch goes as far as having three implementations — stitch.ts / stitchSimple.ts / stitch-typed.ts — coexisting under the same name: 'stitch'.
 
 ## Published symbols (216)
 
 `Builder`, `use`, `for`, `v`, `field`, `useField`, `strict`, `strictOnEditor`, `build`, `validate`, `parse`, `pick`, `validateRaw`, `parseRaw`, `fromJsonSchema`, `string`, `number`, `boolean`, `date`, `array`, `tuple`, `union`, `object`, `any`, `refineString`, `refineNumber`, `refineBoolean`, `refineArray`, `refineObject`, `refineTuple`, `refineUnion`, `refineDate`, `guard`, `createPluginRegistry`, `createFieldRule`, `toBuilder`, `getPlugins`, `plugin`, `pluginPredefinedTransform`, `pluginConfigurableTransform`, `pluginBuilderExtension`, `Result`, `Result.ok`, `Result.error`, `ResultUtils`, `LuqValidationException`, `GlobalConfig`, `globalConfig`, `setGlobalConfig`, `getGlobalConfig`, `resetGlobalConfig`, `SEVERITY`, `FieldBuilder`, `TransformAwareValidator`, `ApplyFieldTransforms`, `ExtractFieldType`, `TypedPlugin`, `PluginType`, `PluginCategory`, `TypeName`, `TypeMapping`, `BuilderExtensionPlugin`, `BuilderExtensionMethod`, `ValidationOptions`, `ParseOptions`, `MessageContext`, `MessageFactory`, `ValidationResult`, `ValidationError`, `FieldValidator`, `FieldValidationResult`, `FieldRule`, `PluginRegistry`, `TypedPluginRegistry`, `ExtractFieldRuleType`, `FieldRuleDefinition`, `PluginImplementation`, `PluginDefinition`, `BasicValidationResult`, `PluginValidationResult`, `StandardPluginImplementation`, `ConditionalPluginImplementation`, `TransformPluginImplementation`, `FieldReferencePluginImplementation`, `MultiFieldReferencePluginImplementation`, `ArrayElementPluginImplementation`, `ContextPluginImplementation`, `PreprocessorPluginImplementation`, `ValidatorFormat`, `FieldOptions`, `FieldConfig`, `DefaultValue`, `NestedKeyOf`, `TypeOfPath`, `ElementType`, `ChainableFieldBuilder`, `FieldBuilderContext`, `FieldDefinition`, `TypeStateFlags`, `ApplyTypeState`, `AddFieldTransform`, `MissingFields`, `IChainableBuilder`, `ChainableBuilder`, `AnyPlugin`, `PluginMapFromArray`, `BuilderExtensions`, `JsonSchemaOptions`, `requiredPlugin`, `optionalPlugin`, `nullablePlugin`, `stringMinPlugin`, `stringMaxPlugin`, `stringEmailPlugin`, `stringPatternPlugin`, `stringUrlPlugin`, `stringDatePlugin`, `stringDatetimePlugin`, `stringTimePlugin`, `stringIpv4Plugin`, `stringIpv6Plugin`, `stringHostnamePlugin`, `stringDurationPlugin`, `stringBase64Plugin`, `stringJsonPointerPlugin`, `stringRelativeJsonPointerPlugin`, `stringIriPlugin`, `stringIriReferencePlugin`, `stringUriTemplatePlugin`, `stringContentEncodingPlugin`, `stringContentMediaTypePlugin`, `uuidPlugin`, `numberMinPlugin`, `numberMaxPlugin`, `numberPositivePlugin`, `numberNegativePlugin`, `numberIntegerPlugin`, `numberMultipleOfPlugin`, `booleanTruthyPlugin`, `booleanFalsyPlugin`, `arrayMinLengthPlugin`, `arrayMaxLengthPlugin`, `arrayUniquePlugin`, `arrayIncludesPlugin`, `arrayContainsPlugin`, `objectPlugin`, `objectMinPropertiesPlugin`, `objectMaxPropertiesPlugin`, `objectAdditionalPropertiesPlugin`, `objectPropertyNamesPlugin`, `objectPatternPropertiesPlugin`, `objectDependentRequiredPlugin`, `objectDependentSchemasPlugin`, `oneOfPlugin`, `literalPlugin`, `compareFieldPlugin`, `requiredIfPlugin`, `validateIfPlugin`, `skipPlugin`, `transformPlugin`, `tupleBuilderPlugin`, `readOnlyWriteOnlyPlugin`, `customPlugin`, `jsonSchemaPlugin`, `jsonSchemaFullFeaturePlugin`, `required`, `optional`, `nullable`, `min`, `max`, `email`, `pattern`, `url`, `datetime`, `time`, `ipv4`, `ipv6`, `hostname`, `duration`, `base64`, `jsonPointer`, `relativeJsonPointer`, `iri`, `iriReference`, `uriTemplate`, `contentEncoding`, `contentMediaType`, `uuid`, `positive`, `negative`, `integer`, `multipleOf`, `truthy`, `falsy`, `minLength`, `maxLength`, `unique`, `includes`, `contains`, `minProperties`, `maxProperties`, `additionalProperties`, `propertyNames`, `patternProperties`, `dependentRequired`, `dependentSchemas`, `oneOf`, `literal`, `compareField`, `requiredIf`, `validateIf`, `skip`, `transform`, `builder`, `readOnly`, `custom`
-
