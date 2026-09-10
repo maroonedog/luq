@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -36,7 +37,7 @@ describe("stringEmail", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(anyDomain, value)).toBe(true);
+    expect(passesThrough(anyDomain, value)).toBe(true);
   });
 
   it("matches allowedDomains case-insensitively after the LAST @", () => {

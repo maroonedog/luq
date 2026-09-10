@@ -53,7 +53,10 @@ describe("arrayContains", () => {
   // LEGACY BUG: arrayContains was the one array plugin that returned false for
   // a non-array, breaking the catalogue-wide pass-through rule.
   it("passes a non-array through like every other array plugin", () => {
-    expect(validator.validate({ scores: "nope" }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ scores: "nope" }).issues.map((issue) => issue.code)
+    ).toEqual(["arrayType"]);
     expect(validator.validate({}).valid).toBe(true);
   });
 

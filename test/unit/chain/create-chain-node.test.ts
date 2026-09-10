@@ -4,6 +4,7 @@ import type { ChainBuildContext } from "../../../src/chain/create-chain-node";
 import { DEFAULT_GLOBAL_CONFIG } from "../../../src/types/global-config";
 import {
   chainContext,
+  declaredRules,
   compareFieldPlugin,
   expectCheck,
   numberMinPlugin,
@@ -33,7 +34,9 @@ function slots(context: ChainBuildContext = chainContext) {
 function rulesOf(chain: unknown) {
   const rules = readChainRules(chain);
   if (rules === undefined) throw new Error("not a chain");
-  return rules;
+  // Without the type check the slot seeds: this file is about what calling a
+  // method appends. slot-type-guard.test.ts is where the seed is asserted.
+  return declaredRules(rules);
 }
 
 describe("createChainNode", () => {

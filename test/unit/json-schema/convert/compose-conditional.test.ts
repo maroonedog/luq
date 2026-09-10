@@ -30,7 +30,16 @@ interface Holder {
 
 const SCHEMA = {
   properties: {
-    a: { if: { minLength: 2 }, then: { minLength: 4 }, else: { maxLength: 0 } },
+    // `type` is declared because the hand-written twin says `b.string`, which
+    // is itself a claim about the type. Without it the document would accept a
+    // number here — correctly, since `minLength` says nothing about one — and
+    // the two doors would be answering different questions.
+    a: {
+      type: "string",
+      if: { minLength: 2 },
+      then: { minLength: 4 },
+      else: { maxLength: 0 },
+    },
   },
 };
 

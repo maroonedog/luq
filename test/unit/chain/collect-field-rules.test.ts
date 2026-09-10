@@ -6,6 +6,7 @@ import type { AnyChain } from "../../../src/chain/field-chain.types";
 import type { FieldSlots } from "../../../src/chain/field-slots.types";
 import {
   chainContext,
+  declaredRules,
   containsPlugin,
   expectPresence,
   requiredPlugin,
@@ -92,7 +93,8 @@ describe("collectFieldRules", () => {
     );
     // requiredPlugin does not surface the context, so assert through the rule
     // it produced: the code fell back to the plugin name resolved in build.
-    expect(expectPresence(rules.rules[0]).code).toBe("required");
+    // `declaredRules` drops the type check the slot seeds ahead of it.
+    expect(expectPresence(declaredRules(rules.rules)[0]).code).toBe("required");
   });
 
   it("throws FieldChainResultError when the callback returns a non-chain", () => {

@@ -48,6 +48,16 @@ export interface ChainBuildContext {
   readonly fieldPath: string;
   readonly declaredSiblingKeys: readonly string[];
   readonly config: ResolvedGlobalConfig;
+  /**
+   * True when something other than the slot already decides the runtime type.
+   *
+   * Set by the JSON Schema converter and nowhere else: there the DOCUMENT owns
+   * the type, its `type` keyword reports under the code `type`, and its
+   * vocabulary is wider than a slot's — `integer`, a list of types, and `null`
+   * as a type in its own right. A slot guard on that path would report a
+   * second issue for one bad value, under a code no schema asked for.
+   */
+  readonly typeDecidedElsewhere?: boolean;
 }
 
 /**

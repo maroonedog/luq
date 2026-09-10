@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -36,7 +37,7 @@ describe("stringEndsWith", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(suffixed, value)).toBe(true);
+    expect(passesThrough(suffixed, value)).toBe(true);
   });
 
   it("defaults its code to the plugin name and quotes the suffix", () => {

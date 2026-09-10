@@ -35,6 +35,9 @@ describe("objectAdditionalPropertiesSchema", () => {
   });
 
   it("passes a non-object through", () => {
-    expect(validator.validate({ labels: 1 }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ labels: 1 }).issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 });

@@ -38,6 +38,9 @@ describe("objectPropertyNames", () => {
   // LEGACY BUG: legacy returned false for a non-object, alone among the
   // object plugins.
   it("passes a non-object through", () => {
-    expect(validator.validate({ metrics: 3 }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ metrics: 3 }).issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 });

@@ -53,7 +53,6 @@ if (result.valid) {
 
 const nestedObjectsExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
-import { objectPlugin } from '@maroonedog/luq/plugins/object';
 import { oneOfPlugin } from '@maroonedog/luq/plugins/oneOf';
 import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
 import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
@@ -71,16 +70,15 @@ type UserProfile = {
 
 export const profileValidator = Builder()
   .use(requiredPlugin)
-  .use(objectPlugin)
   .use(oneOfPlugin)
   .use(stringEmailPlugin)
   .use(stringMinPlugin)
   .for<UserProfile>()
   // The container and its members are separate declarations.
-  .v('user', b => b.object.required().object())
+  .v('user', b => b.object.required())
   .v('user.name', b => b.string.required().min(2))
   .v('user.email', b => b.string.required().email())
-  .v('settings', b => b.object.required().object())
+  .v('settings', b => b.object.required())
   .v('settings.notifications', b => b.boolean.required())
   .v('settings.theme', b => b.string.required().oneOf(['light', 'dark']))
   .build();`;
@@ -337,7 +335,6 @@ export async function handleCreate(body: unknown): Promise<number> {
 const productExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 import { optionalPlugin } from '@maroonedog/luq/plugins/optional';
-import { objectPlugin } from '@maroonedog/luq/plugins/object';
 import { oneOfPlugin } from '@maroonedog/luq/plugins/oneOf';
 import { arrayMaxLengthPlugin } from '@maroonedog/luq/plugins/arrayMaxLength';
 import { arrayUniquePlugin } from '@maroonedog/luq/plugins/arrayUnique';
@@ -358,7 +355,6 @@ type Product = {
 export const productValidator = Builder()
   .use(requiredPlugin)
   .use(optionalPlugin)
-  .use(objectPlugin)
   .use(oneOfPlugin)
   .use(arrayMaxLengthPlugin)
   .use(arrayUniquePlugin)
@@ -372,7 +368,7 @@ export const productValidator = Builder()
   .v('category', b =>
     b.string.required().oneOf(['electronics', 'clothing', 'books'])
   )
-  .v('specifications', b => b.object.required().object())
+  .v('specifications', b => b.object.required())
   .v('inStock', b => b.boolean.required())
   .v('tags', b => b.array.optional().maxLength(10).unique())
   .v('tags[*]', b => b.string.required().min(2))

@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -37,7 +38,7 @@ describe("stringTime", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(byDefault, value)).toBe(true);
+    expect(passesThrough(byDefault, value)).toBe(true);
   });
 
   it("only an EXPLICIT false forbids the fractional part", () => {

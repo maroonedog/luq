@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -39,7 +40,7 @@ describe("stringJsonPointer", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(pointer, value)).toBe(true);
+    expect(passesThrough(pointer, value)).toBe(true);
   });
 
   it("has an overridable code, which 1.x's FORMAT_JSON_POINTER was not", () => {

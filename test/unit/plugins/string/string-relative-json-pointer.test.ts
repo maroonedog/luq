@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -42,7 +43,7 @@ describe("stringRelativeJsonPointer", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(relative, value)).toBe(true);
+    expect(passesThrough(relative, value)).toBe(true);
   });
 
   it("has an overridable code, which 1.x's SCREAMING_SNAKE one was not", () => {

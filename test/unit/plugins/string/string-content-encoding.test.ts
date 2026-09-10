@@ -5,6 +5,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
   type StringValidator,
 } from "./string-model";
@@ -75,7 +76,7 @@ describe("stringContentEncoding", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(base64, value)).toBe(true);
+    expect(passesThrough(base64, value)).toBe(true);
   });
 
   it("REFUSES an unknown encoding at build time instead of passing all", () => {

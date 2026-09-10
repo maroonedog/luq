@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -38,7 +39,7 @@ describe("stringIpv4", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(ipv4, value)).toBe(true);
+    expect(passesThrough(ipv4, value)).toBe(true);
   });
 
   it("has an overridable code, which 1.x's FORMAT_IPV4 was not", () => {

@@ -57,7 +57,12 @@ describe("objectDependentRequired", () => {
   });
 
   it("passes a non-object through", () => {
-    expect(validator.validate({ payment: ["card"] }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator
+        .validate({ payment: ["card"] })
+        .issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 
   // Legacy hard-coded "DEPENDENT_REQUIRED" and accepted no options bag.

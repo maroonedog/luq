@@ -60,6 +60,9 @@ describe("objectAdditionalProperties", () => {
   });
 
   it("passes a non-object through", () => {
-    expect(derived.validate({ user: "a" }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      derived.validate({ user: "a" }).issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 });

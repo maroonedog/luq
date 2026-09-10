@@ -81,8 +81,45 @@ export function expectPresence(rule: Rule | undefined): PresenceRule {
   return rule;
 }
 
+/**
+ * The codes of the rules a chain BUILT — the type check its slot seeds is
+ * dropped first, by `declaredRules` below.
+ *
+ * Every caller of this asks "what did calling these methods append", and
+ * entering a slot already puts one rule in the list. Carrying it into every
+ * expectation would say nothing and hide the ordering the tests are about.
+ * The seed itself is asserted in slot-type-guard.test.ts, which reads issues
+ * rather than rules and so cannot be fooled by this.
+ */
 export function ruleCodes(rules: readonly Rule[]): readonly string[] {
-  return rules.map((rule) =>
+  return declaredRules(rules).map((rule) =>
     rule.kind === "transform" ? "transform" : rule.code
   );
+}
+
+/** The codes a slot seeds its chain with, before any method is called. */
+const SLOT_GUARD_CODES: ReadonlySet<string> = new Set([
+  "stringType",
+  "numberType",
+  "booleanType",
+  "dateType",
+  "arrayType",
+  "objectType",
+]);
+
+/**
+ * The rules a chain BUILT, without the type check its slot seeds.
+ *
+ * These tests are about what calling a method appends, and entering a slot
+ * already puts one rule in the list (see src/chain/slot-type-guard.ts). Its
+ * presence is asserted by slot-type-guard.test.ts; here it is noise, and
+ * leaving it in would make every expectation carry a rule no test is about.
+ */
+export function declaredRules(rules: readonly Rule[]): readonly Rule[] {
+  const first = rules[0];
+  return first !== undefined &&
+    first.kind === "check" &&
+    SLOT_GUARD_CODES.has(first.code)
+    ? rules.slice(1)
+    : rules;
 }

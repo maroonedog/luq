@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -40,7 +41,7 @@ describe("stringUrl", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(anyProtocol, value)).toBe(true);
+    expect(passesThrough(anyProtocol, value)).toBe(true);
   });
 
   it("protocols are matched WITH the colon, as in 1.x", () => {
