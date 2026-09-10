@@ -1,0 +1,22 @@
+{
+  "name": "luq-example-openapi",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Validators generated from an OpenAPI document, against the types generated from the same document.",
+  "scripts": {
+    "generate": "tsx scripts/generate.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/main.ts",
+    "verify": "npm run generate && npm run typecheck && npm run start"
+  },
+  "dependencies": {
+    "@maroonedog/luq": "file:../.."
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0",
+    "yaml": "^2.5.0"
+  }
+}
