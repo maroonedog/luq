@@ -363,6 +363,57 @@ when a bundler can tree-shake (three plugins via the barrel gzip to 7,986 B
 against 7,987 B via three subpaths — 0.01%), but the per-plugin subpaths are the
 supported route.
 
+**Presets, for when the list gets long.** Writing `.use()` thirteen times before
+the first field is a real cost of the design above, so the common bundles are
+named. `.useAll(bundle)` registers every plugin in one.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { everydayRules } from "@maroonedog/luq/presets";
+
+type Order = { id: string; quantity: number };
+
+const orderValidator = Builder()
+  .useAll(everydayRules)
+  .for<Order>()
+  .v("id", (b) => b.string.required().min(3))
+  .v("quantity", (b) => b.number.required().integer().min(1))
+  .build();
+```
+
+| Preset | What is in it |
+|---|---|
+| `presence` | `required` / `optional` / `nullable` |
+| `strings` | presence plus `min` / `max` / `pattern` / `email` |
+| `numbers` | presence plus `min` / `max` / `integer` |
+| `arrays` | presence plus `minLength` / `maxLength` / `each` |
+| `everydayRules` | all four, 13 plugins |
+
+A preset is an ordinary object of plugins, so `.useAll()` and `.use()` mix, and
+you can spread one to make your own. Registration is **first-wins**: a plugin
+already registered is not silently replaced by a preset that also carries it,
+whichever order they arrive in.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { presence, strings } from "@maroonedog/luq/presets";
+import { stringUrlPlugin } from "@maroonedog/luq/plugins/stringUrl";
+
+type Link = { href: string };
+
+const linkValidator = Builder()
+  .useAll({ ...presence, ...strings })
+  .use(stringUrlPlugin)
+  .for<Link>()
+  .v("href", (b) => b.string.required().url())
+  .build();
+```
+
+The bytes are still only what you reach. `presence` alone gzips to 8,203 B
+against the 7,954 B floor, and `everydayRules` to 9,437 B — both are in the
+size budget and re-measured on every build, because a convenience that quietly
+costs a kilobyte is not a convenience.
+
 ## JSON Schema
 
 ```ts

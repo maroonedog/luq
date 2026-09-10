@@ -1,8 +1,10 @@
 ---
 import LuqLogo from './LuqLogo.astro';
 import CodeBlock from './CodeBlock.astro';
+import { bundleSize } from '../data/bundle-size';
 import { conformance } from '../data/conformance';
 import { packageInfo } from '../data/package-info';
+import { pluginSubpathCount } from '../data/plugins';
 
 /**
  * Landing hero.
@@ -14,12 +16,14 @@ import { packageInfo } from '../data/package-info';
  */
 const measured = [
   {
-    value: '7,590 B',
+    // 手書きにしない。ここは 7,590 B と書かれたまま実測が 7,954 B になっていた。
+    // ページ本文は既に生成データを読んでいて、ヒーローだけが取り残されていた。
+    value: bundleSize.coreOnly.gzip,
     label: 'Builder alone, gzipped',
     source: 'config/size-budget.json',
   },
   {
-    value: '77',
+    value: String(pluginSubpathCount),
     label: 'plugins, one import each',
     source: 'config/plugin-catalog.lock.json',
   },

@@ -335,10 +335,7 @@ const tableOfContents = [
 
         <h2 id="installation" class="mt-12 text-headline-small">Installation</h2>
 
-        <p class="mt-3 text-body-large">
-          The published version is {packageInfo.version}, on the default tag. The 0.1.x
-          line is a different library and is not upgraded into.
-        </p>
+        <p class="mt-3 text-body-large">Version {packageInfo.version}.</p>
 
         <div class="mt-4">
           <div
@@ -391,10 +388,8 @@ const tableOfContents = [
         </h3>
 
         <p class="mt-3 text-body-large">
-          The package is emitted to ES2020, and its published declarations are typechecked
-          under both <code>node16</code> and <code>bundler</code> module resolution, so
-          either works. <code>strict</code> is what the path and slot checks are written
-          against — without it the compile errors Luq relies on stop being errors.
+          <code>strict</code> is required: without it, the path and slot checks stop being
+          compile errors. <code>node16</code> and <code>bundler</code> resolution both work.
         </p>
 
         <CodeBlock code={tsconfigExample} language="json" fileName="tsconfig.json" />
@@ -402,10 +397,8 @@ const tableOfContents = [
         <h2 id="the-five-calls" class="mt-12 text-headline-small">The five calls</h2>
 
         <p class="mt-3 text-body-large">
-          Every validator is the same five steps. <code>.use()</code> must come before
-          <code>.for()</code>. Order between <code>.v()</code> calls does not matter; order
-          <em>within</em> one chain does not matter either — <code>build()</code> sorts a
-          chain into presence, gates, checks and transforms.
+          Every validator is the same five steps. <code>.use()</code> comes before
+          <code>.for()</code>; nothing else has an order that matters.
         </p>
 
         <CodeBlock code={basicUsageExample} language="typescript" fileName="user.ts" />
@@ -413,10 +406,8 @@ const tableOfContents = [
         <div class="md-card md-card-outlined mt-6 p-5">
           <h3 class="text-title-medium">Build once, keep the validator</h3>
           <p class="mt-2 text-body-medium text-on-surface-variant">
-            <code>build()</code> resolves every chain into a compiled plan. Measured on this
-            repository it costs 14–662&nbsp;µs depending on the shape, against
-            sub-microsecond <code>validate()</code> calls, so a validator rebuilt per request
-            pays that cost every time. Build it at module scope.
+            <code>build()</code> costs 14–662&nbsp;µs; <code>validate()</code> is
+            sub-microsecond. Build at module scope, not per request.
           </p>
         </div>
 
@@ -425,9 +416,7 @@ const tableOfContents = [
         </h2>
 
         <p class="mt-3 text-body-large">
-          An object with four members. It is <strong>not callable</strong> — Luq 1.x's
-          documentation called it as a function, and that is the single most common thing to
-          port.
+          An object with four members. It is <strong>not callable</strong>.
         </p>
 
         <div class="mt-4 overflow-x-auto">
@@ -472,8 +461,9 @@ const tableOfContents = [
         <h2 id="reading-the-result" class="mt-12 text-headline-small">Reading the result</h2>
 
         <p class="mt-3 text-body-large">
-          <code>ValidationResult&lt;T&gt;</code> is a discriminated union on
-          <code>valid</code>:
+          A discriminated union on <code>valid</code> — every member is documented on
+          <a class="text-primary underline underline-offset-2" href="/docs/api/validator#validation-result"
+            >the validator API</a>.
         </p>
 
         <CodeBlock
@@ -493,22 +483,18 @@ type ValidationIssue = {
         <CodeBlock code={resultExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          <code>data</code> is reachable only on the success branch, so narrowing on
-          <code>valid</code> replaces every cast. <code>severity</code> is never absent, and
-          the default <code>code</code> is the <strong>plugin's own name</strong> —
-          <code>required</code>, <code>stringMin</code>, <code>stringEmail</code> — not a
-          generic constant.
+          <code>data</code> exists only on the success branch, so narrowing on
+          <code>valid</code> replaces every cast. The default <code>code</code> is the
+          plugin's own name — <code>required</code>, <code>stringMin</code>.
         </p>
 
-        <div class="md-card md-card-outlined mt-6 p-5">
-          <h3 class="text-title-medium">If you prefer exceptions</h3>
-          <p class="mt-2 text-body-medium text-on-surface-variant">
-            The <code>@maroonedog/luq/result</code> subpath exports <code>ok</code>,
-            <code>reject</code>, <code>isOk</code>, a free <code>unwrap()</code> function and
-            the <code>ValidationFailure</code> class it throws. <code>ValidationFailure</code>
-            carries <code>.issues</code>, so nothing is lost by going through it.
-          </p>
-        </div>
+        <p class="mt-4 text-body-large">
+          Prefer exceptions? <code>@maroonedog/luq/result</code> gives you
+          <code>unwrap()</code> and a <code>ValidationFailure</code> that carries
+          <code>.issues</code> — see
+          <a class="text-primary underline underline-offset-2" href="/docs/api/validator#result-subpath"
+            >the validator API</a>.
+        </p>
 
         <h2 id="validate-vs-parse" class="mt-12 text-headline-small">
           <code>validate()</code> vs <code>parse()</code>
@@ -525,9 +511,10 @@ type ValidationIssue = {
         <h2 id="options" class="mt-12 text-headline-small">Options</h2>
 
         <p class="mt-3 text-body-large">
-          The second argument of <code>validate()</code> and <code>parse()</code> is
-          <code>ValidateOptions</code>: <code>abortEarly</code>,
-          <code>abortEarlyOnEachField</code> and <code>external</code>.
+          <code>abortEarly</code>, <code>abortEarlyOnEachField</code>, <code>external</code> —
+          in full on
+          <a class="text-primary underline underline-offset-2" href="/docs/api/validator#options"
+            >the validator API</a>.
         </p>
 
         <CodeBlock code={optionsExample} language="typescript" />
@@ -537,18 +524,15 @@ type ValidationIssue = {
             <code>abortEarly</code> defaults to <code>true</code>
           </h3>
           <p class="mt-2 text-body-medium text-on-surface-variant">
-            Both flags default to <code>true</code>. Luq 1.x's documentation said
-            <code>abortEarly</code> defaulted to <code>false</code>; its implementation
-            defaulted to <code>true</code>, and the implementation is what carried over. Pass
-            <code>{'{ abortEarly: false }'}</code> for form UX.
+            Both flags default to <code>true</code>. Pass
+            <code>{'{ abortEarly: false }'}</code> to collect every issue.
           </p>
         </div>
 
         <p class="mt-6 text-body-large">
           <code>external</code> is a pre-resolved bag that
-          <code>@maroonedog/luq/plugins/fromContext</code> reads. That is the whole of the
-          async story: <code>@maroonedog/luq/async</code> resolves your promises and hands the
-          result in on this channel, so there is no second execution engine.
+          <code>@maroonedog/luq/plugins/fromContext</code> reads.
+          <code>@maroonedog/luq/async</code> resolves promises and passes them in on it.
         </p>
 
         <h2 id="defaults" class="mt-12 text-headline-small">Defaults</h2>
@@ -556,9 +540,7 @@ type ValidationIssue = {
         <CodeBlock code={defaultsExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          <code>applyDefaultToNull</code> defaults to <code>true</code>. A bare value as the
-          third argument — 1.x's <code>.v('language', b =&gt; b.string.optional(), 'en')</code>
-          shorthand — is gone; pass <code>{'{ default: "en" }'}</code>.
+          <code>applyDefaultToNull</code> defaults to <code>true</code>.
         </p>
 
         <h2 id="nested-fields-and-arrays" class="mt-12 text-headline-small">
@@ -566,9 +548,8 @@ type ValidationIssue = {
         </h2>
 
         <p class="mt-3 text-body-large">
-          Nested fields use dots and array elements use <code>[*]</code> — that is the whole
-          grammar. The path you <em>declare</em> holds <code>[*]</code>; the path you
-          <em>read back</em> holds the index the failure happened at.
+          Dots for nested fields, <code>[*]</code> for array elements. You declare
+          <code>[*]</code>; the issue comes back with the real index.
         </p>
 
         <CodeBlock code={nestedExample} language="typescript" />
@@ -596,10 +577,9 @@ type ValidationIssue = {
         <CodeBlock code={importsExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          77 plugin objects ship across 76 subpaths, plus one deprecated alias kept from 1.x.
-          The root <code>@maroonedog/luq</code> entry exports the builder and the types — it
-          deliberately exports no plugins at all, which is why the bare builder gzips to
-          {bundleSize.coreOnly.gzip} and a plugin costs 129–224&nbsp;B to add.
+          The root <code>@maroonedog/luq</code> entry exports no plugins at all, which is why
+          the bare builder gzips to {bundleSize.coreOnly.gzip} and a plugin costs
+          129–224&nbsp;B to add.
         </p>
 
         <h2 id="standard-schema" class="mt-12 text-headline-small">Standard Schema</h2>
@@ -614,23 +594,10 @@ type ValidationIssue = {
         <CodeBlock code={standardSchemaExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          Three things the spec leaves to the vendor, decided here:
-          <code>validate</code> runs <code>parse()</code> rather than
-          <code>validate()</code>, because the spec's success value is the value
-          <em>after</em> validation and only <code>parse()</code> applies a
-          transform; it collects every issue instead of stopping at the first,
-          because the consumer of this seam is a form and one-at-a-time errors
-          make a bad one; and <code>InferInput</code> resolves to the type you
-          wrote in <code>.for&lt;T&gt;()</code>, not a type read back out of a
-          schema value.
-        </p>
-
-        <p class="mt-4 text-body-large">
-          It is a subpath rather than something <code>build()</code> always
-          carries, and the reason is measured: putting <code>~standard</code> on
-          every validator costs 312&nbsp;B gzipped, measured on the 2.0.0 core —
-          4.2% charged to everyone, including everyone who never passes a
-          validator to tRPC.
+          It collects every issue, runs <code>parse()</code> so transforms apply, and
+          <code>InferInput</code> is the type you wrote in <code>.for&lt;T&gt;()</code>.
+          It is a subpath so the 312&nbsp;B is not charged to validators that never
+          reach a form or an RPC boundary.
         </p>
 
         <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>
