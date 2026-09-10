@@ -1,6 +1,6 @@
 {
   "name": "@maroonedog/luq",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "Universal Model & API Definition Platform - TypeScript validation library evolving into cross-language code generation",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -46,6 +46,11 @@
       "types": "./dist/plugins/index.d.ts",
       "import": "./dist/plugins/index.mjs",
       "require": "./dist/plugins/index.js"
+    },
+    "./schema-tooling": {
+      "types": "./dist/schema-tooling/index.d.ts",
+      "import": "./dist/schema-tooling/index.mjs",
+      "require": "./dist/schema-tooling/index.js"
     },
     "./plugins/arrayContains": {
       "types": "./dist/plugins/arrayContains.d.ts",

@@ -15,6 +15,7 @@ const DIST_BASE_BY_FIXED_KEY: Readonly<Record<string, string>> = {
   "./standard-schema": "standard-schema",
   "./presets": "presets/index",
   "./plugins": "plugins/index",
+  "./schema-tooling": "schema-tooling/index",
 };
 
 export function toDistConditions(distBase: string): ExportConditions {

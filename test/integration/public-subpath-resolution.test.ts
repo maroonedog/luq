@@ -64,6 +64,7 @@ const FIXED_KEY_SOURCE: Readonly<Record<string, string>> = {
   "./standard-schema": "src/standard-schema/index.ts",
   "./presets": "src/presets/index.ts",
   "./plugins": "src/plugins/index.generated.ts",
+  "./schema-tooling": "src/schema-tooling/index.ts",
   "./package.json": "package.json",
 };
 

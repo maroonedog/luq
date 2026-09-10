@@ -65,7 +65,7 @@ describe("generatePackageExports", () => {
     });
   });
 
-  it("writes the nine fixed keys even with no plugins", () => {
+  it("writes the ten fixed keys even with no plugins", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       generatePackageExports(root);
       expect(Object.keys(readPublishedExportMap(root))).toEqual([
@@ -78,6 +78,7 @@ describe("generatePackageExports", () => {
         "./standard-schema",
         "./presets",
         "./plugins",
+        "./schema-tooling",
       ]);
     });
   });

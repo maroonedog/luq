@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 import { REPOSITORY_ROOT } from "./catalog/plugin-source-roots";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
 import {
@@ -58,6 +59,22 @@ export function checkNoDynamicCode(repositoryRoot: string): number {
   return 1;
 }
 
+/**
+ * The package to read, as a directory relative to the repository root. Given
+ * none, the package at the root itself.
+ *
+ * Taking the root as an argument is what lets one gate judge every package
+ * that ships a dist, instead of each growing its own copy that has to be kept
+ * agreeing with this one.
+ */
+function resolveCheckedRoot(argument: string | undefined): string {
+  return argument === undefined
+    ? REPOSITORY_ROOT
+    : path.resolve(REPOSITORY_ROOT, argument);
+}
+
 if (require.main === module) {
-  runCheckAndExit(() => checkNoDynamicCode(REPOSITORY_ROOT));
+  runCheckAndExit(() =>
+    checkNoDynamicCode(resolveCheckedRoot(process.argv[2]))
+  );
 }

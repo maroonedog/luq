@@ -1,0 +1,7 @@
+node_modules/
+# The point of the example is running the generator, so the output it writes
+# is not committed: a stale copy would hide a generator that stopped working.
+src/*.generated.ts
+# Not committed: the dependency on the repository root resolves by version, so
+# a stale lock silently installs the published package instead of this checkout.
+package-lock.json
