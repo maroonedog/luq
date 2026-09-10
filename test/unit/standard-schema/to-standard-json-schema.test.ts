@@ -10,6 +10,7 @@ import { requiredPlugin } from "../../../src/plugins/required";
 import { stringEmailPlugin } from "../../../src/plugins/string-email";
 import { stringMaxPlugin } from "../../../src/plugins/string-max";
 import { stringMinPlugin } from "../../../src/plugins/string-min";
+import { stringPatternPlugin } from "../../../src/plugins/string-pattern";
 import { fromJsonSchema } from "../../../src/json-schema/index";
 import { jsonSchemaBagFixture } from "../json-schema/convert/json-schema-bag-fixture";
 import {
@@ -205,6 +206,47 @@ describe("declarations JSON Schema cannot express", () => {
         target: "draft-07",
       })
     ).toThrow(/"code".*custom/s);
+  });
+
+  // A plugin the table knows is not automatically writable: it depends on the
+  // arguments it was given. `pattern` is the case that bites, because
+  // Draft-07's `pattern` is an ECMA-262 source string with nowhere to spell a
+  // flag, so emitting the source of `/^a.c$/i` would hand out a schema that
+  // rejects "ABC" while the validator accepts it.
+  const withFlaggedPattern = Builder()
+    .use(requiredPlugin)
+    .use(stringPatternPlugin)
+    .for<{ readonly code: string }>()
+    .v("code", (b) => b.string.required().pattern(/^a.c$/i))
+    .build();
+
+  it("throws for a plugin it knows, given arguments it cannot express", () => {
+    expect(() =>
+      toStandardJsonSchema(withFlaggedPattern)["~standard"].jsonSchema.input({
+        target: "draft-07",
+      })
+    ).toThrow(UnrepresentableRuleError);
+    expect(() =>
+      toStandardJsonSchema(withFlaggedPattern)["~standard"].jsonSchema.input({
+        target: "draft-07",
+      })
+    ).toThrow(/"code".*stringPattern/s);
+  });
+
+  it("emits a pattern that carries no flag", () => {
+    // The refusal above must be about the flag, not about `pattern` at large.
+    const plain = Builder()
+      .use(requiredPlugin)
+      .use(stringPatternPlugin)
+      .for<{ readonly code: string }>()
+      .v("code", (b) => b.string.required().pattern(/^a.c$/))
+      .build();
+
+    expect(
+      toStandardJsonSchema(plain)["~standard"].jsonSchema.input({
+        target: "draft-07",
+      })
+    ).toMatchObject({ properties: { code: { pattern: "^a.c$" } } });
   });
 
   it("drops it only when the caller asked for that in libraryOptions", () => {

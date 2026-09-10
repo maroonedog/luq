@@ -16,10 +16,23 @@
 // UnrepresentableRuleError instead of being hidden.
 // ===========================================================================
 
-/** A keyword fragment made from the arguments; null means type or presence handles it. */
+/**
+ * A keyword fragment made from the arguments. Three answers, and the
+ * difference between the last two is the point:
+ *
+ *   an object   the keywords this declaration means
+ *   null        it adds no keyword, and that is correct — type or presence
+ *               already carries it
+ *   undefined   it cannot be expressed with these arguments, so the caller
+ *               must refuse rather than emit a schema that quietly says
+ *               something else
+ *
+ * Collapsing the last two into `null` is how a constraint disappears without
+ * a trace, which is the failure UnrepresentableRuleError exists to prevent.
+ */
 export type ToKeywords = (
   args: readonly unknown[]
-) => Record<string, unknown> | null;
+) => Record<string, unknown> | null | undefined;
 
 const numberAt = (args: readonly unknown[], index: number): number =>
   typeof args[index] === "number" ? args[index] : Number.NaN;
@@ -49,10 +62,15 @@ export const PLUGIN_KEYWORDS: Readonly<Record<string, ToKeywords>> =
       maxLength: numberAt(args, 0),
     }),
     // Draft-07's `pattern` is an ECMA-262 SOURCE string. Flags cannot be
-    // spelled there, and dropping them changes the meaning, so a flagged
-    // RegExp counts as unwritable rather than being silently narrowed.
+    // spelled there, and dropping them changes the meaning — `/^a.c$/i`
+    // accepts "ABC" and `{"pattern":"^a.c$"}` does not — so a flagged RegExp
+    // is unwritable rather than something to narrow quietly. Anything that is
+    // not a RegExp at all is unwritable for the same reason: refusing is the
+    // only answer that does not lose the constraint in silence.
     stringPattern: (args) =>
-      args[0] instanceof RegExp ? { pattern: args[0].source } : null,
+      args[0] instanceof RegExp && args[0].flags === ""
+        ? { pattern: args[0].source }
+        : undefined,
     stringContentEncoding: (args) => ({ contentEncoding: args[0] }),
     stringContentMediaType: (args) => ({ contentMediaType: args[0] }),
 
@@ -98,7 +116,9 @@ export const PLUGIN_KEYWORDS: Readonly<Record<string, ToKeywords>> =
 
     // --- values -----------------------------------------------------------
     literal: (args) => ({ const: args[0] }),
-    oneOf: (args) => (Array.isArray(args[0]) ? { enum: args[0] } : null),
+    // `enum` needs the list itself. Given something else there is no list to
+    // write, and answering "no keyword" would drop the constraint.
+    oneOf: (args) => (Array.isArray(args[0]) ? { enum: args[0] } : undefined),
 
     // --- handled by type or presence, adding no keyword -------------------
     // numberInteger becomes `type: "integer"`, so it feeds the type decision.
