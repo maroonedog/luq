@@ -99,6 +99,20 @@ export function emitFieldSchema(
       continue;
     }
     const keywords = toKeywords(call.args);
+    // undefined is the table saying it cannot express THESE arguments, which
+    // is the same answer as having no entry at all: refuse, rather than emit a
+    // schema missing a constraint the validator enforces. null is different —
+    // it means type or presence already carries the declaration.
+    if (keywords === undefined) {
+      if (policy === "throw") {
+        throw new UnrepresentableRuleError(
+          fieldPath,
+          call.pluginName,
+          "no JSON Schema keyword expresses the arguments it was given"
+        );
+      }
+      continue;
+    }
     if (keywords === null) continue;
     Object.assign(schema, keywords);
   }
