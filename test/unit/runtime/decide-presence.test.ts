@@ -1,10 +1,12 @@
 // ===========================================================================
-// 条件付き presence の実行時側。フィールドは本物のコンパイラが作る。
+// The run-time side of conditional presence. The fields come from the real
+// compiler.
 //
-// ここで固定したいのは2点:
-//   1. 静的な既定値の上に、条件付きの上書きが宣言順に載ること
-//   2. 上書きが「選ばれる」だけで、実行時に方針を組み立てないこと
-//      (両側は build 時に完成しているので、述語の呼び出しは1フィールド1回)
+// Two things get pinned here:
+//   1. conditional overrides stack onto the static default in declaration order
+//   2. an override is only SELECTED; no policy is assembled at validation time.
+//      Both sides are finished at build time, so the predicate is called once
+//      per field.
 // ===========================================================================
 import type { ArrayItemContext, RuleContext } from "../../../src/types";
 import { decidePresence } from "../../../src/runtime/decide-presence";
@@ -40,8 +42,8 @@ function decide(
 const readsFlag = (root: unknown): boolean =>
   (root as { flag: boolean }).flag === true;
 
-describe("条件付きルールが無いフィールド", () => {
-  it("宣言が無ければ欠損を黙って通す (OPEN_PRESENCE)", () => {
+describe("a field with no conditional rule", () => {
+  it("passes a missing value silently when nothing was declared", () => {
     const sink = createSink();
     expect(
       decide(compileFieldAt({ path: "field", rules: [] }), undefined, sink)
@@ -49,13 +51,13 @@ describe("条件付きルールが無いフィールド", () => {
     expect(sink.issues).toHaveLength(0);
   });
 
-  it("上書きが空なら共有された凍結配列を持つ", () => {
+  it("carries the shared frozen array when there are no overrides", () => {
     const field = compileFieldAt({ path: "field", rules: [] });
     expect(field.presenceOverrides).toHaveLength(0);
     expect(Object.isFrozen(field.presenceOverrides)).toBe(true);
   });
 
-  it("required は欠損を自分の code で咎める", () => {
+  it("has required blame a missing value under its own code", () => {
     const sink = createSink();
     const field = compileFieldAt({ path: "field", rules: [requiredRule()] });
     expect(decide(field, undefined, sink)).toBe(false);
@@ -63,7 +65,7 @@ describe("条件付きルールが無いフィールド", () => {
   });
 });
 
-describe("requiredIf の形 (真なら要求、偽なら無言)", () => {
+describe("the requiredIf shape: demanding when true, silent when false", () => {
   const field = compileFieldAt({
     path: "field",
     rules: [makeConditionalPresence("requiredIf", readsFlag)],
@@ -72,14 +74,14 @@ describe("requiredIf の形 (真なら要求、偽なら無言)", () => {
   it.each([
     ["undefined", undefined],
     ["null", null],
-    ["空文字", ""],
-  ])("条件が真なら %s を拒否する", (_label, value) => {
+    ["the empty string", ""],
+  ])("rejects %s when the condition is true", (_label, value) => {
     const sink = createSink();
     expect(decide(field, value, sink)).toBe(false);
     expect(sink.issues[0]?.code).toBe("requiredIf");
   });
 
-  it("条件が真でも値があれば先へ進む", () => {
+  it("moves on when a value is present, even with a true condition", () => {
     const sink = createSink();
     expect(decide(field, "x", sink)).toBe(true);
     expect(sink.issues).toHaveLength(0);
@@ -88,21 +90,22 @@ describe("requiredIf の形 (真なら要求、偽なら無言)", () => {
   it.each([
     ["undefined", undefined],
     ["null", null],
-  ])("条件が偽なら %s は不在として黙って終わる", (_label, value) => {
+  ])("ends silently, treating %s as absent, when the condition is false", (_label, value) => {
     const sink = createSink();
     expect(decide(field, value, sink, contextFor({ flag: false }))).toBe(false);
     expect(sink.issues).toHaveLength(0);
   });
 
-  // 条件が偽なら requiredIf は無言なので、空文字は「値がある」側に戻る。
-  it("条件が偽なら空文字は存在する値として先へ進む", () => {
+  // With a false condition requiredIf is silent, so the empty string goes
+  // back to counting as present.
+  it("moves on with the empty string as a present value when the condition is false", () => {
     const sink = createSink();
     expect(decide(field, "", sink, contextFor({ flag: false }))).toBe(true);
     expect(sink.issues).toHaveLength(0);
   });
 });
 
-describe("静的な既定値 + 条件付きの上書き", () => {
+describe("a static default with conditional overrides", () => {
   const requiredThenOptionalIf = compileFieldAt({
     path: "field",
     rules: [
@@ -116,13 +119,13 @@ describe("静的な既定値 + 条件付きの上書き", () => {
     ],
   });
 
-  it("条件が真なら上書きが required を解除する", () => {
+  it("has the override lift required when the condition is true", () => {
     const sink = createSink();
     expect(decide(requiredThenOptionalIf, undefined, sink)).toBe(false);
     expect(sink.issues).toHaveLength(0);
   });
 
-  it("条件が偽なら上書き側が拒否する", () => {
+  it("has the override reject when the condition is false", () => {
     const sink = createSink();
     expect(
       decide(
@@ -135,7 +138,7 @@ describe("静的な既定値 + 条件付きの上書き", () => {
     expect(sink.issues[0]?.code).toBe("optionalIf");
   });
 
-  it("意見を持たない側は静的な既定値をそのまま残す", () => {
+  it("leaves the static default alone on the side holding no opinion", () => {
     const sink = createSink();
     const field = compileFieldAt({
       path: "field",
@@ -147,7 +150,7 @@ describe("静的な既定値 + 条件付きの上書き", () => {
     expect(sink.issues[0]?.code).toBe("required");
   });
 
-  it("後から宣言された上書きが先の上書きに勝つ", () => {
+  it("lets a later override win over an earlier one", () => {
     const sink = createSink();
     const field = compileFieldAt({
       path: "field",
@@ -160,7 +163,7 @@ describe("静的な既定値 + 条件付きの上書き", () => {
     expect(sink.issues).toHaveLength(0);
   });
 
-  it("optional の上に requiredIf を載せると条件が真のときだけ厳しくなる", () => {
+  it("makes requiredIf over optional stricter only when the condition is true", () => {
     const field = compileFieldAt({
       path: "field",
       rules: [optionalRule(), makeConditionalPresence("requiredIf", readsFlag)],
@@ -176,8 +179,8 @@ describe("静的な既定値 + 条件付きの上書き", () => {
   });
 });
 
-describe("述語の呼ばれ方", () => {
-  it("1フィールド1回だけ、root と ArrayItemContext を受け取る", () => {
+describe("how the predicate is called", () => {
+  it("calls it once per field, with the root and the item context", () => {
     const when = jest.fn(() => false);
     const field = compileFieldAt({
       path: "field",
@@ -193,7 +196,7 @@ describe("述語の呼ばれ方", () => {
     expect(when).toHaveBeenCalledWith(ROOT, arrayContext);
   });
 
-  it("値が存在していても述語は評価される (空文字の扱いが条件で変わるため)", () => {
+  it("evaluates the predicate even for a present value, the empty string being treated differently either way", () => {
     const when = jest.fn(() => true);
     const field = compileFieldAt({
       path: "field",

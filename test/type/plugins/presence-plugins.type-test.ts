@@ -1,10 +1,10 @@
 // ===========================================================================
 // test/type/plugins/presence-plugins.type-test.ts
 //
-// 呼び出し側の型テスト。ここに宣言だけのアサーションを書いてはいけない。
-// プラグイン定義そのものは RuntimeArgs を通ると markers が潰れるので、宣言を
-// 型検査しても引数の型は一度も検証されない。全ての行が実際の b.<slot>.xxx(...)
-// 呼び出しであること。
+// Type tests from the caller's side. No declaration-only assertion belongs
+// here: a plugin definition loses its markers going through RuntimeArgs, so
+// type-checking the declaration never checks an argument type at all. Every
+// line must be a real b.<slot>.xxx(...) call.
 // ===========================================================================
 import { Builder } from "../../../src/index";
 import { requiredPlugin } from "../../../src/plugins/required";
@@ -42,23 +42,24 @@ const pb = Builder()
   .use(customPlugin)
   .for<Shape>();
 
-// ==================== presence が型状態を動かす ============================
-// `maybe` の slot 値は string | null | undefined。custom の引数は
-// Present<TValue, TState> なので、presence 宣言の有無が引数型に直接出る。
+// ==================== presence moves the type state ========================
+// The slot value of `maybe` is string | null | undefined, and custom's
+// argument is Present<TValue, TState>, so declaring presence shows up directly
+// in the argument type.
 pb.v("maybe", (b) =>
-  // @ts-expect-error presence 宣言が無いので value は string | null | undefined
+  // @ts-expect-error with no presence declared, value is string | null | undefined
   b.string.custom((value) => value.length > 0)
 );
 pb.v("maybe", (b) => b.string.required().custom((value) => value.length > 0));
 pb.v("maybe", (b) =>
-  // @ts-expect-error nullable の後は value に null が残る
+  // @ts-expect-error after nullable, null remains in value
   b.string.nullable().custom((value) => value.length > 0)
 );
 pb.v("maybe", (b) =>
-  // @ts-expect-error optional は undefined を許すので value に undefined が残る
+  // @ts-expect-error optional permits undefined, so undefined remains in value
   b.string.optional().custom((value) => value.length > 0)
 );
-// 並びを入れ替えても同じ: required 済みなら null も undefined も残らない。
+// Order does not matter: once required, neither null nor undefined remains.
 pb.v("maybe", (b) =>
   b.string
     .nullable()
@@ -66,57 +67,57 @@ pb.v("maybe", (b) =>
     .custom((value) => value.length > 0)
 );
 
-// ==================== presence の options =================================
+// ==================== presence options =====================================
 pb.v("name", (b) => b.string.required({ code: "NAME_REQUIRED" }));
 pb.v("name", (b) => b.string.required({ severity: "warning" }));
-// @ts-expect-error code は文字列
+// @ts-expect-error code is a string
 pb.v("name", (b) => b.string.required({ code: 1 }));
-// @ts-expect-error RuleOptions に無いキーは受け取らない
+// @ts-expect-error a key RuleOptions does not have is not accepted
 pb.v("name", (b) => b.string.required({ allowNull: true }));
-// @ts-expect-error required は引数を取らない (第1引数は options)
+// @ts-expect-error required takes no argument; the first parameter is options
 pb.v("name", (b) => b.string.required("nope"));
 
-// ==================== 条件系: 述語は root を型付きで受け取る ================
+// ============ conditionals: the predicate receives a typed root ============
 pb.v("name", (b) => b.string.requiredIf((root) => root.flag));
 pb.v("name", (b) => b.string.optionalIf((root) => root.count > 0));
 pb.v("name", (b) => b.string.validateIf((root) => root.flag));
 pb.v("name", (b) => b.string.skip((root) => root.flag));
 pb.v("name", (b) => b.string.orFail((root) => root.count > 3));
-// @ts-expect-error Shape に nope は無い
+// @ts-expect-error Shape has no nope
 pb.v("name", (b) => b.string.requiredIf((root) => root.nope));
-// @ts-expect-error 述語は boolean を返す
+// @ts-expect-error the predicate returns a boolean
 pb.v("name", (b) => b.string.validateIf((root) => root.name));
-// @ts-expect-error 条件は関数であって値ではない
+// @ts-expect-error the condition is a function, not a value
 pb.v("name", (b) => b.string.skip(true));
 
-// 配列要素の文脈は第2引数。省略可能で、型は ArrayItemContext。
+// The array element context is the optional second parameter.
 pb.v("rows[*].serial", (b) =>
   b.string.requiredIf((_root, item) => item !== undefined && item.index === 0)
 );
 pb.v("rows[*].serial", (b) =>
   b.string.requiredIf(
-    // @ts-expect-error ArrayItemContext に position は無い
+    // @ts-expect-error ArrayItemContext has no position
     (_root, item) => item !== undefined && item.position === 0
   )
 );
 
-// ==================== oneOf: 候補はフィールドの型で縛られる =================
+// ============ oneOf: the candidates are bound by the field's type ==========
 pb.v("name", (b) => b.string.oneOf(["a", "b"]));
 pb.v("count", (b) => b.number.oneOf([1, 2, 3]));
-// @ts-expect-error string フィールドに数値の候補は入らない
+// @ts-expect-error a number candidate does not fit a string field
 pb.v("name", (b) => b.string.oneOf([1, 2]));
-// @ts-expect-error number フィールドに文字列の候補は入らない
+// @ts-expect-error a string candidate does not fit a number field
 pb.v("count", (b) => b.number.oneOf(["1"]));
-// @ts-expect-error oneOf は string / number / boolean スロットにしか生えない
+// @ts-expect-error oneOf appears only on the string, number and boolean slots
 pb.v("meta", (b) => b.object.oneOf(["a"]));
-// @ts-expect-error 候補は配列
+// @ts-expect-error the candidates are an array
 pb.v("name", (b) => b.string.oneOf("a"));
 
 // ==================== literal ============================================
 pb.v("name", (b) => b.string.literal("user"));
 pb.v("count", (b) => b.number.literal(3));
 pb.v("flag", (b) => b.boolean.literal(true));
-// @ts-expect-error 第2引数は options で、第3引数は無い
+// @ts-expect-error the second parameter is options and there is no third
 pb.v("name", (b) => b.string.literal("user", {}, {}));
 
 // ==================== custom =============================================
@@ -125,11 +126,11 @@ pb.v("name", (b) => b.string.custom((value) => ({ valid: value !== "" })));
 pb.v("name", (b) =>
   b.string.custom((value) => ({ valid: false, message: value }))
 );
-// @ts-expect-error number の値に .length は無い
+// @ts-expect-error a number has no .length
 pb.v("count", (b) => b.number.custom((value) => value.length > 0));
-// @ts-expect-error 述語は boolean か { valid } を返す
+// @ts-expect-error the predicate returns a boolean or a { valid } object
 pb.v("name", (b) => b.string.custom((value) => value));
 pb.v("name", (b) =>
-  // @ts-expect-error custom の述語は値だけを受け取る (root は compareField / stitch の仕事)
+  // @ts-expect-error custom's predicate receives only the value; the root is compareField's and stitch's business
   b.string.custom((value, root) => value !== root.name)
 );

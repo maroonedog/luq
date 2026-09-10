@@ -1,67 +1,67 @@
-// プロトタイプ汚染が起きないことを、実際に汚染を試みて確認する。
+// Confirms that prototype pollution cannot happen, by actually attempting it.
 //
-// 以前は parse-field-path が "__proto__" を宣言セグメントとして拒否していた。
-// その拒否は過剰で、JSON-Schema-Test-Suite の properties.json が要求する
-// 「__proto__ という名前のプロパティを検証する」ができなかった。
+// The path parser used to refuse "__proto__" as a declared segment. That was
+// over-broad: it made validating a property actually named __proto__
+// impossible, which the conformance suite requires.
 //
-// 拒否をやめた代わりに、create-value-writer が代入をやめて defineProperty に
-// 移した。危険なのは Object.prototype.__proto__ が **アクセサ** であることで、
-// 代入するとそのアクセサが呼ばれてプロトタイプが差し替わる。defineProperty は
-// アクセサを見ずに own プロパティを定義するので、この経路が閉じる。
+// In place of the refusal, the value writer stopped assigning and moved to
+// defineProperty. The danger is that Object.prototype.__proto__ is an
+// ACCESSOR: assigning invokes it and swaps the prototype. defineProperty
+// ignores accessors and defines the own property, closing that route.
 //
-// このファイルはその境界を守る。落ちたら、汚染できるようになったということ。
+// This file guards that boundary. If it fails, pollution has become possible.
 import { createValueReader } from "../../../src/path/create-value-reader";
 import { createValueWriter } from "../../../src/path/create-value-writer";
 import { parseFieldPath } from "../../../src/path/parse-field-path";
 import { RESERVED_SEGMENTS } from "../../../src/path/reserved-segment";
 
-/** Object.prototype に生えていないことを確かめる。 */
+/** Confirms nothing was added to Object.prototype. */
 function readFromPrototype(key: string): unknown {
   return (Object.prototype as unknown as Record<string, unknown>)[key];
 }
 
-describe("宣言できるようになったこと", () => {
-  it.each(RESERVED_SEGMENTS)("%s を宣言パスとして解析できる", (segment) => {
+describe("what became declarable", () => {
+  it.each(RESERVED_SEGMENTS)("parses %s as a declared path", (segment) => {
     expect(() => parseFieldPath(segment)).not.toThrow();
   });
 
-  it("__proto__ を own プロパティとして読める", () => {
-    // JSON.parse は __proto__ を own プロパティとして作る。
+  it("reads __proto__ as an own property", () => {
+    // JSON.parse creates __proto__ as an own property.
     const subject: unknown = JSON.parse('{"__proto__": "own value"}');
     const read = createValueReader(parseFieldPath("__proto__"));
     expect(read(subject)).toBe("own value");
   });
 
-  it("プロトタイプ経由の値は読まない", () => {
-    // own でないものは undefined。読み取りは元から hasOwnProperty.call。
+  it("does not read a value through the prototype", () => {
+    // Anything not own reads as undefined; reading was always own-only.
     const read = createValueReader(parseFieldPath("toString"));
     expect(read({})).toBeUndefined();
   });
 });
 
-describe("それでも Object.prototype は汚れない", () => {
+describe("and Object.prototype still cannot be polluted", () => {
   afterEach(() => {
     for (const key of ["polluted", "injected"]) {
       delete (Object.prototype as unknown as Record<string, unknown>)[key];
     }
   });
 
-  it("__proto__ への書き込みがプロトタイプを差し替えない", () => {
+  it("does not swap the prototype when writing to __proto__", () => {
     const write = createValueWriter(parseFieldPath("__proto__"));
     const written = write({}, { polluted: "yes" });
 
-    // 書いた先は own プロパティ。
+    // What was written is an own property.
     expect(Object.prototype.hasOwnProperty.call(written, "__proto__")).toBe(
       true
     );
-    // プロトタイプは変わっていない。
+    // The prototype is unchanged.
     expect(Object.getPrototypeOf(written)).toBe(Object.prototype);
-    // 他のオブジェクトに漏れていない。
+    // Nothing leaked to another object.
     expect(readFromPrototype("polluted")).toBeUndefined();
     expect(({} as Record<string, unknown>)["polluted"]).toBeUndefined();
   });
 
-  it("ネストした __proto__ への書き込みでも汚れない", () => {
+  it("does not pollute when writing to a nested __proto__", () => {
     const write = createValueWriter(parseFieldPath("nested.__proto__"));
     const written = write({ nested: {} }, { injected: "yes" });
     expect(readFromPrototype("injected")).toBeUndefined();
@@ -69,24 +69,24 @@ describe("それでも Object.prototype は汚れない", () => {
     void written;
   });
 
-  it("中間を作りながらの書き込みでも汚れない", () => {
-    // vivify が通る経路。ここが代入に戻ると汚染できる。
+  it("does not pollute when writing through created intermediates", () => {
+    // The auto-vivify route. Back on assignment, this is pollutable.
     const write = createValueWriter(parseFieldPath("missing.__proto__"));
     write({}, { injected: "yes" });
     expect(readFromPrototype("injected")).toBeUndefined();
   });
 
-  it("constructor と prototype への書き込みも own プロパティになる", () => {
+  it("makes own properties of constructor and prototype too", () => {
     for (const key of ["constructor", "prototype"]) {
       const written = write1(key, "own value");
       expect(Object.prototype.hasOwnProperty.call(written, key)).toBe(true);
       expect((written as Record<string, unknown>)[key]).toBe("own value");
     }
-    // Object.prototype.constructor は今も Object のまま。
+    // Object.prototype.constructor is still Object.
     expect(Object.prototype.constructor).toBe(Object);
   });
 
-  it("入力オブジェクトは変更されない", () => {
+  it("leaves the input object unmodified", () => {
     const input = {};
     createValueWriter(parseFieldPath("__proto__"))(input, { polluted: "yes" });
     expect(Object.prototype.hasOwnProperty.call(input, "__proto__")).toBe(
