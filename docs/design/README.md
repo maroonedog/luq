@@ -1,6 +1,6 @@
 # The design of this implementation (settled)
 
-**戦略**: Marker-Typed Descriptor Pipeline — one path grammar, one plugin contract, one collector, one compile step, one branch-free engine
+**Strategy**: a marker-typed descriptor pipeline — one path grammar, one plugin contract, one collector, one compile step, one branch-free engine
 
 **Strategy in one line**: one path grammar, one plugin contract, one collector, one compile step, one branch-free engine.
 

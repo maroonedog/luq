@@ -1,10 +1,11 @@
-# Luq 公開面インベントリ（機械抽出・グラウンドトゥルース）
+# The previous major's published surface (machine-extracted ground truth)
 
-既存 src/ から機械的に抽出した、新実装が再現すべき公開面。
+Extracted mechanically from the previous `src/`: the published surface this
+implementation has to reproduce.
 
-## package.json exports (58 エントリ)
+## package.json exports (58 entries)
 
-| サブパス | types | import | require | 実ファイル存在 |
+| Subpath | types | import | require | File exists |
 |---|---|---|---|---|
 | `.` | ./dist/index.d.ts | ./dist/index.mjs | ./dist/index.js | - |
 | `./plugins/required` | ./dist/plugins/required.d.ts | ./dist/plugins/required.mjs | ./dist/plugins/required.js | - |
@@ -67,9 +68,9 @@
 
 ## sideEffects: false
 
-## プラグインモジュール (76 ファイル)
+## Plugin modules (76 files)
 
-| ファイル | 行数 | export const | name | methodName | allowedTypes | category |
+| File | Lines | export const | name | methodName | allowedTypes | category |
 |---|---|---|---|---|---|---|
 | arrayContains.ts | 124 | arrayContainsPlugin |  |  |  |  |
 | arrayIncludes.ts | 80 | arrayIncludesPlugin |  |  |  |  |
@@ -148,18 +149,18 @@
 | uuid.ts | 196 | uuidPlugin |  |  |  |  |
 | validateIf.ts | 136 | validateIfPlugin |  |  |  |  |
 
-## jsonSchema サブモジュール
+## The jsonSchema submodule
 
-- `dsl-converter.ts` (603行): convertJsonSchemaToLuqDSL, convertDSLToFieldDefinition, applyBaseType, applyConstraints
-- `error-generation.ts` (790行): getDetailedValidationErrors, getSpecificValidationErrors
-- `format-validators.ts` (252行): formatValidators, validateFormat, getSupportedFormats, isFormatSupported
-- `index.ts` (28行): 
-- `plugin.ts` (124行): jsonSchemaPlugin
-- `ref-resolver.ts` (143行): resolveRef, resolveSchemaRef, resolveAllRefs
-- `types.ts` (77行): LuqFieldDSL, LuqConstraints, JsonSchemaOptions, ValidationError
-- `validation-core.ts` (481行): validateType, validateMultipleTypes, validateStringConstraints, validateNumberConstraints, validateArrayConstraints, validateObjectConstraints, validateValueAgainstSchema
+- `dsl-converter.ts` (603 lines): convertJsonSchemaToLuqDSL, convertDSLToFieldDefinition, applyBaseType, applyConstraints
+- `error-generation.ts` (790 lines): getDetailedValidationErrors, getSpecificValidationErrors
+- `format-validators.ts` (252 lines): formatValidators, validateFormat, getSupportedFormats, isFormatSupported
+- `index.ts` (28 lines): 
+- `plugin.ts` (124 lines): jsonSchemaPlugin
+- `ref-resolver.ts` (143 lines): resolveRef, resolveSchemaRef, resolveAllRefs
+- `types.ts` (77 lines): LuqFieldDSL, LuqConstraints, JsonSchemaOptions, ValidationError
+- `validation-core.ts` (481 lines): validateType, validateMultipleTypes, validateStringConstraints, validateNumberConstraints, validateArrayConstraints, validateObjectConstraints, validateValueAgainstSchema
 
-## src/ 全ファイル (行数順)
+## Every file under src/, by line count
 
 -  2883  src/core/builder/validator-factory.ts
 -  1483  src/core/builder/plugins/plugin-types.ts
@@ -301,35 +302,37 @@
 
 ---
 
-## 検出済みの公開面の不整合（機械検証・新実装で必ず解消すること）
+## Inconsistencies found in that surface, to be resolved here
 
-### 1. README のコード例が解決できない import パスを使っている
-`package.json` の `exports` は `.` と `./plugins/<name>` の58エントリのみで、以下は **存在しない**:
+### 1. The README's examples import paths that do not resolve
+The exports map holds 58 entries, `.` and `./plugins/<name>`. Neither of these
+**exists**:
 
-| README 内の import | exports キー | 状態 |
+| Import in the README | Exports key | State |
 |---|---|---|
-| `@maroonedog/luq/plugins` | `./plugins` | **MISS** — Quick Start の主要例がこれ |
-| `@maroonedog/luq/core/builder/plugins/plugin-creator` | `./core/builder/plugins/plugin-creator` | **MISS** — カスタムプラグイン例がこれ |
+| `@maroonedog/luq/plugins` | `./plugins` | **MISSING** — and it is the main Quick Start example |
+| `@maroonedog/luq/core/builder/plugins/plugin-creator` | `./core/builder/plugins/plugin-creator` | **MISSING** — and it is the custom-plugin example |
 
-Node の exports 制限下では両方とも解決に失敗する。新実装では
-「ドキュメントに書かれた import パスは必ず exports に存在する」ことを CI で検査すること。
+Under Node's exports resolution both fail. Here, CI checks that every import
+path written in the documentation exists in the exports map.
 
-### 2. src に存在するが公開されていないプラグイン（14個）
+### 2. Fourteen plugins exist in src and are not published
 `fromContext`, `conditionalSchema`, `numberFinite`, `numberRange`, `objectRecursively`,
 `optionalIf`, `orFail`, `stitch`, `stitch-typed`, `stitchSimple`,
 `stringAlphanumeric`, `stringEndsWith`, `stringExactLength`, `stringStartsWith`, `unionGuard`
 
-`src/core/plugin/index.ts` は72個を re-export しているが、サブパス公開されているのは57個。
-新実装ではプラグイン一覧を単一のソースから生成し、この乖離が構造的に起きないようにする。
+The plugin index re-exports 72 while 57 are published as subpaths. Here the
+plugin list is generated from one source, so that gap cannot open.
 
-（`message-factories.ts` / `shared.ts` / `shared-constants.ts` / `testUtils.ts` /
-`transform-type-restrictions.ts` は内部モジュールなので非公開で正しい。
-`testUtils.ts` は規約違反名かつ本番ソースツリーに置くべきでない。）
+(`message-factories.ts`, `shared.ts`, `shared-constants.ts`, `testUtils.ts` and
+`transform-type-restrictions.ts` are internal modules and are correctly
+unpublished. `testUtils.ts` also breaks the naming rules and does not belong in
+a production source tree.)
 
-### 3. 同一責務の実装が3つある
-`stitch.ts` (202行) / `stitch-typed.ts` (120行) / `stitchSimple.ts` (122行) が併存。
-同様に field-accessor が2実装、registry が2実装、validator が3バリアント。
-新実装では「1つの概念に1つの実装」を構造的に強制する。
+### 3. Three implementations of one responsibility
+`stitch.ts`, `stitch-typed.ts` and `stitchSimple.ts` coexist. So do two field
+accessors, two registries and three validator variants. Here, one concept
+having one implementation is enforced structurally.
 
-### 4. `./plugins/jsonSchema` はディレクトリバレル
-`src/core/plugin/jsonSchema/index.ts` に解決される（不整合ではない）。
+### 4. `./plugins/jsonSchema` is a directory barrel
+It resolves to that directory's index. Not an inconsistency.
