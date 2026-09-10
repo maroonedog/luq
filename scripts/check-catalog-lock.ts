@@ -24,9 +24,10 @@ function isPluginCatalogLock(value: unknown): value is PluginCatalogLock {
 }
 
 /**
- * ロックと実ディレクトリを突き合わせる。
- * 受け入れ条件にプラグイン数を書かないための唯一の場所であり、
- * 数はここでロックファイルから読まれる (どこにもハードコードしない)。
+ * Compares the lock against the real directories.
+ *
+ * This is the one place that keeps a plugin count out of any acceptance
+ * criterion: the number is read from the lock file and hard-coded nowhere.
  */
 export function findCatalogLockMismatches(
   repositoryRoot: string
@@ -34,7 +35,7 @@ export function findCatalogLockMismatches(
   const lockPath = path.join(repositoryRoot, PLUGIN_CATALOG_LOCK_OUTPUT);
   if (!fs.existsSync(lockPath)) {
     return [
-      { kind: "absent", detail: `${PLUGIN_CATALOG_LOCK_OUTPUT} がありません` },
+      { kind: "absent", detail: `${PLUGIN_CATALOG_LOCK_OUTPUT} is missing` },
     ];
   }
   const parsed: unknown = JSON.parse(fs.readFileSync(lockPath, "utf8"));
@@ -42,7 +43,7 @@ export function findCatalogLockMismatches(
     return [
       {
         kind: "absent",
-        detail: `${PLUGIN_CATALOG_LOCK_OUTPUT} の形が不正です`,
+        detail: `${PLUGIN_CATALOG_LOCK_OUTPUT} has an invalid shape`,
       },
     ];
   }
@@ -62,7 +63,7 @@ function compareCount(
   return [
     {
       kind: "count",
-      detail: `プラグイン数: ロック ${locked.pluginCount} / 実際 ${live.pluginCount}`,
+      detail: `plugin count: locked ${locked.pluginCount}, actual ${live.pluginCount}`,
     },
   ];
 }
@@ -78,7 +79,7 @@ function compareList(
   return [
     {
       kind,
-      detail: `${kind} が一致しません。ロック ${lockedText} / 実際 ${liveText}`,
+      detail: `${kind} does not match: locked ${lockedText}, actual ${liveText}`,
     },
   ];
 }
@@ -87,10 +88,10 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const mismatches = findCatalogLockMismatches(REPOSITORY_ROOT);
     if (mismatches.length === 0) {
-      console.error("カタログロック: 一致");
+      console.error("Catalog lock: matches");
       return 0;
     }
-    console.error(`カタログロック不一致 ${mismatches.length} 件:`);
+    console.error(`Catalog lock: ${mismatches.length} mismatches:`);
     for (const mismatch of mismatches) console.error(`  ${mismatch.detail}`);
     return 1;
   });

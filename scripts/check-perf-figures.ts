@@ -1,21 +1,21 @@
 // ===========================================================================
 // scripts/check-perf-figures.ts
 //
-// README の性能表が config/perf-baseline.json と一致していることを検査する。
-// `--write` で書き戻す。
+// Checks the README's performance tables against the recorded baseline, and
+// writes them back with `--write`.
 //
-//   npm run generate:perf-figures    書き戻す
-//   npm run check:perf-figures       ずれていたら exit 1 (CI 用)
+//   npm run generate:perf-figures    write them back
+//   npm run check:perf-figures       exit 1 if they differ (for CI)
 //
-// なぜ検査が要るか。適合率で一度やった失敗と同じで、README の数字は**自己
-// 整合している**。29,963 ops/sec も ×0.11 も、書かれた当時は本当だった。
-// 矛盾を探す検査では捕まらず、捕まえるには「今の値は何か」を知っている必要が
-// ある。ここが知っているのは config/perf-baseline.json ただ一つで、それを
-// 書くのは bench:record だけである。
+// Why a check is needed. Same failure as with the conformance figures: the
+// numbers in the README are **self-consistent**. Every one of them was true
+// when it was written. No check for contradiction catches that; catching it
+// takes knowing what the current value is, and only the recorded baseline
+// knows — written by the benchmark and by nothing else.
 //
-// 表は生成の印で囲む。囲まれた内側だけを置き換えるので、表の前後に書かれた
-// 説明文 — なぜ 1.x に負けているのか、何を確かめたのか — は人間が書いたまま
-// 残る。数字が自動で、解釈が手書きである。
+// The tables are fenced by generation markers and only the inside is replaced,
+// so the prose around them — why a shape loses, what was verified — stays as a
+// person wrote it. The numbers are automatic; the interpretation is not.
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
@@ -38,7 +38,7 @@ export const README = "README.md";
 const BASELINE = path.join("config", "perf-baseline.json");
 const SIZE_BUDGET = path.join("config", "size-budget.json");
 
-/** 生成物が読む出所。どちらも実測が書いたファイルで、手で書く場所ではない。 */
+/** The sources read. Both are written by measurement, never by hand. */
 interface Sources {
   readonly baseline: PerfBaseline;
   readonly budget: SizeBudget;
@@ -47,7 +47,7 @@ interface Sources {
 interface GeneratedBlock {
   readonly name: string;
   readonly render: (sources: Sources) => string;
-  /** 文の途中に埋まる印。改行を足すと段落が崩れるので、そのまま差し込む。 */
+  /** A marker inside a sentence. Inserted as-is; a newline would break the paragraph. */
   readonly isInline?: boolean;
 }
 
@@ -92,8 +92,9 @@ export function readSources(repositoryRoot: string): Sources {
 }
 
 /**
- * 印が無い、あるいは片方しか無いのは違反である。黙って素通りさせると、印を
- * 消しただけで検査が効かなくなる — ゲートを外す一番簡単な方法を残さない。
+ * A missing marker, or only one of the pair, is a violation. Passing quietly
+ * would mean deleting a marker disables the check, which is the easiest way to
+ * remove a gate and must not be available.
  */
 function replaceBlock(
   contents: string,
@@ -106,7 +107,7 @@ function replaceBlock(
   const from = contents.indexOf(open);
   const to = contents.indexOf(close);
   if (from === -1 || to === -1 || to < from) {
-    throw new Error(`${README} に ${open} … ${close} が対で見つからない`);
+    throw new Error(`${README} has no matching ${open} … ${close} pair`);
   }
   const head = contents.slice(0, from + open.length);
   const tail = contents.slice(to);
@@ -133,12 +134,12 @@ export function checkPerfFigures(repositoryRoot: string): number {
   const expected = renderReadme(repositoryRoot, readSources(repositoryRoot));
   const actual = fs.readFileSync(path.join(repositoryRoot, README), "utf8");
   if (expected === actual) {
-    console.error(`性能表の表記検査: ${README} は実測と一致`);
+    console.error(`Performance figures: ${README} matches the measurements`);
     return 0;
   }
   console.error(
-    `${README} の数字が ${BASELINE} / ${SIZE_BUDGET} とずれている。` +
-      "npm run generate:perf-figures で書き戻すこと。"
+    `${README} disagrees with ${BASELINE} / ${SIZE_BUDGET}. ` +
+      "Run npm run generate:perf-figures to write it back."
   );
   return 1;
 }
@@ -149,7 +150,7 @@ export function writePerfFigures(repositoryRoot: string): number {
     renderReadme(repositoryRoot, readSources(repositoryRoot)),
     "utf8"
   );
-  console.error(`生成: ${README} の性能表`);
+  console.error(`Generated: the performance tables in ${README}`);
   return 0;
 }
 

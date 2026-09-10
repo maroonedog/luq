@@ -23,22 +23,22 @@ export const PERF_BASELINE_PATH = join(
 );
 
 /**
- * CI ランナー用の床。
+ * The floors for the CI runner.
  *
- * このハーネスは当初「luq と手書き参照を同一プロセスで測るので、ランナーの
- * 速度は比率で相殺される」という前提で書かれていた。**その前提は PR #14 の
- * 最初の CI 実行で反証された。** ubuntu-latest (2コア) では array 形状の luq が
- * 手元の 16コア機に対して 3.8倍遅くなったのに、参照は 1.3倍しか遅くならず、
- * 比率が 0.0304 から 0.0099 に落ちた。
+ * This harness was first written on the assumption that measuring luq and the
+ * hand-written reference in one process cancels the runner's speed out of the
+ * ratio. **The first CI run disproved it.** On a two-core runner the array
+ * shape got several times slower while the reference barely moved, and the
+ * ratio fell by two thirds.
  *
- * 理由は明らかで、両者の性能プロファイルが違う。luq は issue オブジェクトや
- * インデックススタックを確保しながら歩くが、参照は割り当てゼロの密ループ。
- * コア数・メモリ帯域・GC の効き方が変われば、両者は同じようには落ちない。
- * 比率が相殺するのは CPU クロックだけで、割り当ての差は相殺しない。
+ * The reason is plain: their performance profiles differ. luq walks while
+ * allocating issue objects and an index stack; the reference is an
+ * allocation-free tight loop. Change core count, memory bandwidth or how GC
+ * behaves and the two do not slow down together. A ratio cancels out clock
+ * speed and nothing else.
  *
- * したがって床は**ゲートが走る環境で測った値**でなければならない。
- * CI では config/perf-baseline.ci.json を、手元では config/perf-baseline.json を
- * 読む。どちらも同じ形式で、同じ 0.75 倍の規則で床を導く。
+ * A floor therefore has to be **measured in the environment the gate runs in**.
+ * Both files share a format and derive their floors by the same rule.
  */
 export const CI_PERF_BASELINE_PATH = join(
   __dirname,
@@ -47,7 +47,7 @@ export const CI_PERF_BASELINE_PATH = join(
   "perf-baseline.ci.json"
 );
 
-/** ゲートが読むべき床のファイル。CI かどうかで切り替える。 */
+/** Which floor file the gate should read, chosen by whether this is CI. */
 export function baselinePathForEnvironment(
   isContinuousIntegration: boolean = process.env.CI === "true"
 ): string {
@@ -85,8 +85,8 @@ function isReferenceRatio(value: unknown): value is ReferenceRatioRecord {
     typeof value["ratioFloor"] === "number" &&
     Number.isFinite(value["ratioFloor"]) &&
     value["ratioFloor"] > 0 &&
-    // spread は null を許す = 「測っていない」。CI の床はログから起こしたもので
-    // spread が無い。0 を書くと「ばらつきが無かった」という嘘になる。
+    // A null spread means "not measured". The CI floors were recovered from a
+    // log that carried none, and writing 0 would claim there was no variance.
     isNumberOrNull(value["luqSpreadPercent"]) &&
     isNumberOrNull(value["referenceSpreadPercent"]) &&
     isNumberOrNull(value["ratioSpreadPercent"]) &&

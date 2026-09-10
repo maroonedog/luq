@@ -65,19 +65,19 @@ describe("spliceJsonMember", () => {
 
   it("メンバが無ければ落ちる", () => {
     expect(() => spliceJsonMember("{}", "exports", "{}")).toThrow(
-      /メンバ "exports" がありません/
+      /has no member "exports"/
     );
   });
 
   it("値がオブジェクトでも配列でもなければ落ちる", () => {
     expect(() => spliceJsonMember('{ "name": "x" }', "name", "{}")).toThrow(
-      /オブジェクトでも配列でもありません/
+      /is neither an object nor an array/
     );
   });
 
   it("閉じていない値は落ちる", () => {
     expect(() => spliceJsonMember('{ "a": {', "a", "{}")).toThrow(
-      /閉じていません/
+      /is not closed/
     );
   });
 });

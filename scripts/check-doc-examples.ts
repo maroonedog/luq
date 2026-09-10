@@ -1,19 +1,22 @@
 // ===========================================================================
 // scripts/check-doc-examples.ts
 //
-// ドキュメントのコード例を、ビルド済みパッケージに対して実際に型検査する。
+// Type-checks the code examples in the documentation against the built
+// package, for real.
 //
-// これが存在する理由は具体的な事故である。1.x の README の Quick Start は
-// 3箇所同時に壊れていた ─ build() を関数として呼び、Result に無い
-// `result.issues` を読み、exports に無い "@maroonedog/luq/plugins" を import
-// していた。3つとも「読めば分かる」種類の誤りで、誰も読まなかった。
-// コンパイラに読ませる以外に、これを二度と起こさない方法は無い。
+// It exists because of a real incident. The previous major's Quick Start was
+// broken in three places at once: it called build() as a function, read a
+// property the result does not have, and imported a subpath the exports map
+// does not publish. All three were the kind of mistake anyone would catch by
+// reading, and nobody read them. Short of having the compiler read them, there
+// is no way to stop that happening again.
 //
-// 判定は両方向である:
-//   - 既定 (ディレクティブ無し) の例はコンパイルできなければならない
-//   - `<!-- luq-example: must-fail 理由 -->` を付けた例はコンパイルできては
-//     ならない。移行ガイドの「1.x の書き方」がこれで、通ってしまったら
-//     破壊的変更の説明が事実と違うということなので、同じように CI を落とす。
+// The judgement runs both ways:
+//   - by default, an example must compile
+//   - an example marked `<!-- luq-example: must-fail reason -->` must NOT.
+//     The migration guide's "how it used to be written" is exactly that, and
+//     an example that compiles means the description of the breaking change
+//     is untrue, which fails CI just as loudly.
 // ===========================================================================
 import { REPOSITORY_ROOT } from "./catalog/plugin-source-roots";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
@@ -30,7 +33,7 @@ import {
   type ExampleDiagnostic,
 } from "./doc-examples/typecheck-doc-examples";
 
-/** 型検査の対象。legacy-spec は 1.x の記録なので入れない。 */
+/** What gets type-checked. The legacy spec is a record of the old major, so it is out. */
 export const CHECKED_DOC_ROOTS: readonly string[] = [
   "README.md",
   "docs/guide",
@@ -38,9 +41,10 @@ export const CHECKED_DOC_ROOTS: readonly string[] = [
 ];
 
 /**
- * ドキュメントサイトのコード例も同じ検査に掛ける。.astro のフロントマターに
- * 置かれたテンプレート文字列が実体なので、Markdown とは読み取りだけが違う。
- * ここを外していた間、サイトは 1.x の `result.isValid()` を載せたまま緑だった。
+ * The site's examples go through the same check. They live as template
+ * literals in .astro frontmatter, so only the reading differs from Markdown.
+ * While the site was outside this check, it advertised a method from the
+ * previous major and every build stayed green.
  */
 export const CHECKED_ASTRO_ROOTS: readonly string[] = ["docs-site/src"];
 
@@ -71,7 +75,7 @@ function describeDiagnostics(
     .join("\n      ");
 }
 
-/** 期待とコンパイラの答えを突き合わせる。両方向とも違反になる。 */
+/** Compares the expectation with the compiler's answer. Either direction is a violation. */
 export function findExpectationViolations(
   examples: readonly DocExample[],
   diagnostics: readonly ExampleDiagnostic[]
@@ -95,7 +99,7 @@ export function findExpectationViolations(
           file: example.file,
           startLine: example.startLine,
           kind: "compiledButMustFail" as const,
-          detail: `must-fail と宣言されているのにコンパイルが通った: ${example.reason}`,
+          detail: `declared must-fail but compiled: ${example.reason}`,
         },
       ];
     }
@@ -111,7 +115,7 @@ export interface DocExampleReport {
   readonly unmappedOutput: string;
 }
 
-/** 走査 → import 検査 → 型検査 → 突き合わせ。CLI もテストもここを通る。 */
+/** Scan, check imports, type-check, compare. Both the CLI and the tests go through here. */
 export function checkDocExamples(
   repositoryRoot: string,
   docRoots: readonly string[] = CHECKED_DOC_ROOTS,
@@ -128,7 +132,7 @@ export function checkDocExamples(
       file: violation.file,
       startLine: violation.startLine,
       kind: "unpublishedImport" as const,
-      detail: `package.json#exports に無いサブパス: "${violation.specifier}"`,
+      detail: `subpath not in package.json#exports: "${violation.specifier}"`,
     }));
   const compiled = scan.examples.filter(
     (example) => example.expectation !== "skip"
@@ -152,19 +156,19 @@ export function checkDocExamples(
 
 function reportAndExit(report: DocExampleReport): number {
   console.error(
-    `ドキュメント例の型検査: ${String(report.checkedCount)} 件を検査、` +
-      `${String(report.mustFailCount)} 件は失敗を要求、` +
-      `${String(report.skippedCount)} 件は skip`
+    `Doc examples type-checked: ${String(report.checkedCount)} examples, ` +
+      `${String(report.mustFailCount)} required to fail, ` +
+      `${String(report.skippedCount)} skipped`
   );
   if (report.unmappedOutput.length > 0) {
-    console.error(`tsc の未対応出力:\n${report.unmappedOutput}`);
+    console.error(`Unrecognised compiler output:\n${report.unmappedOutput}`);
     return 1;
   }
   if (report.violations.length === 0) {
-    console.error("違反なし");
+    console.error("No violations");
     return 0;
   }
-  console.error(`違反 ${String(report.violations.length)} 件:`);
+  console.error(`${String(report.violations.length)} violations:`);
   for (const violation of report.violations) {
     console.error(
       `  ${violation.file}:${String(violation.startLine)} [${violation.kind}]\n` +

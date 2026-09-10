@@ -30,8 +30,9 @@ export function toPluginSubpath(subpathName: string): string {
 }
 
 /**
- * package.json#/exports の唯一の生成元。固定キー -> プラグイン -> 互換エイリアス の順。
- * カタログが空でも固定キー6件だけの正しいマップになる。
+ * The one generator of package.json#/exports: fixed keys, then plugins, then
+ * compatibility aliases. With an empty catalog it still produces a correct map
+ * holding just the fixed keys.
  */
 export function buildPackageExportMap(
   catalog: PluginCatalog,
@@ -45,7 +46,7 @@ export function buildPackageExportMap(
     }
     const distBase = DIST_BASE_BY_FIXED_KEY[key];
     if (distBase === undefined) {
-      throw new Error(`固定 export キー "${key}" の dist 対応先が未定義です。`);
+      throw new Error(`the fixed export key "${key}" has no dist target.`);
     }
     exportMap[key] = toDistConditions(distBase);
   }

@@ -1,9 +1,10 @@
 // ===========================================================================
-// bench/competitors/zod-subjects.ts — zod で書いた同じ規則。
+// bench/competitors/zod-subjects.ts — the same rules, written in zod.
 //
-// 「同じ規則」であることが全てなので、Luq 側の宣言と一行ずつ対応させてある。
-// 食い違いが出た場合はそれを消さず、agreement の報告に出す — 例えば
-// email の厳しさはライブラリごとに違い、それは速度の差ではなく仕様の差である。
+// Being the SAME rules is the whole point, so this matches the Luq
+// declarations line for line. Where the two disagree, the disagreement is
+// reported rather than removed: how strict an email rule is differs between
+// libraries, and that is a difference in specification, not in speed.
 // ===========================================================================
 import { z } from "zod";
 import type { Competitor, CompetitorSubject } from "./competitor.types";
@@ -15,7 +16,7 @@ function toSubject(schema: z.ZodType): CompetitorSubject {
   return { check: (value) => schema.safeParse(value).success };
 }
 
-/** `.v("name", f => f.string.required().min(3))` に対応。 */
+/** Corresponds to `.v("name", f => f.string.required().min(3))`. */
 const singleField = z.object({
   name: z.string().min(3),
 });

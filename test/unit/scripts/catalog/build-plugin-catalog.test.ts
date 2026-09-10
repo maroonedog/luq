@@ -94,7 +94,7 @@ describe("buildPluginCatalog", () => {
   it("index.ts の無いディレクトリは落ちる", () => {
     withSeedTree(MISSING_ENTRY_TREE, (root) => {
       expect(() => buildPluginCatalog(root)).toThrow(PluginCatalogError);
-      expect(() => buildPluginCatalog(root)).toThrow(/index\.ts がありません/);
+      expect(() => buildPluginCatalog(root)).toThrow(/no index\.ts/);
     });
   });
 
@@ -132,7 +132,7 @@ describe("buildPluginCatalog", () => {
         "src/plugins/read-only-write-only/index.ts",
         "export const readOnlyWriteOnlyPlugin = {};\n"
       );
-      expect(() => buildPluginCatalog(root)).toThrow(/重複しています/);
+      expect(() => buildPluginCatalog(root)).toThrow(/is claimed by both/);
     });
   });
 });

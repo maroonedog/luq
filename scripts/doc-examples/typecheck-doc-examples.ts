@@ -5,12 +5,12 @@ import * as path from "path";
 import type { DocExample } from "./doc-example.types";
 
 const TYPESCRIPT_COMPILER = require.resolve("typescript/lib/tsc.js");
-/** `example-3.ts(12,5): error TS2339: ...` の先頭部分。 */
+/** The leading part of `example-3.ts(12,5): error TS2339: ...`. */
 const DIAGNOSTIC = /^(example-\d+\.ts)\((\d+),(\d+)\):\s+(error .+)$/;
 
 export interface ExampleDiagnostic {
   readonly exampleIndex: number;
-  /** コード例の中での行 (1 始まり)。ドキュメント上の行ではない。 */
+  /** The line within the example, 1-based. Not the line in the document. */
   readonly line: number;
   readonly message: string;
 }
@@ -51,10 +51,10 @@ function writeTsconfig(root: string, includedIndices: readonly number[]): void {
 }
 
 /**
- * ビルド済みパッケージだけが見えるスクラッチ consumer を作る。
- * node_modules/@maroonedog/luq をリポジトリへのジャンクションにしてあるので、
- * 解決されるのは package.json#exports と dist/ の .d.ts であって src/ ではない。
- * moduleResolution は node16 — exports マップを実際に強制する唯一の設定。
+ * Builds a scratch consumer that can see only the built package. The package
+ * is linked into its node_modules, so what resolves is the exports map and the
+ * declaration files in dist, never src. moduleResolution is node16, the one
+ * setting that actually enforces an exports map.
  */
 export function createScratchConsumer(
   repositoryRoot: string,
@@ -70,8 +70,8 @@ export function createScratchConsumer(
     "utf8"
   );
   examples.forEach((example, index) => {
-    // 末尾の `export {}` はモジュール化のため。追記なので、診断の行番号は
-    // コード例の行番号のまま使える。
+    // The trailing `export {}` makes it a module. Being appended, it leaves
+    // the diagnostics' line numbers equal to the example's own.
     fs.writeFileSync(
       path.join(root, exampleFileName(index)),
       `${example.code}\nexport {};\n`,
@@ -115,7 +115,8 @@ function parseCompilerOutput(output: string): ParsedOutput {
     if (line.trim().length === 0) continue;
     const parsed = DIAGNOSTIC.exec(line);
     if (parsed === null) {
-      // 行頭が空白の行は直前の診断の続き。独立した行だけを未対応と数える。
+      // A line starting with whitespace continues the previous diagnostic.
+      // Only standalone lines count as unrecognised.
       if (!line.startsWith(" ")) unmapped.push(line);
       continue;
     }
@@ -129,13 +130,15 @@ function parseCompilerOutput(output: string): ParsedOutput {
 }
 
 /**
- * スクラッチ consumer を作り、tsc を回して診断を例ごとに振り分ける。
+ * Builds the scratch consumer, runs the compiler, and sorts the diagnostics
+ * back to their examples.
  *
- * 2回回すことがあるのは、tsc が「構文エラーが1つでもあれば意味解析の診断を
- * 一切計算しない」ためである。この性質を知らずに1回で済ませていたとき、
- * 壊れた例が1つあるだけで他の例の型エラーが全部消えた (実測で確認)。
- * 1回目で診断が付いた例を外してもう一度回すことで、残りは必ず意味解析まで
- * 到達する。1回目が全緑ならそこで終わる。
+ * It sometimes runs twice, because the compiler computes no semantic
+ * diagnostics at all if there is a single syntax error anywhere. Running once
+ * without knowing that, one broken example made every other example's type
+ * errors vanish. Dropping the examples that got a diagnostic and running again
+ * guarantees the rest reach semantic analysis. An all-green first pass ends
+ * there.
  */
 export function typecheckDocExamples(
   repositoryRoot: string,

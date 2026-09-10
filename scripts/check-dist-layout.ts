@@ -43,17 +43,15 @@ export function findDistLayoutViolations(
 export function checkDistLayout(repositoryRoot: string): number {
   const distRoot = resolveDistRoot(repositoryRoot);
   if (!fs.existsSync(distRoot)) {
-    console.error(
-      `${distRoot} がありません。先に npm run build を実行してください。`
-    );
+    console.error(`${distRoot} is missing. Run npm run build first.`);
     return 1;
   }
   const violations = findDistLayoutViolations(repositoryRoot);
   if (violations.length === 0) {
-    console.error("dist レイアウト検査: 違反なし");
+    console.error("dist layout: no violations");
     return 0;
   }
-  console.error(`dist レイアウト検査 違反 ${violations.length} 件:`);
+  console.error(`dist layout: ${violations.length} violations:`);
   for (const violation of violations) {
     console.error(
       `  [${violation.rule}] ${violation.subject}: ${violation.detail}`

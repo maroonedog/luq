@@ -1,34 +1,34 @@
 // ===========================================================================
 // bench/competitors/competitor.types.ts
 //
-// 競合ライブラリを、この harness が測れる一つの形に揃える。
+// Puts every competitor into the one shape this harness can measure.
 //
-// 測る前に **判定が一致するか** を見るのが、このディレクトリの一番大事な仕事
-// である。assert-reference-agreement.ts が手書き参照に対してやっているのと
-// 同じ理由で、判定の違う相手との速度比較は「遅い数字」ではなく「誤った数字」
-// になる。そして競合とは実際に食い違う: 例えば multiField の rejected プールに
-// は、緩い正規表現なら通るが Luq の string-email は弾くメールが入っている。
+// Checking **whether the verdicts agree** before measuring is this directory's
+// most important job. A speed comparison against something that judges
+// differently does not produce a slow number, it produces a wrong one. And
+// they do disagree: one rejected pool holds an address a loose pattern accepts
+// and this library's email rule refuses.
 //
-// なので食い違いは隠さず、**数える**。時間を測るのは全員が同じ答えを出す値
-// だけにし、食い違った値は件数と中身を報告に出す。どちらも消さない。
+// So disagreements are **counted**, not hidden. Only values everyone answers
+// the same way are timed, and the rest are reported by count and by value.
 // ===========================================================================
 import type { BenchShapeName } from "../shapes/bench-shape.types";
 
-/** 一つの競合ライブラリの、一つの shape に対する実装。 */
+/** One competitor's implementation of one shape. */
 export interface CompetitorSubject {
-  /** 値を受け取り、その shape の規則を満たすかを答える。 */
+  /** Takes a value and answers whether it satisfies that shape's rules. */
   check(value: unknown): boolean;
 }
 
 export interface Competitor {
-  /** npm のパッケージ名。報告に出る。 */
+  /** The npm package name, as it appears in the report. */
   readonly name: string;
-  /** 実測したバージョン。手で書かず package.json から読む。 */
+  /** The version actually measured, read from disk rather than written here. */
   readonly version: string;
   /**
-   * 実装のある shape だけを持つ。全部を埋める必要はない —
-   * 例えば ajv は JSON Schema のライブラリなので jsonSchema shape が本命で、
-   * 他の shape は「同じ規則を JSON Schema で書いたもの」になる。
+   * Only the shapes that have an implementation; there is no need to fill all
+   * of them. ajv, being a JSON Schema library, is really about the jsonSchema
+   * shape, and its other shapes are the same rules written as JSON Schema.
    */
   readonly subjects: Partial<Record<BenchShapeName, CompetitorSubject>>;
 }

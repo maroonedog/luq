@@ -1,18 +1,19 @@
 // ===========================================================================
 // bench/competitors/measure-competitor-ratio.ts
 //
-// Luq と競合ライブラリを、同じ値のプールに対して交互に測る。
+// Measures Luq and a competitor alternately against the same pool of values.
 //
-// 交互に測る理由は take-interleaved-samples.ts のヘッダにある通りで、
-// 片方を全部測ってから他方を測ると、負荷の山が片側だけに落ちて比率が動く。
+// Alternating matters because measuring one of them to completion first drops
+// whatever else the machine was doing onto one side, and the ratio moves.
 //
-// **測るのは判定が一致した値だけ** である。measure-agreement.ts が食い違いを
-// 数えており、食い違った値を含めたまま時間を測ると「相手が別の仕事をして
-// 速い/遅い」を速度差として報告することになる。食い違いは消さず、報告の別の
-// 欄に出す。
+// **Only values whose verdicts agreed are timed.** Disagreements are counted
+// elsewhere; timing them here would report "the other library did different
+// work" as a difference in speed. They are not discarded, only reported in
+// their own column.
 //
-// 測るのは validate 相当の一往復だけで、parse は測らない。競合の多くは
-// 「検証」と「変換」を分けておらず、対応づけると比較のほうが恣意的になる。
+// Only the validate-equivalent round trip is timed, never parse. Most
+// competitors do not separate validating from converting, and forcing a
+// correspondence makes the comparison the arbitrary part.
 // ===========================================================================
 import { median, relativeSpreadPercent } from "../sample-rate";
 import { takeInterleavedSamples } from "../take-interleaved-samples";
@@ -27,9 +28,9 @@ export interface CompetitorRatio {
   readonly competitorVersion: string;
   readonly luqOpsPerSecond: number;
   readonly competitorOpsPerSecond: number;
-  /** 1 より大きければ Luq が速い。ペアごとの比の中央値。 */
+  /** Above 1 means Luq is faster. The median of the per-pair ratios. */
   readonly ratio: number;
-  /** 時間を測った値の数と、食い違って除いた値の数。 */
+  /** How many values were timed, and how many were excluded as disagreements. */
   readonly comparedValues: number;
   readonly disagreedValues: number;
   readonly luqSpreadPercent: number;
@@ -41,9 +42,10 @@ const SAMPLE_COUNT = 9;
 const WARMUP_MS = 120;
 
 /**
- * 一致した値だけを回す関数を作る。返すのは「期待どおりに答えたか」であって
- * 成否ではない — 途中でどちらかが別の答えを返し始めたら、それは比較の前提が
- * 崩れたということなので、呼び出し側が数を突き合わせて気づけるようにする。
+ * Builds the function that cycles over the agreed values. What it returns is
+ * "did it answer as expected", not "did it pass": if either side starts
+ * answering differently partway through, the premise of the comparison has
+ * broken, and the caller can notice by comparing the counts.
  */
 function buildRotation(
   values: ValuePool,
@@ -57,9 +59,9 @@ function buildRotation(
 }
 
 /**
- * ValuePool は「2つ以上」を型で要求する。一致した値が1つしかない相手は
- * 測らない — プールが1値だと V8 が定数畳み込みして、片方だけ消える
- * (rotate-over-values.ts が記録している事故がそれである)。
+ * A value pool requires at least two values, in the type. A competitor
+ * agreeing on only one value is not measured: with a single value the engine
+ * constant-folds it away on one side and not the other.
  */
 function toPool(values: readonly unknown[]): ValuePool | undefined {
   const [first, second, ...rest] = values;

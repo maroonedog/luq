@@ -46,8 +46,8 @@ export interface GateReport {
 }
 
 export function gateThroughputRatio(options?: ThroughputOptions): GateReport {
-  // 床はゲートが走る環境で測ったものを読む。比率はマシンを相殺しないため
-  // (read-perf-baseline.ts の CI_PERF_BASELINE_PATH のコメント参照)。
+  // Floors are read from whichever file was measured in the environment this
+  // gate runs in, because a ratio does not cancel the machine out.
   const baseline = readPerfBaseline(baselinePathForEnvironment());
   const floors = new Map(
     baseline.referenceRatio.map((entry) => [

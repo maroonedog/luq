@@ -1,32 +1,31 @@
 // ===========================================================================
 // scripts/doc-examples/find-template-literal-constants.ts
 //
-// Astro のフロントマターに置かれた `const xExample = ` + テンプレート文字列 を
-// 取り出す。docs-site のコード例はすべてこの形で書かれており、テンプレート側は
-// `<CodeBlock code={xExample} />` で参照するだけなので、コード例の実体は
-// ここでしか定義されない。
+// Extracts `const xExample = ` plus a template literal from Astro
+// frontmatter. Every code example on the site is written that way, and the
+// markup only references it, so this is the one place an example is defined.
 //
-// テンプレート文字列を正規表現で切らないのは、例の中に `${...}` 補間や
-// エスケープした backtick が現れるためである（メッセージファクトリの例が
-// まさにそれ）。開き backtick から1文字ずつ走査して閉じ位置を決める。
+// The literal is not cut with a regular expression, because examples contain
+// `${...}` interpolation and escaped backticks — a message-factory example is
+// exactly that. The closing position is found by walking from the opening
+// backtick one character at a time.
 // ===========================================================================
 
-/** フロントマター中のテンプレート文字列定数1つ分。`startLine` は 1 始まり。 */
+/** One template-literal constant in the frontmatter. `startLine` is 1-based. */
 export interface TemplateLiteralConstant {
   readonly name: string;
   readonly startLine: number;
   readonly code: string;
   /**
-   * エスケープされていない `${` を含むか。含むならコードはビルド時にしか
-   * 決まらないので、静的な型検査には掛けられない（PluginCard の
-   * `import { ${plugin.symbol} } from ...` がその形）。
+   * Whether it holds an unescaped `${`. If it does, the code is only settled
+   * at build time and cannot be statically type-checked.
    */
   readonly hasInterpolation: boolean;
 }
 
 const DECLARATION = /^const ([A-Za-z_$][A-Za-z0-9_$]*) = `/gm;
 
-/** `${` の内側を読み飛ばす。入れ子の波括弧とテンプレート文字列を数える。 */
+/** Skips over the inside of `${`, counting nested braces and template literals. */
 function skipInterpolation(text: string, openBraceIndex: number): number {
   let depth = 0;
   let index = openBraceIndex;
@@ -50,7 +49,7 @@ function skipInterpolation(text: string, openBraceIndex: number): number {
   return text.length;
 }
 
-/** 開き backtick の位置を受け、閉じ backtick の次の位置を返す。 */
+/** Takes the opening backtick's position, returns the one past the closing backtick. */
 function skipTemplateLiteral(text: string, openIndex: number): number {
   let index = openIndex + 1;
   while (index < text.length) {
@@ -80,10 +79,11 @@ const SINGLE_CHARACTER_ESCAPES: Readonly<Record<string, string>> = {
 };
 
 /**
- * ソースに書かれた `\`` や `\$` を、実行時に得られる文字へ戻す。
- * これをしないと、抽出したコードに backslash がそのまま残り、型検査が
- * 「Invalid character」で落ちる（コード例の中身とは無関係な失敗になる）。
- * 未知のエスケープが文字そのものになるのは JavaScript の規則に合わせている。
+ * Turns the escapes written in the source back into the characters they
+ * produce at run time. Without this the extracted code keeps its backslashes
+ * and the type check fails on an invalid character — a failure that has
+ * nothing to do with the example. An unknown escape becoming the character
+ * itself follows the JavaScript rule.
  */
 export function unescapeTemplateLiteral(source: string): string {
   let unescaped = "";
@@ -102,7 +102,7 @@ export function unescapeTemplateLiteral(source: string): string {
   return unescaped;
 }
 
-/** エスケープを飛ばしながら、生の `${` が在るかだけを見る。 */
+/** Skips escapes, looking only for whether a raw `${` is present. */
 export function hasUnescapedInterpolation(rawBody: string): boolean {
   let index = 0;
   while (index < rawBody.length) {
@@ -125,9 +125,9 @@ function countLinesBefore(text: string, index: number): number {
 }
 
 /**
- * 行頭の `const NAME = ` + backtick をすべて拾う。行頭に限るのは、
- * フロントマター直下の宣言だけを対象にしたいためで、関数の内側に
- * インデントして書かれたものは（今のところ存在しないが）拾わない。
+ * Collects every `const NAME = ` plus backtick at the start of a line. Only
+ * at the start of a line, because the target is declarations directly in the
+ * frontmatter; an indented one inside a function is not collected.
  */
 export function findTemplateLiteralConstants(
   text: string

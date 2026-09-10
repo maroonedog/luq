@@ -1,20 +1,22 @@
 // ===========================================================================
-// bench/competitors/check-competitors.ts — CI が回すほう。
+// bench/competitors/check-competitors.ts — the one CI runs.
 //
-// 二つを分けている。**片方はゲートで、片方は記録である。**
+// Two things, kept apart. **One is a gate; the other is a record.**
 //
-//   判定の一致   決定的である。zod のメールの厳しさが版で変われば、一致した
-//                値の数が変わる。機械に依らないのでゲートにできるし、するべき
-//                である — 食い違ったまま速度を測ると、比較の意味が静かに壊れる。
+//   Agreement   Deterministic. If a competitor changes how strict its email
+//               rule is, the number of agreed values changes. It does not
+//               depend on the machine, so it can be a gate and should be —
+//               timing a comparison whose verdicts disagree quietly destroys
+//               what the comparison means.
 //
-//   速度比       ランナーに依る。config/perf-baseline.ci.json が存在するのは、
-//                「比率が機械を相殺する」という前提がこのリポジトリで一度
-//                反証されたからで、同じ誤りをもう一度書かない。CI では測って
-//                **印字する** が、落としはしない。
+//   Speed ratio Depends on the runner. Per-environment floors exist here
+//               because the assumption that a ratio cancels the machine out
+//               has already been disproved once; that mistake is not made
+//               twice. CI measures it and **prints** it, and never fails on it.
 //
-// 記録された比率と CI の比率は並べて出す。桁が違えば人間が気づく。閾値を置か
-// ないのは、置いた瞬間にその閾値の正しさを別途証明しなければならなくなるから
-// である。
+// The recorded ratio and the CI ratio are printed side by side, so a
+// difference in magnitude is visible to a person. No threshold, because
+// adding one means having to justify the threshold separately.
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
@@ -61,7 +63,7 @@ function keyOf(shape: string, competitor: string): string {
   return `${shape}/${competitor}`;
 }
 
-/** 一致だけを見る。ここが違えば、比較そのものが別物になっている。 */
+/** Agreement only. Different here, and the comparison is a different one. */
 function checkAgreement(
   baseline: Baseline,
   measuredAgreement: ReturnType<typeof measureAllAgreement>
@@ -78,20 +80,20 @@ function checkAgreement(
     const key = keyOf(measured.shape, measured.competitor);
     const before = recorded.get(key);
     if (before === undefined) {
-      problems.push(`${key}: 記録に無い組み合わせが現れた`);
+      problems.push(`${key}: a pairing appeared that is not in the record`);
       continue;
     }
     if (before.agreedValues !== measured.agreedValues.length) {
       problems.push(
-        `${key}: 一致した値が ${before.agreedValues} から ` +
-          `${measured.agreedValues.length} に変わった。判定の食い違いが` +
-          `増減している — 速度を比べる前に、何が変わったかを見ること`
+        `${key}: agreed values changed from ${before.agreedValues} to ` +
+          `${measured.agreedValues.length}, so the verdicts disagree more ` +
+          `or less than they did — find out what changed before comparing speed`
       );
     }
     for (const disagreement of measured.disagreements) {
       const shown = JSON.stringify(disagreement.value)?.slice(0, 120);
       problems.push(
-        `  ${key}: Luq=${String(disagreement.luqSaid)} 相手=${String(!disagreement.luqSaid)} ${shown ?? ""}`
+        `  ${key}: luq=${String(disagreement.luqSaid)} other=${String(!disagreement.luqSaid)} ${shown ?? ""}`
       );
     }
   }
@@ -107,23 +109,23 @@ function run(): void {
     ])
   );
 
-  // 測るのはここ一度だけ。判定にも、--write の書き出しにも、同じ測定を使う。
-  // 以前は check と report がそれぞれ測っていて、CI の competitors ジョブは
-  // 16対戦をまるごと二度測っていた — ジョブ時間の約半分が二度目だった。
+  // Measured once, here. The same measurement is what gets judged and what
+  // --write emits. Measuring separately for each meant every matchup was
+  // timed twice, which was about half the job.
   const measuredAgreement = measureAllAgreement(COMPETITORS);
   const measuredRatios: readonly MeasuredRatio[] = measureAllRatios();
 
   const problems = checkAgreement(baseline, measuredAgreement);
   const disagreementsOnly = problems.every((line) => line.startsWith("  "));
 
-  process.stdout.write("競合との判定一致:\n");
+  process.stdout.write("Agreement with competitors:\n");
   if (problems.length === 0) {
-    process.stdout.write("  記録どおり、食い違いは無い\n");
+    process.stdout.write("  as recorded; nothing disagrees\n");
   } else {
     for (const line of problems) process.stdout.write(`${line}\n`);
   }
 
-  process.stdout.write("\n速度比 (このランナー / 記録された値):\n");
+  process.stdout.write("\nSpeed ratio (this runner / recorded):\n");
   for (const measured of measuredRatios) {
     const key = keyOf(measured.shape, measured.competitor);
     const before = recordedRatios.get(key) ?? 0;
@@ -132,19 +134,19 @@ function run(): void {
     );
   }
   process.stdout.write(
-    "\n比率は落としの条件ではない。ランナーが変われば動く数だからで、" +
-      "config/perf-baseline.ci.json が存在するのと同じ理由である。\n"
+    "\nRatios do not fail this check: they move when the runner does, which " +
+      "is the same reason the floors are per environment.\n"
   );
 
-  // 落とすのは「一致が記録と変わった」ときだけ。食い違いそのものは記録済みで
-  // あれば正常なので、その行だけなら通す。
+  // Fails only when agreement differs from the record. A disagreement that is
+  // already recorded is normal, so that line alone passes.
   if (problems.length > 0 && !disagreementsOnly) {
     process.exitCode = 1;
   }
 
-  // --write: 判定に使ったその測定を、そのまま config/ に書き出す。CI はこれで
-  // artifact を上げる。判定と記録が別々の測定だと、artifact の数字が「落ちな
-  // かった数字」であるとは限らなくなる。
+  // --write emits the very measurement that was judged. CI uploads it as an
+  // artifact; measured separately, the artifact's figures would not
+  // necessarily be the figures that passed.
   if (process.argv.includes("--write")) {
     writeCompetitorReport(
       summariseAgreement(measuredAgreement),

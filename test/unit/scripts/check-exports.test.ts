@@ -34,7 +34,7 @@ describe("parseExportCheckMode", () => {
 
   it("知らないモードは落ちる", () => {
     expect(() => parseExportCheckMode(["--mode=loose"])).toThrow(
-      /superset か exact/
+      /must be superset or exact/
     );
   });
 });
@@ -84,7 +84,7 @@ describe("findExportMismatches", () => {
       expect(superset[0]).toEqual({
         kind: "missing",
         subpath: "./plugins/uuid",
-        detail: "公開済みなのにカタログから生成されません",
+        detail: "published but not generated from the catalog",
       });
       expect(findExportMismatches(root, "exact")).toHaveLength(1);
     });

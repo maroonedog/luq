@@ -24,9 +24,10 @@ export interface IsolationViolation {
 }
 
 /**
- * プラグインの import を段ごとの閉じた許可集合に照らす。
- * 走査根は PLUGIN_SOURCE_ROOTS だけなので、src/json-schema/** のうち
- * extensions/ の外はそもそもプラグインディレクトリとして扱われない。
+ * Checks a plugin's imports against the closed set its tier permits.
+ *
+ * Only the plugin source roots are scanned, so a module of the JSON Schema
+ * layer outside the extensions directory is never treated as a plugin at all.
  */
 export function findIsolationViolations(
   repositoryRoot: string
@@ -63,14 +64,14 @@ export function reportIsolationViolations(
   violations: readonly IsolationViolation[]
 ): void {
   if (violations.length === 0) {
-    console.error("プラグイン隔離: 違反なし");
+    console.error("Plugin isolation: no violations");
     return;
   }
-  console.error(`プラグイン隔離違反 ${violations.length} 件:`);
+  console.error(`Plugin isolation: ${violations.length} violations:`);
   for (const violation of violations) {
     console.error(
-      `  ${violation.file}: "${violation.specifier}" は領域 ${violation.area}` +
-        ` で、${violation.tier} 段では許可されていません`
+      `  ${violation.file}: "${violation.specifier}" is in area ${violation.area},` +
+        ` which the ${violation.tier} tier does not permit`
     );
   }
 }

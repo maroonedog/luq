@@ -52,7 +52,7 @@ export function readSubpathEntries(
       const entryFile = entryFileByKey[exportKey];
       if (entryFile === undefined || typeof target === "string") {
         throw new Error(
-          `export キー "${exportKey}" に対応するソースエントリがありません。`
+          `the export key "${exportKey}" has no corresponding source entry.`
         );
       }
       return {

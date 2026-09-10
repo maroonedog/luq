@@ -1,25 +1,25 @@
 // ===========================================================================
 // scripts/check-conformance-figures.ts
 //
-// 公開ドキュメントに書かれた適合率が、実測のピンと一致していることを検査する。
+// Checks that every conformance figure written in the published documentation
+// matches the measured pin.
 //
-// これが存在する理由は具体的な事故である。適合率が 828 から 855 に上がった
-// あと、README・docs/json-schema-conformance.md・トップページ・/json-schema・
-// /roadmap の5箇所が 828 / 929 = 89.13% を表示し続けていた。5箇所とも自己
-// 整合していた (828/929 は本当に 89.13% である) ので、内部矛盾を探す検査では
-// 捕まらない。捕まえるには「今の値は何か」を知っている必要がある。
+// It exists because of a real incident. After the pass rate went up, several
+// pages went on showing the old one. Every one of them was self-consistent —
+// the old numerator really did give the old percentage — so no check for
+// internal contradiction could catch it. Catching it requires knowing what the
+// current value is.
 //
-// 出所は config/json-schema-suite.json ただ一つで、
-// test/integration/json-schema-suite.test.ts がその全項目を両方向に表明する。
-// docs-site 側は docs-site/src/data/conformance.ts に生成して読むので、
-// この検査が見るのは主に Markdown — 生成できない場所である。
+// One source: the pinned measurement, which the conformance test asserts in
+// both directions. The site reads a generated copy of it, so what is left for
+// this check is mostly Markdown, where generation is not an option.
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
 import { REPOSITORY_ROOT } from "./catalog/plugin-source-roots";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
 
-/** ピンのうち、この検査が読む項目だけ。 */
+/** Only the fields of the pin this check reads. */
 interface SuitePinCounts {
   readonly caseCount: number;
   readonly passingCases: number;
@@ -29,7 +29,7 @@ interface SuitePinCounts {
   readonly passingInvalidCases: number;
 }
 
-/** 「この分数は書いてよい」の一覧。理由の無い許可は置かない。 */
+/** The fractions that may be written. No entry without a reason. */
 interface AllowedFigure {
   readonly numerator: number;
   readonly denominator: number;
@@ -43,17 +43,18 @@ export interface FigureViolation {
   readonly detail: string;
 }
 
-/** 表示に使う唯一の丸め方。generate-conformance-data.mjs と同じでなければならない。 */
+/** The one rounding used for display. It must match the site's generator. */
 export function toPercent(part: number, whole: number): string {
   return ((part / whole) * 100).toFixed(2);
 }
 
 /**
- * 書かれた割合が、その分数の値と小数第2位まででほぼ一致するか。
- * 「ほぼ」なのは、手で書かれた表記が丸めと切り捨てのどちらでもありうるため
- * (508 / 551 は 92.196% で、丸めれば 92.20、切り捨てれば 92.19)。厳密一致に
- * すると、切り捨てで書かれた古い数字が「適合率ではない」と見なされて素通り
- * する — 実際にそれで 508 (92.19%) を一度取り逃がした。
+ * Whether a written percentage roughly matches its fraction to two decimals.
+ *
+ * Roughly, because a hand-written figure may have been rounded or truncated:
+ * 508 / 551 is 92.196%, which is 92.20 rounded and 92.19 truncated. Demanding
+ * an exact match lets a stale truncated figure pass as "not a pass rate at
+ * all", and one did.
  */
 function isNearly(written: string, part: number, whole: number): boolean {
   return Math.abs(Number(written) - (part / whole) * 100) < 0.011;
@@ -65,13 +66,22 @@ export function readPinCounts(repositoryRoot: string): SuitePinCounts {
 }
 
 /**
- * 1.x の実測は過去の記録なので動かない。ピンには入らないが、比較表に載る。
- * ここに書いてあるものだけが「古い数字に見えるが正しい」と認められる。
+ * Figures measured on the previous major are historical and do not move. They
+ * are not in the pin but do appear in comparison tables. Only what is listed
+ * here counts as "looks stale, is correct".
  */
 const HISTORICAL: readonly AllowedFigure[] = Object.freeze([
-  { numerator: 536, denominator: 929, why: "1.x の実測 (docs/legacy-spec)" },
-  { numerator: 24, denominator: 378, why: "1.x が無効と判定できた件数" },
-  { numerator: 512, denominator: 551, why: "1.x が有効と判定できた件数" },
+  { numerator: 536, denominator: 929, why: "measured on the previous major" },
+  {
+    numerator: 24,
+    denominator: 378,
+    why: "cases the previous major judged invalid",
+  },
+  {
+    numerator: 512,
+    denominator: 551,
+    why: "cases the previous major judged valid",
+  },
 ]);
 
 export function allowedFigures(pin: SuitePinCounts): readonly AllowedFigure[] {
@@ -79,39 +89,39 @@ export function allowedFigures(pin: SuitePinCounts): readonly AllowedFigure[] {
     {
       numerator: pin.passingCases,
       denominator: pin.caseCount,
-      why: "現在の適合数",
+      why: "the current number of passing cases",
     },
     {
       numerator: pin.validCases,
       denominator: pin.caseCount,
-      why: "常に true を返すだけの検証器が取る下限",
+      why: "the floor a validator that only ever returns true reaches",
     },
     {
       numerator: pin.passingValidCases,
       denominator: pin.validCases,
-      why: "有効と判定すべきケースの内訳",
+      why: "the breakdown of cases that should be judged valid",
     },
     {
       numerator: pin.passingInvalidCases,
       denominator: pin.invalidCases,
-      why: "無効と判定すべきケースの内訳",
+      why: "the breakdown of cases that should be judged invalid",
     },
     {
       numerator: pin.passingCases,
       denominator: pin.caseCount - 57,
-      why: "外部 $ref の 57件を除いた分母 (docs/json-schema-conformance.md §5)",
+      why: "the denominator with the external-$ref cases removed",
     },
     ...HISTORICAL,
   ]);
 }
 
-/** `855 (92.03%)` と `855 / 929 = 92.03%` の両方を拾う。 */
+/** Matches both `855 (92.03%)` and `855 / 929 = 92.03%`. */
 const FIGURE = /(\d{3,4})\s*(?:\/\s*(\d{3,4})\s*=\s*)?\(?(\d{1,3}\.\d{2})%\)?/g;
 
 /**
- * このコーパスが使う分母。ここに一致しない割合は、そもそも適合率の話では
- * ない (例: 前口 2つの比較表は 289 を分母に取る) ので触らない。触ると、
- * 無関係な数字を「古い適合率だ」と言い張る検査になる。
+ * The denominators this corpus uses. A percentage over anything else is not a
+ * conformance figure at all and is left alone — otherwise this check starts
+ * insisting that unrelated numbers are stale pass rates.
  */
 function corpusDenominators(pin: SuitePinCounts): readonly number[] {
   return [pin.caseCount, pin.validCases, pin.invalidCases, pin.caseCount - 57];
@@ -162,10 +172,10 @@ export function findFigureViolations(
           line: index + 1,
           text: text.trim(),
           detail:
-            `${numerator} … ${percent}% は記録されたどの実測とも一致しない。` +
-            `現在の適合率は ${pin.passingCases} / ${pin.caseCount} = ` +
+            `${numerator} … ${percent}% matches no recorded measurement. ` +
+            `The current pass rate is ${pin.passingCases} / ${pin.caseCount} = ` +
             `${toPercent(pin.passingCases, pin.caseCount)}%。` +
-            "config/json-schema-suite.json が唯一の出所である。",
+            "config/json-schema-suite.json is the only source.",
         });
       }
     });
@@ -173,7 +183,7 @@ export function findFigureViolations(
   return violations;
 }
 
-/** 適合率が書かれうる、生成できない場所。 */
+/** The places a pass rate can be written and generation is not an option. */
 export const CHECKED_FILES: readonly string[] = [
   "README.md",
   "docs/json-schema-conformance.md",
@@ -196,7 +206,9 @@ if (require.main === module) {
           .join("\n\n")
       );
     }
-    console.log(`適合率の表記検査: ${CHECKED_FILES.length} ファイル、違反なし`);
+    console.log(
+      `Conformance figures: ${CHECKED_FILES.length} files, no violations`
+    );
     return 0;
   });
 }

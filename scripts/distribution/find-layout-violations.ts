@@ -39,7 +39,7 @@ export function findMissingExportTargets(
       .map((relative) => ({
         rule: "missing-export-target",
         subject: subpath,
-        detail: `${relative} がありません`,
+        detail: `${relative} is missing`,
       }))
   );
 }
@@ -59,7 +59,7 @@ export function findBrokenSpecifiers(
   return findUnresolvedSpecifiers(distRoot, files).map((unresolved) => ({
     rule: "unresolved-specifier",
     subject: unresolved.file,
-    detail: `"${unresolved.specifier}" が解決できません`,
+    detail: `"${unresolved.specifier}" does not resolve`,
   }));
 }
 
@@ -86,8 +86,8 @@ export function findInlinedCores(
             rule: "inlined-core",
             subject: subpath,
             detail:
-              `${entryFile} の依存グラフ ${graph.length} モジュールが ` +
-              "すべて dist/plugins/ の中にあります (コアを内側に取り込んでいます)",
+              `all ${graph.length} modules in ${entryFile}'s dependency graph ` +
+              "are inside dist/plugins/, so it has absorbed the core",
           },
         ];
   });
@@ -103,7 +103,7 @@ export function findPrivateArtifacts(
     .map((file) => ({
       rule: "private-artifact",
       subject: file,
-      detail: "公開してはならない成果物が dist/ にあります",
+      detail: "dist/ holds artefacts that must not be published",
     }));
 }
 
@@ -125,7 +125,7 @@ export function findFilesFieldViolations(
     {
       rule: "files-field",
       subject: "package.json#/files",
-      detail: `["dist"] でなければなりません (実際: ${JSON.stringify(files)})`,
+      detail: `must be ["dist"] (actual: ${JSON.stringify(files)})`,
     },
   ];
 }

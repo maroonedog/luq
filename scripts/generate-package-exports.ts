@@ -11,8 +11,8 @@ import type { PackageExportMap } from "./catalog/plugin-catalog.types";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
 
 /**
- * package.json のうち #/exports の値だけを差し替えたテキストを返す。
- * 他のフィールドは1バイトも動かさない。
+ * Returns package.json with only the value of #/exports replaced. No other
+ * field moves by a single byte.
  */
 export function renderPackageJsonWithExports(
   packageJsonText: string,
@@ -38,7 +38,7 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const changed = generatePackageExports(REPOSITORY_ROOT);
     console.error(
-      `package.json#/exports: ${changed ? "更新しました" : "変更なし"}`
+      `package.json#/exports: ${changed ? "updated" : "unchanged"}`
     );
     return 0;
   });

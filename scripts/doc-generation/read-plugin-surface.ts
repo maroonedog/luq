@@ -5,8 +5,8 @@ import type { PluginTier } from "../catalog/plugin-catalog.types";
 import { SUBPATH_ALIASES } from "../catalog/plugin-source-roots";
 
 /**
- * 1つのプラグインについて、利用者から見える3つの事実。
- * どれも手で書いた表からではなく、ビルド済みモジュールを読んで得る。
+ * The three facts about one plugin that a user can see. All three are read
+ * from the built module, never from a table written by hand.
  */
 export interface PluginSurfaceEntry {
   readonly subpath: string;
@@ -14,7 +14,7 @@ export interface PluginSurfaceEntry {
   readonly method: string;
   readonly slots: readonly string[];
   readonly tier: PluginTier;
-  /** 1.x の名前を残すためだけのサブパス。新しいプラグインではない。 */
+  /** A subpath that exists only to keep an older name. Not a new plugin. */
   readonly isAlias: boolean;
 }
 
@@ -25,7 +25,7 @@ export class PluginSurfaceError extends Error {
   }
 }
 
-/** definePlugin が返す4つのメンバーのうち、ドキュメントに出る3つ。 */
+/** The three of a plugin definition's members that appear in the documentation. */
 interface LoadedPlugin {
   readonly name: string;
   readonly method: string;
@@ -54,23 +54,21 @@ function loadBuiltModule(
   );
   if (!fs.existsSync(built)) {
     throw new PluginSurfaceError(
-      `${built} がありません。先に npm run build を実行してください。`
+      `${built} is missing. Run npm run build first.`
     );
   }
-  // 型検査済みの d.ts ではなく、実際に配る CJS を読む。表に出る method / slots は
-  // 「配ったものがそう言っている」ことにしたい。
+  // Reads what actually ships rather than the type declarations, so the method
+  // and slots in the table are what the shipped artefact says they are.
   const loaded: unknown = require(built);
   if (loaded === null || typeof loaded !== "object") {
-    throw new PluginSurfaceError(
-      `${built} がオブジェクトを export していません`
-    );
+    throw new PluginSurfaceError(`${built} exports no object`);
   }
   return loaded as Record<string, unknown>;
 }
 
 /**
- * カタログ (= ディレクトリ構造) を歩き、各エントリが export するシンボルを
- * ビルド済みモジュールから読み出す。互換エイリアスのサブパスも同じ扱いで並べる。
+ * Walks the catalog, which is the directory structure, and reads the symbols
+ * Read from the built modules. A compatibility alias's subpath is listed the same way.
  */
 export function readPluginSurface(
   repositoryRoot: string
@@ -82,7 +80,7 @@ export function readPluginSurface(
       const plugin = loadedModule[symbol];
       if (!isLoadedPlugin(plugin)) {
         throw new PluginSurfaceError(
-          `${entry.subpathName} の ${symbol} がプラグインの形をしていません`
+          `${symbol} in ${entry.subpathName} is not shaped like a plugin`
         );
       }
       return {

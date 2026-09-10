@@ -65,7 +65,7 @@ describe("findSizeViolations", () => {
       measure("full-feature", 76, 24040),
     ]);
     expect(violations.map((one) => one.kind)).toContain("over-budget");
-    expect(violations[0]?.detail).toContain("1 B 超えています");
+    expect(violations[0]?.detail).toContain("is 1 B over the 8000 B ceiling");
   });
 
   it("プラグイン1個の増分が下限を割ったら weak-increment を出す", () => {
@@ -75,7 +75,7 @@ describe("findSizeViolations", () => {
       measure("full-feature", 76, 24040),
     ]);
     expect(violations.map((one) => one.kind)).toEqual(["weak-increment"]);
-    expect(violations[0]?.detail).toContain("9 B しか増えていません");
+    expect(violations[0]?.detail).toContain("gzip grew only 9 B");
   });
 
   it("増分の下限は足したプラグイン数に比例する", () => {
