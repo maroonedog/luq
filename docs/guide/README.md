@@ -15,6 +15,7 @@ Start at the top; each page assumes the one before it.
 
 Elsewhere:
 
+- [Coming from yup](../migration/from-yup.md) — what is identical, what casting becomes, and the resolver swap
 - [Breaking changes from 1.x](../migration/breaking-changes.md)
 - [Plugin catalogue migration notes](../migration/plugins.md)
 - [Draft-07 conformance, measured](../json-schema-conformance.md)
