@@ -155,7 +155,7 @@ chain until every member of the union has been covered — the error you get is
 `Property 'build' does not exist on type 'UnionGuardCoverageError<…>'`, and it
 means a member is still uncovered rather than that `build` was misspelled.
 
-<!-- luq-example: must-fail out と build() の戻り値が食い違うと落ちることの証明 -->
+<!-- luq-example: must-fail proves it fails when the out marker disagrees with build()'s return -->
 ```ts
 import { definePlugin, check, PASS } from "@maroonedog/luq/plugin-kit";
 import type { PresenceShift } from "@maroonedog/luq/plugin-kit";

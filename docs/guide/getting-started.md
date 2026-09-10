@@ -38,7 +38,7 @@ validator — do not rebuild per request.
 
 An object with four members. It is **not** callable.
 
-<!-- luq-example: must-fail 1.x の README はここを関数として呼んでいた。呼べないことが仕様である -->
+<!-- luq-example: must-fail the previous major's README called this as a function; that it cannot be is the specification -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -259,7 +259,7 @@ export const pairValidator = Builder()
   .build();
 ```
 
-<!-- luq-example: must-fail 宣言漏れがあると strict() の戻り値に build() が無い -->
+<!-- luq-example: must-fail with a field left undeclared, strict() returns something with no build() -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";

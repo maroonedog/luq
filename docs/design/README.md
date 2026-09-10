@@ -1,16 +1,16 @@
-# 新実装の設計（確定版）
+# The design of this implementation (settled)
 
 **戦略**: Marker-Typed Descriptor Pipeline — one path grammar, one plugin contract, one collector, one compile step, one branch-free engine
 
-**プラグイン数**: 71 / **実装ステップ**: 32 / **モジュール**: 96
+**Strategy in one line**: one path grammar, one plugin contract, one collector, one compile step, one branch-free engine.
 
-| 文書 | 内容 |
+| Document | Contents |
 |---|---|
-| [core-types.md](core-types.md) | 中核型仕様。実コンパイル検証済み |
-| [build-order.md](build-order.md) | 実装順序と各ステップの検証方法 |
-| [modules.md](modules.md) | 全モジュールと単一責務・行数見積もり |
-| [test-strategy.md](test-strategy.md) | テストの置き場所・型テスト方式・ツール |
-| [how-any-is-avoided.md](how-any-is-avoided.md) | any を使わずに型を通す方法 |
-| [verification.md](verification.md) | 解決したブロッカーと残るリスク |
+| [core-types.md](core-types.md) | The core type specification, verified by actually compiling it |
+| [build-order.md](build-order.md) | The order of implementation, and how each step is verified |
+| [modules.md](modules.md) | Every module, its single responsibility and its estimated size |
+| [test-strategy.md](test-strategy.md) | Where tests live, how type tests are written, and the tooling |
+| [how-any-is-avoided.md](how-any-is-avoided.md) | How the types are made to work without `any` |
+| [verification.md](verification.md) | The blockers that were resolved and the risks that remain |
 
-引き継ぐ仕様は [../legacy-spec/](../legacy-spec/)、公開面は [../legacy-public-surface.md](../legacy-public-surface.md)。
+The inherited specification is in [../legacy-spec/](../legacy-spec/); the published surface is in [../legacy-public-surface.md](../legacy-public-surface.md).

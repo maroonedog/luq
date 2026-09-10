@@ -23,7 +23,7 @@ nothing in the runtime changed.
 have at run time, so `import { requiredPlugin } from "@maroonedog/luq"`
 typechecked and gave you `undefined`.
 
-<!-- luq-example: must-fail 1.x はここで型が通り、実行時に undefined を返した -->
+<!-- luq-example: must-fail this type-checked in the previous major and returned undefined at run time -->
 ```ts
 import { requiredPlugin } from "@maroonedog/luq";
 
@@ -120,7 +120,7 @@ the registry still exists rather than being folded into the builder.
 1.x's README showed `const validate = ...build(); validate(value)`. The
 implementation never returned a callable.
 
-<!-- luq-example: must-fail 1.x の README がそう書いていた形。実装は一度もこうではなかった -->
+<!-- luq-example: must-fail the form the previous major's README showed; the implementation was never like this -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -159,7 +159,7 @@ export const fixed = userValidator.validate({ name: "Jo" });
 `.v()` is the one declaration mechanism. `strictOnEditor()` was an alias of
 `strict()`; use `strict()`.
 
-<!-- luq-example: must-fail 1.x の三つのメソッドはどれも FieldBuilder に無い -->
+<!-- luq-example: must-fail none of the previous major's three methods exists on the field builder -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -187,7 +187,7 @@ export const brokenField = partial.field("name");
 | `{ metadata }` | removed |
 | `.v(path, define, "en")` — bare value shorthand | removed; write `{ default: "en" }` |
 
-<!-- luq-example: must-fail 1.x の既定値ショートハンド。FieldOptions は生値を受けない -->
+<!-- luq-example: must-fail the previous major's default shorthand; FieldOptions takes no bare value -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { optionalPlugin } from "@maroonedog/luq/plugins/optional";
@@ -231,7 +231,7 @@ plain discriminated union.
 | `LuqValidationException` | `ValidationFailure` from `@maroonedog/luq/result` |
 | `e.errors` | `e.issues` |
 
-<!-- luq-example: must-fail 1.x の Result メンバー。今の ValidationResult には無い -->
+<!-- luq-example: must-fail a result member of the previous major; ValidationResult does not have it -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -297,7 +297,7 @@ from four special cases.
 | `"tags.length"` | `.minLength()` / `.maxLength()` | that was reaching the array's own property |
 | `"when.getTime"` | — | no path enters a `Date`, `RegExp`, `Map`, `Set`, `Promise`, `Error`, buffer, function or class |
 
-<!-- luq-example: must-fail 1.x が受けていたパス。すべて型エラーになる -->
+<!-- luq-example: must-fail paths the previous major accepted; every one is now a type error -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -330,7 +330,7 @@ paths. The cast is gone.
 
 ### 5.1 A slot unrelated to the field's type is now an error
 
-<!-- luq-example: must-fail 型と無関係なスロット。1.x では黙って通っていた -->
+<!-- luq-example: must-fail a slot unrelated to the type, which used to pass in silence -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -351,7 +351,7 @@ Use `b.any` when you genuinely mean "whatever this is".
 1.x's `.required({ allowNull: true })` has no option to pass, because
 `required` takes no options beyond the uniform `RuleOptions`.
 
-<!-- luq-example: must-fail required は allowNull を受け付けない -->
+<!-- luq-example: must-fail required does not accept allowNull -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -405,7 +405,7 @@ remember.
 
 ### 6.3 `custom`'s predicate takes the value only
 
-<!-- luq-example: must-fail custom の述語は第2引数を受け取らない -->
+<!-- luq-example: must-fail custom's predicate takes no second argument -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { customPlugin } from "@maroonedog/luq/plugins/custom";
@@ -516,7 +516,7 @@ surface, the eleven argument markers and the four output markers.
 mechanism. `Builder` has exactly `use` / `withConfig` / `for` now, so the
 conversion front door is a function.
 
-<!-- luq-example: must-fail Builder に fromJsonSchema メソッドは無い -->
+<!-- luq-example: must-fail Builder has no fromJsonSchema method -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { jsonSchemaFullFeaturePlugin } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";

@@ -79,7 +79,7 @@ Four things 1.x accepted are now compile errors. Each is one rule, not four
 special cases: **array members are never enumerated, and built-in objects are
 opaque.**
 
-<!-- luq-example: must-fail 1.x が受けていた4つの形。どれも今はコンパイルできない -->
+<!-- luq-example: must-fail four forms the previous major accepted; none of them compiles now -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -135,7 +135,7 @@ use `objectRecursively` for genuinely recursive structures.
 `b.<slot>` is not a formatting choice. Picking a slot the field's type cannot
 inhabit is a compile error, so a typo cannot silently disable a rule.
 
-<!-- luq-example: must-fail 型と無関係なスロットは型エラー。1.x では黙って通っていた -->
+<!-- luq-example: must-fail a slot unrelated to the type is an error; it used to pass in silence -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";

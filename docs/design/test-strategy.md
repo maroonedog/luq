@@ -1,4 +1,4 @@
-# テスト戦略（確定版）
+# The test strategy (settled)
 
 PLACEMENT AND NAMING (nothing test-shaped lives in src/, so the `files` rule stays clean)
 - test/unit/<mirrors the src path>/<same-kebab-name>.test.ts — one runtime test file per src module, same name, same relative path. `scripts/check-module-has-test.ts` fails CI when any src/**/*.ts other than index.ts and *.types.ts has no sibling here.
