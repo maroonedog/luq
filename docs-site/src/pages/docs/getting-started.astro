@@ -466,20 +466,6 @@ const tableOfContents = [
             >the validator API</a>.
         </p>
 
-        <CodeBlock
-          code={`type ValidationResult<T> =
-  | { valid: true;  data: T; issues: readonly ValidationIssue[] }
-  | { valid: false;          issues: readonly ValidationIssue[] };
-
-type ValidationIssue = {
-  path: string;
-  code: string;
-  message: string;
-  severity: 'error' | 'warning' | 'info';
-};`}
-          language="typescript"
-        />
-
         <CodeBlock code={resultExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
@@ -501,9 +487,12 @@ type ValidationIssue = {
         </h2>
 
         <p class="mt-3 text-body-large">
-          <code>validate()</code> never changes your value. <code>parse()</code> applies
-          <code>.transform()</code> rules, and only to a field whose checks all passed.
-          Transforms always run last, whatever position they hold in the chain.
+          <code>validate()</code> never changes your value; <code>parse()</code> applies
+          <code>.transform()</code> rules. Why transforms run last, and what that does to
+          the chain's type:
+          <a class="text-primary underline underline-offset-2" href="/docs/core-concepts#validate-vs-parse"
+            >core concepts</a
+          >.
         </p>
 
         <CodeBlock code={parseExample} language="typescript" />
@@ -548,8 +537,11 @@ type ValidationIssue = {
         </h2>
 
         <p class="mt-3 text-body-large">
-          Dots for nested fields, <code>[*]</code> for array elements. You declare
-          <code>[*]</code>; the issue comes back with the real index.
+          Dots for nested fields, <code>[*]</code> for array elements; you declare
+          <code>[*]</code> and the issue comes back with the real index. Every form:
+          <a class="text-primary underline underline-offset-2" href="/docs/core-concepts#field-paths"
+            >the path grammar</a
+          >.
         </p>
 
         <CodeBlock code={nestedExample} language="typescript" />
