@@ -135,6 +135,8 @@ export function renderLegacySimpleOps(baseline: PerfBaseline): string {
 const SIZE_ROWS: readonly (readonly [string, string])[] = [
   ["`Builder` only, zero plugins", "core-only"],
   ['+ 6 plugins (1.x\'s "simple" set)', "six-plugin"],
+  ["core + `jsonSchema`, the plugin alone", "jsonschema-plugin"],
+  ["core + `jsonSchemaFullFeature`", "jsonschema-full-feature"],
   ["all 77 plugins", "full-feature"],
 ];
 

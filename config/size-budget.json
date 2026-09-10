@@ -6,7 +6,9 @@
     "実測が天井を超えたら『なぜ増えたか』を先に答えること。",
     "recordedGzipBytes は 2026-09-09 に取り直した。それまでの値は 2.1.0 の作業で最大 170 B ずれており、天井は等号ではないので誰も気づかなかった。README と docs-site の公開値も同時に直してある。full-feature の天井を 25600 -> 26100 に上げたのは、カタログにプラグインが1つ増えた分 (+191 B、README が言う 129-224 B の範囲内) で超えたためで、実装が重くなったのではない。",
     "2026-09-10: RuleContext を遅延させる FieldRuleContext を足した分、全エントリが gzip で 75-125 B 増えた。受理パスで +26% の代価である (bench/ の比で 0.0480 -> 0.0605、4巡すべてで四分位が分離)。天井を動かしたのは preset-presence の 1件だけで、8200 B を 3 B 超えたため 8300 B にした。他の6件は据え置きで、余裕が縮んだことがそのまま残る。",
-    "同じ機能を `#` private で書くと 302 B 増えて全エントリが天井を割る。ES2020 では TypeScript が `#` を WeakMap 3本と __classPrivateFieldGet/Set に落とすためで、配布物では要素ごとに WeakMap 参照が増える。ベンチは esbuild で変換していて `#` がそのまま残るため、計測では差が見えなかった — 測る対象と配る対象が違うと数字が転移しない、という例として残す。"
+    "同じ機能を `#` private で書くと 302 B 増えて全エントリが天井を割る。ES2020 では TypeScript が `#` を WeakMap 3本と __classPrivateFieldGet/Set に落とすためで、配布物では要素ごとに WeakMap 参照が増える。ベンチは esbuild で変換していて `#` がそのまま残るため、計測では差が見えなかった — 測る対象と配る対象が違うと数字が転移しない、という例として残す。",
+    "2026-09-10: JSON Schema の2エントリを足した。これらの数値は README・docs-site の troubleshooting・json-schema の3ページに手書きで散っていて、一度きりの手測定のまま誰も測り直していなかった。ここに入れれば毎ビルド測られ、benchmarks の表に載り、他の場所はそこを見るだけで済む。",
+    "「core + jsonSchema + 動く49プラグインの束」という行は落とした。どの49個かの記録が残っておらず再現できない。再現できない数字を載せ続けるより、落とすほうが正しい。"
   ],
   "method": {
     "measuredFrom": "src/ の TypeScript ソース。dist/ ではない。",
@@ -134,6 +136,24 @@
       ],
       "gzipCeilingBytes": 9600,
       "recordedGzipBytes": 9437
+    },
+    {
+      "id": "jsonschema-plugin",
+      "description": "Builder + jsonSchema プラグイン単体。チェーンメソッドだけを取るときの額。",
+      "plugins": [
+        "jsonSchema"
+      ],
+      "gzipCeilingBytes": 21000,
+      "recordedGzipBytes": 20848
+    },
+    {
+      "id": "jsonschema-full-feature",
+      "description": "Builder + jsonSchemaFullFeature。文書一つを丸ごと受けるときの額。",
+      "plugins": [
+        "jsonSchemaFullFeature"
+      ],
+      "gzipCeilingBytes": 23400,
+      "recordedGzipBytes": 23242
     },
     {
       "id": "full-feature",

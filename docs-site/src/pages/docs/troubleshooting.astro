@@ -790,11 +790,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                   that you are emitting ES modules and that tree-shaking is on.
                 </li>
                 <li>
-                  <code>jsonSchemaFullFeature</code> bundles 49 plugins, which is why one
-                  import covers a whole document; it lands at 21,383 B. The
-                  <code>jsonSchema</code> route is billed as the tree-shakeable half and
-                  measured it is not: with a working plugin bag it is 21,371 B, twelve bytes
-                  less. Use it for the chain method, not to save bytes.
+                  <code>jsonSchemaFullFeature</code> bundles the plugins a whole document
+                  needs, which is why one import covers it. The <code>jsonSchema</code> route
+                  is billed as the tree-shakeable half and measured it is not — use it for the
+                  chain method, not to save bytes. Both are in
+                  <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
+                    >the bundle size table</a
+                  >.
                 </li>
                 <li>
                   <code>import * as plugins from '…'</code> defeats tree-shaking in most

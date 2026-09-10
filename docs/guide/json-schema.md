@@ -120,18 +120,14 @@ through no other route.
 
 ### Which one to use
 
-Measured with the same esbuild + gzip method as the README's size table:
+Both entries are measured on every build and live in one place — the size table
+in [the README](../../README.md#bundle-size). Reading them: `jsonSchema` on its
+own is not a usable configuration, because `.jsonSchema()` needs a bag of
+plugins behind it, and once you supply one the "tree-shakeable" route saves
+nothing worth having.
 
-| Entry | gzip |
-|---|---:|
-| `Builder` + `jsonSchemaPlugin`, no bag | 18,992 B |
-| `Builder` + `jsonSchemaPlugin` + a working 49-plugin bag | 21,371 B |
-| `Builder` + `jsonSchemaFullFeaturePlugin` | 21,383 B |
-
-The first row is not a usable configuration — `.jsonSchema()` needs a bag. Once
-you supply one, the "tree-shakeable" route is **12 bytes** smaller than the
-bundled one. So: use `jsonSchemaFullFeature`, and reach for `./plugins/jsonSchema`
-when you want the per-field chain method, not to save bytes. The two share one
+So: use `jsonSchemaFullFeature`, and reach for `./plugins/jsonSchema` when you
+want the per-field chain method, not to save bytes. The two share one
 implementation; `jsonSchemaFullFeaturePlugin.build` calls
 `jsonSchemaPlugin.build`.
 

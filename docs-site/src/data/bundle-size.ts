@@ -23,6 +23,26 @@ export const bundleSize = {
     gzip: "8,879 B",
     ceiling: 9000,
   },
+  presetPresence: {
+    bytes: 8203,
+    gzip: "8,203 B",
+    ceiling: 8300,
+  },
+  presetEveryday: {
+    bytes: 9437,
+    gzip: "9,437 B",
+    ceiling: 9600,
+  },
+  jsonSchemaPlugin: {
+    bytes: 20848,
+    gzip: "20,848 B",
+    ceiling: 21000,
+  },
+  jsonSchemaFullFeature: {
+    bytes: 23242,
+    gzip: "23,242 B",
+    ceiling: 23400,
+  },
   fullFeature: {
     bytes: 25991,
     gzip: "25,991 B",

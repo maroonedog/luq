@@ -561,20 +561,10 @@ so the two columns are comparable. Recorded in
 <!-- generated:bundle-size -->
 | `Builder` only, zero plugins | **7,954 B** | 17,423 B |
 | + 6 plugins (1.x's "simple" set) | **8,879 B** | 19,562 B |
+| core + `jsonSchema`, the plugin alone | **20,848 B** | — |
+| core + `jsonSchemaFullFeature` | **23,242 B** | — |
 | all 77 plugins | **25,991 B** | — |
 <!-- /generated:bundle-size -->
-
-Three more entries were measured the same way on 2026-09-07 but are **not** in
-`config/size-budget.json`, so nothing re-measures them and they can go stale
-without anything noticing. They are kept because the JSON Schema claim needs
-evidence, and marked because a figure nobody checks is worth less than one that
-is checked:
-
-| Entry (measured once, not gated) | gzip | 1.x, same method |
-|---|---:|---:|
-| core + `jsonSchema`, plugin alone (not usable) | 18,992 B | — |
-| core + `jsonSchema` + a working 49-plugin bag | 21,371 B | 26.06–29.08 KB |
-| core + `jsonSchemaFullFeature` | 21,383 B | 31.75–32.31 KB |
 
 1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
 core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
@@ -584,15 +574,17 @@ the difference is where the bytes sit, not which README is right.
 
 Two lines that are **not** wins:
 
-- "all 77 plugins at 25,607 B" is larger than the 23,015 B 1.x published for its
+- The all-plugins figure is larger than the 23,015 B 1.x published for its
   `complex` case. The two are not comparable — 1.x's figure was one schema's
   plugin set, not its whole catalogue — so it is not counted either way here.
-- The 18,992 B for `jsonSchema` measures the plugin **without a bag**, which is
-  not a configuration you can actually validate with. Supplying a working bag
-  costs 21,371 B — 12 bytes, 0.06%, **less** than just importing
-  `jsonSchemaFullFeature`. The tree-shakeable JSON Schema route saves nothing
-  worth having today; use `jsonSchemaFullFeature` unless you need the chain
-  method for one field.
+- The `jsonSchema` row measures the plugin **without a bag**, which is not a
+  configuration you can validate with. Supplying one costs about what
+  `jsonSchemaFullFeature` costs, so the tree-shakeable JSON Schema route saves
+  nothing worth having today; use `jsonSchemaFullFeature` unless you need the
+  chain method for one field.
+- A third figure used to sit here — `jsonSchema` plus a working 49-plugin bag —
+  and it is gone. **Which 49 was never written down**, so nobody could
+  re-measure it. A number nobody can reproduce is worth less than no number.
 
 ### Speed
 

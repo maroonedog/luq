@@ -37,6 +37,10 @@ const CAMEL_BY_ID = {
   "one-plugin": "onePlugin",
   "three-plugin": "threePlugin",
   "six-plugin": "sixPlugin",
+  "preset-presence": "presetPresence",
+  "preset-everyday": "presetEveryday",
+  "jsonschema-plugin": "jsonSchemaPlugin",
+  "jsonschema-full-feature": "jsonSchemaFullFeature",
   "full-feature": "fullFeature",
 };
 

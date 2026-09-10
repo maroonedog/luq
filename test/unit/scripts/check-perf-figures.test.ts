@@ -57,6 +57,12 @@ const BUDGET: SizeBudget = {
       legacyGzipBytes: 400,
     },
     { id: "six-plugin", gzipCeilingBytes: 200, recordedGzipBytes: 80 },
+    { id: "jsonschema-plugin", gzipCeilingBytes: 300, recordedGzipBytes: 150 },
+    {
+      id: "jsonschema-full-feature",
+      gzipCeilingBytes: 400,
+      recordedGzipBytes: 180,
+    },
     { id: "full-feature", gzipCeilingBytes: 500, recordedGzipBytes: 200 },
   ],
 };

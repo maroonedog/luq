@@ -4,6 +4,7 @@ import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import { bundleSize } from '../data/bundle-size';
 import { conformance as measured } from '../data/conformance';
 
 /**
@@ -796,43 +797,15 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
     <section id="which-door" class="mb-16 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">Which one to use</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        <code>./plugins/jsonSchema</code> is billed as the tree-shakeable half. Measured with the
-        same esbuild and gzip method as the rest of the size table, it is not — supplying a working
-        bag costs 12 bytes <em>less</em> than importing the bundle, which is 0.06%.
+        <code>./plugins/jsonSchema</code> is billed as the tree-shakeable half, and measured it
+        is not: it gzips to {bundleSize.jsonSchemaPlugin.gzip} against
+        {bundleSize.jsonSchemaFullFeature.gzip} for the bundle — and that first figure is the
+        plugin <em>alone</em>, which cannot validate a document without a bag of plugins behind
+        it. Both entries, with their ceilings, are on
+        <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
+          >the bundle size table</a
+        >.
       </p>
-
-      <div class="md-card md-card-outlined overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[38rem] border-collapse text-body-medium">
-            <thead>
-              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
-                <th class="px-4 py-3 text-left font-medium">Entry</th>
-                <th class="px-4 py-3 text-right font-medium">gzip</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-b border-outline-variant/60">
-                <td class="px-4 py-3 font-mono text-body-small text-on-surface-variant">
-                  Builder + jsonSchemaPlugin, no bag
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">18,992 B</td>
-              </tr>
-              <tr class="border-b border-outline-variant/60">
-                <td class="px-4 py-3 font-mono text-body-small text-on-surface">
-                  Builder + jsonSchemaPlugin + a working 49-plugin bag
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-on-surface">21,371 B</td>
-              </tr>
-              <tr>
-                <td class="px-4 py-3 font-mono text-body-small text-on-surface">
-                  Builder + jsonSchemaFullFeaturePlugin
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-on-surface">21,383 B</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
         The first row is not a usable configuration: <code>.jsonSchema()</code> needs a bag. So use
