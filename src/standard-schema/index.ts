@@ -19,3 +19,14 @@ export type { IssuePathSegments } from "./split-issue-path";
 export { splitIssuePath } from "./split-issue-path";
 export type { StandardLuqSchema } from "./to-standard-schema";
 export { toStandardSchema } from "./to-standard-schema";
+export type {
+  JsonSchemaOptions,
+  StandardJsonSchemaLuqSchema,
+} from "./to-standard-json-schema";
+export { toStandardJsonSchema } from "./to-standard-json-schema";
+export { DeclarationsUnavailableError } from "./declarations-unavailable-error";
+export { UnsupportedJsonSchemaTargetError } from "./json-schema-target";
+export {
+  UnrepresentableRuleError,
+  type UnrepresentablePolicy,
+} from "./unrepresentable-rule-error";

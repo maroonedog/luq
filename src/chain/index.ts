@@ -9,10 +9,12 @@ export {
 export {
   createChainNode,
   readChainRules,
+  EMPTY_CALLS,
   EMPTY_RULES,
   type ChainBuildContext,
   type ChainNodeWiring,
 } from "./create-chain-node";
+export type { DeclaredCall } from "./declared-call.types";
 export {
   collectBranchRules,
   resolvePluginArguments,
@@ -25,6 +27,7 @@ export { buildSlotSurface, createFieldSlots } from "./create-field-slots";
 export {
   collectFieldRules,
   FieldChainResultError,
+  type FieldChainOutcome,
 } from "./collect-field-rules";
 
 export type { PluginBag, BagEntry, SlotPlugins } from "./plugin-bag.types";
