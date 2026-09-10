@@ -1,24 +1,23 @@
 // ===========================================================================
 // test/json-schema/read-remote-documents.ts
 //
-// スイートが `http://localhost:1234/...` で配るスキーマを、**ディスクから**
-// 読んで地図にする。
+// Reads the schemas the suite serves over HTTP **from disk** and turns them
+// into a map.
 //
-// これはハーネス側のコードであって、ライブラリのコードではない。そこが要点で、
-// Luq は外部 `$ref` を「呼び出し側が渡した文書」としてしか解決しない
-// (src/json-schema/extensions/json-schema/json-schema.ts の
-// JsonSchemaOptions)。だから公式スイートの外部参照 57件を、
-// **ネットワークに一切触れずに** 通せる。取りに行くのは呼び出し側の仕事で、
-// ここではそれがファイルシステムだというだけである。
+// This is harness code, not library code, and that is the point: the library
+// resolves an external `$ref` only against documents the caller handed it. So
+// the suite's external references pass **without touching the network at all**.
+// Fetching is the caller's job, and here the caller's fetching happens to be a
+// file system.
 //
-// スイートの remotes/ は URL のパスをそのままディレクトリ構造にしているので、
-// 相対パスをそのまま URL に読み替えられる。
+// The suite's remotes directory mirrors the URL paths, so a relative path
+// reads directly as a URL.
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
 import { repositoryRoot } from "./read-suite-corpus";
 
-/** スイートが配信に使うオリジン。remotes/ の中身がこの下にぶら下がる。 */
+/** The origin the suite serves from. Everything in remotes hangs under it. */
 const REMOTES_ORIGIN = "http://localhost:1234";
 
 function listJsonFiles(directory: string): readonly string[] {
@@ -36,19 +35,20 @@ function toUrl(remotesRoot: string, file: string): string {
 }
 
 /**
- * `http://localhost:1234/<path>` から文書への地図。
+ * The map from each served URL to its document.
  *
- * 読めない JSON は黙って落とす。コーパスには他ドラフトのスキーマも入って
- * いて、それが1つ壊れているだけで 57件全部が測れなくなるのは割に合わない。
+ * Unreadable JSON is dropped in silence. The corpus contains schemas for other
+ * drafts too, and letting one of them cost every external reference its
+ * measurement is not a good trade.
  */
 /**
- * Draft-07 のメタスキーマ。コーパスの `{"$ref":"http://json-schema.org/draft-07/schema#"}`
- * がこれを要求する。スイートの remotes/ には入っておらず、公式のハーネスは
- * どれも自分で登録している — このハーネスも同じことをする。
+ * The Draft-07 meta-schema, which cases in the corpus reference directly. It
+ * is not in the suite's remotes, and every official harness registers it
+ * itself — so does this one.
  *
- * ファイルは test/fixtures/well-known/ に置いてある。dev 依存 (ajv) の
- * node_modules から読むこともできたが、他人のパッケージの内部レイアウトに
- * 適合率がぶら下がるのは割に合わない。
+ * The file is kept in this repository's fixtures. It could have been read out
+ * of a dev dependency's node_modules, but hanging the conformance figure on
+ * another package's internal layout is not a good trade.
  */
 const METASCHEMA_URI = "http://json-schema.org/draft-07/schema";
 
@@ -83,7 +83,7 @@ export function readRemoteDocuments(): Readonly<Record<string, unknown>> {
         fs.readFileSync(file, "utf8")
       );
     } catch {
-      // 読めないものは無いものとして扱う。参照されれば $ref が落ちる。
+      // Unreadable counts as absent. Referenced, the $ref simply fails.
     }
   }
   return Object.freeze(documents);

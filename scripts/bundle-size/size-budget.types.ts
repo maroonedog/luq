@@ -1,47 +1,47 @@
 /**
- * config/size-budget.json の語彙。型のみ。
+ * The vocabulary of the size budget. Types only.
  *
- * 予算は「実測値 + 余裕」であって目標値ではない。実測の取り方 (どの入口を
- * どのオプションで束ねたか) は config 側の method に散文で書き、ここでは
- * ゲートが読む数値だけを型にする。
+ * A budget is a measurement plus headroom, never a target. How the measurement
+ * is taken — which entry, bundled with which options — is prose in the config
+ * file itself; only the numbers the gate reads are typed here.
  */
 
-/** "all" はカタログの全エントリ。配列は公開サブパス名 (camelCase) の列。 */
+/** "all" means every catalog entry; an array lists published subpath names. */
 export type PluginSelection = readonly string[] | "all";
 
 export interface BundleBudget {
-  /** 予算の識別子。例 "core-only" */
+  /** The budget's id, e.g. "core-only". */
   readonly id: string;
-  /** 何を測っているかの散文。レポートにそのまま出る。 */
+  /** Prose saying what is measured. Printed verbatim in the report. */
   readonly description: string;
   readonly plugins: PluginSelection;
-  /** これを超えたらゲートが落ちる。 */
+  /** Exceed this and the gate fails. */
   readonly gzipCeilingBytes: number;
-  /** 天井を決めたときの実測値。根拠であって判定には使わない。 */
+  /** What was measured when the ceiling was set: evidence, never judged against. */
   readonly recordedGzipBytes: number;
-  /** 旧実装の対応する数値 (docs/legacy-spec/build-and-distribution.md)。 */
+  /** The corresponding figure from the previous major. */
   readonly legacyGzipBytes?: number;
 }
 
 export interface TreeShakingBudget {
-  /** プラグイン数の昇順に並んだ予算 id。この順で増分を見る。 */
+  /** Budget ids in ascending plugin count. Increments are read in this order. */
   readonly orderedByPluginCount: readonly string[];
   /**
-   * 「足したぶんだけ増える」を数値にしたもの。
+   * "Adding a plugin adds its weight", as a number.
    *
-   * 単調増加を要求するだけでは弱すぎる。中核が既にそのプラグインを抱えて
-   * いても、再 export の数バイトで gzip が増えてしまい検査をすり抜ける
-   * (実測: プラグインを中核から到達可能にする改変で +9 B だけ増え、
-   * 単調増加の検査は通ってしまった)。足したプラグイン1個あたり最低
-   * これだけ増えることを要求する。
+   * Requiring monotonic growth is too weak. Even with the plugin already
+   * reachable from the core, a few bytes of re-export make the gzipped size
+   * grow and the check passes — measured: a change that made a plugin
+   * core-reachable still grew by a handful of bytes and slipped through. This
+   * demands a minimum growth per plugin added.
    */
   readonly minGzipBytesPerAddedPlugin: number;
-  /** 「使わないぶんは入らない」を数値にしたもの: core / full の上限比率。 */
+  /** "You only ship what you used", as a number: the upper bound on core / full. */
   readonly maxCoreShareOfFullPercent: number;
 }
 
 export interface BarrelEquivalenceBudget {
-  /** バレル経由と深いサブパス経由で突き合わせるプラグイン。 */
+  /** The plugins compared through the barrel against through their own subpath. */
   readonly plugins: readonly string[];
   readonly maxDivergencePercent: number;
 }
@@ -54,7 +54,7 @@ export interface SizeBudget {
 
 export interface BundleMeasurement {
   readonly id: string;
-  /** この予算が実際に含んだプラグイン数 ("all" を解決した後の数)。 */
+  /** How many plugins this budget actually included, after resolving "all". */
   readonly pluginCount: number;
   readonly rawBytes: number;
   readonly gzipBytes: number;

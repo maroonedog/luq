@@ -1,21 +1,20 @@
 // ===========================================================================
 // L10 src/standard-schema/to-standard-schema.ts
 //
-// build() が返す Validator を Standard Schema v1 に見せる。
-// これで tRPC / TanStack Form / Hono / t3-env のように「~standard を持つ何か」
-// を受け取るものに、そのまま渡せる。
+// Shows a built Validator as a Standard Schema v1, so it can be handed
+// straight to anything that takes "something with a ~standard".
 //
-// 決めたこと2つ、どちらも仕様が黙っている部分なので理由を書く。
+// Two decisions, both on points the spec leaves open.
 //
-// 1. validate は parse() を呼ぶ。仕様の成功結果は { value: Output } で、
-//    Output は「検証を通ったあとの値」。Luq で transform を適用した値を返すのは
-//    parse() なので、validate() を使うと transform が無かったことになる。
+// 1. validate calls parse(). The spec's success result is { value: Output },
+//    where Output is the value AFTER validation. parse() is what applies a
+//    transform, so calling validate() instead would silently drop transforms.
 //
-// 2. abortEarly / abortEarlyOnEachField をどちらも false にする。Luq の既定は
-//    どちらも true (最初のフィールドの最初の違反で止める) だが、この入口の
-//    消費側はフォームであり、1件だけ返すと「直したら次のエラーが出る」UX になる。
-//    仕様も issues を配列で受け取る形をしていて、全件返すことを想定している。
-//    速いほうが欲しい呼び出し側は Validator を直接使えばよい。
+// 2. abortEarly and abortEarlyOnEachField are both false here, against the
+//    library default of true. What consumes this entry point is a form, and
+//    returning one issue at a time produces "fix it, get the next error".
+//    The spec takes issues as an array and expects all of them. A caller who
+//    wants the faster behaviour can use the Validator directly.
 // ===========================================================================
 import type { Validator } from "../builder/validator.types";
 import type { ValidationIssue } from "../types";
@@ -26,7 +25,7 @@ import type {
 } from "./standard-schema.types";
 import { splitIssuePath } from "./split-issue-path";
 
-/** package.json の name と揃える。消費側がエラー表示に使う。 */
+/** Matches the package name. Consumers show it in error output. */
 const VENDOR = "luq";
 
 const COLLECT_EVERY_ISSUE = {
@@ -35,22 +34,22 @@ const COLLECT_EVERY_ISSUE = {
 } as const;
 
 /**
- * 仕様の Props は validate が Promise を返すことも許すが、Luq は必ず同期で返す。
- * ここで同期に絞っておくと、消費側が `await` も型の絞り込みも書かずに済む。
- * 狭めた型は広い型に代入できるので、StandardSchemaV1 としての互換は保たれる
- * (test/type/standard-schema/ の AssignableToSpec がそれを固定している)。
+ * The spec allows validate to return a Promise; this one never does. Pinning
+ * it to synchronous here spares consumers both the `await` and the narrowing.
+ * A narrower type is still assignable to the wider one, so compatibility with
+ * StandardSchemaV1 holds — and a type test pins that.
  */
 interface SynchronousStandardProps<T extends object, TParsed> {
   readonly version: 1;
   readonly vendor: string;
   /**
-   * 第2引数 options は仕様にある。Luq は今のところ読まないが、**受けること
-   * 自体に意味がある**: 引数の少ない関数は多い方に代入できてしまうので、
-   * 書かないと「仕様に合っている」と型が言うのに消費側の options が黙って
-   * 捨てられる。受けた上で無視しているのだと分かる形にしてある。
+   * The second parameter is in the spec and is deliberately declared even
+   * though nothing reads it yet. **Declaring it is the point**: a function
+   * with fewer parameters is assignable to one with more, so leaving it out
+   * would let the type claim conformance while a consumer's options were
+   * silently discarded. Written this way, ignoring them is visible.
    *
-   * libraryOptions に何を入れるかはベンダーごとの取り決めで、Luq はまだ
-   * 何も定義していない。定義したらここで読む。
+   * What goes in libraryOptions is per-vendor, and none is defined yet.
    */
   readonly validate: (
     value: unknown,
@@ -60,10 +59,11 @@ interface SynchronousStandardProps<T extends object, TParsed> {
 }
 
 /**
- * Standard Schema としての Luq バリデータ。
+ * A Luq validator seen as a Standard Schema.
  *
- * Input は `.for<T>()` に渡した型、Output は transform 適用後の型。
- * 推論ではなく宣言から来るので、InferInput が利用者の書いた型そのものを指す。
+ * Input is the type given to `.for<T>()`; Output is that type after
+ * transforms. Both come from the declaration rather than from inference, so
+ * InferInput names the very type the caller wrote.
  */
 export type StandardLuqSchema<T extends object, TParsed = T> = Validator<
   T,
@@ -73,16 +73,15 @@ export type StandardLuqSchema<T extends object, TParsed = T> = Validator<
 };
 
 /**
- * 元の Validator のメンバー (validate / parse / pick / pickAll) はそのまま残る。
- * 返り値は Validator でもあるので、片方のためにもう片方を諦める必要は無い。
+ * The original validator's members stay. What comes back is still a
+ * Validator, so neither face has to be given up for the other.
  */
 export function toStandardSchema<T extends object, TParsed = T>(
   validator: Validator<T, TParsed>
 ): StandardLuqSchema<T, TParsed> {
-  // アサーションを書かずに組み立てる。src/core/type-erasure.ts が
-  // 「型を破ってよい唯一の場所」で、ここはその場所ではない。
-  // 各メンバーを明示的に写すので、Validator に新しいメンバーが増えたときは
-  // ここがコンパイルエラーになる — 黙って落ちるより良い。
+  // Assembled without a type assertion; this is not a file allowed to write
+  // one. Copying each member by name means a new member on Validator breaks
+  // the build here, which beats being dropped in silence.
   const props: SynchronousStandardProps<T, TParsed> = {
     version: 1,
     vendor: VENDOR,
@@ -103,26 +102,20 @@ export function toStandardSchema<T extends object, TParsed = T>(
 }
 
 /**
- * code と severity は仕様に置き場所が無いので落ちる。message は Luq が
- * 組み立て済みのものをそのまま渡す。
+ * code and severity have nowhere to go in the spec, so they are dropped. The
+ * message is passed through as already composed.
  */
 function toStandardIssue(issue: ValidationIssue): StandardSchemaIssue {
   return { message: issue.message, path: splitIssuePath(issue.path) };
 }
 
 // ---------------------------------------------------------------------------
-// なぜコアの build() が ~standard を常に生やさないのか（実測に基づく判断）
+// Why build() does not simply put ~standard on every validator.
 //
-//   core-only                      gzip  7,420 B
-//   core + standard-schema         gzip  7,732 B   (+312 B)
-//   six-plugin                     gzip  8,373 B
-//   six-plugin + standard-schema   gzip  8,692 B   (+319 B)
-//
-// コアに同梱すると、Standard Schema を使わない利用者も 312 B を払う。中核が
-// 7,420 B なので 4.2% にあたり、「使った分しか入らない」という約束と噛み合わない。
-// サブパスにしておけば import しない限り 0 B で、tRPC などに渡したい人だけが払う。
-//
-// 代償は、利用者が toStandardSchema() で1回包む必要があること。build() が
-// 直接 ~standard を持つほうが体験は良いが、その体験のために全員に課金する形に
-// なるので取らなかった。将来コアに入れるなら、この 312 B が判断材料になる。
+// It would be the nicer experience — no wrapping call — but it bills everyone
+// for it, including the majority who never hand a validator to a spec
+// consumer. Measured against the core bundle the surcharge was a few percent,
+// which does not fit "you only ship what you used". As a subpath it costs
+// nothing until imported. Re-measure before revisiting the decision; the
+// figures live with the size budget, not here.
 // ---------------------------------------------------------------------------

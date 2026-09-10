@@ -4,10 +4,12 @@ Start at the top; each page assumes the one before it.
 
 | Page | Covers |
 |---|---|
-| [Getting started](getting-started.md) | the builder, what `build()` returns, reading a result, `validate` vs `parse`, options, defaults, `strict()`, messages |
+| [Getting started](getting-started.md) | the builder, what `build()` returns, reading a result, `validate` vs `parse`, options, defaults, `normalize`, `strict()`, messages |
 | [Field paths](field-paths.md) | the path grammar, issue paths, what a path may not be, the depth budget, slots |
+| [Plugins and presets](plugins-and-presets.md) | `.use()` and the bag, the barrel, `.useAll()` and the five presets, first-wins registration |
 | [Presence and conditionals](presence-and-conditionals.md) | rule order, `required` / `optional` / `nullable`, `requiredIf` / `optionalIf`, gates, `orFail`, cross-field rules, `custom` |
-| [JSON Schema](json-schema.md) | `fromJsonSchema`, the per-field chain method, measured conformance, what is not supported |
+| [JSON Schema](json-schema.md) | `fromJsonSchema`, the per-field chain method, writing a document back out, measured conformance, what is not supported |
+| [Standard Schema](standard-schema.md) | `toStandardSchema`, what crosses that boundary and what does not, `toStandardJsonSchema` |
 | [Writing a plugin](writing-a-plugin.md) | `definePlugin`, the 11 argument markers and 4 output markers, rule constructors, isolation |
 | [Plugin reference](plugin-reference.md) | generated table of every subpath, symbol, method and slot |
 
@@ -16,7 +18,7 @@ Elsewhere:
 - [Breaking changes from 1.x](../migration/breaking-changes.md)
 - [Plugin catalogue migration notes](../migration/plugins.md)
 - [Draft-07 conformance, measured](../json-schema-conformance.md)
-- [README](../../README.md) — bundle size, speed and CSP figures, all measured
+- [Measured numbers](../measurements.md) — bundle size, speed and CSP figures
 
 ## About the code in these pages
 

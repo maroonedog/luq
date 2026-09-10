@@ -1,22 +1,22 @@
 // ===========================================================================
-// L7  src/presets/presets.ts — 事前定義したプラグイン束。
+// L7  src/presets/presets.ts — predefined plugin bundles.
 //
-// なぜ要るのか。プラグインを1つずつ import するのは「使った分しか入らない」
-// を成り立たせている仕組みそのものだが、最初の一本を書くのに15行の use() を
-// 並べさせるのは、その正しさの押し付けである。
+// Why they exist. Importing plugins one at a time is the very mechanism behind
+// "you only ship what you used", but making someone write fifteen use() lines
+// for their first validator is imposing that correctness on them.
 //
-// なぜ「小さいのを複数」なのか。全部入りを1つ置くと、5個しか要らない人が
-// 40個分のバイトを払う。束は型としてはただの `PluginBag` なので、必要な束
-// だけを `useAll()` すればよく、混ぜても first-wins で衝突しない:
+// Why several small ones rather than one big one. A single everything-bundle
+// bills the person who needs five plugins for forty. A bundle is just a
+// `PluginBag`, so useAll() takes only the ones wanted, and mixing them is
+// first-wins rather than a collision:
 //
 //     Builder().useAll(presence).useAll(strings).for<User>()
 //
-// 何を入れるかはリポジトリ内の使用実績から決めた (test/ と docs-site/ の
-// use() を数えたもの)。required 138 / stringMin 95 / numberMin 43 /
-// stringEmail 33 / optional 26 という並びで、上位が束の中身になっている。
+// Membership was chosen from how often each plugin is actually used across
+// this repository, most-used first.
 //
-// バイト数は config/size-budget.json が測る。プリセットは便利さと引き換えに
-// バイトを払うものなので、いくら払うかは書いてあるべきである。
+// What a bundle costs in bytes is measured by the size budget. A preset trades
+// bytes for convenience, so the price should be measured rather than asserted.
 // ===========================================================================
 import { requiredPlugin } from "../plugins/required";
 import { optionalPlugin } from "../plugins/optional";
@@ -36,8 +36,7 @@ import { arrayMaxLengthPlugin } from "../plugins/array-max-length";
 import { arrayEachPlugin } from "../plugins/array-each";
 
 /**
- * 在る・無い・null。ほぼ全ての宣言がこの三つのどれかを使う。
- * 使用実績: required 138 / optional 26 / nullable 12。
+ * Present, absent, null. Nearly every declaration uses one of the three.
  */
 export const presence = Object.freeze({
   required: requiredPlugin,
@@ -45,7 +44,7 @@ export const presence = Object.freeze({
   nullable: nullablePlugin,
 });
 
-/** 文字列の定番。使用実績: stringMin 95 / stringEmail 33 / stringPattern 12。 */
+/** The everyday string checks. */
 export const strings = Object.freeze({
   stringMin: stringMinPlugin,
   stringMax: stringMaxPlugin,
@@ -53,14 +52,14 @@ export const strings = Object.freeze({
   stringEmail: stringEmailPlugin,
 });
 
-/** 数値の定番。使用実績: numberMin 43 / numberMax 8。 */
+/** The everyday number checks. */
 export const numbers = Object.freeze({
   numberMin: numberMinPlugin,
   numberMax: numberMaxPlugin,
   numberInteger: numberIntegerPlugin,
 });
 
-/** 配列の定番。要素ごとの規則は arrayEach が運ぶ。 */
+/** The everyday array checks. Per-element rules ride on arrayEach. */
 export const arrays = Object.freeze({
   arrayMinLength: arrayMinLengthPlugin,
   arrayMaxLength: arrayMaxLengthPlugin,
@@ -68,14 +67,14 @@ export const arrays = Object.freeze({
 });
 
 /**
- * 上の四つを合わせたもの。13プラグイン、gzip で +1,452 B。
+ * The four bundles above, together.
  *
- * 名前が「common」でないのは、それが何も言っていないからである
- * (lint の禁止語彙にも入っている)。入っているのは presence と、文字列・数値・
- * 配列それぞれの定番で、毎日書くのはこの範囲だ、という主張がこの名前である。
+ * Not called "common", because that name says nothing — and lint bans it. It
+ * holds presence plus the everyday string, number and array checks, and the
+ * name is the claim that this is the range people write day to day.
  *
- * これでも「全部入り」ではない。全部入りが要るなら `@maroonedog/luq/plugins`
- * のバレルがあり、そちらは 77 個ぶん、gzip で +17,986 B を払う。
+ * Still not everything. For everything there is the `@maroonedog/luq/plugins`
+ * barrel, which costs accordingly.
  */
 export const everydayRules = Object.freeze({
   ...presence,

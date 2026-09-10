@@ -33,10 +33,10 @@ describe("stringMax", () => {
     expect(isAccepted(empty, "a")).toBe(false);
   });
 
-  it("コードポイントで数えるので、絵文字1つは1文字", () => {
-    // 1.x は UTF-16 のコード単位で数えていた。docs/legacy-spec が
-    // 「暗黙の挙動で、明示的な決定にすべき」と記録しており、
-    // JSON Schema §6.3.1 に合わせてコードポイントに決めた。
+  it("counts by code point, so one emoji is one character", () => {
+    // A previous release counted UTF-16 code units as an implicit
+    // consequence. Code points are the deliberate choice, matching JSON
+    // Schema §6.3.1.
     expect(isAccepted(atMostThree, "ab\u{1F600}")).toBe(true);
     expect(isAccepted(atMostThree, "abc\u{1F600}")).toBe(false);
   });

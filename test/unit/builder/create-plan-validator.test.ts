@@ -13,7 +13,8 @@ function entryOf(
     path,
     defaultOf,
     applyDefaultToNull: true,
-    collectRules: () => rules,
+    normalize: null,
+    collectRules: () => ({ rules, calls: [] }),
   };
 }
 
@@ -32,7 +33,7 @@ const upperCaseRule = (): Rule =>
   transform((value) => String(value).toUpperCase());
 
 const validatorOf = (entries: readonly FieldEntry[]) =>
-  createPlanBackedValidator(compileDeclarations(entries, undefined));
+  createPlanBackedValidator(compileDeclarations(entries, undefined).plan);
 
 describe("createPlanBackedValidator", () => {
   it("returns a frozen object with the four documented members", () => {

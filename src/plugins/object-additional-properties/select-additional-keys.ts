@@ -1,23 +1,23 @@
 // ===========================================================================
 // L7  src/plugins/object-additional-properties/select-additional-keys.ts
 //
-// 「additional なキー」を選ぶ規則。boolean 形とスキーマ形の両方が使う。
+// Which keys count as "additional". Used by both the boolean form and the
+// schema form.
 //
-// Draft-07 §6.5.4 は additionalProperties の対象を「properties にも
-// patternProperties にも該当しないキー」と定めている。パターンを見落とすと
-// `{"patternProperties":{"^v":{}},"additionalProperties":false}` が
-// {"vroom":2} を誤って拒否する (スイートの
-// "patternProperties are not additional properties" がそれを突く)。
+// Draft-07 §6.5.4 defines them as the keys matched by neither `properties`
+// nor `patternProperties`. Miss the patterns and
+// `{"patternProperties":{"^v":{}},"additionalProperties":false}` wrongly
+// rejects {"vroom":2}.
 // ===========================================================================
 
 /**
- * パターンは build 時に一度だけコンパイルする。実行時は回すだけ、という
- * 設計に合わせるためで、キーごとに new RegExp すると O(キー数 x パターン数)
- * のコンパイルが毎回走る。
+ * Patterns are compiled once, at build time, matching the design where
+ * validation only runs what was already assembled. Compiling per key would
+ * cost O(keys × patterns) compilations on every call.
  *
- * 壊れた正規表現は無視する。スキーマ側の誤りでビルド全体を落とすより、
- * そのパターンが誰にも一致しないほうがまし (Draft-07 は ECMA-262 の
- * 正規表現を求めるが、方言差で通らないものが現実には来る)。
+ * A broken pattern is ignored rather than fatal. Draft-07 asks for ECMA-262
+ * regular expressions and real documents arrive with dialect differences;
+ * having that one pattern match nothing beats refusing the whole build.
  */
 export function compilePatterns(
   patterns: readonly string[] | undefined
@@ -29,10 +29,10 @@ export function compilePatterns(
       compiled.push(new RegExp(pattern, "u"));
     } catch {
       try {
-        // "u" が付くと通らない書き方が現実にはある。付けずにもう一度試す。
+        // Some real patterns fail only under "u". Try again without it.
         compiled.push(new RegExp(pattern));
       } catch {
-        // どちらでも駄目なら、このパターンは一致しないものとして扱う。
+        // Failing both ways, treat this pattern as matching nothing.
       }
     }
   }
@@ -40,8 +40,8 @@ export function compilePatterns(
 }
 
 /**
- * 宣言済みのキー名にも、どのパターンにも該当しないキーを返す。
- * 返る配列は入力の列挙順を保つ (issue のメッセージが安定する)。
+ * Returns the keys matched by neither a declared name nor any pattern,
+ * preserving the input's enumeration order so issue output stays stable.
  */
 export function selectAdditionalKeys(
   value: Readonly<Record<string, unknown>>,

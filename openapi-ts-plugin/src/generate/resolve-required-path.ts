@@ -1,23 +1,24 @@
 // ===========================================================================
 // openapi-ts-plugin/src/generate/resolve-required-path.ts
 //
-// ネストした `required` を `.required()` に落としてよいかを判定する。
+// Decides whether a nested `required` may be lowered to `.required()`.
 //
-// 実行時 (src/json-schema/declare-required-properties.ts) は `required` を
-// 「子の presence」ではなく「オブジェクト側の規則」にしている。理由はそこの
-// コメントに書かれているとおりで、子の presence 規則は **親ごと不在** のときも
-// 発火してしまうが、Draft-07 はサブスキーマを存在する値にしか適用しないため。
+// At run time `required` is a rule on the OBJECT, not presence on the child.
+// A presence rule on the child would also fire when the PARENT is absent,
+// and Draft-07 applies a subschema only to a value that exists.
 //
 //   { properties: { a: { properties: { b: {} }, required: ["b"] } } }
-//   に対して {} は VALID。a が無いので a のサブスキーマは適用されない。
-//   ここで "a.b" に .required() を書くと {} を拒否してしまい、実行時と食い違う。
+//   {} is VALID against it: a is absent, so a's subschema does not apply.
+//   Writing .required() on "a.b" would reject {} and disagree with run time.
 //
-// ただし **祖先のオブジェクトがすべて必須なら** 話が変わる。親が必ず存在する
-// なら「子が undefined」は「親にそのキーが無い」としか読めないので、
-// .required() は正しい。生成器はその場合だけ .required() を出す。
+// It changes when **every ancestor object is itself required**. The parent is
+// then guaranteed to exist, so an undefined child can only mean the parent is
+// missing that key, and .required() is correct. The generator emits it in that
+// case and no other.
 //
-// 配列は鎖を切らない。配列自体が不在なら要素は1つも無く、要素の規則は走らない。
-// したがって items[*].sku の判定に items の必須性は効かない。
+// An array does not break the chain: if the array is absent it has no
+// elements, so no element rule runs. Whether the array is required therefore
+// does not affect the judgement for its elements.
 // ===========================================================================
 import type {
   Draft07Schema,
@@ -28,7 +29,7 @@ import {
   isSchemaObject,
 } from "../../../src/json-schema/draft07.types";
 
-/** "items[*].sku" -> ["items[*]", "sku"]。"[*]" は直前のキーに付いたまま。 */
+/** "items[*].sku" -> ["items[*]", "sku"]; "[*]" stays attached to its key. */
 export function splitDeclaredPath(path: string): readonly string[] {
   return path === "" ? [] : path.split(".");
 }
@@ -56,10 +57,10 @@ function listsAsRequired(schema: Draft07SchemaObject, key: string): boolean {
 }
 
 /**
- * そのパスに `.required()` を出してよいか。
+ * Whether `.required()` may be emitted for that path.
  *
- * 途中の祖先オブジェクトが1つでも必須でなければ false。false のときは
- * 呼び出し側が `.optional()` を出し、落としたことを skipped で報告する。
+ * False as soon as one ancestor object along the way is not itself required.
+ * On false the caller emits `.optional()` instead and reports the omission.
  */
 export function isSafelyRequired(root: Draft07Schema, path: string): boolean {
   if (!isSchemaObject(root)) return false;
@@ -80,8 +81,8 @@ export function isSafelyRequired(root: Draft07Schema, path: string): boolean {
     let descended: Draft07SchemaObject = child;
     for (let level = 0; level < wildcards; level += 1) {
       const element = itemsOf(descended);
-      // 配列の要素スキーマが無ければ、これ以上たどれない。ここまでの祖先が
-      // すべて必須だったので、最後の段なら required でよい。
+      // With no element schema there is nowhere further to walk. Every
+      // ancestor so far was required, so the last segment may be required.
       if (element === undefined) return index === steps.length - 1;
       descended = element;
     }
@@ -91,10 +92,11 @@ export function isSafelyRequired(root: Draft07Schema, path: string): boolean {
 }
 
 /**
- * 直近の親スキーマがそのキーを required に挙げているか。
- * isSafelyRequired が false のとき、「そもそも required と書かれていない」のか
- * 「書かれているが祖先の都合で落とせない」のかを区別するために使う。
- * 後者だけを skipped として報告する。
+ * Whether the immediate parent schema lists that key in its required set.
+ *
+ * When the path is not safely required, this separates "it was never written
+ * as required" from "it was, but an ancestor makes it unlowerable". Only the
+ * second is reported as skipped.
  */
 export function isListedByParent(root: Draft07Schema, path: string): boolean {
   if (!isSchemaObject(root)) return false;

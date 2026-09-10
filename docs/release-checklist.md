@@ -1,167 +1,171 @@
-# リリース前チェックリスト
+# Pre-release checklist
 
-このファイルは「機械が答えられないこと」だけを並べる。
-機械が答えられることは `npm run verify` が答える（下の §1 がその一覧）。
-チェックリストに「テストが通ること」と書いてはいけない。それは CI の仕事であって、
-人が目視するリストに混ぜると、人にしか判断できない項目が埋もれる。
+This file lists only what a machine cannot answer. What a machine can answer,
+`npm run verify` answers, and §1 is the list of that. Never write "the tests
+pass" on a checklist: that is CI's job, and mixing it in buries the items only a
+person can decide.
 
-**数字をこのファイルに転記しないこと。** すべて記録ファイルから読むこと。
-1.x の README が「1.2M ops/sec」と書き、同じリポジトリのベンチページが 694,692 と
-書いていたのは、数字を散文に手で打ったからである。
+**Do not copy a number into this file.** Read every one of them from the file
+that records it. A published README once advertised one throughput figure while
+a benchmark page in the same repository showed another, because both were typed
+into prose by hand.
 
-| 数字 | 唯一の出所 |
+| Number | Its one source |
 |---|---|
-| バンドルサイズ | `config/size-budget.json` の `recordedGzipBytes` |
-| 性能（ops/sec, build コスト, 1.x 比） | `config/perf-baseline.json` |
-| Draft-07 適合率 | `config/json-schema-suite.json` と `docs/json-schema-conformance.md` |
-| プラグイン数・公開キー | `config/plugin-catalog.lock.json` |
-| プラグイン著者契約の形 | `config/contract-arity.lock.json` |
+| Bundle size | `recordedGzipBytes` in `config/size-budget.json` |
+| Performance: ops/sec, build cost, the comparison against the previous major | `config/perf-baseline.json` |
+| Draft-07 conformance | `config/json-schema-suite.json` and `docs/json-schema-conformance.md` |
+| Plugin and published-key counts | `config/plugin-catalog.lock.json` |
+| The shape of the plugin author contract | `config/contract-arity.lock.json` |
 
-数字を測り直すコマンド:
+Commands that measure them again:
 
-```
-npm run check:size     # バンドルサイズ（毎ビルド走る。天井超過でCIが落ちる）
-npm run bench:record   # 性能。静かな、名前のあるマシンで。config/perf-baseline.json を書き換える
-npx jest test/integration/json-schema-suite.test.ts   # Draft-07 適合率
-npm pack --dry-run     # パッケージに入るファイル一覧
+```bash
+npm run check:size     # bundle sizes; runs every build and fails CI over a ceiling
+npm run bench:record   # performance, on a quiet named machine; rewrites config/perf-baseline.json
+npx jest test/integration/json-schema-suite.test.ts   # Draft-07 conformance
+npm pack --dry-run     # what actually goes into the package
 ```
 
 ---
 
-## 0. この版で公開面が変わった点（レビューの起点）
+## 0. What changed in the published surface this release
 
-- `./field-rule` を新規に公開した。`createFieldRule` / `createPluginRegistry` /
-  `useField` / `FieldRule` は 1.x ではルートから公開されていたもので、新実装では
-  実装もテストも dist もあったのに **どの export キーも指していなかった**。
-  公開キーは 83 → 84 になった。`docs/migration/breaking-changes.md` §1.5 を読むこと。
-- 固定キーは6件から7件に増えた。`config/plugin-catalog.lock.json` と
-  `scripts/catalog/plugin-source-roots.ts` の両方に出る。
+The starting point for review. Fill this in per release; it is the section that
+tells a reviewer where to look.
 
 ---
 
-## 1. 機械が答える部分（人は「緑だったか」だけ確認する）
+## 1. What the machine answers (a person confirms only that it was green)
 
+```bash
+npm run verify      # everything below; do not release unless it exits 0
+npm run bench:gate  # not part of verify; the bench workflow runs it
 ```
-npm run verify      # 下の全部を含む。exit 0 でなければリリースしない
-npm run bench:gate  # verify には入っていない。CI の bench ジョブが回す
-npm publish --dry-run
-```
 
-`npm run verify` の中身（この順に走る）:
+What `npm run verify` runs, in this order:
 
-| 段 | コマンド | 何が落ちたら何が壊れている |
+| Stage | Command | What a failure means is broken |
 |---|---|---|
-| 生成物の同期 | `generate:sources` | マニフェスト／バレルが src と食い違っている |
-| 整形 | `format:check` | src / test / scripts / bench の prettier 差分 |
-| 静的検査 | `lint`, `lint:filenames` | `any`・禁止語・kebab-case 違反 |
-| 型 | `typecheck`（src / scripts / bench）, `test:types` | 型の退行、`@ts-expect-error` の位置ずれ |
-| ソース契約 | `check:contract-arity` | プラグイン著者面（マーカー語彙・ResolveArg 引数・build のメソッド宣言）が動いた |
-| | `check:module-has-test` | 実行時テストがどこからも触っていない src モジュールがある |
-| | `check:suite-pin` | JSON Schema スイートの SHA / digest / skip 件数が記録と食い違う |
-| カタログ | `check:plugin-uniqueness`, `check:plugin-isolation`, `check:exports --mode=exact`, `check:catalog-lock` | プラグインの重複・隔離違反・exports の手編集 |
-| ビルド | `build` | dist が作れない |
-| 出荷物 | `check:no-dynamic-code` | 出荷物に `eval` / `new Function` が入った（CSP-safe の主張の根拠） |
-| | `check:dist-layout` | 私的成果物の混入、解決できない相対指定、コアの取り込み |
-| ドキュメント | `check:generated-docs`, `check:doc-examples`, `check:doc-imports` | 生成リファレンスの差分、コンパイルしない例、公開されていない import |
-| 配布 | `check:size`, `check:barrel-equivalence` | サイズ予算超過、バレル経由の肥大 |
-| テスト | `npm test` | 単体・統合・dist・型以外の全部 |
+| Generated sources | `generate:sources` | The manifest or the barrel disagrees with src |
+| Formatting | `format:check` | A formatting difference under src, test, scripts or bench |
+| Static checks | `lint`, `lint:filenames` | `any`, a banned word, or a kebab-case violation |
+| Types | `typecheck` (src, scripts, bench), `test:types` | A type regression, or a misplaced `@ts-expect-error` |
+| Source contracts | `check:contract-arity` | The plugin author surface moved: the marker vocabulary, ResolveArg's arity, or build's method declaration |
+| | `check:module-has-test` | A src module no run-time test touches |
+| | `check:suite-pin` | The JSON Schema suite's SHA, digest or skip count disagrees with the record |
+| Catalog | `check:plugin-uniqueness`, `check:plugin-isolation`, `check:exports --mode=exact`, `check:catalog-lock` | A duplicated plugin, an isolation violation, or a hand-edited exports map |
+| Build | `build` | dist cannot be produced |
+| Shipped artefact | `check:no-dynamic-code` | `eval` or `new Function` reached the shipped artefact, which is the evidence for the CSP-safe claim |
+| | `check:dist-layout` | A private artefact got in, a relative specifier does not resolve, or an entry absorbed the core |
+| Documentation | `check:generated-docs`, `check:doc-examples`, `check:doc-imports` | A stale generated reference, an example that does not compile, or an unpublished import |
+| Distribution | `check:size`, `check:barrel-equivalence` | A size budget exceeded, or the barrel keeping code the subpath drops |
+| Tests | `npm test` | Everything else: unit, integration and dist |
 
-`prepublishOnly` は `npm run verify` を回す。つまり `npm publish` は verify を通らずには走らない。
+`prepublishOnly` runs `npm run verify`, so `npm publish` cannot run without it.
 
 ---
 
-## 2. 人が判断すること（リリースを止める権限があるのはここだけ）
+## 2. What a person decides (only these can stop a release)
 
-### 2.1 性能：**新実装は 1.x より遅い**。受け入れるか直すかを決める
+### 2.1 Performance against the previous major
 
-`config/perf-baseline.json` の `legacyComparison` を読むこと。同じマシン・同じプロセスで
-1.x のソースと新実装のソースを交互に測った結果である。**平坦な形と入れ子の形で 3〜11 倍遅い。**
-速いのは配列と JSON Schema の形だけ。
+Read `legacyComparison` in `config/perf-baseline.json`, which is the previous
+major's sources and this implementation's measured alternately, in one process,
+on one machine. The README renders the same figures and puts the shapes that
+lose in bold.
 
-- これは測定の癖ではない。入力を16個回しても 1.x 側は変わらず、1.x は5つの形すべてで
-  不正値を落としているので「手を抜いて速い」わけでもない（step 30 の検証記録）。
-- 原因の候補として記録されているのは、1.x が持っていた `src/core/optimization/` 相当の
-  特殊化された高速経路が新実装に無いこと。
-- **決めること: (a) この差を受け入れて公開する / (b) 公開前に最適化する / (c) 差を README に
-  明記したまま alpha として出す。** 現在の README は差を差として太字で書いてある。
-- 決めた結果をこのファイルの下の「決定の記録」に書き、日付と決めた人を残すこと。
+- A shape that loses is not a measurement artefact. The previous major rejects
+  invalid values on all five shapes, so it is not faster by doing less.
+- **Decide: accept the difference, optimise before publishing, or publish with
+  the difference stated.** The README states it either way.
+- Record the decision below, with the date and who made it.
 
-### 2.2 サイズ予算の天井が今のままでよいか
+### 2.2 Whether the size ceilings are still right
 
-`config/size-budget.json` の `gzipCeilingBytes` は実測の追認で、余裕は 6.5〜8%（最小で 580 B）。
-プラグインを1個足すと gzip で 130〜950 B 増えるので、天井は「もう1個足したら割れる」位置にある。
+Read `gzipCeilingBytes` in `config/size-budget.json`. A ceiling confirms a
+measurement and leaves a margin smaller than one plugin costs, so it sits where
+adding one more plugin breaks it.
 
-- 天井を上げるのはレビュー対象。**実測が天井を超えたときに天井を書き換えて通す、をやらないこと。**
-- `full-feature` は「中核 + 全プラグイン」であって、現実にこの構成を import する利用者はいない。
-  この数字を単独で「バンドルサイズ」として引用しないこと。
+- Raising a ceiling is reviewable. **Never raise one to make a measurement
+  pass.**
+- `full-feature` is the core plus every plugin, which nobody actually imports.
+  Do not quote it on its own as "the bundle size".
 
-### 2.3 JSON Schema 適合率を公開値として認めるか
+### 2.3 Whether to publish the conformance figure
 
-`docs/json-schema-conformance.md` の見出しの数字（skip は不合格として数えている）を読むこと。
-自明な下限（常に true を返す検証器）との差が意味のある部分である。
-skip リストを増やして率を上げることは構造的にできない（skip は不合格に数えられる）が、
-**skip の増減はレビューすること**：`check:suite-pin` は件数の一致しか見ない。
+Read the headline number in `docs/json-schema-conformance.md`, remembering that
+a skipped case counts as a failure there. What means something is the distance
+from the trivial floor.
 
-### 2.4 パッケージに入るもの
+Raising the rate by skipping more is structurally impossible, since a skip
+counts as a failure — but **review any change in the skip count**:
+`check:suite-pin` compares counts and nothing else.
 
-```
+### 2.4 What goes into the package
+
+```bash
 npm publish --dry-run
 ```
 
-出力のファイル一覧を見て、次を確認する。
+Read the file list.
 
-- 入るべきもの: `dist/`、`README.md`、`LICENSE`、`package.json`
-- 入ってはいけないもの: `src/` の生 `.ts`、`test/`、`scripts/`、`bench/`、`docs/`、
-  `__tests__`、`*.experimental*`、`.map`
-- `files: ["dist"]` がこれを担保しており、`check:dist-layout` が dist 側の混入を見ている。
-  それでも**目視すること**：1.x は `dist/core/plugin/__tests__/` を公開していた。
+- Belongs: `dist/`, `README.md`, `LICENSE`, `package.json`
+- Must not: raw `.ts` from `src/`, `test/`, `scripts/`, `bench/`, `docs/`,
+  `__tests__`, anything `*.experimental*`, `.map`
+- `files: ["dist"]` and `check:dist-layout` cover this between them. **Read the
+  list anyway**: the previous major published its own test directory.
 
-### 2.5 バージョンと配布メタデータ
+### 2.5 Version and distribution metadata
 
-- `package.json#version` を上げたか。今は `0.1.2-alpha`。
-  1.x の公開面と互換でない変更（`docs/migration/breaking-changes.md`）を含むので、
-  安定版を名乗るならメジャーを上げること。
-- alpha のまま出すなら `npm publish --tag alpha`。既定の `latest` に alpha を載せない。
-- `repository` / `homepage` / `bugs` / `license` / `sideEffects: false` が生きているか。
-- `dependencies` は空である（`@types/json-schema` への依存は新実装には無い。
-  出荷される `.d.ts` が `json-schema` 型を参照していないことを確認済み）。
-  ここに依存が増えたら、それは公開面の変更である。
+- Was `package.json#version` raised? A change incompatible with the previous
+  published surface — see `docs/migration/breaking-changes.md` — needs a major.
+- Publishing a pre-release goes out under its own tag, never on `latest`.
+- Are `repository`, `homepage`, `bugs`, `license` and `sideEffects: false`
+  still correct?
+- `dependencies` is empty, and
+  `test/integration/published-package-shape.test.ts` asserts it. A dependency
+  appearing there is a change to the published surface.
 
-### 2.6 ドキュメントの約束
+### 2.6 The documentation's promises
 
-- README とガイドの数字が §0 の表の出所から読まれているか（手打ちが混ざっていないか）。
-- `docs/migration/breaking-changes.md` に、1.x から壊れる点が全部載っているか。
-- 1.x が謳っていて新実装が引き継がないものを、引き継がないと書いてあるか
-  （`.luq` DSL、ロードマップ、`19-23KB gzipped` という数字、Plugin Registry の第2入口）。
-
----
-
-## 3. まだ残っている宿題（リリースを止めるかは人が決める）
-
-- **リポジトリ直下の 1.x 由来の残骸**: `core-entry.ts`, `exports-config.json`,
-  `rollup.dts.config.js`, `build.sh`, `run-all-tests.sh`, `lib/`, `test-build/`,
-  `jest.swc.config.js`, `scripts/benchmark-optimized.js`,
-  `scripts/performance-profiler.js`。どれも `files: ["dist"]` の外なので**公開はされない**が、
-  リポジトリを読む人には「生きている設定」に見える。消すなら別コミットで。
-  `bundle-size-comparison/` はこの一覧から外れた ── 削除済み。動かせば throw する
-  1.x の呼び出し側（`validator.parse(...).isValid()`）と、実行せずに束ねるだけで
-  新 dist と 1.x 呼び出し側が混ざった偽サイズを出す `build-all.js` を抱えていたため。
-  他に記録の無かった 18 行（zod / valibot / yup / joi / ajv のサイズと ops/sec）は
-  `docs/legacy-spec/bundle-size-comparison-results.json` に無編集で退避してある。
-  2025-08 時点の他ライブラリのバージョンでの値なので、現在の比較としては引用しないこと。
-- **言語が混在している**: README とガイドと `breaking-changes.md` は英語、
-  `docs/migration/plugins.md` と設計文書とコードコメントは日本語。どちらかに寄せるかを決める。
-- **`test/type/contract/**` と `docs/plugin-author-contract.md` は存在しない**。
-  build-order step 7 の生成物だが作られなかった。契約の凍結は
-  `config/contract-arity.lock.json`（step 32 で作成）が代行している。
-- **`scripts/check-test-names.ts` が無い**（test-strategy が要求している、
-  final-assault / coverage / extra といった名前を禁止する検査）。
-  現状その名前のテストは無いが、機械的な歯止めは無い。
+- Are the numbers in the README and the guides read from the sources in the
+  table at the top, with none typed in by hand?
+- Does `docs/migration/breaking-changes.md` list everything that breaks?
+- Is everything the previous major advertised and this one does not carry
+  forward written down as not carried forward?
 
 ---
 
-## 4. 決定の記録
+## 3. Outstanding, and whether it stops a release is a person's call
 
-| 日付 | 決めた人 | 決めたこと |
+- **Leftovers from the previous major at the repository root**:
+  `core-entry.ts`, `exports-config.json`, `rollup.dts.config.js`, `build.sh`,
+  `run-all-tests.sh`, `lib/`, `test-build/`, `jest.swc.config.js`,
+  `scripts/benchmark-optimized.js`, `scripts/performance-profiler.js`. All of
+  them fall outside `files: ["dist"]` and so **are not published**, but anyone
+  reading the repository takes them for live configuration. Remove them in
+  their own commit.
+
+  `bundle-size-comparison/` has already gone: it held calling code that throws
+  when run, and a build script that produced a false size by bundling this
+  dist together with the previous major's calling code without executing
+  either. The eighteen lines of otherwise unrecorded figures it carried are
+  preserved verbatim in
+  `docs/legacy-spec/bundle-size-comparison-results.json`. Those are other
+  libraries' versions as of August 2025 and must not be quoted as a current
+  comparison.
+- **`test/type/contract/**` and `docs/plugin-author-contract.md` do not
+  exist.** They were listed as products of build-order step 7 and never made.
+  `config/contract-arity.lock.json` freezes the contract in their place.
+- **There is no `scripts/check-test-names.ts`** — the check the test strategy
+  asks for, banning names like final-assault, coverage and extra. No test
+  currently carries such a name, but nothing mechanical stops one.
+
+---
+
+## 4. Record of decisions
+
+| Date | Decided by | Decision |
 |---|---|---|
 | | | |

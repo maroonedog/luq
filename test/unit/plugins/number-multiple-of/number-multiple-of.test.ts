@@ -17,7 +17,7 @@ const byTenth = Builder()
   .build();
 
 describe("numberMultipleOf", () => {
-  it("整数の倍数を通し、そうでないものを弾く", () => {
+  it("accepts an integer multiple and rejects anything else", () => {
     expect(byThree.validate({ value: 9 }).valid).toBe(true);
     expect(byThree.validate({ value: 0 }).valid).toBe(true);
     const validationResult = byThree.validate({ value: 10 });
@@ -32,18 +32,18 @@ describe("numberMultipleOf", () => {
     ]);
   });
 
-  // 旧実装のバグ (naive float modulo) をここで直している。
-  it("multipleOf(0.1) が 0.3 を受け入れる", () => {
+  // A naive floating-point modulo gets this wrong.
+  it("has multipleOf(0.1) accept 0.3", () => {
     expect(byTenth.validate({ value: 0.3 }).valid).toBe(true);
     expect(byTenth.validate({ value: 0.7 }).valid).toBe(true);
     expect(byTenth.validate({ value: 2.4 }).valid).toBe(true);
   });
 
-  it("multipleOf(0.1) が 0.35 は弾く (誤差の吸収しすぎを防ぐ)", () => {
+  it("has multipleOf(0.1) reject 0.35, absorbing no more error than it must", () => {
     expect(byTenth.validate({ value: 0.35 }).valid).toBe(false);
   });
 
-  it("messageFactory は divisor を受け取る", () => {
+  it("hands messageFactory the divisor", () => {
     const custom = Builder()
       .use(numberMultipleOfPlugin)
       .for<Score>()
@@ -58,7 +58,7 @@ describe("numberMultipleOf", () => {
     );
   });
 
-  it("0 / NaN / Infinity の除数は build 時に PluginArgumentError で落ちる", () => {
+  it("fails a divisor of 0, NaN or Infinity at build time, with PluginArgumentError", () => {
     const buildWith =
       (divisor: number): (() => unknown) =>
       () =>

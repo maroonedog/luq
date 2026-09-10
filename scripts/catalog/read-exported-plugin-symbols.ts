@@ -3,9 +3,9 @@ import * as ts from "typescript";
 const PLUGIN_SYMBOL = /Plugin$/;
 
 /**
- * エントリファイルが export しているプラグインシンボル名 (末尾 "Plugin") を集める。
- * barrel はここで得た名前だけを再 export するので、実在しない名前を書けない。
- * `export * from` は名前を与えないため、ここでは何も足さない。
+ * Collects the plugin symbol names an entry file exports, meaning the ones
+ * ending in "Plugin". The barrel re-exports only these, so a name that does
+ * not exist cannot be written. `export * from` names nothing and adds nothing.
  */
 export function readExportedPluginSymbols(
   sourceText: string,

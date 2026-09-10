@@ -24,25 +24,25 @@ function violatingDirectories(repositoryRoot: string): readonly string[] {
 }
 
 describe("findIsolationViolations", () => {
-  it("健全なツリーには違反が無い", () => {
+  it("reports nothing for a healthy tree", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(findIsolationViolations(root)).toEqual([]);
     });
   });
 
-  it("プラグイン0件でも落ちない", () => {
+  it("does not fail with no plugins at all", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       expect(findIsolationViolations(root)).toEqual([]);
     });
   });
 
-  it("仕込んだ違反をすべて検出する", () => {
+  it("detects every planted violation", () => {
     withSeedTree(ISOLATION_PROBE_TREE, (root) => {
       expect(violatingDirectories(root)).toEqual(LEAKY_PLUGIN_DIRECTORIES);
     });
   });
 
-  it("違反ごとに領域名を報告する", () => {
+  it("names the area for each violation", () => {
     withSeedTree(ISOLATION_PROBE_TREE, (root) => {
       const areaByDirectory = new Map(
         findIsolationViolations(root).map((violation) => [
@@ -71,7 +71,7 @@ describe("findIsolationViolations", () => {
     });
   });
 
-  it("自パッケージ名で迂回しても検出する", () => {
+  it("detects a detour through the package's own name", () => {
     withSeedTree(ISOLATION_PROBE_TREE, (root) => {
       const violation = findIsolationViolations(root).find(
         (candidate) =>
@@ -82,7 +82,7 @@ describe("findIsolationViolations", () => {
     });
   });
 
-  it("型 import でも違反になる", () => {
+  it("makes a type import a violation too", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       writeSeedFile(
         root,
@@ -97,7 +97,7 @@ describe("findIsolationViolations", () => {
     });
   });
 
-  it("動的 import で隠しても違反になる", () => {
+  it("makes a dynamic import a violation too", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       writeSeedFile(
         root,
@@ -113,7 +113,7 @@ describe("findIsolationViolations", () => {
     });
   });
 
-  it("同じ import が extension 段では通り、isolated 段では落ちる", () => {
+  it("lets one import pass at the extension tier and fail at the isolated one", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(findIsolationViolations(root)).toEqual([]);
       writeSeedFile(
@@ -134,7 +134,7 @@ describe("findIsolationViolations", () => {
     });
   });
 
-  it("src/json-schema/** のうち extensions/ の外はプラグイン扱いされない", () => {
+  it("does not treat anything outside the extensions directory as a plugin", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       writeSeedFile(
         root,
@@ -146,7 +146,8 @@ describe("findIsolationViolations", () => {
           "",
         ].join("\n")
       );
-      // json-schema 層は隔離の対象ではないので、この import は検査されない。
+      // The JSON Schema layer is not subject to isolation, so this import is
+      // not checked at all.
       expect(findIsolationViolations(root)).toEqual([]);
     });
   });

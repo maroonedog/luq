@@ -1,6 +1,15 @@
 ---
 import CodeBlock from './CodeBlock.astro';
+import { bundleSize } from '../data/bundle-size';
 import { conformance } from '../data/conformance';
+
+// Read, never hand-written. These figures were once typed here and went
+// stale while the page body already read the generated data — the code
+// sample inside the component was the part left behind.
+const corePercent = (
+  (bundleSize.coreOnly.bytes / bundleSize.fullFeature.bytes) *
+  100
+).toFixed(1);
 
 /**
  * The five claims worth making, each with the code that backs it.
@@ -55,7 +64,7 @@ const draftValidator = Builder()
     icon: 'deployed_code',
     title: 'You pay for what you import',
     description:
-      'Measured with esbuild and gzip, the same options 1.x’s own comparison used. The core is 30.9% of the all-plugins build — the floor you pay before using anything is small, which is the part a bundle-size claim usually hides.',
+      `Measured with esbuild and gzip. The core is ${corePercent}% of the all-plugins build — the floor you pay before importing anything, which is the part a bundle-size claim usually hides.`,
     fileName: 'imports.ts',
     example: `// Six plugins, six imports.
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -66,9 +75,9 @@ import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
 import { numberMaxPlugin } from "@maroonedog/luq/plugins/numberMax";
 
 // Measured gzip — config/size-budget.json:
-//   Builder alone .............  7,590 B
-//   Builder + these six .......  8,475 B
-//   Builder + all 77 plugins .. 25,607 B`,
+//   Builder alone ............. ${bundleSize.coreOnly.gzip}
+//   Builder + these six ....... ${bundleSize.sixPlugin.gzip}
+//   Builder + all 77 plugins .. ${bundleSize.fullFeature.gzip}`,
   },
   {
     icon: 'compare_arrows',

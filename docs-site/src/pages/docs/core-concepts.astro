@@ -28,7 +28,7 @@ const userValidator = Builder()
   .v('age', b => b.number.required().min(0))
   .build();`;
 
-// luq-example: skip — キャレットで一行を指すだけの断片で、単体では文にならない
+// luq-example: skip — a caret pointing at one line, not a statement on its own
 const slotExample = `.v('title', b => b.number.required().min(3))
 //              ^^^^^^^^
 // \`title\` is a string. Choosing b.number does not compile.`;
@@ -49,7 +49,7 @@ const validator = Builder()
   .v('age', b => b.number.required().min(18))
   .build();`;
 
-// luq-example: must-fail — .min() を bag に入れていないことを示す例なので、通ったらページの主張が嘘になる
+// luq-example: must-fail — shows .min() missing from the bag; compiling would make the page's claim false
 const unimportedExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 
@@ -119,7 +119,7 @@ const memberValidator = Builder()
   .v('closedAt', b => b.string.required().nullable())
   .build();`;
 
-// luq-example: with bagExample — 直前のブロックで組み立てた validator をそのまま読むところなので、宣言を繰り返さずに検査だけ前置きする
+// luq-example: with bagExample — reads the validator built in the block above, so only the check is shown rather than repeating the declaration
 const resultExample = `const result = validator.validate({ name: 'John', age: 25 });
 
 if (result.valid) {
@@ -383,33 +383,21 @@ const tableOfContents = [
         <h2 id="results" class="mt-12 text-headline-small">Results</h2>
 
         <p class="mt-3 text-body-large">
-          <code>validate()</code> and <code>parse()</code> return a
-          <code>ValidationResult&lt;T&gt;</code> — a discriminated union on <code>valid</code>.
-          There is no result class, no <code>unwrap()</code> method on the value, and no
-          <code>errors</code> member.
+          <code>validate()</code> and <code>parse()</code> return a discriminated union on
+          <code>valid</code>. There is no result class, no <code>unwrap()</code> on the value
+          and no <code>errors</code> member — narrowing on <code>valid</code> is what gives
+          you <code>data</code>.
         </p>
-
-        <CodeBlock
-          code={`type ValidationResult<T> =
-  | { valid: true;  data: T; issues: readonly ValidationIssue[] }
-  | { valid: false;          issues: readonly ValidationIssue[] };
-
-type ValidationIssue = {
-  path: string;
-  code: string;
-  message: string;
-  severity: 'error' | 'warning' | 'info';
-};`}
-          language="typescript"
-        />
 
         <CodeBlock code={resultExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          The default <code>code</code> is the plugin's own name. <code>severity</code> is
-          never absent, and an issue whose severity is not <code>error</code> is reported
-          without failing the result — so <code>issues</code> is worth reading on the success
-          branch too.
+          The full shape, <code>ValidationIssue</code>, and why a
+          non-<code>error</code> severity does not fail the result:
+          <a
+            class="text-primary underline underline-offset-2"
+            href="/docs/api/validator#validation-result">the validator API</a
+          >.
         </p>
 
         <h2 id="validate-vs-parse" class="mt-12 text-headline-small">

@@ -18,7 +18,7 @@ const ORIGINAL = [
 ].join("\n");
 
 describe("spliceJsonMember", () => {
-  it("指定メンバの値だけを差し替え、他のバイトは動かさない", () => {
+  it("replaces one member's value and moves no other byte", () => {
     const replaced = spliceJsonMember(ORIGINAL, "exports", '{ "x": 1 }');
     expect(replaced).toBe(
       [
@@ -34,7 +34,7 @@ describe("spliceJsonMember", () => {
     );
   });
 
-  it("メンバの前後のバイト列がそのまま残る", () => {
+  it("leaves the bytes before and after the member as they were", () => {
     const keyText = '"exports": ';
     const prefix = ORIGINAL.slice(
       0,
@@ -47,47 +47,47 @@ describe("spliceJsonMember", () => {
     expect(replaced.endsWith(suffix)).toBe(true);
   });
 
-  it("文字列の中の波括弧に釣られない", () => {
+  it("is not fooled by a brace inside a string", () => {
     const source = '{ "a": { "s": "}}}}" }, "b": 1 }';
     expect(spliceJsonMember(source, "a", "null")).toBe('{ "a": null, "b": 1 }');
   });
 
-  it("エスケープされた引用符に釣られない", () => {
+  it("is not fooled by an escaped quote", () => {
     const source = '{ "a": { "s": "\\"}" }, "b": 1 }';
     expect(spliceJsonMember(source, "a", "null")).toBe('{ "a": null, "b": 1 }');
   });
 
-  it("配列メンバも差し替えられる", () => {
+  it("replaces an array member too", () => {
     expect(spliceJsonMember('{ "files": ["dist"] }', "files", "[]")).toBe(
       '{ "files": [] }'
     );
   });
 
-  it("メンバが無ければ落ちる", () => {
+  it("fails when the member is absent", () => {
     expect(() => spliceJsonMember("{}", "exports", "{}")).toThrow(
-      /メンバ "exports" がありません/
+      /has no member "exports"/
     );
   });
 
-  it("値がオブジェクトでも配列でもなければ落ちる", () => {
+  it("fails when the value is neither an object nor an array", () => {
     expect(() => spliceJsonMember('{ "name": "x" }', "name", "{}")).toThrow(
-      /オブジェクトでも配列でもありません/
+      /is neither an object nor an array/
     );
   });
 
-  it("閉じていない値は落ちる", () => {
+  it("fails on a value that is not closed", () => {
     expect(() => spliceJsonMember('{ "a": {', "a", "{}")).toThrow(
-      /閉じていません/
+      /is not closed/
     );
   });
 });
 
 describe("renderJsonValue", () => {
-  it("指定インデントの中に収まるよう各行を字下げする", () => {
+  it("indents every line to sit inside the given indent", () => {
     expect(renderJsonValue({ a: 1 }, 1)).toBe('{\n    "a": 1\n  }');
   });
 
-  it("インデント0なら JSON.stringify と同じ", () => {
+  it("matches JSON.stringify at indent 0", () => {
     expect(renderJsonValue({ a: 1 }, 0)).toBe(
       JSON.stringify({ a: 1 }, null, 2)
     );

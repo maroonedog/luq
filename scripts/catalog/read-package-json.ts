@@ -9,7 +9,7 @@ export function readPackageJsonText(repositoryRoot: string): string {
 function parsePackageJson(repositoryRoot: string): Record<string, unknown> {
   const parsed: unknown = JSON.parse(readPackageJsonText(repositoryRoot));
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new Error("package.json がオブジェクトではありません。");
+    throw new Error("package.json is not an object.");
   }
   return parsed as Record<string, unknown>;
 }
@@ -17,12 +17,12 @@ function parsePackageJson(repositoryRoot: string): Record<string, unknown> {
 export function readPackageName(repositoryRoot: string): string {
   const name = parsePackageJson(repositoryRoot)["name"];
   if (typeof name !== "string" || name.length === 0) {
-    throw new Error("package.json に name がありません。");
+    throw new Error("package.json has no name.");
   }
   return name;
 }
 
-/** 現在 package.json が公開している exports。未定義なら空マップ。 */
+/** What package.json currently publishes. An empty map when undefined. */
 export function readPublishedExportMap(
   repositoryRoot: string
 ): PackageExportMap {
@@ -33,7 +33,7 @@ export function readPublishedExportMap(
     exportsMember === null ||
     Array.isArray(exportsMember)
   ) {
-    throw new Error("package.json#/exports がオブジェクトではありません。");
+    throw new Error("package.json#/exports is not an object.");
   }
   const published: Record<string, PackageExportMap[string]> = {};
   for (const [key, value] of Object.entries(exportsMember)) {
@@ -45,7 +45,7 @@ export function readPublishedExportMap(
 function toExportTarget(key: string, value: unknown): PackageExportMap[string] {
   if (typeof value === "string") return value;
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`package.json#/exports/${key} の形が不正です。`);
+    throw new Error(`package.json#/exports/${key} has an invalid shape.`);
   }
   const conditions = value as Record<string, unknown>;
   const types = conditions["types"];
@@ -57,7 +57,7 @@ function toExportTarget(key: string, value: unknown): PackageExportMap[string] {
     typeof requireTarget !== "string"
   ) {
     throw new Error(
-      `package.json#/exports/${key} に types/import/require が揃っていません。`
+      `package.json#/exports/${key} is missing types, import or require.`
     );
   }
   return { types, import: importTarget, require: requireTarget };

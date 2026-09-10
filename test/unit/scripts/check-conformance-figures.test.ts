@@ -1,9 +1,9 @@
-// 適合率の表記検査そのものを検査する。
+// Checks the conformance-figure check itself.
 //
-// この検査は「古い数字は自己整合している」という性質のために存在する
-// (828 / 929 は本当に 89.13% である)。したがってここで確かめるべきは
-// 「整合しているか」ではなく「今の値と一致しているか」であり、
-// 逆に別コーパスの割合を巻き込まないことである。
+// That check exists because a stale figure is self-consistent: the old
+// numerator really does give the old percentage. So what matters here is not
+// whether a figure is consistent but whether it equals the CURRENT one — and,
+// on the other side, that a percentage over a different corpus is left alone.
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -37,7 +37,7 @@ function withFile(contents: string, run: (relative: string) => void): void {
 
 describe("toPercent", () => {
   it("rounds to two places, which is how every published figure is written", () => {
-    // 手で書いていた頃 855/929 は 92.04% と書かれていた。実際は 92.0344…%。
+    // Written by hand, this pass rate was once rounded up by a hundredth.
     expect(toPercent(855, 929)).toBe("92.03");
     expect(toPercent(551, 929)).toBe("59.31");
   });
@@ -45,7 +45,7 @@ describe("toPercent", () => {
 
 describe("findFigureViolations", () => {
   it("accepts the figure the pin records", () => {
-    withFile("合格は **855 / 929 = 92.03%** である。", (relative) => {
+    withFile("It passes **855 / 929 = 92.03%**.", (relative) => {
       expect(findFigureViolations(REPOSITORY_ROOT, [relative], PIN)).toEqual(
         []
       );
@@ -53,7 +53,7 @@ describe("findFigureViolations", () => {
   });
 
   it("rejects a stale figure even though it is arithmetically correct", () => {
-    withFile("合格は **828 / 929 = 89.13%** である。", (relative) => {
+    withFile("It passes **828 / 929 = 89.13%**.", (relative) => {
       const violations = findFigureViolations(REPOSITORY_ROOT, [relative], PIN);
       expect(violations).toHaveLength(1);
       expect(violations[0]?.detail).toContain("855 / 929");
@@ -61,7 +61,7 @@ describe("findFigureViolations", () => {
   });
 
   it("rejects a stale breakdown written as `N (P%)`", () => {
-    withFile("| 新実装 | 508 (92.19%) |", (relative) => {
+    withFile("| this release | 508 (92.19%) |", (relative) => {
       expect(
         findFigureViolations(REPOSITORY_ROOT, [relative], PIN)
       ).toHaveLength(1);
@@ -69,8 +69,9 @@ describe("findFigureViolations", () => {
   });
 
   it("ignores a percentage that belongs to another corpus", () => {
-    // 前口 2つの比較表は 289 を分母に取る。929 の話ではないので触らない。
-    withFile("| 合格 / 289 | 155 (53.63%) | 229 (79.24%) |", (relative) => {
+    // A comparison table over a different corpus takes 289 as its
+    // denominator. That is not this pass rate, so it is left alone.
+    withFile("| passing / 289 | 155 (53.63%) | 229 (79.24%) |", (relative) => {
       expect(findFigureViolations(REPOSITORY_ROOT, [relative], PIN)).toEqual(
         []
       );
@@ -79,7 +80,7 @@ describe("findFigureViolations", () => {
 
   it("keeps the recorded 1.x figures, which are history and do not move", () => {
     withFile(
-      "| 旧実装 | 536 (57.70%) | 512 (92.92%) | 24 (6.35%) |",
+      "| previous release | 536 (57.70%) | 512 (92.92%) | 24 (6.35%) |",
       (relative) => {
         expect(findFigureViolations(REPOSITORY_ROOT, [relative], PIN)).toEqual(
           []

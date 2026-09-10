@@ -9,7 +9,7 @@ import type {
 
 const FENCE = /^```([A-Za-z0-9]*)\s*$/;
 const CLOSING_FENCE = /^```\s*$/;
-/** `<!-- luq-example: skip — 断片なので単体ではコンパイルできない -->` */
+/** `<!-- luq-example: skip — a fragment, not compilable on its own -->` */
 const DIRECTIVE = /^<!--\s*luq-example:\s*([A-Za-z-]+)\s*(.*?)\s*-->\s*$/;
 
 const CHECKED_LANGUAGES = new Set(["ts", "tsx", "typescript"]);
@@ -20,7 +20,7 @@ export interface DocExampleScan {
   readonly violations: readonly DocExampleViolation[];
 }
 
-/** 走査対象の .md を集める。ファイル直指定 (README.md) もディレクトリも受ける。 */
+/** Collects the .md files to scan. Accepts a file or a directory. */
 export function collectMarkdownFiles(absolutePath: string): string[] {
   if (!fs.existsSync(absolutePath)) return [];
   if (!fs.statSync(absolutePath).isDirectory()) {
@@ -46,9 +46,11 @@ interface PendingDirective {
 }
 
 /**
- * 1つの Markdown からコード例を取り出す。
- * ts/tsx/typescript のフェンスだけを対象にし、直前の行にディレクティブが
- * あればその期待値を採る。理由の無いディレクティブは違反として返す。
+ * Extracts the code examples from one Markdown file.
+ *
+ * Only ts/tsx/typescript fences are taken, with the expectation coming from a
+ * directive on the line above when there is one. A directive with no reason
+ * comes back as a violation.
  */
 export function readDocExamples(
   repositoryRoot: string,
@@ -93,7 +95,7 @@ export function readDocExamples(
           file,
           startLine: lineNumber,
           kind: "unknownDirective",
-          detail: `未知のディレクティブ "${directive[1] ?? ""}"。使えるのは ${[
+          detail: `unknown directive "${directive[1] ?? ""}"; use ${[
             ...KNOWN_EXPECTATIONS,
           ].join(" / ")}`,
         });
@@ -105,7 +107,7 @@ export function readDocExamples(
           file,
           startLine: lineNumber,
           kind: "directiveWithoutReason",
-          detail: `luq-example: ${expectation} には理由を書くこと`,
+          detail: `luq-example: ${expectation} needs a reason`,
         });
         return;
       }
@@ -126,7 +128,7 @@ export function readDocExamples(
   return { examples, violations };
 }
 
-/** 走査根 (README.md や docs/guide) をまとめて読む。 */
+/** Reads a whole scan root at once. */
 export function readAllDocExamples(
   repositoryRoot: string,
   docRoots: readonly string[]

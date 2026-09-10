@@ -3,7 +3,7 @@ node_modules/
 
 # Build outputs
 dist/
-# test/dist/ はビルド成果物ではなく、成果物を検査するテストのソース。
+# test/dist/ is not build output: it is the source of the tests that inspect the output.
 !test/dist/
 dist-test/
 build/

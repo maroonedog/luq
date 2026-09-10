@@ -1,19 +1,19 @@
 // ===========================================================================
-// bench/competitors/ajv-subjects.ts — 同じ規則を JSON Schema で書き、ajv に
-// コンパイルさせたもの。
+// bench/competitors/ajv-subjects.ts — the same rules written as JSON Schema
+// and compiled by ajv.
 //
-// ajv はここでの主役の一つである。スキーマを JavaScript にコンパイルするので
-// 速く、その差は桁で出る。それは実装の優劣ではなく方式の違いなので、数字だけを
-// 並べても読者は何も判断できない。
+// ajv compiles a schema into JavaScript, which makes it fast by an order of
+// magnitude. That is a difference of method, not of implementation quality, so
+// the numbers alone tell a reader nothing.
 //
-// 一度ここに「だから CSP が厳しい環境では動かない」と書いた。**それは誤り**
-// である。ajv/dist/standalone で事前にコンパイルすれば、生成物に動的コードは
-// 含まれない (実際に生成して確認した)。ビルド時にスキーマが確定しているなら
-// ajv は CSP 下でも問題なく動く。
+// "Which is why it does not work under a strict CSP" was once written here.
+// **That is wrong.** Compiled ahead of time through ajv's standalone build,
+// the output contains no dynamic code — generated and checked, not assumed. If
+// the schema is fixed at build time, ajv is fine under CSP.
 //
-// 差が出るのはスキーマが実行時に届く場合だけである — サーバから来る、DB に
-// 入っている、利用者が書く。そのとき事前コンパイルは原理的にできない。
-// 主張を絞ったほうが強い、という例でもある。
+// The difference appears only when the schema arrives at run time: from a
+// server, from a database, written by the user. Compiling ahead of time is
+// then impossible in principle. A narrower claim is the stronger one.
 // ===========================================================================
 import ajvConstructor from "ajv";
 import addFormats from "ajv-formats";
@@ -22,11 +22,11 @@ import { readInstalledVersion } from "./read-installed-version";
 
 const version = readInstalledVersion("ajv");
 
-// JSON Schema の pattern は文字列なので、正規表現のバックスラッシュは
-// **文字列としての** エスケープを一段通る。ここを一段落として書くと
-// "^SKU-d+$" になり、リテラルの "d" を要求するスキーマになる。最初に
-// それをやって、ajv だけが array の受理値を4件とも弾いた — 仕様差では
-// なくこちらの誤りだった。String.raw ならその段が無い。
+// A JSON Schema pattern is a string, so a backslash in the regular expression
+// goes through **string** escaping first. Written one level short, "^SKU-\\d+$"
+// becomes "^SKU-d+$", a schema demanding a literal "d". Done exactly that once,
+// and ajv alone rejected all four accepted array values — our mistake, not a
+// difference between the libraries. String.raw removes that level.
 const SKU_PATTERN = String.raw`^SKU-\d+$`;
 
 const ajv = new ajvConstructor({ allErrors: false, strict: false });

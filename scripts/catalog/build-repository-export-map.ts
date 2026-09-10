@@ -3,7 +3,7 @@ import { buildPackageExportMap } from "./package-export-map";
 import type { PackageExportMap } from "./plugin-catalog.types";
 import { readSubpathAliases } from "./read-subpath-aliases";
 
-/** そのリポジトリの現在の状態から公開 export マップを1つだけ作る。 */
+/** Builds exactly one published export map from the repository's current state. */
 export function buildRepositoryExportMap(
   repositoryRoot: string
 ): PackageExportMap {

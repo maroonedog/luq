@@ -1,10 +1,10 @@
-// circular-a.luq - 循環依存テスト A
+// circular-a.luq - circular dependency test A
 
 import { ServiceB } from "./circular-b.luq";
 
-/// ServiceA - 循環依存のテスト用サービス
-/// これはDart形式のドキュメントコメントです
-/// 複数行のコメントもサポートしています
+/// ServiceA - a service for testing circular dependencies
+/// This is a Dart-style documentation comment
+/// Multi-line comments are supported too
 export interface ServiceA {
     @
     id: string;
@@ -14,10 +14,10 @@ export interface ServiceA {
 }
 
 
-/// ServiceAを処理する関数
-/// ServiceBと連携して動作します
+/// A function that processes a ServiceA
+/// It works together with ServiceB
 export function processA(): void {
-    /// ServiceBを使用する処理
+    /// The part that uses ServiceB
     
 }
 

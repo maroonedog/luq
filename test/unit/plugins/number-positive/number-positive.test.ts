@@ -10,12 +10,12 @@ const positive = Builder()
   .build();
 
 describe("numberPositive", () => {
-  it("正の数を通す", () => {
+  it("accepts a positive number", () => {
     expect(positive.validate({ value: 1 }).valid).toBe(true);
     expect(positive.validate({ value: 0.0001 }).valid).toBe(true);
   });
 
-  it("0 を弾く (厳密に正)", () => {
+  it("rejects 0, being strictly positive", () => {
     const validationResult = positive.validate({ value: 0 });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues).toEqual([
@@ -28,11 +28,11 @@ describe("numberPositive", () => {
     ]);
   });
 
-  it("-0 も弾く", () => {
+  it("rejects -0 too", () => {
     expect(positive.validate({ value: -0 }).valid).toBe(false);
   });
 
-  it("負の数を弾く", () => {
+  it("rejects a negative number", () => {
     expect(positive.validate({ value: -1 }).valid).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 // ===========================================================================
-// bench/competitors/valibot-subjects.ts — valibot で書いた同じ規則。
+// bench/competitors/valibot-subjects.ts — the same rules, written in valibot.
 // ===========================================================================
 import * as v from "valibot";
 import type { Competitor, CompetitorSubject } from "./competitor.types";

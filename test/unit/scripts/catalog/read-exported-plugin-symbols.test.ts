@@ -1,13 +1,13 @@
 import { readExportedPluginSymbols } from "../../../../scripts/catalog/read-exported-plugin-symbols";
 
 describe("readExportedPluginSymbols", () => {
-  it("export const の Plugin シンボルを拾う", () => {
+  it("collects a Plugin symbol from an export const", () => {
     expect(
       readExportedPluginSymbols("export const stringMinPlugin = {};\n")
     ).toEqual(["stringMinPlugin"]);
   });
 
-  it("再 export の Plugin シンボルを拾う", () => {
+  it("collects a Plugin symbol from a re-export", () => {
     expect(
       readExportedPluginSymbols(
         'export { readOnlyPlugin, writeOnlyPlugin } from "./read-only";\n'
@@ -15,7 +15,7 @@ describe("readExportedPluginSymbols", () => {
     ).toEqual(["readOnlyPlugin", "writeOnlyPlugin"]);
   });
 
-  it("Plugin で終わらない export は拾わない", () => {
+  it("collects no export whose name does not end in Plugin", () => {
     const source = [
       "export const RECURSIVE_SELF = 1;",
       "export type PluginOptions = { a: 1 };",
@@ -28,17 +28,17 @@ describe("readExportedPluginSymbols", () => {
     ]);
   });
 
-  it("export の付いていない宣言は拾わない", () => {
+  it("collects no declaration that is not exported", () => {
     expect(readExportedPluginSymbols("const hiddenPlugin = {};\n")).toEqual([]);
   });
 
-  it("export * from は名前を与えないので何も拾わない", () => {
+  it("collects nothing from export * from, which names nothing", () => {
     expect(
       readExportedPluginSymbols('export * from "./string-min";\n')
     ).toEqual([]);
   });
 
-  it("結果は決定的に並ぶ", () => {
+  it("orders the result deterministically", () => {
     const source = [
       "export const zzzPlugin = {};",
       "export const aaaPlugin = {};",

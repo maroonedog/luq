@@ -38,7 +38,7 @@ validator — do not rebuild per request.
 
 An object with four members. It is **not** callable.
 
-<!-- luq-example: must-fail 1.x の README はここを関数として呼んでいた。呼べないことが仕様である -->
+<!-- luq-example: must-fail the previous major's README called this as a function; that it cannot be is the specification -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -238,6 +238,51 @@ export const filled = settingsValidator.parse({});
 1.x's `.v("language", b => b.string.optional(), "en")` shorthand — is gone; pass
 `{ default: "en" }`.
 
+## `normalize`
+
+The other member of that third argument. A form hands over a string in a number
+field and spaces around a name; `normalize` tidies the value **before** anything
+judges it, so `validate()` and `parse()` never disagree about what they looked
+at, and only `parse()` writes the tidied value back.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+
+type Signup = { name: string; age: number };
+
+const signupValidator = Builder()
+  .use(requiredPlugin)
+  .use(numberMinPlugin)
+  .for<Signup>()
+  .v("name", (b) => b.string.required(), {
+    normalize: (value) => (typeof value === "string" ? value.trim() : value),
+  })
+  // A number input still hands over a string.
+  .v("age", (b) => b.number.required().min(18), {
+    normalize: (value) => (value === "" ? value : Number(value)),
+  })
+  .build();
+
+export const parsed = signupValidator.parse({ name: "  Ada  ", age: "31" });
+```
+
+It takes and returns `unknown` on purpose: the value has not been validated yet,
+and `"42"` → `42` is the point, so typing it `(value: T) => T` would be a lie.
+
+**It is never called with `undefined` or `null`.** So `(v) => String(v).trim()`
+cannot turn a missing field into the string `"undefined"` and sneak it past
+`required`. Absence is `default`'s job; `normalize` only ever sees a value that
+is there, which is why a normalizer needs no null check of its own.
+
+The order is what makes the common case work: `"  "` → trim → `""` → presence
+reads an empty string as missing → `required` fires.
+
+Running in that position also means the tidied value is what a consumer of the
+[Standard Schema](standard-schema.md) face receives, which is what lets a form
+library get a coerced payload without a per-field rule of its own.
+
 ## `strict()`
 
 `strict()` has no runtime effect. It is a compile-time assertion that every leaf
@@ -259,7 +304,7 @@ export const pairValidator = Builder()
   .build();
 ```
 
-<!-- luq-example: must-fail 宣言漏れがあると strict() の戻り値に build() が無い -->
+<!-- luq-example: must-fail with a field left undeclared, strict() returns something with no build() -->
 ```ts
 import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";

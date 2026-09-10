@@ -1,8 +1,10 @@
 ---
 import LuqLogo from './LuqLogo.astro';
 import CodeBlock from './CodeBlock.astro';
+import { bundleSize } from '../data/bundle-size';
 import { conformance } from '../data/conformance';
 import { packageInfo } from '../data/package-info';
+import { pluginSubpathCount } from '../data/plugins';
 
 /**
  * Landing hero.
@@ -14,12 +16,14 @@ import { packageInfo } from '../data/package-info';
  */
 const measured = [
   {
-    value: '7,590 B',
+    // Read, never hand-written. This figure was once typed here and went
+    // stale while the rest of the page already read the generated data.
+    value: bundleSize.coreOnly.gzip,
     label: 'Builder alone, gzipped',
     source: 'config/size-budget.json',
   },
   {
-    value: '77',
+    value: String(pluginSubpathCount),
     label: 'plugins, one import each',
     source: 'config/plugin-catalog.lock.json',
   },
@@ -37,10 +41,10 @@ const measured = [
 
 const install = packageInfo.install;
 
-// 1.x では通ってしまい、2.0 ではコンパイルエラーになるもの。
-// 「制約が機械で強制される」という主張を、具体例で見せるための表。
-// 出典はすべて test/type/ の否定 (@ts-expect-error) で、typecheck が通ること
-// 自体がこれらが今も落ちることの証明になっている。
+// Things the previous major accepted and this one refuses to compile: the
+// claim that constraints are machine-enforced, shown case by case.
+// Each one comes from a negative type test, so the type check passing is
+// itself the proof that these still fail.
 const refused = [
   {
     mistake: 'A slot unrelated to the field’s type',

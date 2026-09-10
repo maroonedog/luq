@@ -95,6 +95,9 @@ function compilePlan(
     hasDefaults: relatives.some(
       (declaration) => declaration.defaultOf !== null
     ),
+    hasNormalizers: relatives.some(
+      (declaration) => declaration.normalize !== null
+    ),
   });
   return compiled;
 }
@@ -133,6 +136,7 @@ function parseRelativeDeclaration(
     defaultOf: declaration.defaultOf ?? null,
     applyDefaultToNull:
       declaration.applyDefaultToNull ?? APPLIES_DEFAULT_TO_NULL_BY_DEFAULT,
+    normalize: declaration.normalize ?? null,
   };
 }
 
@@ -153,6 +157,7 @@ function collectBranchDeclarations(
       fieldPath: branch.label,
       defaultOf: null,
       applyDefaultToNull: APPLIES_DEFAULT_TO_NULL_BY_DEFAULT,
+      normalize: null,
     });
   }
   for (const field of branch.fields) {
@@ -162,6 +167,7 @@ function collectBranchDeclarations(
       fieldPath: field.path,
       defaultOf: null,
       applyDefaultToNull: APPLIES_DEFAULT_TO_NULL_BY_DEFAULT,
+      normalize: null,
     });
   }
   return declarations;

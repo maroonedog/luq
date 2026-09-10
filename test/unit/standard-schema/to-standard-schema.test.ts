@@ -28,22 +28,22 @@ function buildAccountSchema() {
 }
 
 describe("toStandardSchema", () => {
-  it("仕様の props をすべて持つ", () => {
+  it("carries every prop the spec asks for", () => {
     const schema = buildAccountSchema();
     expect(schema["~standard"].version).toBe(1);
     expect(schema["~standard"].vendor).toBe("luq");
     expect(typeof schema["~standard"].validate).toBe("function");
   });
 
-  it("元の Validator のメンバーが残る", () => {
-    // 片方のためにもう片方を諦めなくてよい、という約束。
+  it("keeps the original validator's members", () => {
+    // The promise that neither face has to be given up for the other.
     const schema = buildAccountSchema();
     for (const member of ["validate", "parse", "pick", "pickAll"] as const) {
       expect(typeof schema[member]).toBe("function");
     }
   });
 
-  it("有効な値は { value } を返す", () => {
+  it("answers { value } for a valid value", () => {
     const outcome = buildAccountSchema()["~standard"].validate({
       name: "John",
       age: 25,
@@ -51,8 +51,9 @@ describe("toStandardSchema", () => {
     expect(outcome).toEqual({ value: { name: "John", age: 25 } });
   });
 
-  it("成功時に issues を持たない", () => {
-    // 仕様の SuccessResult は issues?: undefined。消費側は issues の有無で分岐する。
+  it("carries no issues on success", () => {
+    // The spec's success result has issues?: undefined, and consumers branch
+    // on whether issues is there.
     const outcome = buildAccountSchema()["~standard"].validate({
       name: "John",
       age: 25,
@@ -60,7 +61,7 @@ describe("toStandardSchema", () => {
     expect("issues" in outcome && outcome.issues !== undefined).toBe(false);
   });
 
-  it("無効な値は issues を返し value を持たない", () => {
+  it("answers issues and no value for an invalid one", () => {
     const outcome = buildAccountSchema()["~standard"].validate({
       name: "Jo",
       age: 25,
@@ -71,45 +72,45 @@ describe("toStandardSchema", () => {
     }
   });
 
-  it("path が配列に開かれる", () => {
+  it("opens the path into a list", () => {
     const outcome = buildAccountSchema()["~standard"].validate({
       name: "Jo",
       age: 25,
     });
     if (!("issues" in outcome) || outcome.issues === undefined) {
-      throw new Error("issues が返っていない");
+      throw new Error("no issues came back");
     }
     expect(outcome.issues[0]?.path).toEqual(["name"]);
   });
 
-  it("message が入る", () => {
+  it("carries a message", () => {
     const outcome = buildAccountSchema()["~standard"].validate({
       name: "Jo",
       age: 25,
     });
     if (!("issues" in outcome) || outcome.issues === undefined) {
-      throw new Error("issues が返っていない");
+      throw new Error("no issues came back");
     }
     expect(typeof outcome.issues[0]?.message).toBe("string");
     expect(outcome.issues[0]?.message.length).toBeGreaterThan(0);
   });
 
-  it("全フィールドの違反を返す（abortEarly を効かせない）", () => {
-    // Luq の既定は最初のフィールドで打ち切るが、この入口はフォームが消費するので
-    // 全件返す。1件ずつ出すと「直したら次が出る」UX になる。
+  it("returns every field's violation, leaving abortEarly off", () => {
+    // The library default stops at the first field, but a form consumes this
+    // entry point, and one issue at a time means "fix it, get the next".
     const outcome = buildAccountSchema()["~standard"].validate({
       name: "Jo",
       age: 3,
     });
     if (!("issues" in outcome) || outcome.issues === undefined) {
-      throw new Error("issues が返っていない");
+      throw new Error("no issues came back");
     }
     const paths = outcome.issues.map((issue) => JSON.stringify(issue.path));
     expect(paths).toContain(JSON.stringify(["name"]));
     expect(paths).toContain(JSON.stringify(["age"]));
   });
 
-  it("配列要素の path が実インデックスの number になる", () => {
+  it("gives an array element's path the real index, as a number", () => {
     const schema = toStandardSchema(
       Builder()
         .use(requiredPlugin)
@@ -122,7 +123,7 @@ describe("toStandardSchema", () => {
       items: [{ sku: "PROD-1" }, { sku: "X" }],
     });
     if (!("issues" in outcome) || outcome.issues === undefined) {
-      throw new Error("issues が返っていない");
+      throw new Error("no issues came back");
     }
     expect(outcome.issues.map((issue) => issue.path)).toContainEqual([
       "items",
@@ -131,8 +132,8 @@ describe("toStandardSchema", () => {
     ]);
   });
 
-  it("value は transform 適用後の値（validate ではなく parse を呼んでいる）", () => {
-    // ここが validate() 呼び出しに戻ると、transform が無かったことになる。
+  it("returns the value after transforms, meaning it calls parse", () => {
+    // Back on validate(), transforms silently stop happening.
     const schema = toStandardSchema(
       Builder()
         .use(requiredPlugin)
@@ -147,7 +148,7 @@ describe("toStandardSchema", () => {
     expect(outcome).toEqual({ value: { name: "John" } });
   });
 
-  it("入力オブジェクトを変更しない", () => {
+  it("does not modify the input object", () => {
     const input = { name: "  John  " };
     const snapshot = JSON.stringify(input);
     const schema = toStandardSchema(
@@ -164,7 +165,7 @@ describe("toStandardSchema", () => {
     expect(JSON.stringify(input)).toBe(snapshot);
   });
 
-  it("types は実行時に存在しない（型を運ぶだけのメンバー）", () => {
+  it("has no types at run time, it being a type-carrying member only", () => {
     const schema = buildAccountSchema();
     expect(schema["~standard"].types).toBeUndefined();
   });

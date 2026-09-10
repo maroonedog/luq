@@ -35,23 +35,21 @@ import {
 export function checkNoDynamicCode(repositoryRoot: string): number {
   const distRoot = resolveDistRoot(repositoryRoot);
   if (!fs.existsSync(distRoot)) {
-    console.error(
-      `${distRoot} がありません。先に npm run build を実行してください。`
-    );
+    console.error(`${distRoot} is missing. Run npm run build first.`);
     return 1;
   }
   const report = findDynamicCode(distRoot);
   if (report.scannedFileCount === 0) {
-    console.error(`${distRoot} に走査対象の .js/.mjs が1つもありません。`);
+    console.error(`${distRoot} holds no .js or .mjs to scan.`);
     return 1;
   }
   if (report.findings.length === 0) {
     console.error(
-      `動的コード検査: ${report.scannedFileCount} ファイルに違反なし`
+      `Dynamic code: no violations in ${report.scannedFileCount} files`
     );
     return 0;
   }
-  console.error(`動的コード検査 違反 ${report.findings.length} 件:`);
+  console.error(`Dynamic code: ${report.findings.length} violations:`);
   for (const finding of report.findings) {
     console.error(
       `  ${finding.file}:${finding.line} [${finding.rule}] ${finding.text}`

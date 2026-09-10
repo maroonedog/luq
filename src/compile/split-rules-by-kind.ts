@@ -42,26 +42,22 @@ export class UnknownRuleKindError extends Error {
 }
 
 /**
- * 空の束は一つを共有する。
+ * Every empty bucket is the same object.
  *
- * 七つの種のうち、どのフィールドもたいてい二つか三つしか使わない。残りは
- * 空配列だが、フィールドごとに新しく Object.freeze([]) を作っていたので、
- * 空であること自体は同じなのにマップの同一性だけが全部違っていた。実行時の
- * `field.gates.length` や `field.transforms` の読み出しは、フィールドを
- * またぐたびに別の受け手を見ることになる。
- *
- * この置き換えは src/compile/resolve-conditional-presence.ts の
- * NO_PRESENCE_OVERRIDES と src/runtime/output-writer.ts の NO_WRITE_TARGETS が
- * 既にやっていることを、残りの種にも広げただけである。
+ * A field typically uses two or three of the kinds and leaves the rest empty.
+ * Freezing a fresh [] per field per kind made every one of those empties a
+ * distinct object, so reading the same empty list across fields kept landing
+ * on a different receiver.
  */
 const NO_RULES_OF_THIS_KIND: readonly never[] = Object.freeze([]);
 
 /**
- * 空なら共有の一つを返す。中身があるならその配列を凍結して返す。
+ * Returns the shared empty for an empty bucket, and the frozen array
+ * otherwise.
  *
- * `readonly never[]` はどの `readonly R[]` にも代入できるので、共有する
- * ためにアサーションを書く必要はない。型アサーションを書いてよいのは
- * src/core/type-erasure.ts だけである。
+ * `readonly never[]` is assignable to every `readonly R[]`, so sharing needs
+ * no type assertion — which matters, because this is not a file allowed to
+ * write one.
  */
 function freezeRules<R>(rules: readonly R[]): readonly R[] {
   return rules.length === 0 ? NO_RULES_OF_THIS_KIND : Object.freeze(rules);

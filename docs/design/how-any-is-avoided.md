@@ -1,7 +1,8 @@
-# any を使わずに型を通す方法
+# How the types are made to work without `any`
 
-旧実装が any に逃げた地点と、新設計での解決。
-旧実装の失敗の診断は [../legacy-spec/anti-patterns.md](../legacy-spec/anti-patterns.md)。
+Where the previous implementation reached for `any`, and how this design
+resolves each of those points. The diagnosis of the previous implementation is
+in [../legacy-spec/anti-patterns.md](../legacy-spec/anti-patterns.md).
 
 Verified by compiling, not asserted. `grep -nE "as any|: any|any\[\]|@ts-ignore|\bFunction\b"` over the whole confirmed type set returns nothing, and the set compiles under `--strict --noUncheckedIndexedAccess --noImplicitOverride --noFallthroughCasesInSwitch --noUnusedLocals` with exit 0.
 

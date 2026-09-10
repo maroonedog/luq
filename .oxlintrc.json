@@ -21,8 +21,8 @@
     "typescript/no-unsafe-function-type": "error",
     "typescript/no-wrapper-object-types": "error",
 
-    // Draft-07 の if/then/else の then はキーワードであって Promise ではない。
-    // unicorn のこのルールは前者を後者と取り違えるので外す。
+    // In Draft-07 if/then/else, then is a keyword, not a Promise.
+    // This unicorn rule mistakes the former for the latter, so it is turned off.
     "unicorn/no-thenable": "off"
   },
   "overrides": [

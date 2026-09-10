@@ -428,41 +428,11 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <CodeBlock code={vExample} language="typescript" />
 
-          <div class="not-prose my-8 overflow-x-auto">
-            <table class="w-full min-w-[40rem] text-left">
-              <thead>
-                <tr class="border-b border-outline">
-                  <th class="md-title-small py-2 pr-4">Form</th>
-                  <th class="md-title-small py-2">Means</th>
-                </tr>
-              </thead>
-              <tbody class="md-body-medium text-on-surface-variant">
-                <tr class="border-b border-outline-variant">
-                  <td class="py-2 pr-4"><code>'name'</code></td>
-                  <td class="py-2">A top-level field.</td>
-                </tr>
-                <tr class="border-b border-outline-variant">
-                  <td class="py-2 pr-4"><code>'customer.name'</code></td>
-                  <td class="py-2">A nested field. Dots go into plain objects only.</td>
-                </tr>
-                <tr class="border-b border-outline-variant">
-                  <td class="py-2 pr-4"><code>'tags[*]'</code></td>
-                  <td class="py-2">Every element of a primitive array.</td>
-                </tr>
-                <tr class="border-b border-outline-variant">
-                  <td class="py-2 pr-4"><code>'items[*].productId'</code></td>
-                  <td class="py-2">
-                    One field of every element. The reported path carries the real index —
-                    <code>items[1].productId</code>.
-                  </td>
-                </tr>
-                <tr>
-                  <td class="py-2 pr-4"><code>'data[*][*]'</code></td>
-                  <td class="py-2">Every element of a nested array.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <p>
+            Dots for nested fields, <code>[*]</code> for array elements. Every form, with
+            what each one means:
+            <a href="/docs/core-concepts#field-paths">the path grammar</a>.
+          </p>
 
           <div
             class="not-prose my-8 rounded-shape-md bg-error-container p-6 text-on-error-container"

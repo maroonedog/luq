@@ -15,6 +15,11 @@
 // The rule list is held in a WeakMap rather than on the node, so the node
 // carries exactly the members its type declares and reading the rules back
 // needs no assertion and no runtime shape check.
+//
+// A node does NOT carry what was called with what. This file builds no record
+// of the call; it only notifies whoever asked to be told, and with nobody
+// asking that is one null check per chain step. See
+// declaration-recorder.port.ts.
 // ===========================================================================
 import { isPlainObject, isString } from "../types";
 import type {
@@ -31,8 +36,9 @@ import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import type { PluginBag } from "./plugin-bag.types";
 import { REFINE_METHOD_SLOTS } from "./refine-methods.types";
 import { attachSlotMethods } from "./attach-slot-methods";
+import { declarationRecorder } from "./declaration-recorder.port";
+import { readChainNode, rememberChainNode } from "./chain-node-store";
 
-const chainRulesByNode = new WeakMap<object, readonly Rule[]>();
 const EMPTY_RECORD: Readonly<Record<string, unknown>> = Object.freeze({});
 
 export const EMPTY_RULES: readonly Rule[] = Object.freeze([]);
@@ -109,6 +115,7 @@ function nullIsAValue(severity: IssueSeverity): Rule {
 
 function createSlotMethod(
   wiring: ChainNodeWiring,
+  parent: object,
   slot: TypeName,
   rules: readonly Rule[],
   plugin: AnyPlugin
@@ -125,7 +132,9 @@ function createSlotMethod(
       plugin.judgesNull === true
         ? [nullIsAValue(wiring.context.config.defaultSeverity), rule]
         : [rule];
-    return createChainNode(wiring, slot, [...rules, ...added]);
+    const child = createChainNode(wiring, slot, [...rules, ...added]);
+    declarationRecorder?.record(parent, child, plugin, slot, resolved);
+    return child;
   };
 }
 
@@ -135,7 +144,11 @@ function attachRefineMethods(
   rules: readonly Rule[]
 ): void {
   for (const [methodName, slot] of Object.entries(REFINE_METHOD_SLOTS)) {
-    target[methodName] = (): unknown => createChainNode(wiring, slot, rules);
+    target[methodName] = (): unknown => {
+      const child = createChainNode(wiring, slot, rules);
+      declarationRecorder?.inherit(target, child);
+      return child;
+    };
   }
 }
 
@@ -148,9 +161,9 @@ export function createChainNode(
   const node: Record<string, unknown> = {};
   attachRefineMethods(node, wiring, rules);
   attachSlotMethods(node, wiring.bag, slot, (plugin) =>
-    createSlotMethod(wiring, slot, rules, plugin)
+    createSlotMethod(wiring, node, slot, rules, plugin)
   );
-  chainRulesByNode.set(node, rules);
+  rememberChainNode(node, rules);
   return Object.freeze(node);
 }
 
@@ -158,6 +171,5 @@ export function createChainNode(
 export function readChainRules(
   candidate: unknown
 ): readonly Rule[] | undefined {
-  if (typeof candidate !== "object" || candidate === null) return undefined;
-  return chainRulesByNode.get(candidate);
+  return readChainNode(candidate);
 }

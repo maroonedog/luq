@@ -6,18 +6,18 @@ import { PLUGIN_BARREL_OUTPUT } from "../catalog/plugin-source-roots";
 import type { PluginSelection } from "./size-budget.types";
 
 /**
- * 大きさを測るための合成入口を組み立てる。
+ * Builds the synthetic entry module that gets measured.
  *
- * 入口は「名前を挙げたシンボルだけを再 export するモジュール」にする。
- * こうすると esbuild が残すのは挙げた名前から到達できるコードだけになり、
- * 測っているものが「この import を書いた利用者が払う量」と一致する。
- * アプリを書いて測る方式より、何を測ったかが読んで分かる。
+ * The entry re-exports exactly the named symbols and nothing else, so what
+ * survives bundling is only the code reachable from those names — which makes
+ * the measurement equal to what a user who wrote those imports would pay.
+ * Writing an app and measuring that says far less about what was measured.
  */
 const CORE_ENTRY_MODULE = "./src/index";
 
 const BARREL_MODULE = `./${PLUGIN_BARREL_OUTPUT.replace(/\.ts$/, "")}`;
 
-/** プラグインを1つも使わない利用者が払う床。Builder から到達できるもの。 */
+/** The floor paid by a user with no plugins: whatever Builder reaches. */
 export function createCoreEntrySource(): string {
   return `export { Builder } from "${CORE_ENTRY_MODULE}";\n`;
 }
@@ -33,15 +33,15 @@ export function selectCatalogEntries(
     );
     if (found === undefined) {
       throw new Error(
-        `プラグイン "${subpathName}" はカタログにありません。` +
-          `config/size-budget.json の綴りを確認してください。`
+        `the plugin "${subpathName}" is not in the catalog; ` +
+          `check the spelling in config/size-budget.json`
       );
     }
     return found;
   });
 }
 
-/** 深いサブパス (@maroonedog/luq/plugins/<name>) から個別に import した形。 */
+/** Imported individually from the deep subpaths. */
 export function createSubpathEntrySource(
   catalog: PluginCatalog,
   selection: PluginSelection
@@ -54,7 +54,7 @@ export function createSubpathEntrySource(
   return [createCoreEntrySource(), ...lines, ""].join("\n");
 }
 
-/** バレル (@maroonedog/luq/plugins) から名前指定で import した形。 */
+/** Imported by name from the barrel. */
 export function createBarrelEntrySource(
   catalog: PluginCatalog,
   selection: PluginSelection

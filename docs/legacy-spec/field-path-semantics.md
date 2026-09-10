@@ -188,90 +188,90 @@ Differences are surface only:
 
 **Verdict for the new implementation:** neither file is "the correct one." Keep the `createAccessor` / `createFieldSetter` semantics (identical in both, and correct modulo the missing prototype guard and the falsy auto-vivification bug). **Discard `createNestedValueAccessor` entirely** — its implicit array traversal is the root of the divergence and cannot be made coherent. Adopt `nested-array-processor.ts`'s `parseArrayElementPath` (P2) as the single source of truth for `[*]` grammar, since it is the only parser that handles multi-dimensional and interleaved arrays. Delete the other three parsers and the seven duplicate accessor/setter copies. The wish encoded in the optimized test (uniform marker, recursive descent into nested arrays) is the more coherent *design*, but it should be expressed by **explicit `[*]`**, not by implicit dotted traversal.
 
-## 引き継ぐ契約 (15件)
+## Contracts to preserve (15)
 
 ### must-preserve (9)
 
 #### Dot-notation field path
-- 出典: `src/core/plugin/utils/field-accessor.ts:17-68 (createAccessor), src/constants.ts:7 (DOT)`
-- 形: "a.b.c" — segments split on the single character "."; no escape syntax
-- 意味: Walks own/inherited properties left to right. Missing key, null, or undefined at any point yields undefined without throwing. Never throws on a malformed path.
+- Source: `src/core/plugin/utils/field-accessor.ts:17-68 (createAccessor), src/constants.ts:7 (DOT)`
+- Shape: "a.b.c" — segments split on the single character "."; no escape syntax
+- Meaning: Walks own/inherited properties left to right. Missing key, null, or undefined at any point yields undefined without throwing. Never throws on a malformed path.
 
 #### [*] array-element wildcard
-- 出典: `src/core/builder/nested-array-processor.ts:21-103 (parseArrayElementPath)`
-- 形: "items[*]", "items[*].name", "matrix[*][*]", "orders[*].items[*].productId", "departments[*].teams[*]"
-- 意味: [*] means 'apply this field rule to every element'. A trailing [*] with no following field validates the element itself; [*].field validates that property of each element; consecutive [*][*] descends into sub-arrays. Arbitrary interleaving of object and array levels is supported.
+- Source: `src/core/builder/nested-array-processor.ts:21-103 (parseArrayElementPath)`
+- Shape: "items[*]", "items[*].name", "matrix[*][*]", "orders[*].items[*].productId", "departments[*].teams[*]"
+- Meaning: [*] means 'apply this field rule to every element'. A trailing [*] with no following field validates the element itself; [*].field validates that property of each element; consecutive [*][*] descends into sub-arrays. Arbitrary interleaving of object and array levels is supported.
 
 #### Error path uses numeric indices
-- 出典: `src/core/builder/nested-array-processor.ts:410-412, 550; src/core/builder/validator-factory.ts:2008, 2631`
-- 形: error.path: "items[0].name", "matrix[0][2]", "" for root; error.paths: () => string[]
-- 意味: A declaration path containing [*] emits errors with the wildcard replaced by the concrete index. The round-trip is formalized by matchesFieldPattern: patternPath.replace(/\[\*\]/g, "\\[\\d+\\]"). Declaration paths never contain [n]; error paths never contain [*].
+- Source: `src/core/builder/nested-array-processor.ts:410-412, 550; src/core/builder/validator-factory.ts:2008, 2631`
+- Shape: error.path: "items[0].name", "matrix[0][2]", "" for root; error.paths: () => string[]
+- Meaning: A declaration path containing [*] emits errors with the wildcard replaced by the concrete index. The round-trip is formalized by matchesFieldPattern: patternPath.replace(/\[\*\]/g, "\\[\\d+\\]"). Declaration paths never contain [n]; error paths never contain [*].
 
 #### NestedKeyOf<T>
-- 出典: `src/types/util.ts:44-67; exported from src/types/index.ts:74`
-- 形: type NestedKeyOf<T> = <union of all valid path strings for T>
-- 意味: Constrains the first argument of .v(), .field(), .useField(), .pick(). Generates K, `K.sub…` for plain objects (Function/Array/Date excluded), and K | `K[*]` | `K[*].sub…` for arrays, plus `K[*][*]` forms for 2D arrays. Array method names (length, map, …) are excluded. Recursion depth 5; at most 3 array dimensions. Removing or narrowing this breaks every typed .v() call.
+- Source: `src/types/util.ts:44-67; exported from src/types/index.ts:74`
+- Shape: type NestedKeyOf<T> = <union of all valid path strings for T>
+- Meaning: Constrains the first argument of .v(), .field(), .useField(), .pick(). Generates K, `K.sub…` for plain objects (Function/Array/Date excluded), and K | `K[*]` | `K[*].sub…` for arrays, plus `K[*][*]` forms for 2D arrays. Array method names (length, map, …) are excluded. Recursion depth 5; at most 3 array dimensions. Removing or narrowing this breaks every typed .v() call.
 
 #### TypeOfPath<T, Path>
-- 出典: `src/types/util.ts:69-131; exported from src/types/index.ts:74`
-- 形: type TypeOfPath<T, Path extends string> = <the value type at Path>
-- 意味: Resolves a path string to its value type; drives the b.string/b.number/... builder typing and pick()'s return type. Branch order: K[*][*][*], K[*][*], K[*], K.*, then the same with .Rest, then K.Rest, then keyof T.
+- Source: `src/types/util.ts:69-131; exported from src/types/index.ts:74`
+- Shape: type TypeOfPath<T, Path extends string> = <the value type at Path>
+- Meaning: Resolves a path string to its value type; drives the b.string/b.number/... builder typing and pick()'s return type. Branch order: K[*][*][*], K[*][*], K[*], K.*, then the same with .Rest, then K.Rest, then keyof T.
 
 #### Missing/null intermediate resolves to undefined, never throws
-- 出典: `src/core/plugin/utils/field-accessor.ts:24-57`
-- 形: accessor(obj) => value | undefined
-- 意味: Validation of a deep path against a shallow object is not an exception — it is an undefined value which the field's own validators then judge. This is what makes .v("a.b.c", b => b.string.optional()) safe on {}.
+- Source: `src/core/plugin/utils/field-accessor.ts:24-57`
+- Shape: accessor(obj) => value | undefined
+- Meaning: Validation of a deep path against a shallow object is not an exception — it is an undefined value which the field's own validators then judge. This is what makes .v("a.b.c", b => b.string.optional()) safe on {}.
 
 #### fromJsonSchema path derivation
-- 出典: `src/core/plugin/jsonSchema/dsl-converter.ts:121, 138`
-- 形: nested property -> `${parentPath}.${name}`; array items -> `${parentPath}[*]`
-- 意味: A Draft-07 schema is flattened to the same path grammar the builder uses, so runtime-loaded schemas and hand-written .v() calls share one path language.
+- Source: `src/core/plugin/jsonSchema/dsl-converter.ts:121, 138`
+- Shape: nested property -> `${parentPath}.${name}`; array items -> `${parentPath}[*]`
+- Meaning: A Draft-07 schema is flattened to the same path grammar the builder uses, so runtime-loaded schemas and hand-written .v() calls share one path language.
 
 #### Field path reaches plugins verbatim as context.path
-- 出典: `src/core/builder/context/field-context.ts:384-393 (extractCheckFunction), :354`
-- 形: result(value, { path: fieldPath, allValues: currentValue })
-- 意味: The exact string the user wrote in .v() is handed to plugin implementations unmodified — never normalized, split, or rewritten. Field-reference plugins (compareField, stitch) rely on this.
+- Source: `src/core/builder/context/field-context.ts:384-393 (extractCheckFunction), :354`
+- Shape: result(value, { path: fieldPath, allValues: currentValue })
+- Meaning: The exact string the user wrote in .v() is handed to plugin implementations unmodified — never normalized, split, or rewritten. Field-reference plugins (compareField, stitch) rely on this.
 
 #### Empty array => element rules do not fire
-- 出典: `src/core/builder/nested-array-processor.ts:395-400 (loop never entered); src/core/builder/validator-factory.ts:1996-1999 (explicit early return)`
-- 形: items: [] with a declared "items[*].name" rule => zero errors from that rule
-- 意味: Element-level rules are vacuous over an empty array. Cardinality is expressed separately (arrayMinLength on "items"), not by the element rule.
+- Source: `src/core/builder/nested-array-processor.ts:395-400 (loop never entered); src/core/builder/validator-factory.ts:1996-1999 (explicit early return)`
+- Shape: items: [] with a declared "items[*].name" rule => zero errors from that rule
+- Meaning: Element-level rules are vacuous over an empty array. Cardinality is expressed separately (arrayMinLength on "items"), not by the element rule.
 
 ### should-preserve (4)
 
 #### Non-array value at an [*] path is silently skipped
-- 出典: `src/core/builder/nested-array-processor.ts:391-393; src/core/builder/validator-factory.ts:1953-1957`
-- 形: {items: "oops"} with "items[*].name" => no error from the element rule
-- 意味: Element rules do not assert that the container is an array; that must be asserted by a separate rule on "items". This means a type error on the container produces zero errors unless the container itself was declared.
+- Source: `src/core/builder/nested-array-processor.ts:391-393; src/core/builder/validator-factory.ts:1953-1957`
+- Shape: {items: "oops"} with "items[*].name" => no error from the element rule
+- Meaning: Element rules do not assert that the container is an array; that must be asserted by a separate rule on "items". This means a type error on the container produces zero errors unless the container itself was declared.
 
 #### Existence = resolved value !== undefined
-- 出典: `src/core/plugin/utils/field-accessor.ts:150-155; src/core/builder/validator-factory.ts:1269-1295`
-- 形: createFieldExistenceChecker(path)(obj) => boolean
-- 意味: Drives the implicit REQUIRED error ({code:"REQUIRED", message:"Field '<path>' is required"}) for declared, non-optional fields with no explicit required plugin. null counts as present; an own key explicitly set to undefined counts as absent.
+- Source: `src/core/plugin/utils/field-accessor.ts:150-155; src/core/builder/validator-factory.ts:1269-1295`
+- Shape: createFieldExistenceChecker(path)(obj) => boolean
+- Meaning: Drives the implicit REQUIRED error ({code:"REQUIRED", message:"Field '<path>' is required"}) for declared, non-optional fields with no explicit required plugin. null counts as present; an own key explicitly set to undefined counts as absent.
 
 #### Parse-mode writeback auto-vivifies missing intermediates
-- 出典: `src/core/plugin/utils/field-accessor.ts:164-203`
-- 形: createFieldSetter(path)(obj, value)
-- 意味: Writing a transformed value to a nested path creates missing intermediate objects so transforms on deep paths work on partially-populated inputs.
+- Source: `src/core/plugin/utils/field-accessor.ts:164-203`
+- Shape: createFieldSetter(path)(obj, value)
+- Meaning: Writing a transformed value to a nested path creates missing intermediate objects so transforms on deep paths work on partially-populated inputs.
 
 #### abortEarlyOnEachField is disabled inside array elements
-- 出典: `src/core/builder/nested-array-processor.ts:388`
-- 形: const effectiveAbortEarlyOnEachField = false
-- 意味: All declared field rules run on every array element even when abortEarlyOnEachField is set at the top level; only the top-level abortEarly stops iteration across elements.
+- Source: `src/core/builder/nested-array-processor.ts:388`
+- Shape: const effectiveAbortEarlyOnEachField = false
+- Meaning: All declared field rules run on every array element even when abortEarlyOnEachField is set at the top level; only the top-level abortEarly stops iteration across elements.
 
 ### optional (2)
 
 #### Numeric segment in a dot path
-- 出典: `src/core/plugin/utils/field-accessor.ts:32-35; test/unit/core/plugin/utils/field-accessor-optimized.test.ts:117-121`
-- 形: createAccessor(["users","0","name"])
-- 意味: Resolves users[0].name in the simple accessor family. Not reachable through the typed .v() surface (NestedKeyOf never emits it) and broken in the array-aware family.
+- Source: `src/core/plugin/utils/field-accessor.ts:32-35; test/unit/core/plugin/utils/field-accessor-optimized.test.ts:117-121`
+- Shape: createAccessor(["users","0","name"])
+- Meaning: Resolves users[0].name in the simple accessor family. Not reachable through the typed .v() surface (NestedKeyOf never emits it) and broken in the array-aware family.
 
 #### ".*." legacy wildcard syntax
-- 出典: `src/core/builder/nested-array-processor.ts:92-99; src/core/builder/validator-factory.ts:1936-1941; src/types/util.ts:88-95, 111-117`
-- 形: "items.*.name"
-- 意味: Runtime-recognized as an alias for items[*].name, and present in TypeOfPath, but never generated by NestedKeyOf, so it cannot be typed through .v(). Effectively unreachable.
+- Source: `src/core/builder/nested-array-processor.ts:92-99; src/core/builder/validator-factory.ts:1936-1941; src/types/util.ts:88-95, 111-117`
+- Shape: "items.*.name"
+- Meaning: Runtime-recognized as an alias for items[*].name, and present in TypeOfPath, but never generated by NestedKeyOf, so it cannot be typed through .v(). Effectively unreachable.
 
-## 振る舞い規則
+## Behavioural rules
 
 - One path grammar, one parser, one resolver. The new codebase must contain exactly ONE function that turns a path string into segments and exactly ONE that resolves segments against a value. Today there are four parsers (field-accessor.parseFieldPath, nested-array-processor.parseArrayElementPath, the inline regexes in validator-factory.validateArrayElementPath, field-utils.parseFieldPath) and four accessor/setter copies (field-accessor, field-accessor-optimized, field-utils, validator-factory.createGlobalSetter) that disagree.
 - Parse paths once, at .build() time, into a typed segment list — never re-parse or re-split during validation. Model segments as a discriminated union, e.g. { kind: "key"; name: string } | { kind: "eachElement" }. String-sniffing (path.includes("[*]"), path.match(/\[\*\]/)) must not appear at validation time.
@@ -288,7 +288,7 @@ Differences are surface only:
 - No caching of accessors keyed by string at module scope. Accessors are compiled once into the validator that owns them; module-level Maps were already removed here for leak reasons and must not come back.
 - Segment splitting must be defined for keys containing a dot. Either define an escape, or reject such keys at build time with a clear error — the current silent-unreachable behavior is unacceptable now that fromJsonSchema feeds arbitrary property names in.
 
-## 引き継がないもの
+## Not carried forward
 
 - **The entire `createNestedValueAccessor` function and its `{ __isArrayElementField, values, arrayPath }` marker object (both copies).** — It returns three different shapes depending on segment count: raw property for 1 segment, the raw ARRAY for 2 segments (ignoring the second key entirely), and a sentinel marker for 3+. It maps only the first array it meets and yields undefined for every array below that ("teams.members.name" -> [undefined, undefined]). It cannot parse [*] at all. It is the single largest source of the confusion in this area, and its 1-segment branch `(obj) => obj[fieldPath]` throws on a null object.
 - **Implicit array traversal through dotted paths — both the runtime behavior above and its type-level twin `Path extends \`${K}.${Rest}\` ? T[K] extends Array<infer U> ? TypeOfPath<U, Rest>` in src/types/util.ts:118-121.** — It makes "users.name" mean something different from "users" with no marker in the syntax, and it collides with numeric-index segments ("items.0.name" hits the array branch and never reaches index 0). [*] already expresses this explicitly and unambiguously.
@@ -305,7 +305,7 @@ Differences are surface only:
 - **The ad-hoc 'skip this field if any ancestor prefix is an empty array' rule at validator-factory.ts:1224-1245.** — An undocumented special case, applied only to paths containing no `[` and no `*`, that silently suppresses validation of a dotted field. If empty-array suppression is desired it must be part of the resolution rule, not a guard bolted onto one loop.
 - **`ArrayElementPaths<U, Prefix, D>` in src/types/util.ts:33-41.** — Its object-mapped type emits `${Prefix}.${P}` for array-valued properties only and `never` for everything else, duplicating paths that the main NestedKeyOfWithDepth branch already emits and contributing to the union blowup that forced the depth-5 budget.
 
-## 公開シンボル (13)
+## Published symbols (13)
 
 `NestedKeyOf`, `TypeOfPath`, `ElementType`, `InferType`, `.v(path, builderFn)`, `.field(path, builderFn)`, `.useField(path)`, `.pick(path)`, `[*]`, `error.path`, `error.paths()`, `"REQUIRED"`, `fromJsonSchema`
 

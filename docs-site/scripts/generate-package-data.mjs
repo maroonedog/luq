@@ -1,16 +1,15 @@
 // ===========================================================================
 // docs-site/scripts/generate-package-data.mjs
 //
-// src/data/package-info.ts を、リポジトリの package.json から生成する。
+// Generates the package data the site reads, from the repository package.json.
 //
-// なぜ生成するのか。バージョン表記はページに直接書かれていて、そして実際に
-// 古くなった: 2.0.0 を公開したあとも、トップ・フッター・getting-started の
-// 3箇所が別々に手で書かれており、次に上げるときは3箇所を思い出さなければ
-// ならない。外部レビューが「v0.1.0-alpha のまま」と指摘したのも、元をたどれば
-// 同じ種類の写しである。
+// Why generate it. The version was typed into several pages independently, and
+// it went stale after a release — with the next release, all of them would
+// have to be remembered again. An outside review once reported the site still
+// advertising a long-superseded alpha, which was the same copying.
 //
-// 出所は package.json ただ一つ。npm に出るのはその値なので、そこが唯一の
-// 正しい出所である。
+// One source. What package.json says is what npm serves, which makes it the
+// only correct one.
 // ===========================================================================
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -29,7 +28,7 @@ function run() {
   const manifest = JSON.parse(readFileSync(PACKAGE_FILE, "utf8"));
   const { name, version } = manifest;
   if (typeof name !== "string" || typeof version !== "string") {
-    throw new Error("package.json: name か version が読めない");
+    throw new Error("package.json: name or version is unreadable");
   }
 
   const body = [

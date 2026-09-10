@@ -1,11 +1,12 @@
-// custom は任意述語。旧実装の可変クロージャと二重実行をどちらも持ち込まない。
+// custom takes an arbitrary predicate. Neither the mutable closure nor the
+// double execution a previous release had is carried over.
 import { Builder } from "../../../../src/index";
 import { customPlugin } from "../../../../src/plugins/custom";
 
 type Item = { sku: string; qty: number };
 
 describe("custom", () => {
-  it("true を返せば通し、false なら既定メッセージで弾く", () => {
+  it("passes on true and rejects on false with the default message", () => {
     const validator = Builder()
       .use(customPlugin)
       .for<Item>()
@@ -23,7 +24,7 @@ describe("custom", () => {
     });
   });
 
-  it("{ valid, message } を返せばその message が使われる", () => {
+  it("uses the message from a { valid, message } answer", () => {
     const validator = Builder()
       .use(customPlugin)
       .for<Item>()
@@ -31,19 +32,19 @@ describe("custom", () => {
         b.string.custom((value) =>
           value.startsWith("SKU-")
             ? true
-            : { valid: false, message: `${value} は SKU- で始まらない` }
+            : { valid: false, message: `${value} does not start with SKU-` }
         )
       )
       .build();
     const result = validator.validate({ sku: "X", qty: 1 });
     expect(result.valid).toBe(false);
     if (result.valid) return;
-    expect(result.issues[0]?.message).toBe("X は SKU- で始まらない");
+    expect(result.issues[0]?.message).toBe("X does not start with SKU-");
   });
 
-  // 旧実装は message を可変クロージャ変数 dynamicMessage に書き戻していたため、
-  // 同じ validator を2回使うと前回の message が残った。
-  it("同じ validator を続けて使っても前回の message が残らない", () => {
+  // A previous release wrote the message back into a mutable closure
+  // variable, so using one validator twice kept the first message.
+  it("keeps no message from a previous use of the same validator", () => {
     const validator = Builder()
       .use(customPlugin)
       .for<Item>()
@@ -62,8 +63,9 @@ describe("custom", () => {
     expect(second.issues[0]?.message).toBe("bad:b");
   });
 
-  // 旧実装は判定に1回、メッセージ生成にもう1回、述語を呼んでいた。
-  it("述語は1つの値につき1回だけ呼ばれる", () => {
+  // A previous release called the predicate twice: once to judge and once to
+  // build the message.
+  it("calls the predicate once per value", () => {
     let calls = 0;
     const validator = Builder()
       .use(customPlugin)
@@ -79,7 +81,7 @@ describe("custom", () => {
     expect(calls).toBe(1);
   });
 
-  it("述語が例外を投げたら失敗として扱い、検証は落ちない", () => {
+  it("treats a thrown predicate as a failure without crashing the validation", () => {
     const validator = Builder()
       .use(customPlugin)
       .for<Item>()
@@ -95,7 +97,7 @@ describe("custom", () => {
     expect(result.issues[0]?.message).toBe("boom");
   });
 
-  it("options.code と options.messageFactory を尊重する", () => {
+  it("honours options.code and options.messageFactory", () => {
     const validator = Builder()
       .use(customPlugin)
       .for<Item>()

@@ -17,11 +17,11 @@ const exclusive = Builder()
   .build();
 
 describe("numberMax", () => {
-  it("境界は既定で包含する (100 <= 100)", () => {
+  it("includes the boundary by default", () => {
     expect(inclusive.validate({ value: 100 }).valid).toBe(true);
   });
 
-  it("境界を上回る値を弾く", () => {
+  it("rejects a value above the boundary", () => {
     const validationResult = inclusive.validate({ value: 100.5 });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues).toEqual([
@@ -34,7 +34,7 @@ describe("numberMax", () => {
     ]);
   });
 
-  it("exclusive を渡すと境界そのものを弾き、文言も変わる", () => {
+  it("rejects the boundary itself under exclusive, wording included", () => {
     const validationResult = exclusive.validate({ value: 100 });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues[0]?.message).toBe(
@@ -43,7 +43,7 @@ describe("numberMax", () => {
     expect(exclusive.validate({ value: 99.9 }).valid).toBe(true);
   });
 
-  it("messageFactory は max / actual / exclusive を受け取る", () => {
+  it("hands messageFactory the maximum, the actual value and the exclusive flag", () => {
     const custom = Builder()
       .use(numberMaxPlugin)
       .for<Score>()
@@ -59,7 +59,7 @@ describe("numberMax", () => {
     expect(custom.validate({ value: 9 }).issues[0]?.message).toBe("5/9/false");
   });
 
-  it("NaN の上限は build 時に PluginArgumentError で落ちる", () => {
+  it("fails a NaN maximum at build time, with PluginArgumentError", () => {
     expect(() =>
       Builder()
         .use(numberMaxPlugin)

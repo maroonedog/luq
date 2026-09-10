@@ -1,7 +1,7 @@
 /**
- * ドキュメント中のコード例1つ分。`file` はリポジトリ相対の posix パス、
- * `startLine` は開きフェンスの行番号 (1 始まり) なので、違反はエディタから
- * そのまま開ける。
+ * One code example in the documentation. `file` is a posix path relative to
+ * the repository root and `startLine` is the opening fence's line, 1-based,
+ * so a violation opens straight from an editor.
  */
 export interface DocExample {
   readonly file: string;
@@ -11,19 +11,20 @@ export interface DocExample {
   readonly reason: string;
   readonly code: string;
   /**
-   * `code` の先頭に足された前置きの行数。docs-site の抜粋は、ページ上では
-   * 直前のブロックが宣言した validator を使うだけの短い形で見せたまま、
-   * 型検査には前置きを付けた完全な形を渡す（read-astro-examples.ts の
-   * `with` ディレクティブ）。診断の行番号をドキュメント上の行に戻すために
-   * この分を引く。Markdown のコード例では常に 0。
+   * How many prelude lines were prepended to `code`. A site excerpt stays a
+   * short form on the page — using the validator the block above declared —
+   * while the type check receives the complete form with a prelude. This is
+   * subtracted to map a diagnostic's line back to the line in the document.
+   * Always 0 for a Markdown example.
    */
   readonly preludeLineCount?: number;
 }
 
 /**
- * 既定は `compiles`。`must-fail` は「1.x の書き方はもうコンパイルできない」を
- * 主張する移行ガイド用で、通ってしまったらそれ自体が違反になる。
- * `skip` は断片 (import を伴わない鎖の一部など) 専用で、理由を必ず書かせる。
+ * `compiles` by default. `must-fail` is for the migration guide's claim that
+ * the old way no longer compiles: if it does compile, that is the violation.
+ * `skip` is for fragments only — part of a chain with no imports, say — and
+ * always requires a reason.
  */
 export type DocExampleExpectation = "compiles" | "must-fail" | "skip";
 

@@ -84,11 +84,11 @@ export function isCorpusPresent(pin: SuitePin): boolean {
 }
 
 /**
- * サブモジュールは本体の .gitattributes の外にあるので、チェックアウトされる
- * 改行コードはプラットフォーム依存になる (Windows の core.autocrlf=true なら
- * CRLF、Linux CI なら LF)。生バイトを数えると同じコミットでも digest が変わり、
- * pin 検査が「コーパスが動いた」と誤検出する。実際に PR #14 の CI がこれで落ちた。
- * 内容の変化だけを見るために、ハッシュを取る前に改行を正規化する。
+ * The submodule sits outside this repository's .gitattributes, so what gets
+ * checked out is platform-dependent: CRLF on Windows, LF on a Linux runner.
+ * Hashing the raw bytes therefore changes the digest for one commit, and the
+ * pin check reports "the corpus moved" when nothing did. Line endings are
+ * normalised before hashing so that only a change in content shows.
  */
 function normalizeLineEndings(text: string): string {
   return text.split("\r\n").join("\n");

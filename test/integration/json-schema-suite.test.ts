@@ -39,7 +39,7 @@ interface CaseResult {
   readonly group: string;
   readonly test: string;
   readonly passed: boolean;
-  /** スイートがそのケースに期待する答え。有効/無効の内訳を数えるのに使う。 */
+  /** What the suite expects for that case, used to count the valid/invalid split. */
   readonly expected: boolean;
   readonly skip: SuiteSkip | undefined;
   readonly detail: string;
@@ -195,9 +195,10 @@ describeCorpus("JSON-Schema-Test-Suite draft7 conformance", () => {
       expect(passing.length).toBe(pin.passingCases);
     });
 
-    // 適合率は「何を渡しても true を返す検証器」の下限と比べて初めて意味を
-    // 持つ。その比較表を docs と docs-site が載せているので、内訳もピンに
-    // 記録して、片方だけ古くなることを防ぐ。
+    // A pass rate only means something beside the floor a validator that
+    // always answers true reaches. Both the docs and the site publish that
+    // comparison, so the breakdown is recorded in the pin and neither copy can
+    // go stale on its own.
     it("reports the recorded valid/invalid breakdown, exactly", () => {
       expect({
         validCases: results.filter((r) => r.expected).length,

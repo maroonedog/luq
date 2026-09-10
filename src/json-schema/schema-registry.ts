@@ -1,17 +1,18 @@
 // ===========================================================================
-// L8  src/json-schema/schema-registry.ts — どの URI がどのスキーマを指すか。
+// L8  src/json-schema/schema-registry.ts — which URI names which schema.
 //
-// Draft-07 §8.2 では `$id` が二つの働きをする: 場所を示す URI はベースを
-// 立て直し、`#name` の形は**位置に依らない名前**を付ける。どちらも
-// 「この URI はこのノード」という索引で、それがこのファイルの責務である。
-// ポインタ (`#/definitions/x`) を辿るのは場所の話なので resolve-ref.ts が持つ。
+// Draft-07 §8.2 gives `$id` two jobs: a URI that names a location re-bases
+// what follows, and the `#name` form gives a **location-independent name**.
+// Both are the same index — this URI is that node — which is this file's whole
+// responsibility. Walking a pointer is about location, and lives elsewhere.
 //
-// 外部文書は**呼び出し側が渡したものだけ**である。Luq は取りに行かない:
-// 関数ではなく地図 (`externalDocuments`) を受けるのは、そうすれば
-//   * スキーマに書かれた URI でプロセスがソケットを開くことがない (SSRF)、
-//   * 変換が同期のままで、CSP でも動く、
-//   * 何が読まれうるかが呼び出し側のコードに全部書いてある、
-// の三つが同時に成り立つからで、非同期ローダーではどれも失われる。
+// External documents are **only what the caller passed in**; nothing is
+// fetched. Taking a map rather than a loader function is what makes all three
+// of these true at once:
+//   * a URI written in a schema can never make this process open a socket,
+//   * conversion stays synchronous, so it works under CSP,
+//   * everything that could possibly be read is visible in the caller's code.
+// An async loader gives up all three.
 // ===========================================================================
 import { isDraft07Schema, isSchemaObject } from "./draft07.types";
 import type { Draft07Schema, Draft07SchemaObject } from "./draft07.types";

@@ -1,28 +1,27 @@
 // ===========================================================================
 // test/integration/reentrancy.test.ts
 //
-// build() したものは、何度でも、入れ子でも、同じ答えを返さなければならない。
+// A built validator must give the same answer however many times it is used,
+// nested inside itself included.
 //
-// JavaScript は単一スレッドなので validate() が実行の途中で切り替わることは
-// ない。二つの検証が同時に在りうる唯一の道は **再入** である — 規則の中から
-// validator を呼ぶ。そのとき壊れるのはモジュール階層の可変シングルトンで、
-// 1.x はまさにそれをやっていた: docs/legacy-spec/execution-model.md が
-// ultra-fast-validator.ts の可変シングルトンを欠陥として記録しており、
-// custom プラグインは検証器が返したメッセージを可変クロージャ変数に置いて
-// いたので「二つ目の値を検証すると一つ目のメッセージが出る」状態だった。
+// JavaScript is single-threaded, so a validation is never switched away from
+// mid-run. The one way two validations can be alive at once is **re-entry**:
+// calling a validator from inside a rule. What breaks then is mutable state
+// held at module scope — a previous major did exactly that, keeping a message
+// in a mutable closure variable, so validating a second value reported the
+// first value's message.
 //
-// この実装は最近、性能のために状態を **外へ持ち上げて** いる:
-//   * 要素コンテキストは要素ごとではなくノードごとに一つで、item だけを
-//     書き換える (src/runtime/run-array-node.ts)
-//   * IndexStack は可変で、push / pop で現在位置を持ち回る
-//   * 再帰ランナーは、プランが再帰しうるときだけ作られる
-// どれも「呼び出しの中」に閉じているはずである。ここはそれを、断言ではなく
-// 実行で固定する。持ち上げ先を一段まちがえてモジュール階層に置いた瞬間、
-// 下の再入テストが落ちる。
+// This implementation deliberately lifts state OUT of the inner loops for
+// speed: one element context per array node with only the item rewritten, a
+// mutable index stack carrying the current position, a recursion runner built
+// only when the plan can recurse. Every one of those is supposed to stay
+// inside the call. This file pins that by running it rather than asserting it.
+// Lift one of them one level too far — to module scope — and the re-entry
+// tests below fail.
 //
-// 落としたものも記録しておく: RuleContext をノードごとに一つ使い回す案は
-// モジュール階層の可変シングルトンそのもので、計測でも 7.5% 遅かったので
-// 採らなかった。もし将来それを採るなら、このファイルが門になる。
+// Worth recording what was rejected: reusing one rule context per node is
+// exactly that mutable module-scope singleton, and it measured slower anyway.
+// If it is ever revisited, this file is the gate.
 // ===========================================================================
 import { Builder } from "../../src/index";
 import { requiredPlugin } from "../../src/plugins/required";
@@ -91,8 +90,9 @@ describe("a built validator carries nothing between calls", () => {
     }
   });
 
-  // 要素コンテキストはノードごとに一つで item だけ書き換えるので、長さの
-  // 違う配列を続けて流すと、前回の長さが残っていれば index がずれる。
+  // One element context per node with only the item rewritten, so running
+  // arrays of different lengths back to back shifts the indices if the
+  // previous length is still there.
   it("renders the right index when the array length changes between calls", () => {
     const validator = buildOrderValidator();
     const long = order("SKU-1", "SKU-2", "SKU-3", "SKU-4", "bad");
@@ -111,8 +111,9 @@ describe("a built validator carries nothing between calls", () => {
     expect(paths(validator.validate(bad, options).issues)).toEqual(expected);
   });
 
-  // 同じ validator を、options を変えて交互に呼ぶ。中断方針は sink が持って
-  // いて、sink は呼び出しごとに作られる — 持ち上げ先を間違えるとここが落ちる。
+  // The same validator called alternately with different options. The abort
+  // policy belongs to the sink, and a sink is made per call — lift it too far
+  // and this fails.
   it("keeps abortEarly per call, not per validator", () => {
     const validator = buildOrderValidator();
     const bad = order("no", "SKU-1", "also-no");
@@ -133,8 +134,8 @@ describe("a built validator carries nothing between calls", () => {
     expect(held.valid).toBe(false);
     validator.validate(order("SKU-9"));
     validator.validate(order("SKU-1", "SKU-2", "bad"));
-    // 保持していた結果は、あとの実行に触られていない。path も message も
-    // 掴んだ瞬間のままで、あいだに二度走った検証の値が混ざらない。
+    // A held result is untouched by later runs: path and message are as they
+    // were when it was taken, with nothing from the two runs in between.
     expect(paths(held.issues)).toEqual(["lines[0].sku"]);
     expect(held.issues[0]?.message).toBe("Invalid format");
     expect(held.issues).toHaveLength(1);
@@ -142,10 +143,10 @@ describe("a built validator carries nothing between calls", () => {
 });
 
 describe("a validator called from inside its own rule", () => {
-  // 単一スレッドで二つの検証が同時に在りうる唯一の道。外側は配列の要素3を
-  // 処理している最中で、IndexStack には lines[2] が積まれている。その状態で
-  // 内側の検証が走り、自分のスタックを積んで畳む。外側の発行パスがそれに
-  // 影響されるなら、状態が呼び出しの外に漏れている。
+  // The one way two validations are alive at once on a single thread. The
+  // outer one is partway through an array element, with its index on the
+  // stack, when the inner one runs and pushes and pops a stack of its own. If
+  // the outer one's emitted path is affected, state has leaked out of the call.
   interface Node {
     readonly items: readonly { readonly name: string }[];
   }
@@ -165,7 +166,7 @@ describe("a validator called from inside its own rule", () => {
     .for<Node>()
     .v("items[*].name", (field) =>
       field.string.required().custom((value) => {
-        // 検証の途中で、別の検証をまるごと回す。
+        // Runs an entire second validation partway through the first.
         const nested = inner.validate({ depth: 0 });
         seenInside.push(nested.issues[0]?.path ?? "(none)");
         return typeof value === "string" && value.startsWith("ok");
@@ -187,8 +188,8 @@ describe("a validator called from inside its own rule", () => {
 
   it("gives the inner run its own path, unprefixed by the outer position", () => {
     outer.validate({ items: [{ name: "ok-1" }, { name: "ok-2" }] });
-    // 内側は自分のルートから見た path を報告する。外側が lines[1] を開いて
-    // いても items[1].depth にはならない。
+    // The inner one reports a path relative to its own root. The outer one
+    // having an index open does not prefix it.
     expect(seenInside).toEqual(["depth", "depth"]);
   });
 
@@ -199,9 +200,9 @@ describe("a validator called from inside its own rule", () => {
     for (let run = 0; run < 5; run += 1) {
       expect(paths(outer.validate(value).issues)).toEqual(["items[1].name"]);
     }
-    // 既定の abortEarly はプランを止めるので、要素2には届かない。1回の
-    // validate() あたり内側は2回。「毎回きっちり同じ回数」であることが
-    // 見たいもので、前回の状態が残っていれば回数か位置がずれる。
+    // The default abortEarly stops the plan, so the third element is never
+    // reached. What is being watched is that the count is exactly the same
+    // every time: leftover state shifts either the count or the position.
     expect(seenInside).toHaveLength(10);
   });
 
@@ -222,16 +223,16 @@ describe("a validator called from inside its own rule", () => {
 
 // ===========================================================================
 describe("one built validator, many concurrent callers", () => {
-  // サーバ側の使い方。build() したものをモジュール階層に一つ置き、リクエスト
-  // ごとに呼ぶ。同期の validate() はイベントループ上で途中に割り込まれない
-  // ので、同時実行が割り込めるのは ./async の await の位置だけである —
-  // その部分木は「await を一回してから、いつもの同期エンジン」であって
-  // (src/async/index.ts)、エンジンの中で yield することはない。
+  // How a server uses it: one built validator at module scope, called per
+  // request. A synchronous validate() cannot be interrupted on the event loop,
+  // so the only place concurrency can interleave is the await in the async
+  // entry point — and that is one await followed by the ordinary synchronous
+  // engine, which never yields inside itself.
   //
-  // ここはその主張を実行で固定する。解決の速さがばらばらな外部文脈を持つ
-  // 検証を同時に走らせ、**解決の順序が入れ替わっても** それぞれが自分の値の
-  // 答えを受け取ることを見る。エンジンが呼び出しをまたいで状態を持っていれば、
-  // ここで path か valid が混ざる。
+  // This pins that claim by running it: several validations at once, with
+  // external contexts that resolve at different speeds, checking that each
+  // gets the answer for its own value **even when the resolutions land out of
+  // order**. State held across calls would mix a path or a verdict here.
   const validator = buildOrderValidator();
 
   function delayed<T>(value: T, ms: number): Promise<T> {
@@ -270,7 +271,8 @@ describe("one built validator, many concurrent callers", () => {
     });
   });
 
-  // 同じことを、解決順が起動順の逆になるように仕組んで繰り返す。
+  // The same again, arranged so the resolution order is the reverse of the
+  // start order.
   it("holds when the async contexts resolve in reverse order", async () => {
     const bound = addAsyncSupport(validator);
     const values = [

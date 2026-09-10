@@ -1,4 +1,5 @@
-// 実際に検証を走らせて valid / issues を確かめる。型が通っただけでは合格にしない。
+// Runs the validation and checks the verdict and the issues. Type-checking is
+// not a pass.
 import { Builder } from "../../../../src/index";
 import { PluginArgumentError } from "../../../../src/plugin-kit/plugin-definition";
 import { numberMinPlugin } from "../../../../src/plugins/number-min";
@@ -18,11 +19,11 @@ const exclusive = Builder()
   .build();
 
 describe("numberMin", () => {
-  it("境界は既定で包含する (10 >= 10)", () => {
+  it("includes the boundary by default", () => {
     expect(inclusive.validate({ value: 10 }).valid).toBe(true);
   });
 
-  it("境界を下回る値を弾く", () => {
+  it("rejects a value below the boundary", () => {
     const validationResult = inclusive.validate({ value: 9.999 });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues).toEqual([
@@ -35,7 +36,7 @@ describe("numberMin", () => {
     ]);
   });
 
-  it("exclusive を渡すと境界そのものを弾き、文言も変わる", () => {
+  it("rejects the boundary itself under exclusive, wording included", () => {
     const validationResult = exclusive.validate({ value: 10 });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues[0]?.message).toBe(
@@ -44,7 +45,7 @@ describe("numberMin", () => {
     expect(exclusive.validate({ value: 10.0001 }).valid).toBe(true);
   });
 
-  it("code はオプションで上書きできる", () => {
+  it("lets an option override the code", () => {
     const renamed = Builder()
       .use(numberMinPlugin)
       .for<Score>()
@@ -54,7 +55,7 @@ describe("numberMin", () => {
     expect(validationResult.issues[0]?.code).toBe("TOO_SMALL");
   });
 
-  it("messageFactory は min / actual / exclusive を受け取る", () => {
+  it("hands messageFactory the minimum, the actual value and the exclusive flag", () => {
     const custom = Builder()
       .use(numberMinPlugin)
       .for<Score>()
@@ -72,7 +73,7 @@ describe("numberMin", () => {
     );
   });
 
-  it("負の下限も扱える", () => {
+  it("handles a negative minimum", () => {
     const belowZero = Builder()
       .use(numberMinPlugin)
       .for<Score>()
@@ -82,7 +83,7 @@ describe("numberMin", () => {
     expect(belowZero.validate({ value: -6 }).valid).toBe(false);
   });
 
-  it("NaN の下限は build 時に PluginArgumentError で落ちる", () => {
+  it("fails a NaN minimum at build time, with PluginArgumentError", () => {
     expect(() =>
       Builder()
         .use(numberMinPlugin)

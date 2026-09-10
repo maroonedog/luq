@@ -219,10 +219,11 @@ describe("collectDocumentRules", () => {
   });
 
   it("forbids nothing for an empty document", () => {
-    // 「ルールが0本」ではなく「何も禁じない」を見る。空文書でも null 方針の
-    // 1本は必ず載る (それが無いと、presence が null を先に片付けてしまい、
-    // 文書が null について何か言っていても届かない) が、その1本は何も
-    // 禁じない。数えるのではなく、判定を確かめる。
+    // What is checked is that nothing is forbidden, not that there are zero
+    // rules. Even an empty document carries one rule stating the null policy —
+    // without it presence disposes of null first and whatever the document
+    // says about null never arrives — and that one rule forbids nothing. So
+    // the verdict is what gets checked, rather than a count.
     const rules = collectDocumentRules(BUILD_CONTEXT, {}, jsonSchemaBag);
     expect(rules.every((rule) => rule.kind === "presence")).toBe(true);
     for (const value of [null, 0, "", false, [], {}, "x"]) {
@@ -232,18 +233,14 @@ describe("collectDocumentRules", () => {
 });
 
 // ---------------------------------------------------------------------------
-// null は文書が決める。
+// The document decides about null.
 //
-// この describe は逆のことを書いていた: 「null はフィールドが決める。文書
-// だけでは reject できない」。それが本当だった間、スイートのハーネスは
-// `.optional()` を自分で足しており、その注記は「これが `.optional()` 無しで
-// 通るようになったらグルーは消せる」だった。消せるようになったので消した。
+// Two things make that work. The plugin declares `judgesNull`, so null reaches
+// this composite at all, and the document's own rule list carries its own null
+// policy, so null reaches inside the composite too.
 //
-// 効いているのは二段ある。プラグインが `judgesNull` を宣言するので null が
-// この composite まで届き、文書のルール列が自分の null 方針を持つので
-// composite の中でも届く。`type` だけを見るのでは足りない —
-// `false`・`{"not":{}}`・null を含まない `enum` は `type` に何も言わずに
-// null を禁じる。
+// Looking at `type` alone is not enough: `false`, `{"not":{}}` and an `enum`
+// without null in it all forbid null while saying nothing about `type`.
 // ---------------------------------------------------------------------------
 describe("null is decided by the document", () => {
   it("rejects null on its own, with no help from the field", () => {

@@ -18,6 +18,7 @@ function declare(path: string): RelativeDeclaration {
     fieldPath: path,
     defaultOf: null,
     applyDefaultToNull: true,
+    normalize: null,
   };
 }
 

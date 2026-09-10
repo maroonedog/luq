@@ -30,13 +30,13 @@ function countSyntaxErrors(sourceText: string): number {
 }
 
 describe("generatePluginBarrel", () => {
-  it("プラグイン0件でも合法なモジュールを出す", () => {
+  it("emits a valid module for no plugins at all", () => {
     const rendered = renderPluginBarrel({ entries: [] });
     expect(rendered).toContain("export {};");
     expect(countSyntaxErrors(rendered)).toBe(0);
   });
 
-  it("全プラグインを1箇所から再 export する", () => {
+  it("re-exports every plugin from one place", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginBarrel(root);
       const barrel = readBarrel(root);
@@ -51,7 +51,7 @@ describe("generatePluginBarrel", () => {
     });
   });
 
-  it("再 export 先はプラグインのディレクトリだけを指す", () => {
+  it("points every re-export at a plugin directory and nowhere else", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginBarrel(root);
       expect([...readImportSpecifiers(readBarrel(root))].sort()).toEqual([
@@ -64,14 +64,14 @@ describe("generatePluginBarrel", () => {
     });
   });
 
-  it("barrel の export 数と公開サブパス数が一致する (旧実装の 72 対 57 が再発しない)", () => {
+  it("keeps the barrel's export count equal to the published subpath count", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginBarrel(root);
       expect(readImportSpecifiers(readBarrel(root))).toHaveLength(5);
     });
   });
 
-  it("エントリが実際に export していない名前は書かない", () => {
+  it("writes no name an entry does not actually export", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       writeSeedFile(
         root,
@@ -91,7 +91,7 @@ describe("generatePluginBarrel", () => {
     });
   });
 
-  it("内容が同じなら書き直さない", () => {
+  it("does not rewrite when the content is unchanged", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(generatePluginBarrel(root)).toBe(true);
       expect(generatePluginBarrel(root)).toBe(false);

@@ -1,15 +1,15 @@
 // ===========================================================================
 // bench/competitors/read-installed-version.ts
 //
-// 比較相手のバージョンを、**インストールされている実物から** 読む。
+// Reads each competitor's version **from what is actually installed**.
 //
-// `require("zod/package.json")` は動くが valibot では動かない — exports に
-// "./package.json" が無いパッケージがあるためで、そこで分岐を書くと
-// 「読めなかったライブラリだけバージョン不明」という穴になる。ディスクから
-// 読めば全員同じ経路になる。
+// Requiring a package's own package.json works for some and not others: not
+// every package lists "./package.json" in its exports. Branching on that would
+// leave exactly the unreadable ones with an unknown version. Reading from disk
+// puts every library on the same path.
 //
-// package.json の devDependencies を読まないのは、そこに書いてあるのは範囲
-// (`^4.0.14`) であって、実際に測ったものではないからである。
+// The devDependencies are not read, because what is written there is a range
+// and not the version that was measured.
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
@@ -34,7 +34,7 @@ export function readInstalledVersion(packageName: string): string {
       return (parsed as { version: string }).version;
     }
   } catch {
-    // 読めなければ「不明」と書く。黙って空文字を報告に出すよりよい。
+    // Unreadable becomes "unknown", which beats an empty string in a report.
   }
   return "unknown";
 }

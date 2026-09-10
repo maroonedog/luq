@@ -5,7 +5,7 @@
   "dialect": "draft7",
   "corpusDirectory": "tests/draft7",
   "includesOptionalDirectory": false,
-  "note": "THE PIN. test/integration/json-schema-suite.test.ts asserts every number below. Moving the submodule changes contentDigest and therefore fails the build until this file is re-measured, which is what makes a suite bump a reviewed commit. validCases / invalidCases / passingValidCases / passingInvalidCases は「常に true を返すだけの検証器」との比較表の出所で、docs と docs-site の両方がここから読む (片方だけ古くなるのを防ぐため)。skippedCases and passingCases come from test/json-schema/suite-skip-list.ts, so a bump cannot be recorded without re-reading the skip list. contentDigest は改行を LF に正規化してから取る (サブモジュールは本体の .gitattributes の外にあり、チェックアウトされる改行がプラットフォーム依存になるため)。正規化しない値を記録すると Windows で測って Linux CI で落ちる。",
+  "note": "THE PIN. test/integration/json-schema-suite.test.ts asserts every number below. Moving the submodule changes contentDigest and therefore fails the build until this file is re-measured, which is what makes a suite bump a reviewed commit. validCases / invalidCases / passingValidCases / passingInvalidCases are the source for the table comparing against a validator that only ever returns true; both the docs and the site read them from here, so neither can go stale on its own. skippedCases and passingCases come from test/json-schema/suite-skip-list.ts, so a bump cannot be recorded without re-reading the skip list. contentDigest is taken after normalising line endings to LF: the submodule sits outside this repository's .gitattributes, so what gets checked out is platform-dependent. Recorded without normalising, a digest measured on Windows fails on a Linux runner.",
   "fileCount": 37,
   "groupCount": 258,
   "caseCount": 929,

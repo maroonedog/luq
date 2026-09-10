@@ -92,14 +92,15 @@ export interface RecursionPolicy {
 export interface CompiledField {
   readonly template: readonly PathSegment[];
   /**
-   * この フィールド自身のパスを、配列の添字を除いて描画したもの。
+   * This field's own path, rendered without array indices.
    *
-   * コンパイル時に一度だけ作る。実行時に組み直していたのは、テンプレートが
-   * 固定なので **毎回同じ文字列を作る** ことを意味していた: 50要素・3
-   * フィールドの配列なら、1回の validate で 150 回、issue が1件も出なくても
-   * である。実測でそれが要素あたりの費用の 35% を占めていた。
+   * Rendered once, at compile time. The template is fixed, so rebuilding it
+   * per call meant **producing the same string every time** — once per field
+   * per element, whether or not a single issue was reported, and it was a
+   * large share of the per-element cost.
    *
-   * 実行時に残るのは、開いている添字の接頭辞と繋ぐ連結ひとつだけになる。
+   * What remains at validation time is one concatenation with the prefix
+   * holding the open indices.
    */
   readonly renderedPath: string;
   readonly read: (subject: unknown) => unknown;
@@ -114,6 +115,11 @@ export interface CompiledField {
   readonly write: ValueWriter | null;
   readonly defaultOf: ((root: unknown) => unknown) | null;
   readonly applyDefaultToNull: boolean;
+  /**
+   * null unless the field declared one. Runs after the default and BEFORE
+   * presence, on a value that is neither undefined nor null.
+   */
+  readonly normalize: ((value: unknown) => unknown) | null;
   readonly presence: PresencePolicy;
   /**
    * The conditional overrides of `presence`, in declaration order, and the
@@ -155,6 +161,12 @@ export interface ValidationPlan {
   readonly arrays: readonly ArrayNode[];
   readonly hasTransforms: boolean;
   readonly hasDefaults: boolean;
+  /**
+   * A normalizer substitutes a value the same way a default does, so the
+   * writer must exist for it too. Kept as its own flag rather than folded
+   * into hasDefaults, which would make that name say something it does not.
+   */
+  readonly hasNormalizers: boolean;
 }
 
 /**
@@ -172,4 +184,5 @@ export interface FieldDeclaration {
   readonly rules: readonly Rule[];
   readonly defaultOf?: (root: unknown) => unknown;
   readonly applyDefaultToNull?: boolean;
+  readonly normalize?: (value: unknown) => unknown;
 }

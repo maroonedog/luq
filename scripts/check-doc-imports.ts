@@ -29,7 +29,7 @@ function collectMarkdownFiles(absolutePath: string): string[] {
     );
 }
 
-/** "@scope/pkg/plugins/x" -> "./plugins/x"、"@scope/pkg" -> "." */
+/** "@scope/pkg/plugins/x" -> "./plugins/x", and "@scope/pkg" -> "." */
 function toSubpathKey(specifier: string, packageName: string): string | null {
   if (specifier === packageName) return ".";
   if (!specifier.startsWith(`${packageName}/`)) return null;
@@ -37,8 +37,8 @@ function toSubpathKey(specifier: string, packageName: string): string | null {
 }
 
 /**
- * ドキュメントのコード例が、公開されていないサブパスを import していないか。
- * 自パッケージ以外の import は対象外。
+ * Whether any documented example imports a subpath that is not published.
+ * Imports of other packages are out of scope.
  */
 export function findDocImportViolations(
   repositoryRoot: string,
@@ -80,11 +80,11 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const violations = findDocImportViolations(REPOSITORY_ROOT);
     if (violations.length === 0) {
-      console.error("ドキュメント import 検査: 違反なし");
+      console.error("Doc imports: no violations");
       return 0;
     }
     console.error(
-      `未公開サブパスを import しているコード例 ${violations.length} 件:`
+      `${violations.length} examples import an unpublished subpath:`
     );
     for (const violation of violations) {
       console.error(

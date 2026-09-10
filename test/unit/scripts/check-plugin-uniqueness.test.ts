@@ -23,7 +23,7 @@ function identity(
 }
 
 describe("findUniquenessViolations", () => {
-  it("衝突が無ければ違反を出さない", () => {
+  it("reports nothing when there is no collision", () => {
     expect(
       findUniquenessViolations([
         identity("stringMin", "min", ["string"]),
@@ -33,9 +33,9 @@ describe("findUniquenessViolations", () => {
     ).toEqual([]);
   });
 
-  it("同じメソッド名でもスロットが違えば衝突ではない", () => {
-    // .min() は string にも number にもある。これを衝突と呼んだら
-    // カタログは成立しない。
+  it("does not call the same method name on different slots a collision", () => {
+    // .min() exists on both string and number. Calling that a collision
+    // would leave no workable catalog.
     expect(
       findUniquenessViolations([
         identity("stringMin", "min", ["string"]),
@@ -46,8 +46,8 @@ describe("findUniquenessViolations", () => {
     ).toEqual([]);
   });
 
-  it("プラグイン名の重複を捕まえる", () => {
-    // 足場を消し忘れた状態そのもの: 同じ名前が2箇所にある。
+  it("catches a duplicated plugin name", () => {
+    // Exactly the state of scaffolding left behind: one name in two places.
     const violations = findUniquenessViolations([
       identity("stringMin", "min", ["string"]),
       {
@@ -60,7 +60,7 @@ describe("findUniquenessViolations", () => {
     expect(violations[0]?.detail).toContain("src/plugins/check-plugins");
   });
 
-  it("1スロットに同じメソッドを生やす2プラグインを捕まえる", () => {
+  it("catches two plugins growing the same method on one slot", () => {
     const violations = findUniquenessViolations([
       identity("stringMin", "min", ["string"]),
       identity("stringMinimum", "min", ["string"]),
@@ -70,7 +70,7 @@ describe("findUniquenessViolations", () => {
     expect(violations[0]?.detail).toContain("string.min");
   });
 
-  it("複数スロットのうち1つだけ重なっても捕まえる", () => {
+  it("catches an overlap on just one of several slots", () => {
     const violations = findUniquenessViolations([
       identity("arrayMinLength", "minLength", ["array", "tuple"]),
       identity("tupleMinLength", "minLength", ["tuple"]),
@@ -79,8 +79,8 @@ describe("findUniquenessViolations", () => {
     expect(violations[0]?.detail).toContain("tuple.minLength");
   });
 
-  it("stitch が2つあれば落ちる", () => {
-    // 1.x の stitch / stitch-typed / stitchSimple が並存した状態。
+  it("fails when there are two stitches", () => {
+    // The state of three implementations of it coexisting.
     const violations = findUniquenessViolations([
       identity("stitch", "stitch", ["string"]),
       { ...identity("stitch", "stitch", ["string"]), symbol: "stitchTyped" },
@@ -93,10 +93,10 @@ describe("findUniquenessViolations", () => {
   });
 });
 
-describe("readPluginIdentities (実カタログ)", () => {
+describe("readPluginIdentities against the real catalog", () => {
   const identities = readPluginIdentities(REPOSITORY_ROOT);
 
-  it("manifest が読んだシンボル数と同じだけ実物を読める", () => {
+  it("reads as many real plugins as the manifest has symbols", () => {
     const symbolCount = PLUGIN_MANIFEST.reduce(
       (total, entry) => total + entry.exportedSymbols.length,
       0
@@ -104,11 +104,11 @@ describe("readPluginIdentities (実カタログ)", () => {
     expect(identities).toHaveLength(symbolCount);
   });
 
-  it("実カタログに衝突は無い", () => {
+  it("finds no collision in the real catalog", () => {
     expect(findUniquenessViolations(identities)).toEqual([]);
   });
 
-  it("stitch はちょうど1つ", () => {
+  it("finds exactly one stitch", () => {
     expect(identities.filter((one) => one.name === "stitch")).toHaveLength(1);
   });
 });

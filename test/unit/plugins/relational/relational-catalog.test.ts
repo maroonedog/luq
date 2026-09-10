@@ -1,5 +1,5 @@
-// このカテゴリの6プラグインを1つの Builder に載せて、利用者が書くとおりに動かす。
-// 1つでもメソッド名が衝突していれば use() の時点で落ちる。
+// Puts this category's six plugins on one Builder and runs it the way a user
+// writes it. One colliding method name fails at use().
 import { Builder } from "../../../../src/index";
 import { compareFieldPlugin } from "../../../../src/plugins/compare-field/index";
 import { stitchPlugin } from "../../../../src/plugins/stitch/index";
@@ -69,12 +69,12 @@ const validator = Builder()
   )
   .build();
 
-describe("relational カテゴリ: 6プラグインが同時に載る", () => {
-  it("すべて満たす入力は通る", () => {
+describe("the relational category: all six load together", () => {
+  it("accepts input satisfying all of them", () => {
     expect(validator.validate(makeInvoice()).valid).toBe(true);
   });
 
-  it("それぞれの違反がそれぞれの path で出る", () => {
+  it("reports each violation at its own path", () => {
     const result = validator.validate(
       makeInvoice({ confirm: "no", total: 1 }),
       { abortEarly: false }
@@ -87,7 +87,7 @@ describe("relational カテゴリ: 6プラグインが同時に載る", () => {
     ]);
   });
 
-  it("external は同じ1本の経路で全プラグインに届く", () => {
+  it("delivers the external context to every plugin by one route", () => {
     const result = validator.validate(makeInvoice(), {
       abortEarly: false,
       external: {
@@ -98,7 +98,7 @@ describe("relational カテゴリ: 6プラグインが同時に載る", () => {
     });
     expect(result.valid).toBe(false);
     if (result.valid) return;
-    // 読み出しなので writeOnly の token が落ち、readOnly の id は通る。
+    // Being a read, the writeOnly field fails and the readOnly one passes.
     expect(result.issues.map((issue) => issue.path).sort()).toEqual([
       "password",
       "token",
@@ -106,8 +106,8 @@ describe("relational カテゴリ: 6プラグインが同時に載る", () => {
   });
 });
 
-describe("relational カテゴリ: 実行順序は1つだけ", () => {
-  it("validate は変換しない / parse だけが変換する", () => {
+describe("the relational category: there is only one execution order", () => {
+  it("has validate transform nothing and parse transform", () => {
     const input = makeInvoice();
     const validated = validator.validate(input);
     expect(validated.valid).toBe(true);
@@ -120,7 +120,7 @@ describe("relational カテゴリ: 実行順序は1つだけ", () => {
     expect(parsed.data).toEqual(makeInvoice({ note: "hi" }));
   });
 
-  it("検証が落ちた parse は変換結果を返さない", () => {
+  it("returns no transformed result from a parse that failed validation", () => {
     const parsed = validator.parse(makeInvoice({ confirm: "no" }));
     expect(parsed.valid).toBe(false);
   });

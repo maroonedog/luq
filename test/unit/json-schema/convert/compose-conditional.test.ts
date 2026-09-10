@@ -81,7 +81,7 @@ describe("compose-conditional", () => {
       declaredSiblingKeys: [],
       config: DEFAULT_GLOBAL_CONFIG,
     });
-    const composites = (rules ?? []).filter(
+    const composites = (rules?.rules ?? []).filter(
       (rule) => rule.kind === "composite"
     );
     const conditional = composites.find((rule) => rule.code === "if");
@@ -104,7 +104,7 @@ describe("compose-conditional", () => {
       declaredSiblingKeys: [],
       config: DEFAULT_GLOBAL_CONFIG,
     });
-    const conditional = (rules ?? []).find(
+    const conditional = (rules?.rules ?? []).find(
       (rule) => rule.kind === "composite" && rule.code === "if"
     );
     expect(conditional).toBeDefined();

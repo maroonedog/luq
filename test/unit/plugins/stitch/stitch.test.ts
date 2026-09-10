@@ -1,5 +1,5 @@
-// stitch は1つだけ。旧実装の3実装 (stitch / stitch-typed / stitchSimple) が
-// 提供していた呼び出し形を、この1つが実際に受けて動くことを確かめる。
+// There is exactly one stitch. This confirms that the single implementation
+// really accepts and runs every call form the three it replaced offered.
 import { Builder } from "../../../../src/index";
 import { stitchPlugin } from "../../../../src/plugins/stitch/index";
 import type {
@@ -26,7 +26,7 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
   };
 }
 
-/** PickPaths が組み立てる型に、呼び出し側のガードで絞る (alternative 2)。 */
+/** The assembled bundle type, narrowed by a guard on the caller's side. */
 type PriceAndQuantity = StitchFieldsOf<Order, ["price", "quantity"]>;
 
 function isPriceAndQuantity(
@@ -38,14 +38,17 @@ function isPriceAndQuantity(
   );
 }
 
-describe("stitch: 宣言したパスの値が束ねて渡る", () => {
+describe("stitch: the declared paths' values arrive bundled", () => {
   const validator = Builder()
     .use(stitchPlugin)
     .for<Order>()
     .v("total", (b) =>
       b.number.stitch(["price", "quantity"], (values, value) => {
         if (!isPriceAndQuantity(values)) {
-          return { valid: false, message: "price と quantity が数値ではない" };
+          return {
+            valid: false,
+            message: "price and quantity are not numbers",
+          };
         }
         const expected = values.price * values.quantity;
         return {
@@ -56,11 +59,11 @@ describe("stitch: 宣言したパスの値が束ねて渡る", () => {
     )
     .build();
 
-  it("計算が合えば通る", () => {
+  it("passes when the arithmetic works out", () => {
     expect(validator.validate(makeOrder()).valid).toBe(true);
   });
 
-  it("合わなければ落ち、check が返した message がそのまま出る", () => {
+  it("fails when it does not, reporting check's own message verbatim", () => {
     const result = validator.validate(makeOrder({ total: 42 }));
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -69,18 +72,20 @@ describe("stitch: 宣言したパスの値が束ねて渡る", () => {
     expect(result.issues[0]?.message).toBe("Expected 300, got 42");
   });
 
-  it("ガードが弾く形の入力でもエンジンは落ちない", () => {
+  it("does not crash the engine on input the guard rejects", () => {
     const result = validator.validate({
       ...makeOrder(),
       price: "100",
     } as unknown as Order);
     expect(result.valid).toBe(false);
     if (result.valid) return;
-    expect(result.issues[0]?.message).toBe("price と quantity が数値ではない");
+    expect(result.issues[0]?.message).toBe(
+      "price and quantity are not numbers"
+    );
   });
 });
 
-describe("stitch: 型を持たない素の呼び出し形 (旧 stitchSimple 相当)", () => {
+describe("stitch: the plain, untyped call form", () => {
   const validator = Builder()
     .use(stitchPlugin)
     .for<Order>()
@@ -91,11 +96,11 @@ describe("stitch: 型を持たない素の呼び出し形 (旧 stitchSimple 相�
     )
     .build();
 
-  it("ドット記法のパスをキーにして値を受け取る", () => {
+  it("receives the values keyed by their dotted paths", () => {
     expect(validator.validate(makeOrder()).valid).toBe(true);
   });
 
-  it("message を返さなければ既定メッセージが path 付きで出る", () => {
+  it("falls back to the default message, with the path, when none is returned", () => {
     const result = validator.validate(
       makeOrder({ customer: { tier: "free" } })
     );
@@ -107,7 +112,7 @@ describe("stitch: 型を持たない素の呼び出し形 (旧 stitchSimple 相�
   });
 });
 
-describe("stitch: 検証関数は1回しか呼ばれない", () => {
+describe("stitch: the check runs exactly once", () => {
   let calls = 0;
   const validator = Builder()
     .use(stitchPlugin)
@@ -115,29 +120,29 @@ describe("stitch: 検証関数は1回しか呼ばれない", () => {
     .v("total", (b) =>
       b.number.stitch(["price"], () => {
         calls += 1;
-        return { valid: false, message: "だめ" };
+        return { valid: false, message: "no good" };
       })
     )
     .build();
 
-  it("メッセージ生成のために再実行しない (旧実装は2回呼んでいた)", () => {
+  it("does not re-run it to build the message, which a previous release did", () => {
     calls = 0;
     const result = validator.validate(makeOrder());
     expect(result.valid).toBe(false);
     if (result.valid) return;
-    expect(result.issues[0]?.message).toBe("だめ");
+    expect(result.issues[0]?.message).toBe("no good");
     expect(calls).toBe(1);
   });
 });
 
-describe("stitch: messageFactory に fields / fieldValues / message が渡る", () => {
+describe("stitch: messageFactory receives the fields, their values and the message", () => {
   const validator = Builder()
     .use(stitchPlugin)
     .for<Order>()
     .v("total", (b) =>
       b.number.stitch(
         ["price", "quantity"],
-        () => ({ valid: false, message: "内側のメッセージ" }),
+        () => ({ valid: false, message: "the inner message" }),
         {
           code: "TOTAL_MISMATCH",
           messageFactory: (msgCtx) =>
@@ -151,18 +156,18 @@ describe("stitch: messageFactory に fields / fieldValues / message が渡る", 
     )
     .build();
 
-  it("code を上書きし、宣言パスとその値を文脈として受け取る", () => {
+  it("overrides the code and receives the declared paths and values as context", () => {
     const result = validator.validate(makeOrder());
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("TOTAL_MISMATCH");
     expect(result.issues[0]?.message).toBe(
-      "price+quantity=100,3 (内側のメッセージ)"
+      "price+quantity=100,3 (the inner message)"
     );
   });
 });
 
-describe("stitch: ルートは常に渡る", () => {
+describe("stitch: the root is always passed", () => {
   const validator = Builder()
     .use(stitchPlugin)
     .for<Order>()
@@ -177,7 +182,7 @@ describe("stitch: ルートは常に渡る", () => {
     )
     .build();
 
-  it("パスを1つも宣言しなくても root と自値は渡る", () => {
+  it("passes the root and the field's own value even with no path declared", () => {
     expect(validator.validate(makeOrder()).valid).toBe(true);
   });
 });

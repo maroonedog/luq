@@ -4,7 +4,7 @@ import { toRepositoryRelativePosix } from "../catalog/collect-typescript-files";
 import type { DocExampleViolation } from "./doc-example.types";
 import { collectMarkdownFiles } from "./read-doc-examples";
 
-/** `[text](target)` の target 部分。画像の `![...]` も同じ形で拾える。 */
+/** The target of `[text](target)`. An image's `![...]` matches the same way. */
 const LINK = /\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 
 function isExternal(target: string): boolean {
@@ -16,16 +16,18 @@ function isExternal(target: string): boolean {
   );
 }
 
-/** アンカー (#section) とクエリを落として、ファイルとして存在するかだけを見る。 */
+/** Drops the anchor and query, looking only at whether the file exists. */
 function toFilePart(target: string): string {
   const withoutAnchor = target.split("#")[0] ?? "";
   return withoutAnchor.split("?")[0] ?? "";
 }
 
 /**
- * ドキュメント同士のリンクが実在するファイルを指しているか。
- * リンク切れは「読んだ人が次に進めない」という形で必ず表に出る欠陥なので、
- * コード例と同じゲートで落とす。外部 URL は検査しない (ネットワークを踏まない)。
+ * Whether the links between documents point at files that exist.
+ *
+ * A broken link always surfaces as a reader unable to go on, so it fails the
+ * same gate the code examples do. External URLs are not checked: nothing here
+ * touches the network.
  */
 export function findBrokenLinks(
   repositoryRoot: string,
@@ -52,7 +54,7 @@ export function findBrokenLinks(
             file,
             startLine: index + 1,
             kind: "brokenLink" as const,
-            detail: `リンク先が存在しません: "${filePart}"`,
+            detail: `the link target does not exist: "${filePart}"`,
           }))
       );
     });

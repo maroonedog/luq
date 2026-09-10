@@ -63,7 +63,7 @@ export function findContractDrift(
   for (const fact of unlocked) {
     drift.push({
       fact,
-      locked: "(記録なし)",
+      locked: "(not recorded)",
       actual: describe(actual[fact as keyof ContractFacts]),
     });
   }
@@ -79,25 +79,25 @@ if (require.main === module) {
     );
     if (drift.length === 0) {
       console.error(
-        `プラグイン著者契約: 一致 ` +
-          `(引数マーカー ${actual.argumentMarkerKinds.length} / ` +
-          `出力マーカー ${actual.outputMarkerKinds.length} エントリ・` +
-          `${actual.outputMarkerTypeNames.length} 型 / ` +
-          `ResolveArg 引数 ${actual.resolveArgTypeParameterCount} / ` +
+        `Plugin author contract: matches ` +
+          `(argument markers ${actual.argumentMarkerKinds.length} / ` +
+          `output markers ${actual.outputMarkerKinds.length} entries, ` +
+          `${actual.outputMarkerTypeNames.length} types / ` +
+          `ResolveArg parameters ${actual.resolveArgTypeParameterCount} / ` +
           `ChainState ${actual.chainStateMembers.length} / ` +
           `RuleBuildContext ${actual.ruleBuildContextMembers.length})`
       );
       return 0;
     }
-    console.error(`プラグイン著者契約の drift ${drift.length} 件:`);
+    console.error(`Plugin author contract: ${drift.length} drifts:`);
     for (const one of drift) {
       console.error(`  ${one.fact}`);
-      console.error(`    ロック: ${one.locked}`);
-      console.error(`    実測  : ${one.actual}`);
+      console.error(`    locked:   ${one.locked}`);
+      console.error(`    measured: ${one.actual}`);
     }
     console.error(
-      `契約を変えるなら ${CONTRACT_LOCK_PATH} を同じコミットで更新すること。` +
-        "この面はプラグイン77個とドキュメントの全例が依存している。"
+      `Changing the contract means updating ${CONTRACT_LOCK_PATH} in the same ` +
+        "commit. Every plugin and every documented example depends on this surface."
     );
     return 1;
   });

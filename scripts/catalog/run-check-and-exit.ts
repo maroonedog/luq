@@ -1,7 +1,9 @@
 /**
- * CLI として実行されたときの共通の出口。
- * カタログの構成ミス (index.ts が無い、名前が不正) は例外で表現されるが、
- * CI に見せたいのはスタックトレースではなくメッセージなので、ここで畳む。
+ * The shared exit path when run as a CLI.
+ *
+ * A malformed catalog — a missing entry, an invalid name — is raised as an
+ * exception, but what CI should show is the message and not a stack trace, so
+ * it is folded here.
  */
 export function runCheckAndExit(run: () => number): void {
   try {

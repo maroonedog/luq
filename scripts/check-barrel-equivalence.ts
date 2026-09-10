@@ -14,17 +14,20 @@ import { measureGzippedBundle } from "./bundle-size/measure-gzipped-bundle";
 import { readSizeBudget } from "./bundle-size/read-size-budget";
 
 /**
- * `@maroonedog/luq/plugins` から取ったものと
- * `@maroonedog/luq/plugins/<name>` から取ったものが同じであることを検査する。
+ * Checks that taking a plugin from the barrel and taking it from its own
+ * subpath give the same thing.
  *
- * 旧実装ではこの2つが乖離していた (バレルが名指す symbol とサブパスとして
- * 公開されている名前の集合が一致せず、README が案内する import が
- * ERR_PACKAGE_PATH_NOT_EXPORTED で落ちた)。乖離は3つの形で起きるので3つ見る:
- *   1. 名前の集合がずれる (バレルにしか無い / サブパスにしか無い)
- *   2. 名前は同じだが別物を指す (再 export 先の付け替え)
- *   3. 同じ物を指すが、バレル経由だと捨てられずサイズが膨らむ
- * 3 は「バレルは tree-shaking を壊すので使うな」という旧実装の但し書きを
- * 不要にするための検査であり、公開している以上これが本体である。
+ * In the previous major the two had drifted apart: the symbols the barrel
+ * named and the names published as subpaths were different sets, and an import
+ * the README recommended failed to resolve. Drift takes three forms, so three
+ * are checked:
+ *   1. the name sets differ (in one and not the other)
+ *   2. the same name points at different things (a re-export was repointed)
+ *   3. they point at the same thing, but going through the barrel keeps code
+ *      that the subpath drops
+ * The third is what makes "do not use the barrel, it breaks tree-shaking"
+ * unnecessary as a caveat — and since the barrel is published, that is the
+ * point of this check.
  */
 export interface BarrelDivergence {
   readonly kind:
@@ -47,7 +50,7 @@ function loadModule(
   const absolutePath = path.join(repositoryRoot, relativePath);
   const loaded: unknown = require(absolutePath);
   if (typeof loaded !== "object" || loaded === null) {
-    throw new Error(`${relativePath}: モジュールを読めませんでした`);
+    throw new Error(`${relativePath}: the module could not be read`);
   }
   return {
     specifier: relativePath,
@@ -71,13 +74,13 @@ function findNameSetDivergences(
     .filter((symbol) => !barrelNames.includes(symbol))
     .map((symbol) => ({
       kind: "missing-in-barrel" as const,
-      detail: `${symbol} はサブパスにあるのにバレルにありません`,
+      detail: `${symbol} is published as a subpath but missing from the barrel`,
     }));
   const extra = barrelNames
     .filter((name) => !catalogSymbols.includes(name))
     .map((name) => ({
       kind: "extra-in-barrel" as const,
-      detail: `${name} はバレルにあるのに対応する公開サブパスがありません`,
+      detail: `${name} is in the barrel but has no published subpath`,
     }));
   return [...missing, ...extra];
 }
@@ -97,8 +100,8 @@ function findIdentityDivergences(
         {
           kind: "not-identical" as const,
           detail:
-            `${symbol}: バレルとサブパス ${entry.entryFile} が同一の値を` +
-            `指していません`,
+            `${symbol}: the barrel and the subpath ${entry.entryFile} do not ` +
+            `point at the same value`,
         },
       ];
     });
@@ -123,17 +126,17 @@ function findSizeDivergence(
     Math.abs(viaBarrel.gzipBytes - viaSubpath.gzipBytes) / viaSubpath.gzipBytes;
   const percent = divergence * 100;
   console.error(
-    `  ${plugins.join(", ")}: サブパス ${String(viaSubpath.gzipBytes)} B / ` +
-      `バレル ${String(viaBarrel.gzipBytes)} B (差 ${percent.toFixed(2)}%)`
+    `  ${plugins.join(", ")}: subpath ${String(viaSubpath.gzipBytes)} B / ` +
+      `barrel ${String(viaBarrel.gzipBytes)} B (${percent.toFixed(2)}% apart)`
   );
   if (percent <= maxDivergencePercent) return [];
   return [
     {
       kind: "size" as const,
       detail:
-        `バレル経由 ${String(viaBarrel.gzipBytes)} B とサブパス経由 ` +
-        `${String(viaSubpath.gzipBytes)} B の差が ${percent.toFixed(2)}% で、` +
-        `許容 ${String(maxDivergencePercent)}% を超えています`,
+        `via the barrel ${String(viaBarrel.gzipBytes)} B against ` +
+        `${String(viaSubpath.gzipBytes)} B via the subpath, ${percent.toFixed(2)}% ` +
+        `apart, over the ${String(maxDivergencePercent)}% allowed`,
     },
   ];
 }
@@ -158,13 +161,15 @@ export function findBarrelDivergences(
 
 if (require.main === module) {
   runCheckAndExit(() => {
-    console.error("バレル等価性:");
+    console.error("Barrel equivalence:");
     const divergences = findBarrelDivergences(REPOSITORY_ROOT);
     if (divergences.length === 0) {
-      console.error("バレル等価性: 乖離なし");
+      console.error("Barrel equivalence: no divergence");
       return 0;
     }
-    console.error(`バレル等価性の乖離 ${String(divergences.length)} 件:`);
+    console.error(
+      `Barrel equivalence: ${String(divergences.length)} divergences:`
+    );
     for (const one of divergences) console.error(`  ${one.detail}`);
     return 1;
   });

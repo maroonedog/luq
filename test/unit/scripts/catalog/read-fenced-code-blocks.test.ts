@@ -3,7 +3,7 @@ import { readFencedCodeBlocks } from "../../../../scripts/catalog/read-fenced-co
 const FENCE = "```";
 
 describe("readFencedCodeBlocks", () => {
-  it("TypeScript のフェンスだけを取り出す", () => {
+  it("extracts the TypeScript fences and no others", () => {
     const markdown = [
       "# title",
       `${FENCE}ts`,
@@ -22,7 +22,7 @@ describe("readFencedCodeBlocks", () => {
     expect(blocks[0]?.code).toBe('import { Builder } from "@maroonedog/luq";');
   });
 
-  it("言語エイリアスを認める", () => {
+  it("accepts the language aliases", () => {
     const markdown = ["typescript", "tsx", "js", "javascript", "jsx"]
       .map((language) =>
         [`${FENCE}${language}`, "const a = 1;", FENCE].join("\n")
@@ -31,19 +31,19 @@ describe("readFencedCodeBlocks", () => {
     expect(readFencedCodeBlocks(markdown)).toHaveLength(5);
   });
 
-  it("開始行を1始まりで報告する", () => {
+  it("reports the start line 1-based", () => {
     const markdown = ["intro", "", `${FENCE}ts`, "const a = 1;", FENCE].join(
       "\n"
     );
     expect(readFencedCodeBlocks(markdown)[0]?.startLine).toBe(3);
   });
 
-  it("閉じていないフェンスは無視する", () => {
+  it("ignores a fence that is never closed", () => {
     const markdown = [`${FENCE}ts`, "const a = 1;"].join("\n");
     expect(readFencedCodeBlocks(markdown)).toEqual([]);
   });
 
-  it("CRLF でも動く", () => {
+  it("works with CRLF", () => {
     const markdown = [`${FENCE}ts`, "const a = 1;", FENCE].join("\r\n");
     expect(readFencedCodeBlocks(markdown)[0]?.code).toBe("const a = 1;");
   });

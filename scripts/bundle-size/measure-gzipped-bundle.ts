@@ -2,18 +2,15 @@ import { buildSync } from "esbuild";
 import { gzipSync } from "zlib";
 
 /**
- * 合成した入口モジュールを利用者のバンドラと同じ条件で束ねて gzip し、
- * その大きさを返す唯一の場所。
+ * The one place a synthetic entry module is bundled under the same conditions
+ * a user's bundler would use, gzipped, and measured.
  *
- * 測る対象は dist ではなく src (TypeScript ソース) である。理由は2つ:
- * 公開パッケージは「1ソースファイル = 1出力モジュール」の未束ね ESM として
- * 配るので、実際に木を歩いて捨てるのは利用者のバンドラであり、ここで
- * esbuild に歩かせる木と同じものだから。そしてもう1つ、リポジトリに
- * 残っている dist/ は旧実装の生成物で、これを測ると旧実装の数字が出るから。
+ * It measures src, the TypeScript sources, and not dist. The package ships as
+ * unbundled ESM, one module per source file, so the tree actually walked and
+ * pruned belongs to the user's bundler — the same tree esbuild walks here.
  *
- * オプションは旧実装の bundle-size-comparison/build-all.js と同一にしてある
- * (bundle/minify/esm/es2020/neutral/treeShaking)。そうしないと旧実装の
- * 19-23KB という主張と比較できない。
+ * The options match the previous major's own comparison build, without which
+ * its published size claim cannot be compared against.
  */
 export interface GzippedBundleSize {
   readonly rawBytes: number;
@@ -44,7 +41,7 @@ export function measureGzippedBundle(
   });
   const [outputFile] = built.outputFiles;
   if (outputFile === undefined) {
-    throw new Error("esbuild が出力を返しませんでした");
+    throw new Error("esbuild returned no output");
   }
   const bytes = Buffer.from(outputFile.contents);
   return { rawBytes: bytes.length, gzipBytes: gzipSync(bytes).length };

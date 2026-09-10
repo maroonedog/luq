@@ -9,7 +9,7 @@
 import { IndexStack, joinIssuePath } from "../../../src/runtime/index-stack";
 
 const NAME = "name";
-/** 要素そのものを指す宣言は、自分自身のパスを持たない。 */
+/** A declaration naming the element itself has no path of its own. */
 const ELEMENT_ITSELF = "";
 
 describe("IndexStack renders a concrete issue path", () => {
@@ -95,11 +95,10 @@ describe("IndexStack refuses a location no declaration could produce", () => {
     expect(() => stack.pop()).toThrow(/never pushed/);
   });
 
-  // ワイルドカードを含むテンプレートの拒否は、ここではなく **コンパイル時**
-  // の仕事になった。フィールド自身のパスは compileField が一度だけ描画するので、
-  // 描画できないテンプレートはそこで落ちる (test/unit/compile/compile-field.test.ts
-  // の「refuses a wildcard template」がそれを固定している)。実行時に残るのは
-  // 接頭辞との連結だけで、そこには落ちる余地が無い。
+  // Refusing a template that still holds a wildcard is a COMPILE-TIME job,
+  // not this one: a field's own path is rendered once, and a template that
+  // cannot be rendered fails there. What remains at validation time is one
+  // concatenation with the prefix, which has nothing left to fail on.
   it("joins a rendered field path onto the open prefix, and nothing more", () => {
     const stack = new IndexStack();
     stack.push("items", 0);

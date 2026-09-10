@@ -4,29 +4,49 @@
 
 export const bundleSize = {
   coreOnly: {
-    bytes: 7954,
-    gzip: "7,954 B",
-    ceiling: 8000,
+    bytes: 8208,
+    gzip: "8,208 B",
+    ceiling: 8340,
   },
   onePlugin: {
-    bytes: 8087,
-    gzip: "8,087 B",
-    ceiling: 8250,
+    bytes: 8338,
+    gzip: "8,338 B",
+    ceiling: 8470,
   },
   threePlugin: {
-    bytes: 8466,
-    gzip: "8,466 B",
-    ceiling: 8600,
+    bytes: 8713,
+    gzip: "8,713 B",
+    ceiling: 8850,
   },
   sixPlugin: {
-    bytes: 8879,
-    gzip: "8,879 B",
-    ceiling: 9000,
+    bytes: 9124,
+    gzip: "9,124 B",
+    ceiling: 9270,
+  },
+  presetPresence: {
+    bytes: 8453,
+    gzip: "8,453 B",
+    ceiling: 8590,
+  },
+  presetEveryday: {
+    bytes: 9674,
+    gzip: "9,674 B",
+    ceiling: 9810,
+  },
+  jsonSchemaPlugin: {
+    bytes: 21145,
+    gzip: "21,145 B",
+    ceiling: 21280,
+  },
+  jsonSchemaFullFeature: {
+    bytes: 23536,
+    gzip: "23,536 B",
+    ceiling: 23660,
   },
   fullFeature: {
-    bytes: 25991,
-    gzip: "25,991 B",
-    ceiling: 26100,
+    bytes: 26253,
+    gzip: "26,253 B",
+    ceiling: 26360,
   },
   legacyCoreGzip: 17423,
 } as const;

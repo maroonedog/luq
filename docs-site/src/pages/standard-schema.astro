@@ -1,0 +1,201 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header, { navItems } from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+
+/**
+ * Sources for everything on this page:
+ *
+ *   docs/guide/standard-schema.md          the three decisions, what does not
+ *                                          cross the boundary
+ *   src/standard-schema/to-standard-schema.ts   the decisions, in the code
+ *   examples/react-hook-form/              the resolver line, running
+ *
+ * The guide is the version-tracked copy; this page renders it. Every code
+ * block below was executed against the built package before it was written.
+ */
+
+const description =
+  'Luq implements Standard Schema v1, so a Luq validator goes wherever a zod schema goes — tRPC, TanStack Form, Hono, t3-env, react-hook-form. What crosses that boundary, and what does not.';
+
+const standardExample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { toStandardSchema } from "@maroonedog/luq/standard-schema";
+
+type Account = { handle: string };
+
+export const account = toStandardSchema(
+  Builder()
+    .use(requiredPlugin)
+    .use(stringMinPlugin)
+    .for<Account>()
+    .v("handle", (b) => b.string.required().min(2))
+    .build()
+);
+
+const outcome = account["~standard"].validate({ handle: "j" });
+
+if (outcome.issues === undefined) {
+  console.log(outcome.value.handle);
+} else {
+  for (const issue of outcome.issues) {
+    console.log(issue.message, issue.path);
+  }
+}`;
+
+// luq-example: with standardExample an excerpt that uses the validator built above
+const stillAValidatorExample = `// toStandardSchema ADDS ~standard and takes nothing away, so the same value is
+// still the validator. Nothing has to be given up to get the other face.
+account.pick("handle").validate("j");
+account.parse({ handle: "ada" });`;
+
+// luq-example: skip — needs react and react-hook-form, which the doc harness's scratch consumer does not install
+const resolverExample = `import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { useForm } from "react-hook-form";
+import { signupSchema, type Signup } from "./signup-schema";
+
+const { register, handleSubmit, formState } = useForm<Signup>({
+  resolver: standardSchemaResolver(signupSchema),
+});`;
+
+const decisions = [
+  {
+    title: 'validate calls parse(), not validate()',
+    body: "The spec's success result is { value: Output }, and Output is the value AFTER validation — so a transform has to be applied, and only parse() applies it. This is also why a normalize reaches the consumer: the tidied value is the one written back.",
+    href: '/docs/getting-started',
+    hrefLabel: 'normalize, in Getting started',
+  },
+  {
+    title: 'It collects every issue',
+    body: 'The library default is abortEarly: true; this seam turns it off. What consumes it is usually a form, and returning one issue at a time produces a UI where fixing an error reveals the next one. Callers who want the fast path use the validator directly.',
+  },
+  {
+    title: 'InferInput is the type you wrote',
+    body: 'It is the type given to .for<T>(), not a type inferred back out of a schema value. The name in an error message is the name you chose.',
+  },
+];
+---
+
+<BaseLayout title="Standard Schema" description={description}>
+  <Header />
+  <MobileMenuOverlay navItems={navItems} />
+
+  <main class="px-4 py-16 sm:px-6 lg:px-8">
+    <div class="container mx-auto max-w-3xl">
+      <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
+        Interop
+      </p>
+      <h1 class="mb-6 text-display-small text-on-surface">Standard Schema</h1>
+      <p class="mb-6 text-body-large text-on-surface-variant">
+        Luq implements <a
+          class="text-primary underline underline-offset-2"
+          href="https://standardschema.dev">Standard Schema v1</a
+        >. Anything that accepts a Standard Schema — tRPC, TanStack Form, Hono,
+        t3-env, react-hook-form — accepts a Luq validator wherever it accepts a
+        zod schema.
+      </p>
+      <p class="mb-12 text-body-medium text-on-surface-variant">
+        It is a subpath, not part of <code class="font-mono">build()</code>.
+        Carrying <code class="font-mono">~standard</code> on every validator would
+        charge every caller for a seam most of them never cross, so you import it
+        and pay for it when you use it.
+      </p>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">One import</h2>
+      <CodeBlock code={standardExample} language="typescript" fileName="account.ts" />
+
+      <p class="mb-4 mt-8 text-body-large text-on-surface-variant">
+        What comes back is <strong class="text-on-surface">still the validator</strong>:
+        <code class="font-mono">validate</code>, <code class="font-mono">parse</code>,
+        <code class="font-mono">pick</code> and <code class="font-mono">pickAll</code>
+        are all still there for the rest of the application.
+      </p>
+      <CodeBlock code={stillAValidatorExample} language="typescript" fileName="both-faces.ts" />
+
+      <h2 class="mb-4 mt-12 text-headline-small text-on-surface">
+        Three decisions the spec leaves open
+      </h2>
+      <div class="mb-12 grid gap-4">
+        {
+          decisions.map((decision) => (
+            <div class="md-card md-card-filled p-6">
+              <p class="mb-2 text-title-medium text-on-surface">{decision.title}</p>
+              <p class="text-body-medium text-on-surface-variant">{decision.body}</p>
+              {decision.href && (
+                <p class="mt-3 text-body-medium">
+                  <a class="text-primary underline underline-offset-2" href={decision.href}>
+                    {decision.hrefLabel}
+                  </a>
+                </p>
+              )}
+            </div>
+          ))
+        }
+      </div>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        What does not cross the boundary
+      </h2>
+      <p class="mb-12 text-body-large text-on-surface-variant">
+        A Standard Schema issue carries <code class="font-mono">message</code> and
+        <code class="font-mono">path</code>. Luq's own <code class="font-mono">code</code>
+        and <code class="font-mono">severity</code> have no field in the spec and do
+        not survive, so a consumer that switches on <code class="font-mono">issue.code</code>
+        needs the validator rather than this face — and the same value
+        <em>is</em> the validator, so nothing has to be given up to get it.
+      </p>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">react-hook-form</h2>
+      <p class="mb-4 text-body-large text-on-surface-variant">
+        react-hook-form takes any Standard Schema, so the integration is one line.
+      </p>
+      <CodeBlock code={resolverExample} language="typescript" fileName="SignupForm.tsx" />
+      <div class="md-card md-card-filled my-8 p-6">
+        <p class="mb-3 text-body-medium text-on-surface-variant">
+          Pair it with <code class="font-mono">normalize</code> and the payload
+          reaching <code class="font-mono">handleSubmit</code> is already tidied —
+          the name trimmed, the email lowercased, the number input's string turned
+          into a number — with no <code class="font-mono">valueAsNumber</code> and
+          no per-field <code class="font-mono">setValueAs</code>, because the
+          resolver reads the value Luq wrote back.
+        </p>
+        <p class="text-body-medium text-on-surface-variant">
+          A running form is in <code class="font-mono">examples/react-hook-form</code>
+          in the repository.
+        </p>
+      </div>
+
+      <h2 class="mb-4 text-headline-small text-on-surface">
+        Writing JSON Schema out
+      </h2>
+      <p class="mb-12 text-body-large text-on-surface-variant">
+        <code class="font-mono">toStandardJsonSchema</code> is the same idea one
+        step further: it attaches a <code class="font-mono">~standard.jsonSchema</code>
+        converter as well, so the value satisfies both
+        <code class="font-mono">StandardSchemaV1</code> and
+        <code class="font-mono">StandardJSONSchemaV1</code>. The targets, what
+        happens to a rule that cannot be expressed, and the ordering it needs are
+        on <a class="text-primary underline underline-offset-2" href="/json-schema#emit"
+          >the JSON Schema page</a
+        >.
+      </p>
+
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <a
+          href="/docs/getting-started"
+          class="md-button md-button-filled md-state-layer md-focus-ring"
+        >
+          Get started
+        </a>
+        <a href="/json-schema" class="md-button md-button-outlined md-state-layer md-focus-ring">
+          JSON Schema
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>

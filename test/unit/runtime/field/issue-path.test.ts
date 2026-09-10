@@ -142,6 +142,7 @@ function elementItself(): CompiledField {
     fieldPath: "grid[*][*]",
     defaultOf: null,
     applyDefaultToNull: true,
+    normalize: null,
     planRef: planRefTo(EMPTY_PLAN),
     eraseComposite: eraseCompositeToCheck,
   });

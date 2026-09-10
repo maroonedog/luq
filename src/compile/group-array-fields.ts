@@ -35,6 +35,7 @@ export interface RelativeDeclaration {
   readonly fieldPath: string;
   readonly defaultOf: ((root: unknown) => unknown) | null;
   readonly applyDefaultToNull: boolean;
+  readonly normalize: ((value: unknown) => unknown) | null;
 }
 
 /** Every declaration that reaches through the same array, plus that array. */

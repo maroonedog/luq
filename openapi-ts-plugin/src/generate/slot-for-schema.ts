@@ -1,11 +1,11 @@
 // ===========================================================================
 // openapi-ts-plugin/src/generate/slot-for-schema.ts
 //
-// スキーマの type → `b.` のあとに来るスロット名。
+// A schema's type to the slot name that follows `b.`.
 //
-// 本体の src/json-schema は type をスロット選択に使うと keyword-map-core.ts に
-// 書いているだけで、対応表を値として持っていない (実行時はチェーンが既に
-// 型から決まっているため必要ない)。生成器はソースを書くので必要になる。
+// The library states that type selects the slot but holds no table as a value,
+// because at run time the chain is already determined by the types. A
+// generator writes source, so it needs the table.
 // ===========================================================================
 import type { Draft07SchemaObject } from "../../../src/json-schema/draft07.types";
 
@@ -19,9 +19,9 @@ const SLOT_BY_TYPE: Readonly<Record<string, string>> = {
 };
 
 /**
- * type が無いスキーマ、複数 type、null 単独はどのスロットにも寄せられないので
- * "any" に落とす。any スロットは全プラグインを受けるので、そこに生える規則
- * (required / literal / oneOf) はそのまま書ける。
+ * A schema with no type, with several types, or with null alone belongs to no
+ * slot, so it falls to "any". The any slot accepts every plugin, so the rules
+ * that appear there (required, literal, oneOf) can still be written.
  */
 export function slotForSchema(schema: Draft07SchemaObject): string {
   const type = (schema as { type?: unknown }).type;

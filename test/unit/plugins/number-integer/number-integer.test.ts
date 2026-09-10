@@ -10,13 +10,13 @@ const integer = Builder()
   .build();
 
 describe("numberInteger", () => {
-  it("整数を通す (0 と負の整数を含む)", () => {
+  it("accepts an integer, 0 and negatives included", () => {
     expect(integer.validate({ value: 0 }).valid).toBe(true);
     expect(integer.validate({ value: 42 }).valid).toBe(true);
     expect(integer.validate({ value: -7 }).valid).toBe(true);
   });
 
-  it("小数を弾く", () => {
+  it("rejects a decimal", () => {
     const validationResult = integer.validate({ value: 1.5 });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues).toEqual([
@@ -29,7 +29,7 @@ describe("numberInteger", () => {
     ]);
   });
 
-  it("NaN と Infinity を弾く", () => {
+  it("rejects NaN and Infinity", () => {
     expect(integer.validate({ value: Number.NaN }).valid).toBe(false);
     expect(integer.validate({ value: Number.POSITIVE_INFINITY }).valid).toBe(
       false

@@ -1,24 +1,22 @@
 # ===========================================================================
-# .github/workflows/docs.yml — サイトがビルドできることを、マージ **前** に見る。
+# .github/workflows/docs.yml — checks the site builds, **before** the merge.
 #
-# **何を見ているか**: docs-site/ そのものと、サイトが読むもの。サイトは
-# src/plugins/manifest.generated.ts (gitignore された生成物) と config/*.json
-# を読むので、src/ と config/ と生成スクリプトも監視対象に入る。
+# **What it watches**: docs-site/ itself, plus everything the site reads. The
+# site reads a generated plugin manifest and the config files, so src/, config/
+# and the generation scripts are watched too.
 #
-# これが無かったせいで luq.dev が古いまま配られた。deploy-docs.yml は master
-# への push でしか走らないので、docs-site がビルドできないという最初の合図が
-# **マージ後の赤** で、その間ずっと前のサイトが配信され続けていた。2026-09-07
-# に二度そうなり、どちらもマージは誰にも止められなかった。原因は、どちらの
-# workflow も generate:sources を走らせていなかったことである。
+# Without this the published site went stale twice. Deployment only runs on the
+# trunk, so the first sign that the site could not build was a red run AFTER
+# the merge, and the previous site kept being served throughout. Both times the
+# cause was the same: the site's build never ran the source generation step.
 # ===========================================================================
 name: docs
 
 on:
-  # push はトランクだけ。以前は branches: ["**"] と pull_request の両方だったので、
-  # PR ブランチへの1コミットが **2回** 全ジョブを回していた (run 34408561896 と
-  # 34408566222 は同じコミットである)。CI 時間のちょうど半分がそれだった。
-  # 作業ブランチの結果が欲しいときは PR を開く (draft でよい) か、
-  # workflow_dispatch を使う。
+  # push watches the trunks only. Watching every branch as well as
+  # pull_request ran every job TWICE for one commit on a PR branch, which was
+  # half of all CI time. To get a result for a working branch, open a PR
+  # (draft is fine) or use workflow_dispatch.
   push:
     branches: [master, develop]
     paths:
@@ -41,8 +39,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # PR 番号で束ねる。ref で束ねていたときは、同じ PR の push イベントと
-  # pull_request イベントが別 ref を持つので互いに打ち消せなかった。
+  # Grouped by PR number. Grouped by ref, a PR's push event and its
+  # pull_request event carry different refs and cannot cancel each other.
   group: docs-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
@@ -60,7 +58,7 @@ jobs:
 
       - run: npm ci
 
-      # サイトは生成された plugin manifest を読むので、先に作る。
+      # The site reads the generated plugin manifest, so generate it first.
       - run: npm run generate:sources
 
       - run: npm run build

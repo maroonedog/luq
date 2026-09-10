@@ -17,8 +17,9 @@ export class PluginCatalogError extends Error {
 }
 
 /**
- * 走査根の直下ディレクトリだけをプラグインとして認める。
- * 走査根が存在しない場合は空のカタログを返す (プラグイン0件でも全生成物が成立する)。
+ * Only a directory directly under a scan root counts as a plugin. A missing
+ * scan root gives an empty catalog: every generated artefact still holds with
+ * no plugins at all.
  */
 export function buildPluginCatalog(
   repositoryRoot: string,
@@ -58,14 +59,14 @@ function readEntry(
   const absoluteEntryFile = path.join(absoluteRoot, directoryName, "index.ts");
   if (!fs.existsSync(absoluteEntryFile)) {
     throw new PluginCatalogError(
-      `${directory}: index.ts がありません。プラグインディレクトリはエントリを1つ持たなければなりません。`
+      `${directory}: no index.ts. A plugin directory must have exactly one entry.`
     );
   }
   const sourceText = fs.readFileSync(absoluteEntryFile, "utf8");
   const exportedSymbols = readExportedPluginSymbols(sourceText);
   if (exportedSymbols.length === 0) {
     throw new PluginCatalogError(
-      `${directory}/index.ts: 末尾が "Plugin" の export がありません。`
+      `${directory}/index.ts: no export whose name ends in "Plugin".`
     );
   }
   return {
@@ -84,7 +85,7 @@ function rejectDuplicateSubpaths(entries: readonly PluginCatalogEntry[]): void {
     const previous = seen.get(entry.subpathName);
     if (previous !== undefined) {
       throw new PluginCatalogError(
-        `公開サブパス "${entry.subpathName}" が ${previous} と ${entry.directory} で重複しています。`
+        `the published subpath "${entry.subpathName}" is claimed by both ${previous} and ${entry.directory}.`
       );
     }
     seen.set(entry.subpathName, entry.directory);

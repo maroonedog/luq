@@ -1,15 +1,18 @@
 // ===========================================================================
 // scripts/perf-figures/render-perf-tables.ts
 //
-// README の2つの性能表を config/perf-baseline.json から組み立てる。
+// Builds the README's two performance tables from the recorded baseline.
 //
-// ここに置いたのは、同じ事故が5度目だからである。適合率・バージョン・バンドル
-// サイズ・競合表は既に生成に移した。残っていたのがこの2表で、`bench:record` を
-// 回すたびに README だけが古い数字を出し続けていた — 実際、配列の負添字を直して
-// 全形状が 20〜45% 速くなったとき、README は「×0.11 / ×0.35 / ×0.32」を掲げた
-// ままだった。自己整合しているので、内部矛盾を探す検査では捕まらない。
+// This exists because the same accident had already happened several times
+// over. The pass rate, the version, the bundle sizes and the competitor table
+// had all been moved to generation; these two tables were what was left, and
+// re-recording the benchmark left the README showing the old figures. Once,
+// after every shape got substantially faster, the README still advertised the
+// speeds from before. Self-consistent, so no check for internal contradiction
+// catches it.
 //
-// 表そのものを組み立てるのは1箇所だけで、書き出しも検査も同じ関数を通る。
+// The tables are assembled in one place, and writing them and checking them
+// go through the same function.
 // ===========================================================================
 
 export interface ThroughputRecord {
@@ -42,7 +45,7 @@ export interface PerfBaseline {
   readonly legacyComparison: readonly LegacyRecord[];
 }
 
-/** 表の行の並びと見出し。形状の識別子は実測ファイル側の綴りである。 */
+/** Row order and headings. Shape ids are spelled as the measurement file spells them. */
 const THROUGHPUT_ROWS: readonly (readonly [string, string])[] = [
   ["1 field, 1 check", "singleField"],
   ["3 fields, 6 plugins", "multiField"],
@@ -52,9 +55,9 @@ const THROUGHPUT_ROWS: readonly (readonly [string, string])[] = [
 ];
 
 /**
- * 1.x に負けている形状だけ太字にする。強調は「読者が知っておくべき悪い報せ」
- * を指すためのもので、勝ちを飾るためのものではない。どちらが負けかは実測から
- * 決めるので、速度が変われば強調も勝手に移る。
+ * Only the shapes that lose to the previous major are bold. Emphasis points
+ * at the bad news a reader should know, never at a win. Which shapes lose is
+ * decided from the measurement, so the emphasis moves on its own.
  */
 const LEGACY_ROWS: readonly (readonly [string, string])[] = [
   ["1 field", "singleField"],
@@ -77,9 +80,7 @@ function findThroughput(
     (record) => record.shape === shape && record.operation === operation
   );
   if (found === undefined) {
-    throw new Error(
-      `config/perf-baseline.json に ${shape}/${operation} が無い`
-    );
+    throw new Error(`config/perf-baseline.json has no ${shape}/${operation}`);
   }
   return found;
 }
@@ -89,7 +90,7 @@ function findLegacy(baseline: PerfBaseline, shape: string): LegacyRecord {
     (record) => record.shape === shape
   );
   if (found === undefined) {
-    throw new Error(`config/perf-baseline.json に legacy ${shape} が無い`);
+    throw new Error(`config/perf-baseline.json has no legacy ${shape}`);
   }
   return found;
 }
@@ -103,8 +104,9 @@ export function renderThroughputTable(baseline: PerfBaseline): string {
 }
 
 /**
- * 比較できなかった形状は行ごと落とさず「not comparable」と書く。落とすと、
- * 表の行数が黙って減って読者には「そんな形状は測っていない」と読める。
+ * A shape that could not be compared says "not comparable" rather than losing
+ * its row. Dropping the row quietly shortens the table, which reads as "that
+ * shape was never measured".
  */
 export function renderLegacyTable(baseline: PerfBaseline): string {
   return LEGACY_ROWS.map(([label, shape]) => {
@@ -119,11 +121,12 @@ export function renderLegacyTable(baseline: PerfBaseline): string {
 }
 
 /**
- * 1.x が自分の README で「simple」と呼んでいた形状を、こちらで測り直した値。
+ * The shape the previous major's README called "simple", measured again here.
  *
- * README の一文の中に `3.06M` と書かれていて、そこだけ生成の外に残っていた。
- * 表を生成にしても一文が腐れば同じことなので、ここに引き込む。桁は百万単位の
- * まま — 文章の中の数字であって、表の数字ではない。
+ * It appeared inside a sentence in the README and was the one figure left
+ * outside generation. Generating the tables achieves nothing if a sentence
+ * rots instead, so it is pulled in here. Kept in millions: it is a number in
+ * prose, not a number in a table.
  */
 export function renderLegacySimpleOps(baseline: PerfBaseline): string {
   const record = findLegacy(baseline, "multiField");
@@ -131,26 +134,27 @@ export function renderLegacySimpleOps(baseline: PerfBaseline): string {
   return `${(record.legacyOpsPerSecond / 1_000_000).toFixed(2)}M`;
 }
 
-/** README のバンドル表に出す行と、その見出し。 */
+/** The rows of the README's bundle table, and their headings. */
 const SIZE_ROWS: readonly (readonly [string, string])[] = [
   ["`Builder` only, zero plugins", "core-only"],
   ['+ 6 plugins (1.x\'s "simple" set)', "six-plugin"],
+  ["core + `jsonSchema`, the plugin alone", "jsonschema-plugin"],
+  ["core + `jsonSchemaFullFeature`", "jsonschema-full-feature"],
   ["all 77 plugins", "full-feature"],
 ];
 
 /**
- * バンドル表。ここに出るのは config/size-budget.json が **毎ビルド測り直して
- * いる** 行だけである。
+ * The bundle table. Only rows the size budget **re-measures on every build**
+ * appear here.
  *
- * README はこれを手で書いていて、腐っていた: core-only を 7,590 B と書いた
- * まま実測は 7,646 B になり、さらに 7,954 B になった。同じ事故を数えるのは
- * これで六度目 (適合率・バージョン・バンドルサイズ・競合表・性能表に続く)。
+ * The README used to carry these by hand, and they went stale: the core figure
+ * stayed put through two increases. Same accident, once more.
  */
 export function renderSizeTable(budget: SizeBudget): string {
   return SIZE_ROWS.map(([label, id]) => {
     const entry = budget.budgets.find((one) => one.id === id);
     if (entry === undefined) {
-      throw new Error(`config/size-budget.json に ${id} が無い`);
+      throw new Error(`config/size-budget.json has no ${id}`);
     }
     const legacy =
       entry.legacyGzipBytes === undefined
@@ -160,12 +164,12 @@ export function renderSizeTable(budget: SizeBudget): string {
   }).join("\n");
 }
 
-/** 「core は全部入りの 29.6%」の二つの数字。表と同じ出所から出す。 */
+/** The two numbers behind "the core is N% of the all-plugins build", from the same source as the table. */
 export function renderCoreShare(budget: SizeBudget): string {
   const core = budget.budgets.find((one) => one.id === "core-only");
   const all = budget.budgets.find((one) => one.id === "full-feature");
   if (core === undefined || all === undefined) {
-    throw new Error("core-only または full-feature が無い");
+    throw new Error("core-only or full-feature is missing");
   }
   const share = (
     (core.recordedGzipBytes / all.recordedGzipBytes) *
@@ -174,7 +178,7 @@ export function renderCoreShare(budget: SizeBudget): string {
   return `${share}% of the all-plugins build (${core.recordedGzipBytes.toLocaleString("en-US")} of ${all.recordedGzipBytes.toLocaleString("en-US")} B)`;
 }
 
-/** 「on these ten it is 2.9–8.6%」の数字。丸めは表示と同じ小数第1位。 */
+/** The figure behind "on these ten it is 2.9-8.6%", rounded as displayed. */
 export function renderSpreadRange(baseline: PerfBaseline): string {
   const spreads = baseline.throughput.map(
     (record) => record.relativeSpreadPercent

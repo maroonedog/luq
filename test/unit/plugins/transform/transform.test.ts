@@ -1,5 +1,6 @@
-// transform の確定意味論: 「検証が先、変換が後」「validate() は変換しない」。
-// 旧実装は本流とフォールバックで順序が真逆だった (plugin-catalog-relational.md)。
+// The settled meaning of transform: validate first, transform after, and
+// validate() transforms nothing. A previous release ran the two orders in
+// opposite directions on its main path and its fallback.
 import { Builder } from "../../../../src/index";
 import { transformPlugin } from "../../../../src/plugins/transform/index";
 import { compareFieldPlugin } from "../../../../src/plugins/compare-field/index";
@@ -14,35 +15,35 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
   return { name: "  ada  ", nick: "ada", score: 3, ...overrides };
 }
 
-describe("transform: parse だけが変換する", () => {
+describe("transform: only parse transforms", () => {
   const validator = Builder()
     .use(transformPlugin)
     .for<Account>()
     .v("name", (b) => b.string.transform((value) => value.trim()))
     .build();
 
-  it("validate は元の値をそのまま返す", () => {
+  it("has validate return the original value untouched", () => {
     const result = validator.validate(makeAccount());
     expect(result.valid).toBe(true);
     if (!result.valid) return;
     expect(result.data).toEqual(makeAccount());
   });
 
-  it("parse は変換後の値を返す", () => {
+  it("has parse return the transformed value", () => {
     const result = validator.parse(makeAccount());
     expect(result.valid).toBe(true);
     if (!result.valid) return;
     expect(result.data).toEqual(makeAccount({ name: "ada" }));
   });
 
-  it("parse は入力オブジェクトを変更しない (copy-on-write)", () => {
+  it("has parse leave the input object alone, being copy-on-write", () => {
     const input = makeAccount();
     validator.parse(input);
     expect(input.name).toBe("  ada  ");
   });
 });
 
-describe("transform: 連鎖は登録順に合成される", () => {
+describe("transform: a chain composes in declaration order", () => {
   const validator = Builder()
     .use(transformPlugin)
     .for<Account>()
@@ -54,7 +55,7 @@ describe("transform: 連鎖は登録順に合成される", () => {
     )
     .build();
 
-  it("後段は前段の出力を受け取る", () => {
+  it("gives a later step the earlier step's output", () => {
     const result = validator.parse(makeAccount());
     expect(result.valid).toBe(true);
     if (!result.valid) return;
@@ -62,7 +63,7 @@ describe("transform: 連鎖は登録順に合成される", () => {
   });
 });
 
-describe("transform: 検証が先、変換が後", () => {
+describe("transform: validate first, transform after", () => {
   let calls = 0;
   const validator = Builder()
     .use(transformPlugin)
@@ -76,14 +77,14 @@ describe("transform: 検証が先、変換が後", () => {
     )
     .build();
 
-  it("同じフィールドの検査が落ちたら変換は走らない", () => {
+  it("does not transform when a check on the same field failed", () => {
     calls = 0;
     const result = validator.parse(makeAccount({ name: "zoe", nick: "ada" }));
     expect(result.valid).toBe(false);
     expect(calls).toBe(0);
   });
 
-  it("検査は変換前の値を見る (チェーン上の記述位置は順序を変えない)", () => {
+  it("has the checks see the value before transforming, whatever the chain order", () => {
     calls = 0;
     const result = validator.parse(makeAccount({ name: "ada", nick: "ada" }));
     expect(result.valid).toBe(true);
@@ -92,7 +93,7 @@ describe("transform: 検証が先、変換が後", () => {
     expect(calls).toBe(1);
   });
 
-  it("validate は変換関数を1度も呼ばない", () => {
+  it("has validate never call the transform at all", () => {
     calls = 0;
     const result = validator.validate(
       makeAccount({ name: "ada", nick: "ada" })
@@ -102,7 +103,7 @@ describe("transform: 検証が先、変換が後", () => {
   });
 });
 
-describe("transform: 例外は握り潰されずそのまま伝播する", () => {
+describe("transform: an exception propagates rather than being swallowed", () => {
   const validator = Builder()
     .use(transformPlugin)
     .for<Account>()
@@ -113,23 +114,23 @@ describe("transform: 例外は握り潰されずそのまま伝播する", () =>
     )
     .build();
 
-  it("parse は投げる", () => {
+  it("has parse throw", () => {
     expect(() => validator.parse(makeAccount())).toThrow("boom");
   });
 
-  it("validate は変換に触れないので投げない", () => {
+  it("has validate not throw, never touching the transform", () => {
     expect(validator.validate(makeAccount()).valid).toBe(true);
   });
 });
 
-describe("transform: 数値スロットでも動く", () => {
+describe("transform: it works on the number slot too", () => {
   const validator = Builder()
     .use(transformPlugin)
     .for<Account>()
     .v("score", (b) => b.number.transform((value) => value * 2))
     .build();
 
-  it("parse で倍になる", () => {
+  it("doubles the value in parse", () => {
     const result = validator.parse(makeAccount({ score: 21 }));
     expect(result.valid).toBe(true);
     if (!result.valid) return;

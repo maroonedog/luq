@@ -41,7 +41,7 @@ function findInterface(
       return statement;
     }
   }
-  throw new Error(`interface ${name} が ${sourceFile.fileName} にありません`);
+  throw new Error(`${sourceFile.fileName} has no interface ${name}`);
 }
 
 function findTypeAlias(
@@ -53,7 +53,7 @@ function findTypeAlias(
       return statement;
     }
   }
-  throw new Error(`type ${name} が ${sourceFile.fileName} にありません`);
+  throw new Error(`${sourceFile.fileName} has no type ${name}`);
 }
 
 /** Property names of an interface, in declaration order. */

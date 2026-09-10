@@ -1,17 +1,18 @@
 // ===========================================================================
 // scripts/generate-docs.ts
 //
-// 手で書くと必ずずれる表を、実体から作る。今のところ生成物は1つ:
-//   docs/guide/plugin-reference.md — 76ディレクトリ / 77シンボルの
-//   サブパス・シンボル・チェーンメソッド・スロット・段。
+// Builds, from the real thing, the tables that always drift when written by
+// hand. One output so far: the plugin reference, listing each plugin's
+// subpath, symbol, chain method, slots and stage.
 //
-// 出どころはビルド済みの dist/plugins/*.js が実際に export した値であって、
-// ソースのコメントでも設計文書でもない。だから「ドキュメントにはあるが実装には
-// 無いメソッド」を書きようがない。1.x の docs/generated/plugins.md は
-// JSDoc 注釈を舐めて作られており、注釈が実装から外れた分だけ嘘になっていた。
+// The source is the values the built package actually exports — not a comment
+// in the source, and not a design document. A method that exists in the
+// documentation and not in the implementation is therefore unwritable. The
+// previous major generated its plugin list by scraping JSDoc, and it was
+// wrong by exactly as much as the annotations had drifted.
 //
-//   npm run generate-docs          書き出す
-//   npm run generate-docs -- --check   ずれていたら exit 1 (CI 用)
+//   npm run generate-docs              write them out
+//   npm run generate-docs -- --check   exit 1 if they differ (for CI)
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
@@ -27,7 +28,7 @@ export interface GeneratedDocument {
   readonly contents: string;
 }
 
-/** 生成物の一覧。増えたらここに足す。 */
+/** The generated documents. Add one here. */
 export function generateDocuments(
   repositoryRoot: string
 ): readonly GeneratedDocument[] {
@@ -53,12 +54,12 @@ function writeDocuments(
     const absolutePath = path.join(repositoryRoot, document.outputPath);
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
     fs.writeFileSync(absolutePath, document.contents, "utf8");
-    console.error(`生成: ${document.outputPath}`);
+    console.error(`Generated: ${document.outputPath}`);
   }
   return 0;
 }
 
-/** 書き出さずに突き合わせるだけ。CI はこちらを回す。 */
+/** Compares without writing. This is what CI runs. */
 export function findStaleDocuments(
   repositoryRoot: string,
   documents: readonly GeneratedDocument[]
@@ -80,13 +81,13 @@ function checkDocuments(
   const stale = findStaleDocuments(repositoryRoot, documents);
   if (stale.length === 0) {
     console.error(
-      `生成ドキュメント検査: ${String(documents.length)} 件、すべて最新`
+      `Generated docs: ${String(documents.length)} documents, all current`
     );
     return 0;
   }
-  console.error(`生成ドキュメントが古い ${String(stale.length)} 件:`);
+  console.error(`Generated docs: ${String(stale.length)} are stale:`);
   for (const outputPath of stale) console.error(`  ${outputPath}`);
-  console.error("npm run generate-docs を実行して差分をコミットしてください。");
+  console.error("Run npm run generate-docs and commit the difference.");
   return 1;
 }
 

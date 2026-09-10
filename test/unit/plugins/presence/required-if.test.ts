@@ -1,4 +1,5 @@
-// requiredIf の実挙動。条件は root と、配列要素なら ArrayItemContext を受け取る。
+// How requiredIf actually behaves. The condition receives the root, and for
+// an array element the item context as well.
 import { Builder } from "../../../../src/index";
 import { requiredIfPlugin } from "../../../../src/plugins/required-if";
 import { requiredPlugin } from "../../../../src/plugins/required";
@@ -21,17 +22,17 @@ function validate(input: Partial<Order>) {
   return validateOrder.validate(input as Order);
 }
 
-/** null を含む「型では作れない入力」を通すための入口。 */
+/** A way in for inputs the types cannot construct, null among them. */
 function validateRaw(input: Record<string, unknown>) {
   return validateOrder.validate(input as unknown as Order);
 }
 
-describe("requiredIf: 条件の評価", () => {
-  it("条件が偽なら空文字を通す", () => {
+describe("requiredIf: evaluating the condition", () => {
+  it("accepts an empty string when the condition is false", () => {
     expect(validate({ needsBilling: false, billingCode: "" }).valid).toBe(true);
   });
 
-  it("条件が真で値が空文字なら弾く", () => {
+  it("rejects an empty string when the condition is true", () => {
     const result = validate({ needsBilling: true, billingCode: "" });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -43,13 +44,13 @@ describe("requiredIf: 条件の評価", () => {
     });
   });
 
-  it("条件が真でも値があれば通す", () => {
+  it("accepts a present value even when the condition is true", () => {
     expect(validate({ needsBilling: true, billingCode: "BC-1" }).valid).toBe(
       true
     );
   });
 
-  it("条件関数には root オブジェクト全体が渡る", () => {
+  it("hands the condition the whole root object", () => {
     const seen: unknown[] = [];
     const validator = Builder()
       .use(requiredIfPlugin)
@@ -67,9 +68,9 @@ describe("requiredIf: 条件の評価", () => {
   });
 });
 
-// 旧実装は条件関数の第2引数 ArrayContext を宣言しながら一度も渡していなかった
-// (legacy-spec/plugin-catalog-relational.md「宣言されているが機能していない」)。
-describe("requiredIf: 配列要素の文脈が実際に届く", () => {
+// A previous release declared the condition's second parameter and never
+// passed it, so the feature was documented and did nothing.
+describe("requiredIf: the array element context actually arrives", () => {
   const validateLines = Builder()
     .use(requiredIfPlugin)
     .for<Order>()
@@ -80,7 +81,7 @@ describe("requiredIf: 配列要素の文脈が実際に届く", () => {
     )
     .build();
 
-  it("index 1 の要素だけが必須になる", () => {
+  it("makes only the element at index 1 required", () => {
     const result = validateLines.validate(
       {
         needsBilling: false,
@@ -99,7 +100,7 @@ describe("requiredIf: 配列要素の文脈が実際に届く", () => {
     ]);
   });
 
-  it("item.item / item.array が要素と配列そのものを指す", () => {
+  it("points item.item at the element and item.array at the array", () => {
     const captured: { index: number; item: unknown; length: number }[] = [];
     const validator = Builder()
       .use(requiredIfPlugin)
@@ -129,7 +130,7 @@ describe("requiredIf: 配列要素の文脈が実際に届く", () => {
 });
 
 describe("requiredIf: options", () => {
-  it("options.code と options.messageFactory を尊重する", () => {
+  it("honours options.code and options.messageFactory", () => {
     const validator = Builder()
       .use(requiredIfPlugin)
       .for<Order>()
@@ -153,11 +154,11 @@ describe("requiredIf: options", () => {
   });
 });
 
-// requiredIf は CheckRule ではなく「条件付き presence ルール」である。
-// check は presence ゲートを通った値しか見ないので、check のままでは
-// 欠損 (undefined) と null を一度も観測できなかった。ここがその修正の証拠。
-describe("requiredIf: 条件が真なら欠損・null・空文字のすべてを拒否する", () => {
-  it("欠損 (undefined) を拒否する", () => {
+// requiredIf is a conditional presence rule, not a check. A check only sees
+// values that already passed the presence gate, so as a check it could never
+// observe a missing value or a null at all. This is the evidence for that fix.
+describe("requiredIf: a true condition rejects missing, null and empty alike", () => {
+  it("rejects a missing value", () => {
     const result = validate({ needsBilling: true });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -171,39 +172,39 @@ describe("requiredIf: 条件が真なら欠損・null・空文字のすべてを
     ]);
   });
 
-  it("null を拒否する", () => {
+  it("rejects null", () => {
     const result = validateRaw({ needsBilling: true, billingCode: null });
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues.map((issue) => issue.code)).toEqual(["requiredIf"]);
   });
 
-  it("空文字を拒否する", () => {
+  it("rejects the empty string", () => {
     expect(validate({ needsBilling: true, billingCode: "" }).valid).toBe(false);
   });
 
-  it("値があれば通す", () => {
+  it("accepts a present value", () => {
     expect(validate({ needsBilling: true, billingCode: "BC-1" }).valid).toBe(
       true
     );
   });
 });
 
-describe("requiredIf: 条件が偽なら欠損も null も通す", () => {
-  it("欠損を通す", () => {
+describe("requiredIf: a false condition accepts missing and null", () => {
+  it("accepts a missing value", () => {
     expect(validate({ needsBilling: false }).valid).toBe(true);
   });
 
-  it("null を通す", () => {
+  it("accepts null", () => {
     expect(validateRaw({ needsBilling: false, billingCode: null }).valid).toBe(
       true
     );
   });
 });
 
-// 条件が偽のとき requiredIf は「意見を持たない」。フィールドが自分で宣言した
-// presence がそのまま効く、という二段構えの確認。
-describe("requiredIf: フィールド自身の presence と重ねたとき", () => {
+// With a false condition requiredIf holds no opinion, and whatever presence
+// the field declared for itself applies unchanged.
+describe("requiredIf: layered over the field's own presence", () => {
   const validator = Builder()
     .use(requiredIfPlugin)
     .use(requiredPlugin)
@@ -213,14 +214,14 @@ describe("requiredIf: フィールド自身の presence と重ねたとき", () 
     )
     .build();
 
-  it("条件が偽でも .required() が欠損を捕まえる", () => {
+  it("still lets .required() catch a missing value when the condition is false", () => {
     const result = validator.validate({ needsBilling: false } as Order);
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("required");
   });
 
-  it("条件が真なら requiredIf 自身の code で報告する", () => {
+  it("reports under requiredIf's own code when the condition is true", () => {
     const result = validator.validate({ needsBilling: true } as Order);
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -228,7 +229,7 @@ describe("requiredIf: フィールド自身の presence と重ねたとき", () 
   });
 });
 
-describe("requiredIf: 配列要素ごとに欠損を判定する", () => {
+describe("requiredIf: decides absence per array element", () => {
   const validateLines = Builder()
     .use(requiredIfPlugin)
     .for<Order>()
@@ -237,7 +238,7 @@ describe("requiredIf: 配列要素ごとに欠損を判定する", () => {
     )
     .build();
 
-  it("index 1 の要素だけが欠損を咎められる", () => {
+  it("blames only the element at index 1 for being absent", () => {
     const result = validateLines.validate(
       {
         needsBilling: false,

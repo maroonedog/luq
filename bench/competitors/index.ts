@@ -10,7 +10,7 @@ import { YUP_COMPETITOR } from "./yup-subjects";
 import { ZOD_COMPETITOR } from "./zod-subjects";
 import type { Competitor } from "./competitor.types";
 
-/** 比較に載せるライブラリ。増やすならここに足す。 */
+/** The libraries in the comparison. Add one here. */
 export const COMPETITORS: readonly Competitor[] = Object.freeze([
   ZOD_COMPETITOR,
   VALIBOT_COMPETITOR,

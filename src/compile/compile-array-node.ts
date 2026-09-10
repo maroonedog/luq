@@ -43,6 +43,7 @@ export function compileRelativeDeclaration(
     fieldPath: declaration.fieldPath,
     defaultOf: declaration.defaultOf,
     applyDefaultToNull: declaration.applyDefaultToNull,
+    normalize: declaration.normalize,
     planRef: context.planRef,
     eraseComposite: context.eraseComposite,
   });

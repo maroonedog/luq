@@ -25,11 +25,10 @@ import type { FieldRefs, StitchOut } from "../../plugin-kit/marker.types";
  * The bundle handed to the check at RUN TIME, keyed by the path exactly as
  * declared.
  *
- * 呼び出し側がこれを見ることはもう無い。`.stitch(["price"], ...)` と書いた
- * 時点でパスの集合は分かっているので、述語が受け取る束の型は
- * `PickPaths<TRoot, F>` として組まれる (src/chain/chain-method.types.ts の
- * StitchOut の腕)。この型が残っているのは、実行時に集める側が「キーは
- * パス文字列」という事実を書き留めておく場所だからである。
+ * Callers no longer see this type. Writing `.stitch(["price"], ...)` already
+ * fixes the set of paths, so the bundle the predicate receives is typed per
+ * key from those paths. What survives here is the run-time side's record of
+ * one fact: the keys are the path strings.
  */
 export type StitchFieldValues = Readonly<Record<string, unknown>>;
 
@@ -47,20 +46,17 @@ export type StitchFieldsOf<
 > = PickPaths<TRoot, TFields>;
 
 /**
- * 1.x の `{ valid, message? }`、名前も形もそのまま。実体は src/types の
- * CrossFieldOutcome で、チェーン層が呼び出し側の型を組むのに参照する —
- * L3 から L7 を import しないための置き場である。
+ * The legacy `{ valid, message? }`, name and shape unchanged. It is declared
+ * where the chain layer can reach it, so that layer never has to import a
+ * plugin to build a caller-facing type.
  */
 export type StitchOutcome = CrossFieldOutcome;
 
 /**
- * 実行時に build() が受け取る形。**呼び出し側が見る型ではない。**
+ * The shape build() receives at run time. **Not the type a caller sees.**
  *
- * `.stitch(["price", "quantity"], ...)` と書いた時点でパスの集合は分かって
- * いるので、述語が受け取る束は `PickPaths<TRoot, F>` として組まれ、キーごとに
- * 値の型が付く (src/chain/chain-method.types.ts の StitchOut の腕)。
- * ここが `Record<string, unknown>` のままだったのが、その腕を足すまでの
- * stitch である。
+ * Writing `.stitch(["price", "quantity"], ...)` already fixes the set of
+ * paths, so the bundle the predicate receives is typed per key.
  */
 export type StitchCheck = (
   fieldValues: StitchFieldValues,

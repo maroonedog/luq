@@ -20,7 +20,7 @@ function readManifest(root: string): string {
 }
 
 describe("renderPluginManifest", () => {
-  it("プラグイン0件でも合法な TypeScript を出す", () => {
+  it("emits valid TypeScript for no plugins at all", () => {
     const rendered = renderPluginManifest({ entries: [] });
     expect(rendered).toContain(
       "export const PLUGIN_MANIFEST: readonly PluginManifestEntry[] = [];"
@@ -28,7 +28,7 @@ describe("renderPluginManifest", () => {
     expect(rendered.endsWith("\n")).toBe(true);
   });
 
-  it("1エントリ1行なので71件でも200行に収まる", () => {
+  it("stays inside the line limit, being one line per entry", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const catalog = buildPluginCatalog(root);
       const inflated = {
@@ -50,7 +50,7 @@ describe("renderPluginManifest", () => {
 });
 
 describe("generatePluginManifest", () => {
-  it("プラグイン本体を import しない (L7 から上への import を作らない)", () => {
+  it("imports no plugin, creating no import running outward", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginManifest(root);
       const manifest = readManifest(root);
@@ -59,7 +59,7 @@ describe("generatePluginManifest", () => {
     });
   });
 
-  it("全プラグインを段つきで記録する", () => {
+  it("records every plugin with its tier", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginManifest(root);
       const manifest = readManifest(root);
@@ -73,21 +73,21 @@ describe("generatePluginManifest", () => {
     });
   });
 
-  it("空のカタログでも生成できる", () => {
+  it("generates from an empty catalog", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       expect(generatePluginManifest(root)).toBe(true);
       expect(readManifest(root)).toContain("PLUGIN_MANIFEST");
     });
   });
 
-  it("内容が同じなら書き直さない", () => {
+  it("does not rewrite when the content is unchanged", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(generatePluginManifest(root)).toBe(true);
       expect(generatePluginManifest(root)).toBe(false);
     });
   });
 
-  it("プラグインが増えたら次の生成で自動的に拾う", () => {
+  it("picks up an added plugin on the next generation", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       generatePluginManifest(root);
       expect(readManifest(root)).not.toContain("required");

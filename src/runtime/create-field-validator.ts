@@ -92,13 +92,11 @@ function createSubjectComposer(
 }
 
 /**
- * テンプレートを **一度だけ** 歩いて、包む関数に畳んでおく。
+ * Walks the template **once** and folds it into a wrapping function.
  *
- * 以前はここが `nestValue(template, 0, value)` で、検証のたびにテンプレートを
- * 歩き直して `segment.kind` を読み直していた。src/compile/validation-plan.types.ts
- * が書いているとおり「実行時はルールが何であるかを決め直してはならない。
- * 決めるのはコンパイルが済ませたこと」であり、ここはその例外になっていた。
- * 非ワイルドカードの経路 (createValueWriter) は最初からこの形である。
+ * Walking it per validation re-read each segment's kind every time, which is
+ * exactly the thing validation time must not do: what something IS was settled
+ * at compile time. The non-wildcard route was always shaped this way.
  */
 function compileNester(
   template: readonly PathSegment[]

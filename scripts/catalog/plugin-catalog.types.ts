@@ -1,35 +1,37 @@
 /**
- * カタログ機構の語彙。型のみ。
+ * The vocabulary of the catalog machinery. Types only.
  *
- * 「プラグインカタログ」は src のディレクトリ構造から導出される唯一の真実であり、
- * manifest / barrel / package.json#exports / catalog lock の4つの派生物は
- * すべてこの型を入力に取る。二重管理を作らないための中心。
+ * The plugin catalog is the one truth derived from the directory structure
+ * under src, and every artefact built from it — the manifest, the barrel, the
+ * exports map, the catalog lock — takes this type as its input. That is what
+ * keeps any of them from being maintained separately.
  */
 
 /**
- * isolated: src/plugins/<dir>。plugin-kit / types / path / 自ディレクトリのみ import 可。
- * extension: src/json-schema/extensions/<dir>。加えて json-schema 層と
- *            プラグインの ENTRY ファイルを import 可。
+ * isolated: under src/plugins. May import only plugin-kit, types, path and
+ *           its own directory.
+ * extension: under the JSON Schema extensions directory. May additionally
+ *           import the JSON Schema layer and a plugin's ENTRY file.
  */
 export type PluginTier = "isolated" | "extension";
 
 export interface PluginSourceRoot {
   readonly tier: PluginTier;
-  /** リポジトリルートからの posix 相対パス。例 "src/plugins" */
+  /** A posix path relative to the repository root, e.g. "src/plugins". */
   readonly directory: string;
 }
 
 export interface PluginCatalogEntry {
-  /** ディレクトリ名 (kebab-case)。例 "string-min" */
+  /** The directory name, kebab-case, e.g. "string-min". */
   readonly directoryName: string;
-  /** 公開サブパス名 (camelCase)。例 "stringMin" */
+  /** The published subpath name, camelCase, e.g. "stringMin". */
   readonly subpathName: string;
   readonly tier: PluginTier;
-  /** リポジトリルートからの posix 相対パス。例 "src/plugins/string-min" */
+  /** A posix path relative to the repository root, e.g. "src/plugins/string-min". */
   readonly directory: string;
-  /** エントリファイルの posix 相対パス。例 "src/plugins/string-min/index.ts" */
+  /** The entry file's posix path, e.g. "src/plugins/string-min/index.ts". */
   readonly entryFile: string;
-  /** エントリが export するプラグインシンボル。例 ["stringMinPlugin"] */
+  /** The plugin symbols the entry exports, e.g. ["stringMinPlugin"]. */
   readonly exportedSymbols: readonly string[];
 }
 
@@ -37,7 +39,7 @@ export interface PluginCatalog {
   readonly entries: readonly PluginCatalogEntry[];
 }
 
-/** ディレクトリを持たない互換サブパス (1.x で公開済みの名前を落とさないため)。 */
+/** A compatibility subpath with no directory, kept so a published name is not lost. */
 export interface SubpathAlias {
   readonly subpathName: string;
   /** src/subpath-aliases/<moduleName>.ts */

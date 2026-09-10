@@ -1,0 +1,6 @@
+node_modules/
+dist/
+# Not committed on purpose: the dependency on the repository root resolves by
+# version, so a stale lock silently installs the published package instead of
+# this checkout.
+package-lock.json

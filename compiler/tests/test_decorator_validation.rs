@@ -17,10 +17,10 @@ interface User {
     let parser = Parser::new(source.to_string());
     let (program, context) = parser.parse(source).expect("Should parse");
     
-    // デコレーターの検証を実行
+    // Run the decorator validation
     let diagnostics = analyze_program(&program);
     
-    // 未定義のデコレーターがエラーとして検出されるべき
+    // An undefined decorator should be reported as an error
     assert!(diagnostics.iter().any(|d| 
         d.message.contains("nonExistentDecorator") && 
         d.message.contains("not defined")
@@ -46,7 +46,7 @@ interface User {
     let parser = Parser::new(source.to_string());
     let (program, context) = parser.parse(source).expect("Should parse");
     
-    // インポートされたデコレーターはエラーにならないべき
+    // An imported decorator should not be an error
     let diagnostics = analyze_program(&program);
     
     assert!(!diagnostics.iter().any(|d| 
@@ -72,7 +72,7 @@ interface User {
     let parser = Parser::new(source.to_string());
     let (program, context) = parser.parse(source).expect("Should parse");
     
-    // @validatorでデコレートされた関数は使用可能であるべき
+    // A function decorated with @validator should be usable
     let diagnostics = analyze_program(&program);
     
     assert!(!diagnostics.iter().any(|d| 
@@ -97,7 +97,7 @@ interface User {
     let parser = Parser::new(source.to_string());
     let (program, context) = parser.parse(source).expect("Should parse");
     
-    // @validatorでデコレートされていない関数はデコレーターとして使用不可
+    // A function not decorated with @validator cannot be used as a decorator
     let diagnostics = analyze_program(&program);
     
     assert!(diagnostics.iter().any(|d| 

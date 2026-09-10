@@ -48,7 +48,7 @@ const refused = [
 // handling against a Luq sample that had both, which made the line counts say
 // something about the page rather than about the libraries.
 
-// luq-example: skip zod のコード。zod はこのリポジトリの依存ではないので型検査できない。
+// luq-example: skip zod's own code. zod is not a dependency here, so it cannot be type-checked.
 const zodSample = `import { z } from "zod";
 
 // The schema is the source. The type comes out of it.
@@ -99,8 +99,8 @@ if (result.valid) {
   }
 }`;
 
-// luq-example: with luqSample validateUser を前の抜粋から受け取る。router は tRPC 側の
-// luq-example: skip 名前で、このリポジトリの依存ではないため型検査できない。
+// luq-example: with luqSample takes validateUser from the previous excerpt. router is a
+// luq-example: skip tRPC name and not a dependency here, so it cannot be type-checked.
 const bothSample = `// Standard Schema means this is not an either/or at the boundary.
 import { toStandardSchema } from "@maroonedog/luq/standard-schema";
 

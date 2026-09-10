@@ -59,7 +59,7 @@ function toExplicitEsmSpecifier(fromFile: string, specifier: string): string {
   const resolved = resolveEmittedSpecifier(fromFile, specifier, CJS_EXTENSION);
   if (resolved === undefined) {
     throw new DistributionBuildError(
-      `${fromFile}: 相対指定 "${specifier}" が解決できません。`
+      `${fromFile}: the relative specifier "${specifier}" does not resolve.`
     );
   }
   const relative = path

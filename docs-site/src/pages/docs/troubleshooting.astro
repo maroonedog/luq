@@ -19,7 +19,7 @@ const tableOfContents = [
   { id: 'getting-help', title: 'Getting help', level: 2 },
 ];
 
-// luq-example: must-fail — 1.x の import 指定子は exports マップに無いので、解決できてはならない
+// luq-example: must-fail — the legacy import specifiers are not in the exports map, so they must not resolve
 const badImportsExample = `// Does not compile. None of these specifiers exist in the exports map.
 import { Builder } from '@maroonedog/luq/core';
 import { requiredPlugin } from '@maroonedog/luq/plugin';
@@ -44,13 +44,13 @@ export const used = [
   definePlugin,
 ];`;
 
-// luq-example: must-fail — ルート subpath はプラグインを1つも export しないので、通ってはならない
+// luq-example: must-fail — the root subpath exports no plugin, so this must not compile
 const rootPluginsExample = `// Does not compile. The root subpath exports NO plugins, deliberately.
 import { Builder, requiredPlugin } from '@maroonedog/luq';
 
 export const used = [Builder, requiredPlugin];`;
 
-// luq-example: must-fail — bag に入れていない .email() が生えていないことの証明なので、通ってはならない
+// luq-example: must-fail — proves .email() does not appear without being in the bag, so this must not compile
 const missingPluginExample = `// Does not compile: .email() is not on the chain, because the plugin
 // that contributes it was never put in the bag.
 import { Builder } from '@maroonedog/luq';
@@ -77,7 +77,7 @@ export const userValidator = Builder()
   .v('email', b => b.string.required().email())
   .build();`;
 
-// luq-example: must-fail — number のフィールドに b.string を選べないことの証明なので、通ってはならない
+// luq-example: must-fail — proves b.string cannot be chosen for a number field, so this must not compile
 const wrongSlotExample = `// Does not compile: 'age' is a number, so b.string is not offered.
 import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
@@ -90,7 +90,7 @@ export const personValidator = Builder()
   .v('age', b => b.string.required())
   .build();`;
 
-// luq-example: must-fail — 1.x が受けた4つのパス形が型で弾かれることの証明なので、通ってはならない
+// luq-example: must-fail — proves the four legacy path forms are refused by the types, so this must not compile
 const badPathsExample = `// Does not compile. Four path forms 1.x accepted, and why each is gone.
 import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
@@ -122,7 +122,7 @@ export const modelValidator = Builder()
   .v('when', b => b.date.required())
   .build();`;
 
-// luq-example: must-fail — required() に allowNull オプションが無いことの証明なので、通ってはならない
+// luq-example: must-fail — proves required() has no allowNull option, so this must not compile
 const allowNullExample = `// Does not compile: required() takes no options beyond the uniform RuleOptions.
 import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
@@ -148,7 +148,7 @@ export const rowValidator = Builder()
   .v('closedAt', b => b.string.required().nullable())
   .build();`;
 
-// luq-example: must-fail — build() の戻り値が関数でないことの証明なので、通ってはならない
+// luq-example: must-fail — proves build() does not return a function, so this must not compile
 const buildCallableExample = `// Does not compile: build() returns an object, not a function.
 import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
@@ -163,7 +163,7 @@ const validateUser = Builder()
 
 export const broken = validateUser({ name: 'Jo' });`;
 
-// luq-example: must-fail — RuleOptions に message キーが無いことの証明なので、通ってはならない
+// luq-example: must-fail — proves RuleOptions has no message key, so this must not compile
 const messageOptionExample = `// Does not compile: RuleOptions has no \`message\` key.
 import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
@@ -771,46 +771,16 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             >
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                First, check what "expected" was. These are the measured figures — esbuild
-                0.25.5, <code>bundle + minify + esm + es2020 + treeShaking</code>, then
-                <code>zlib.gzipSync</code>, re-measured by CI on every build.
+                First, check what "expected" was. Every entry is measured and re-measured by
+                CI on every build:
+                <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
+                  >the bundle size table</a
+                >. The floor is {bundleSize.coreOnly.gzip} for
+                <code>Builder</code> with no plugins.
               </p>
-              <div class="overflow-x-auto">
-                <table class="w-full min-w-[32rem] text-left">
-                  <thead>
-                    <tr class="border-b border-outline">
-                      <th class="md-title-small py-2 pr-4">Entry</th>
-                      <th class="md-title-small py-2 text-right">gzip</th>
-                    </tr>
-                  </thead>
-                  <tbody class="md-body-medium text-on-surface-variant">
-                    <tr class="border-b border-outline-variant">
-                      <td class="py-2 pr-4"><code>Builder</code> only, zero plugins</td>
-                      <td class="py-2 text-right">{bundleSize.coreOnly.gzip}</td>
-                    </tr>
-                    <tr class="border-b border-outline-variant">
-                      <td class="py-2 pr-4">+ 1 plugin</td>
-                      <td class="py-2 text-right">7,638 B</td>
-                    </tr>
-                    <tr class="border-b border-outline-variant">
-                      <td class="py-2 pr-4">+ 3 plugins</td>
-                      <td class="py-2 text-right">7,987 B</td>
-                    </tr>
-                    <tr class="border-b border-outline-variant">
-                      <td class="py-2 pr-4">+ 6 plugins</td>
-                      <td class="py-2 text-right">{bundleSize.sixPlugin.gzip}</td>
-                    </tr>
-                    <tr>
-                      <td class="py-2 pr-4">all 76 plugins</td>
-                      <td class="py-2 text-right">{bundleSize.fullFeature.gzip}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
               <p class="md-body-medium text-on-surface-variant">
-                Adding a plugin costs 129–224 B of gzip across that range, so if your bundle
-                is much larger than the core plus your plugin count, something is pulling in
-                more than you named.
+                Adding a plugin costs 129–224 B of gzip, so if your bundle is much larger than
+                the core plus your plugin count, something is pulling in more than you named.
               </p>
               <CodeBlock code={importCostExample} language="typescript" />
               <ul class="md-body-medium space-y-2 text-on-surface-variant">
@@ -820,11 +790,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                   that you are emitting ES modules and that tree-shaking is on.
                 </li>
                 <li>
-                  <code>jsonSchemaFullFeature</code> bundles 49 plugins, which is why one
-                  import covers a whole document; it lands at 21,383 B. The
-                  <code>jsonSchema</code> route is billed as the tree-shakeable half and
-                  measured it is not: with a working plugin bag it is 21,371 B, twelve bytes
-                  less. Use it for the chain method, not to save bytes.
+                  <code>jsonSchemaFullFeature</code> bundles the plugins a whole document
+                  needs, which is why one import covers it. The <code>jsonSchema</code> route
+                  is billed as the tree-shakeable half and measured it is not — use it for the
+                  chain method, not to save bytes. Both are in
+                  <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
+                    >the bundle size table</a
+                  >.
                 </li>
                 <li>
                   <code>import * as plugins from '…'</code> defeats tree-shaking in most

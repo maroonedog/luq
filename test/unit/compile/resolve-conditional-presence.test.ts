@@ -1,5 +1,5 @@
-// 条件付き presence が「build 時に完成し、実行時は選ぶだけ」であることの検証。
-// 主張は結果ではなくプランに対して立てる。
+// That conditional presence is finished at build time and only selected at
+// validation time. The assertions are made against the plan, not the result.
 import {
   NO_PRESENCE_OVERRIDES,
   resolveConditionalPresence,
@@ -11,7 +11,7 @@ import {
 } from "./rule-fixtures";
 
 describe("resolveConditionalPresence", () => {
-  it("条件付きルールが無ければ共有された凍結済みの空配列を返す", () => {
+  it("answers the shared frozen empty array when there is no conditional rule", () => {
     const overrides = resolveConditionalPresence([]);
     expect(overrides).toBe(NO_PRESENCE_OVERRIDES);
     expect(Object.isFrozen(overrides)).toBe(true);
@@ -20,7 +20,7 @@ describe("resolveConditionalPresence", () => {
     }).toThrow(TypeError);
   });
 
-  it("宣言順を保ち、1ルールにつき1エントリを作る", () => {
+  it("keeps declaration order and makes one entry per rule", () => {
     const overrides = resolveConditionalPresence([
       makeConditionalPresence("first", () => true),
       makeConditionalPresence("second", () => true),
@@ -32,7 +32,7 @@ describe("resolveConditionalPresence", () => {
     ]);
   });
 
-  it("両側とも完成した PresencePolicy になっている (実行時に組み立てない)", () => {
+  it("has both sides as finished policies, assembled at no point later", () => {
     const [override] = resolveConditionalPresence([
       makeConditionalPresence(
         "optionalIf",
@@ -44,8 +44,8 @@ describe("resolveConditionalPresence", () => {
     expect(override?.whenMet).toEqual({
       code: "optionalIf",
       severity: "error",
-      // 条件付き presence はビルダーの機能で、文書は関わらない。null は
-      // ここでは値ではなく不在のままである。
+      // Conditional presence is a builder feature and no document is
+      // involved, so null stays absence here rather than becoming a value.
       nullIsValue: false,
       allowUndefined: true,
       allowNull: true,
@@ -63,7 +63,7 @@ describe("resolveConditionalPresence", () => {
     });
   });
 
-  it("意見を持たない側は null のまま残る", () => {
+  it("leaves the side holding no opinion as null", () => {
     const [override] = resolveConditionalPresence([
       makeConditionalPresence("requiredIf", () => true),
     ]);
@@ -71,7 +71,7 @@ describe("resolveConditionalPresence", () => {
     expect(override?.whenUnmet).toBeNull();
   });
 
-  it("述語は同一性のまま保持され、再ラップされない", () => {
+  it("keeps the predicate by identity, wrapping it in nothing", () => {
     const when = (): boolean => true;
     const [override] = resolveConditionalPresence([
       makeConditionalPresence("requiredIf", when),
@@ -79,13 +79,13 @@ describe("resolveConditionalPresence", () => {
     expect(override?.when).toBe(when);
   });
 
-  it("build 時に述語を一度も呼ばない", () => {
+  it("never calls the predicate at build time", () => {
     const when = jest.fn(() => true);
     resolveConditionalPresence([makeConditionalPresence("requiredIf", when)]);
     expect(when).not.toHaveBeenCalled();
   });
 
-  it("両側の severity と code はルールと同一", () => {
+  it("takes both sides' severity and code from the rule", () => {
     const [override] = resolveConditionalPresence([
       makeConditionalPresence(
         "MY_CODE",
@@ -99,7 +99,7 @@ describe("resolveConditionalPresence", () => {
     expect(override?.whenUnmet?.code).toBe("MY_CODE");
   });
 
-  it("エントリもポリシーも凍結されている", () => {
+  it("freezes both the entries and the policies", () => {
     const [override] = resolveConditionalPresence([
       makeConditionalPresence("requiredIf", () => true),
     ]);
@@ -107,7 +107,7 @@ describe("resolveConditionalPresence", () => {
     expect(Object.isFrozen(override?.whenMet)).toBe(true);
   });
 
-  it("describe はルールのものへ委譲する", () => {
+  it("delegates describe to the rule's own", () => {
     const [override] = resolveConditionalPresence([
       makeConditionalPresence("requiredIf", () => true),
     ]);
