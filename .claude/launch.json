@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "preview", "--prefix", "docs-site"],
       "port": 4321,
       "autoPort": true
+    },
+    {
+      "name": "react-hook-form-example",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "examples/react-hook-form"],
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }

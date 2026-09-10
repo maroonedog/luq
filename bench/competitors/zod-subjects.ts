@@ -21,7 +21,7 @@ const singleField = z.object({
   name: z.string().min(3),
 });
 
-/** multiField: name 3..50 / email / age 18..120。 */
+/** multiField: name 3..50 / email / age 18..120. */
 const multiField = z.object({
   name: z.string().min(3).max(50),
   email: z.email(),

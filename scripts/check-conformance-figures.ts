@@ -174,7 +174,7 @@ export function findFigureViolations(
           detail:
             `${numerator} … ${percent}% matches no recorded measurement. ` +
             `The current pass rate is ${pin.passingCases} / ${pin.caseCount} = ` +
-            `${toPercent(pin.passingCases, pin.caseCount)}%。` +
+            `${toPercent(pin.passingCases, pin.caseCount)}%. ` +
             "config/json-schema-suite.json is the only source.",
         });
       }

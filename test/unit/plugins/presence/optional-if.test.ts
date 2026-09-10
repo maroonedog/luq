@@ -43,7 +43,7 @@ describe("optionalIf", () => {
   });
 
   // A previous release hard-coded the code away and never called the factory.
-  // (legacy-spec/plugin-catalog-core.md「optionalIf's discarded options」)。
+  // (legacy-spec/plugin-catalog-core.md, "optionalIf's discarded options")
   it("honours options.code, which a previous release ignored", () => {
     const validator = Builder()
       .use(optionalIfPlugin)

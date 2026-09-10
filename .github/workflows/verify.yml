@@ -58,6 +58,16 @@ jobs:
       # dist gates, doc gates, size + barrel-equivalence, jest.
       - run: npm run verify
 
+      # The react-hook-form example compiles against the dist the step above
+      # just built. An example that nothing compiles drifts from the API for
+      # the same reason a README does, and this one is the only place the
+      # Standard Schema seam is exercised by a real consumer.
+      # --ignore-scripts keeps the file: dependency from rebuilding dist.
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: examples/react-hook-form
+      - run: npm run typecheck
+        working-directory: examples/react-hook-form
+
       # The published artefact, listed. A file that should not ship shows up in
       # the log of the run that would have published it.
       - run: npm pack --dry-run

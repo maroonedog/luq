@@ -550,6 +550,29 @@ carrying `~standard` on every validator adds 312 B — 4.2% charged to everyone,
 including the people who never pass a validator to tRPC. Importing the subpath
 costs those 312 B only when you import it, and nothing when you don't.
 
+### react-hook-form
+
+react-hook-form takes any Standard Schema, so the integration is one line:
+
+<!-- luq-example: skip — needs react and react-hook-form, which the doc harness's scratch consumer does not install -->
+
+```ts
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { useForm } from "react-hook-form";
+
+const { register, handleSubmit, formState } = useForm<Signup>({
+  resolver: standardSchemaResolver(signupSchema),
+});
+```
+
+Pair it with `normalize` and the payload reaching `handleSubmit` is already
+tidied — the name trimmed, the email lowercased, and the number input's string
+turned into a number — without `valueAsNumber` or a `setValueAs` per field,
+because the resolver reads the value Luq wrote back.
+
+A running form is in [examples/react-hook-form](examples/react-hook-form):
+`npm install && npm run dev`.
+
 ## Your own rules
 
 ```ts

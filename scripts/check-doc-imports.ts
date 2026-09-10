@@ -29,7 +29,7 @@ function collectMarkdownFiles(absolutePath: string): string[] {
     );
 }
 
-/** "@scope/pkg/plugins/x" -> "./plugins/x"、"@scope/pkg" -> "." */
+/** "@scope/pkg/plugins/x" -> "./plugins/x", and "@scope/pkg" -> "." */
 function toSubpathKey(specifier: string, packageName: string): string | null {
   if (specifier === packageName) return ".";
   if (!specifier.startsWith(`${packageName}/`)) return null;
