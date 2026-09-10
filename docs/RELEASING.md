@@ -139,15 +139,27 @@ publishing**, because the settings page a publisher is registered on belongs to
 a package that does not exist yet. It has to be bootstrapped by hand once:
 
 ```bash
-cd luq-codegen && npm publish --no-provenance
+cd luq-codegen && npm publish
 ```
 
-`--no-provenance` is required, and is not optional politeness. `publishConfig`
-asks for provenance, provenance is generated from a CI provider's OIDC
-identity, and a laptop is not one — without the flag npm refuses the publish
-outright with `Automatic provenance generation not supported for provider:
-null`. That one release therefore ships without provenance. Every release after
-it goes through the workflow and carries it.
+That works because the generator asks for provenance in the **workflow**
+(`npm publish --provenance`) rather than in `publishConfig`, which is where the
+library asks for it. The difference is deliberate and was learned the hard way:
+provenance is generated from a CI provider's OIDC identity, so `publishConfig`
+provenance makes `npm publish` refuse to run anywhere else at all —
+
+```
+npm ERR! code EUSAGE
+npm ERR! Automatic provenance generation not supported for provider: null
+```
+
+— and `--no-provenance` does not get past it, because `publishConfig` wins over
+the flag. A package that must be bootstrapped by hand once therefore cannot
+carry provenance in `publishConfig`, or the bootstrap requires editing
+package.json to get through it.
+
+The bootstrap release ships without provenance. Every release after it goes
+through the workflow and carries it.
 
 Then register the trusted publisher against the package that now exists, and
 the workflow has every release after this one.

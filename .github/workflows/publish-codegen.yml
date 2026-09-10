@@ -106,10 +106,16 @@ jobs:
       # `npm publish` runs prepublishOnly, which is where the generator's
       # verify happens — typecheck, build, dist gates, tests.
       #
-      # access and provenance live in publishConfig rather than as CLI flags,
-      # so a publish run by hand carries the same terms.
+      # --provenance is a flag here rather than publishConfig, unlike the
+      # library. Provenance is generated from a CI provider's OIDC identity, so
+      # asking for it in package.json makes `npm publish` REFUSE to run
+      # anywhere else — including the one hand publish that has to bootstrap a
+      # package npm has never seen, since a trusted publisher cannot be
+      # registered against a package that does not exist. Requesting it where
+      # it can actually be produced keeps that bootstrap possible without
+      # anyone editing package.json to get through it.
       - name: Publish
-        run: npm publish
+        run: npm publish --provenance
         working-directory: luq-codegen
 
       - name: Confirm what npm now serves
