@@ -56,8 +56,8 @@ Two consequences worth knowing before you read further:
   registry, no plugin installation, no shared configuration object.
 - **Every rule you can call is a plugin you imported by name**, so the bundle
   contains what you used and nothing else — an unimported plugin's method does
-  not even typecheck. What each configuration costs is measured on every build
-  and recorded in [docs/measurements.md](docs/measurements.md).
+  not even typecheck. What each configuration costs is measured on every build:
+  [luq.dev/benchmarks](https://luq.dev/benchmarks).
 
 ## When schema-first is the right answer
 
@@ -99,19 +99,19 @@ Zero runtime dependencies. TypeScript 5.0 or later.
 
 ## Documentation
 
-**[luq.dev](https://luq.dev)** — the guide, the plugin reference, the measured
-figures and the JSON Schema conformance report.
-
-The same guide ships inside this repository, so the copy at any tag is the copy
-that describes that release:
+### **[luq.dev](https://luq.dev)**
 
 | | |
 |---|---|
-| [docs/guide/](docs/guide/) | getting started, field paths, presence and conditionals, JSON Schema, Standard Schema, writing a plugin, plugin reference |
-| [docs/measurements.md](docs/measurements.md) | bundle size, throughput, what is slower than 1.x and why |
-| [docs/json-schema-conformance.md](docs/json-schema-conformance.md) | the Draft-07 suite result, case by case |
-| [docs/migration/](docs/migration/) | every incompatibility with 1.x, with the fix beside it |
-| [examples/](examples/) | runnable projects |
+| [Getting started](https://luq.dev/docs/getting-started) | the builder, defaults, `normalize`, reading a result |
+| [Core concepts](https://luq.dev/docs/core-concepts) | field paths, slots, presence, transforms |
+| [Plugins](https://luq.dev/plugins) | every subpath, symbol, chain method and slot |
+| [JSON Schema](https://luq.dev/json-schema) | reading a document in, writing one back out, measured Draft-07 conformance |
+| [Benchmarks](https://luq.dev/benchmarks) | bundle size and throughput, with the method |
+| [Luq or zod?](https://luq.dev/luq-or-zod) | when schema-first is the better answer |
+
+The same documentation ships in `docs/` inside this repository, so the copy at
+any tag describes that release.
 
 ## Status, and how this gets changed
 
