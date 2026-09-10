@@ -22,12 +22,13 @@ unsearchable for everyone.
   so the formatted result fits.
 
 ### Where the cut usually goes
-| Symptom | Extract to |
-|---|---|
-| A block of branches that only handles one type | A module for that type (`string-length-validator.ts`) |
-| "prepare → run → format" living in one function | One pure function per step, one file each |
-| Constant tables or error messages mixed in | `*-messages.ts` / `*-constants.ts` |
-| Type declarations living beside logic | `*.types.ts` |
+
+| Symptom                                         | Extract to                                            |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| A block of branches that only handles one type  | A module for that type (`string-length-validator.ts`) |
+| "prepare → run → format" living in one function | One pure function per step, one file each             |
+| Constant tables or error messages mixed in      | `*-messages.ts` / `*-constants.ts`                    |
+| Type declarations living beside logic           | `*.types.ts`                                          |
 
 ## 2. One responsibility per class
 
@@ -47,16 +48,17 @@ unsearchable for everyone.
 
 **How to replace one**: put "what" and "does what" into the name.
 
-| ✗ | ✓ |
-|---|---|
-| `FieldHelper` | `FieldPathResolver` |
-| `validateData(d)` | `validateEmailFormat(email)` |
-| `processItem(x)` | `compileFieldRuleToValidator(rule)` |
-| `getInfo()` | `getPluginMetadata()` |
+| ✗                 | ✓                                       |
+| ----------------- | --------------------------------------- |
+| `FieldHelper`     | `FieldPathResolver`                     |
+| `validateData(d)` | `validateEmailFormat(email)`            |
+| `processItem(x)`  | `compileFieldRuleToValidator(rule)`     |
+| `getInfo()`       | `getPluginMetadata()`                   |
 | `handleResult(r)` | `mergeIssuesIntoResult(issues, result)` |
-| `utils/index.ts` | `field-path/parse-field-path.ts` |
+| `utils/index.ts`  | `field-path/parse-field-path.ts`        |
 
 **Rules**:
+
 - Function = verb phrase. Start with `is` / `has` / `can` / `should` when it
   returns a boolean.
 - Variable = a noun you can identify the contents from. `result` alone is not
@@ -96,13 +98,13 @@ the comment is still self-consistent, just wrong.
 
 **Banned in a comment:**
 
-| ✗ | Why it rots |
-|---|---|
-| Restating another file's contents ("`run-field.ts` applies the default, then normalize, then presence") | That order changes there, not here |
-| A measured number owned elsewhere ("core-only is 8,208 B", "45–54% of the garbage") | The measurement is re-taken and this copy is not |
-| A count of things that live elsewhere ("the four callers", "all 77 plugins", "three pages say this") | Someone adds a fifth |
-| Narrating another layer's design to justify this one | That layer gets refactored |
-| A changelog of what this file used to do, or what was tried and reverted | Belongs in git history |
+| ✗                                                                                                       | Why it rots                                      |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Restating another file's contents ("`run-field.ts` applies the default, then normalize, then presence") | That order changes there, not here               |
+| A measured number owned elsewhere ("core-only is 8,208 B", "45–54% of the garbage")                     | The measurement is re-taken and this copy is not |
+| A count of things that live elsewhere ("the four callers", "all 77 plugins", "three pages say this")    | Someone adds a fifth                             |
+| Narrating another layer's design to justify this one                                                    | That layer gets refactored                       |
+| A changelog of what this file used to do, or what was tried and reverted                                | Belongs in git history                           |
 
 **Allowed:**
 
@@ -135,7 +137,33 @@ measurement config, cross-layer design in `docs/design/`, history in git.
 **Do not duplicate.** One topic, one owner. If two files would say the same
 thing, one of them says it and the other points.
 
-## 6. Everything else
+## 6. A pull request or an issue states the result, not the review
+
+**Write what the code does now, as fact.** Never write what someone pointed
+out, what was wrong before, whose comment prompted it, or how many rounds it
+took. The review is a conversation; the pull request is a record of the change.
+
+| ✗                                                             | ✓                                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| "As pointed out in review, the recorder was on the core path" | "The recorder is installed by the JSON Schema entry point; the core carries one null check" |
+| "My first estimate was wrong: it does not save bytes"         | "core-only measures 8,208 B, 18 B above the previous figure"                                |
+| "Fixed the bug where normalize ran after presence"            | "normalize runs after default and before presence"                                          |
+| "Reviewer asked for tests, so 11 were added"                  | "11 tests pin the ordering, the absence handling and the write-back contract"               |
+
+A defect that is being FIXED IN THIS CHANGE is part of the result, so name it —
+in one line, as a fact about the code, with no account of how it was found.
+What never belongs is the review itself: who said what, in what order, and what
+was believed before.
+
+The same applies to a measurement that came out against expectation. Publish
+the number and what follows from it. Do not publish the expectation.
+
+**Why.** A pull request is read later by someone deciding whether a change is
+safe, and by whoever bisects to it. Neither needs the discussion; both need the
+resulting behaviour stated plainly. Narrating the review also makes the record
+about the people rather than about the code.
+
+## 7. Everything else
 
 - One file, one public concept. `index.ts` holds re-exports and no implementation.
 - No import cycles.
@@ -145,7 +173,7 @@ thing, one of them says it and the other points.
   npm run lint && npm run format:check && npm test
   ```
 
-## 7. The design, which does not change
+## 8. The design, which does not change
 
 Luq's core stays as it is. A refactor re-expresses the same design with more
 precise types and smaller responsibilities.
@@ -157,7 +185,7 @@ precise types and smaller responsibilities.
 - **Existing TypeScript types are the schema**: no redeclaration required
 - **JSON Schema Draft-07 compatible**
 
-## 8. Limits on type-level tests (measured)
+## 9. Limits on type-level tests (measured)
 
 A type-level test written the wrong way stops the compiler.
 
@@ -166,10 +194,10 @@ A type-level test written the wrong way stops the compiler.
 Checking "for every literal P that `FieldPath<T>` produces, `ValueAtPath<T,P>` is
 not `never`" costs instantiations proportional to paths × depth.
 
-| Subject | Instantiations | Time | Result |
-|---|---|---|---|
-| Model of width 6, depth 5 | — | 1.95s | passes |
-| Model of width 8, depth 6 | 9,200,000 | 16.5s / 2.2GB | **fails with TS2589** |
+| Subject                   | Instantiations | Time          | Result                |
+| ------------------------- | -------------- | ------------- | --------------------- |
+| Model of width 6, depth 5 | —              | 1.95s         | passes                |
+| Model of width 8, depth 6 | 9,200,000      | 16.5s / 2.2GB | **fails with TS2589** |
 
 **Never point this test at a realistically sized model.** Pin it to a bounded
 fixture.
@@ -184,7 +212,7 @@ With 45 plugins over 100 fields: a 6-step chain costs 172,521 / 0.87s, a 25-step
 chain 182,997 / 0.88s. "More plugins makes completion slow" does not hold when
 measured. Measure again after any change that adds type parameters.
 
-## 9. Mutation-test every safety mechanism
+## 10. Mutation-test every safety mechanism
 
 This design has twice produced a test that looked like it checked "this must
 fail" and checked nothing. Both times it took actually breaking the code to find
