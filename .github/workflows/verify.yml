@@ -58,15 +58,29 @@ jobs:
       # dist gates, doc gates, size + barrel-equivalence, jest.
       - run: npm run verify
 
-      # The react-hook-form example compiles against the dist the step above
-      # just built. An example that nothing compiles drifts from the API for
-      # the same reason a README does, and this one is the only place the
-      # Standard Schema seam is exercised by a real consumer.
+      # The OpenAPI generator has its own tests and, until now, nothing ran
+      # them: it is a sub-package with no entry in this file, so it could have
+      # been broken by a change here for as long as nobody looked.
+      - run: npm run verify
+        working-directory: openapi-ts-plugin
+
+      # The examples compile against the dist the step above just built. An
+      # example that nothing compiles drifts from the API for the same reason
+      # a README does, and these are the only places the Standard Schema seam
+      # and the OpenAPI generator are exercised by a real consumer.
       # --ignore-scripts keeps the file: dependency from rebuilding dist.
       - run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: examples/react-hook-form
       - run: npm run typecheck
         working-directory: examples/react-hook-form
+
+      # This one generates first: the checked-in tree has no generated file, so
+      # a generator that stopped working fails here rather than passing on a
+      # stale copy someone committed.
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: examples/openapi
+      - run: npm run verify
+        working-directory: examples/openapi
 
       # The published artefact, listed. A file that should not ship shows up in
       # the log of the run that would have published it.
