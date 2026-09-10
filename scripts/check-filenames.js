@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * src/ 配下のファイル名が kebab-case であることを検査する。
- * 規約: ファイル名 = kebab-case、export する主要シンボルと対応させる。
+ * Checks that file names under src/ are kebab-case.
+ * The rule: file name = kebab-case, matching the main symbol the file exports.
  */
 const fs = require("fs");
 const path = require("path");
@@ -26,18 +26,16 @@ for (const filePath of collectTypeScriptFiles(SOURCE_ROOT)) {
   if (relativePath.includes("__tests__") || fileName.endsWith(".test.ts"))
     continue;
   if (!KEBAB_CASE.test(fileName)) {
-    violations.push(`${relativePath}: ファイル名が kebab-case ではありません`);
+    violations.push(`${relativePath}: file name is not kebab-case`);
   }
   if (ABSTRACT_NAMES.test(fileName)) {
-    violations.push(
-      `${relativePath}: 抽象的な語をファイル名に含めないでください`
-    );
+    violations.push(`${relativePath}: do not put a vague word in a file name`);
   }
 }
 
 if (violations.length > 0) {
-  console.error(`ファイル名規約違反 ${violations.length} 件:`);
+  console.error(`${violations.length} file-name rule violation(s):`);
   for (const violation of violations) console.error(`  ${violation}`);
   process.exit(1);
 }
-console.log("ファイル名規約: 違反なし");
+console.log("File-name rules: no violations");

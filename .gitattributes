@@ -1,8 +1,7 @@
-# 既定: テキストと判定したものは全て LF で保存・チェックアウトする。
-# .prettierrc.json の endOfLine: lf と揃える。
+# Default: everything detected as text is stored and checked out with LF.
 * text=auto eol=lf
 
-# 明示的にテキスト
+# Explicitly text
 *.ts    text eol=lf
 *.tsx   text eol=lf
 *.js    text eol=lf
@@ -17,12 +16,12 @@
 *.sh    text eol=lf
 *.luq   text eol=lf
 
-# Windows 専用スクリプトは CRLF のまま
+# Windows-only scripts stay CRLF
 *.bat   text eol=crlf
 *.cmd   text eol=crlf
 *.ps1   text eol=crlf
 
-# バイナリ
+# Binary
 *.png   binary
 *.jpg   binary
 *.jpeg  binary

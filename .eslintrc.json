@@ -18,15 +18,15 @@
       "error",
       {
         "selector": "TSAsExpression > TSAnyKeyword",
-        "message": "`as any` は禁止。unknown + 型ガード、判別可能ユニオン、または具体型への as を使う。どうしても必要なら理由コメント + eslint-disable-next-line を書く。"
+        "message": "`as any` is banned. Use unknown plus a type guard, a discriminated union, or an as to a concrete type. When it is genuinely unavoidable, write the reason in a comment above an eslint-disable-next-line."
       },
       {
         "selector": "TSTypeAssertion > TSAnyKeyword",
-        "message": "`<any>` キャストは禁止。`as any` と同じ理由。"
+        "message": "The `<any>` cast is banned, for the same reason as `as any`."
       },
       {
         "selector": "TSTypeReference > TSQualifiedName[left.name='globalThis']",
-        "message": "globalThis 経由の型参照は禁止。明示的に import する。"
+        "message": "Referring to a type through globalThis is banned. Import it explicitly."
       }
     ],
     "@typescript-eslint/naming-convention": [
