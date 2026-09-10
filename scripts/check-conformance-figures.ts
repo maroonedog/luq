@@ -183,10 +183,17 @@ export function findFigureViolations(
   return violations;
 }
 
-/** The places a pass rate can be written and generation is not an option. */
+/**
+ * The places a pass rate can be written and generation is not an option.
+ *
+ * The guide is here because it was outside this list for two releases and went
+ * on quoting 828 / 929 = 89.13% while the measured rate had reached 100.00%.
+ * A file that states a pass rate belongs in this list or it drifts.
+ */
 export const CHECKED_FILES: readonly string[] = [
   "README.md",
   "docs/json-schema-conformance.md",
+  "docs/guide/json-schema.md",
 ];
 
 if (require.main === module) {

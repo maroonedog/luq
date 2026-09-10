@@ -498,8 +498,8 @@ not — use it for the chain method, not to save bytes.
 
 The other direction works too: `toStandardJsonSchema(validator)` writes a built
 validator back out as a Draft-07 or 2020-12 document. Targets, what happens to a
-rule that cannot be expressed, and the ordering it needs are on
-[the JSON Schema page](https://luq.dev/json-schema#emit).
+rule that cannot be expressed, and the ordering it needs are in
+[docs/guide/json-schema.md](docs/guide/json-schema.md#the-other-direction-writing-a-document-out).
 
 ## Standard Schema
 
@@ -768,8 +768,8 @@ the 86 keys** against the published declarations under **both** `node16` and
 - **[Presence and conditionals](docs/guide/presence-and-conditionals.md)** —
   `required` / `optional` / `nullable` / `requiredIf`, the order rules run
   in, and the cross-field rules (`compareField` / `stitch` / `stitchWith`)
-- **[JSON Schema](docs/guide/json-schema.md)** — the two front doors, and the
-  keywords that are not supported
+- **[JSON Schema](docs/guide/json-schema.md)** — the two front doors, writing a
+  document back out, and the keywords that are not supported
 - **[Writing a plugin](docs/guide/writing-a-plugin.md)** — markers, `out`,
   message factories, and the isolation rule
 - **[Plugin reference](docs/guide/plugin-reference.md)** — generated table of
