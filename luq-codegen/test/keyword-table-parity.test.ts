@@ -1,5 +1,5 @@
 // ===========================================================================
-// openapi-ts-plugin/test/keyword-table-parity.test.ts
+// luq-codegen/test/keyword-table-parity.test.ts
 //
 // The generator holds its own keyword table because it answers a different
 // question from the library's: "what source do we emit" rather than "which

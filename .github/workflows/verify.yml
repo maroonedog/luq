@@ -58,7 +58,7 @@ jobs:
       # dist gates, doc gates, size + barrel-equivalence, jest.
       - run: npm run verify
 
-      # The OpenAPI generator has its own tests and, until now, nothing ran
+      # The code generator has its own tests and, until now, nothing ran
       # them: it is a sub-package with no entry in this file, so it could have
       # been broken by a change here for as long as nobody looked.
       #
@@ -66,19 +66,19 @@ jobs:
       # step above built, reachable under its own node_modules. --ignore-scripts
       # keeps the file: dependency from rebuilding that dist.
       - run: npm install --ignore-scripts --no-audit --no-fund
-        working-directory: openapi-ts-plugin
+        working-directory: luq-codegen
       - run: npm run verify
-        working-directory: openapi-ts-plugin
+        working-directory: luq-codegen
 
       # Listed here as well as at the root, because this sub-package publishes
       # its own tarball and the root's pack says nothing about it.
       - run: npm pack --dry-run
-        working-directory: openapi-ts-plugin
+        working-directory: luq-codegen
 
       # The examples compile against the dist built earlier in this job. An
       # example that nothing compiles drifts from the API for the same reason
       # a README does, and these are the only places the Standard Schema seam
-      # and the OpenAPI generator are exercised by a real consumer.
+      # and the code generator are exercised by a real consumer.
       # --ignore-scripts keeps the file: dependency from rebuilding dist.
       - run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: examples/react-hook-form
@@ -88,7 +88,7 @@ jobs:
       # This one generates first: the checked-in tree has no generated file, so
       # a generator that stopped working fails here rather than passing on a
       # stale copy someone committed. It imports the generator as an installed
-      # package, so openapi-ts-plugin has to have been built earlier in this job.
+      # package, so luq-codegen has to have been built earlier in this job.
       - run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: examples/openapi
       - run: npm run verify

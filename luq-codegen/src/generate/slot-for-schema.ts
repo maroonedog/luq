@@ -1,5 +1,5 @@
 // ===========================================================================
-// openapi-ts-plugin/src/generate/slot-for-schema.ts
+// luq-codegen/src/generate/slot-for-schema.ts
 //
 // A schema's type to the slot name that follows `b.`.
 //

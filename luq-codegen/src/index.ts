@@ -1,5 +1,5 @@
 // ===========================================================================
-// openapi-ts-plugin/src/index.ts — re-exports only. Nothing is defined here.
+// luq-codegen/src/index.ts — re-exports only. Nothing is defined here.
 //
 // The one entry point this package publishes. Every module beside it is
 // reachable only through what is named below, so moving or splitting one of

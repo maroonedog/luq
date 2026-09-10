@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@maroonedog/luq": "file:../..",
-    "@maroonedog/openapi-ts-luq": "file:../../openapi-ts-plugin"
+    "@maroonedog/luq-codegen": "file:../../luq-codegen"
   },
   "devDependencies": {
     "openapi-typescript": "^7.0.0",

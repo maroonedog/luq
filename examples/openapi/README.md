@@ -5,7 +5,7 @@ One document, two generators, no hand-written constraint.
 ```bash
 # Both dependencies are this checkout, so build them first.
 ( cd ../.. && npm run build )
-( cd ../../openapi-ts-plugin && npm install && npm run build )
+( cd ../../luq-codegen && npm install && npm run build )
 
 npm install
 npm run verify     # generate, typecheck, run
@@ -19,7 +19,7 @@ turns it into two files, and neither is edited:
 | File | Written by |
 |---|---|
 | `src/api.generated.ts` | `openapi-typescript` — the **types** |
-| `src/order-validator.generated.ts` | `@maroonedog/openapi-ts-luq` — the **rules** |
+| `src/order-validator.generated.ts` | `@maroonedog/luq-codegen` — the **rules** |
 
 The second refers to the first, so they cannot drift apart:
 
@@ -105,7 +105,7 @@ rather than a validator that passes everything.
 ## The dependency on Luq
 
 `package.json` installs both packages from this checkout: `@maroonedog/luq`
-from the repository root and `@maroonedog/openapi-ts-luq` from
-`../../openapi-ts-plugin`, neither of which is published yet. Each is imported
+from the repository root and `@maroonedog/luq-codegen` from
+`../../luq-codegen`, neither of which is published yet. Each is imported
 by package name, exactly as it would be from npm, so in your own project the two
 `file:` specifiers become versions and nothing else about this example moves.

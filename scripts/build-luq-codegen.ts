@@ -13,7 +13,7 @@ import {
 import { emitTypeScriptOutputs } from "./distribution/emit-typescript-outputs";
 
 /** The sub-package built here, relative to the repository root. */
-const PACKAGE_DIRECTORY = "openapi-ts-plugin";
+const PACKAGE_DIRECTORY = "luq-codegen";
 
 export interface OpenapiPluginBuildReport {
   readonly commonJsModuleCount: number;
@@ -21,7 +21,7 @@ export interface OpenapiPluginBuildReport {
 }
 
 /**
- * Builds openapi-ts-plugin/dist from openapi-ts-plugin/src.
+ * Builds luq-codegen/dist from luq-codegen/src.
  *
  * The same two emits and the same output shape the package at the repository
  * root uses: .js is CommonJS, .mjs is ESM, .d.ts sits beside them, and one

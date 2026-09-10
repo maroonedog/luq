@@ -1,5 +1,5 @@
 // ===========================================================================
-// openapi-ts-plugin/src/generate/resolve-required-path.ts
+// luq-codegen/src/generate/resolve-required-path.ts
 //
 // Decides whether a nested `required` may be lowered to `.required()`.
 //

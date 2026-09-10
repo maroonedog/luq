@@ -1,4 +1,4 @@
-# @maroonedog/openapi-ts-luq
+# @maroonedog/luq-codegen
 
 Turns a JSON Schema Draft-07 schema **object** into the **source** of a
 TypeScript module that exports a Luq validator. An OpenAPI 3.0 component schema
@@ -11,7 +11,7 @@ all of that. See [the worked example](#a-worked-example).
 
 ## Status
 
-- **Not published.** `npm install @maroonedog/openapi-ts-luq` does not resolve.
+- **Not published.** `npm install @maroonedog/luq-codegen` does not resolve.
   The only way to use it today is from this checkout, with a `file:` specifier —
   which is what [`examples/openapi`](../examples/openapi) does.
 - **It is not a plugin for `@hey-api/openapi-ts`.** The name says otherwise;
@@ -27,8 +27,8 @@ all of that. See [the worked example](#a-worked-example).
 ## The API
 
 ```ts
-import { generateValidatorModule } from "@maroonedog/openapi-ts-luq";
-import type { GenerateOptions, GeneratedModule } from "@maroonedog/openapi-ts-luq";
+import { generateValidatorModule } from "@maroonedog/luq-codegen";
+import type { GenerateOptions, GeneratedModule } from "@maroonedog/luq-codegen";
 
 generateValidatorModule(schema: Draft07Schema, options: GenerateOptions): GeneratedModule;
 ```
