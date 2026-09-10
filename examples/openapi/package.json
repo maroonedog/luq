@@ -11,7 +11,8 @@
     "verify": "npm run generate && npm run typecheck && npm run start"
   },
   "dependencies": {
-    "@maroonedog/luq": "file:../.."
+    "@maroonedog/luq": "file:../..",
+    "@maroonedog/openapi-ts-luq": "file:../../openapi-ts-plugin"
   },
   "devDependencies": {
     "openapi-typescript": "^7.0.0",

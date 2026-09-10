@@ -1,21 +1,44 @@
 {
   "name": "@maroonedog/openapi-ts-luq",
   "version": "0.1.0",
-  "description": "Generate Luq validators from OpenAPI. A plugin for @hey-api/openapi-ts, and the generator it wraps.",
+  "description": "Generates the source of a Luq validator module from a JSON Schema Draft-07 object, such as an OpenAPI 3.0 component schema.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/maroonedog/luq.git",
     "directory": "openapi-ts-plugin"
   },
-  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": ["dist"],
+  "sideEffects": false,
   "scripts": {
+    "build": "npx ts-node --project ../scripts/tsconfig.json ../scripts/build-openapi-plugin.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest --no-watch --no-watchman -c jest.config.cjs",
-    "verify": "npm run typecheck && npm test"
+    "check:no-dynamic-code": "npx ts-node --project ../scripts/tsconfig.json ../scripts/check-no-dynamic-code.ts openapi-ts-plugin",
+    "check:dist-layout": "npx ts-node --project ../scripts/tsconfig.json ../scripts/check-dist-layout.ts openapi-ts-plugin",
+    "check:dist": "npm run check:no-dynamic-code && npm run check:dist-layout",
+    "verify": "npm run typecheck && npm run build && npm run check:dist && npm test",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run verify"
   },
   "peerDependencies": {
-    "@maroonedog/luq": ">=2.0.0"
+    "@maroonedog/luq": ">=2.4.0"
+  },
+  "devDependencies": {
+    "@maroonedog/luq": "file:.."
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

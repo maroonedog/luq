@@ -11,7 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
-import { generateValidatorModule } from "../../../openapi-ts-plugin/src/generate/generate-validator-module.ts";
+import { generateValidatorModule } from "@maroonedog/openapi-ts-luq";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");

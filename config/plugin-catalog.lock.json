@@ -397,6 +397,7 @@
     "./standard-schema",
     "./presets",
     "./plugins",
+    "./schema-tooling",
     "./plugins/arrayContains",
     "./plugins/arrayEach",
     "./plugins/arrayIncludes",

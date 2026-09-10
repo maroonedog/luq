@@ -23,11 +23,11 @@
 import type {
   Draft07Schema,
   Draft07SchemaObject,
-} from "../../../src/json-schema/draft07.types";
+} from "@maroonedog/luq/schema-tooling";
 import {
   isDraft07Schema,
   isSchemaObject,
-} from "../../../src/json-schema/draft07.types";
+} from "@maroonedog/luq/schema-tooling";
 
 /** "items[*].sku" -> ["items[*]", "sku"]; "[*]" stays attached to its key. */
 export function splitDeclaredPath(path: string): readonly string[] {

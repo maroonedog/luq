@@ -3,6 +3,10 @@
 One document, two generators, no hand-written constraint.
 
 ```bash
+# Both dependencies are this checkout, so build them first.
+( cd ../.. && npm run build )
+( cd ../../openapi-ts-plugin && npm install && npm run build )
+
 npm install
 npm run verify     # generate, typecheck, run
 ```
@@ -100,7 +104,8 @@ rather than a validator that passes everything.
 
 ## The dependency on Luq
 
-`package.json` installs `@maroonedog/luq` from the repository root
-(`file:../..`) and imports the generator from `../../openapi-ts-plugin`, which
-is not published yet. In your own project both would be installed from npm and
-nothing else about this example would move.
+`package.json` installs both packages from this checkout: `@maroonedog/luq`
+from the repository root and `@maroonedog/openapi-ts-luq` from
+`../../openapi-ts-plugin`, neither of which is published yet. Each is imported
+by package name, exactly as it would be from npm, so in your own project the two
+`file:` specifiers become versions and nothing else about this example moves.

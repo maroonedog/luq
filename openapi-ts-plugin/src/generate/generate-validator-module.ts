@@ -7,12 +7,11 @@
 // conversion decide paths with the same function, which makes it structurally
 // impossible for the two to disagree about what a path looks like.
 // ===========================================================================
-import { flattenSchema } from "../../../src/json-schema/flatten-schema";
-import { readChildSchemas } from "../../../src/json-schema/schema-to-declarations";
+import { flattenSchema, readChildSchemas } from "@maroonedog/luq/schema-tooling";
 import type {
   Draft07Schema,
   Draft07SchemaObject,
-} from "../../../src/json-schema/draft07.types";
+} from "@maroonedog/luq/schema-tooling";
 import type {
   ChainCall,
   FieldChain,
