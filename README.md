@@ -496,6 +496,11 @@ single declared field can be constrained by a document; it takes the plugin bag
 explicitly. It is billed as the tree-shakeable half, and measured below, it is
 not — use it for the chain method, not to save bytes.
 
+The other direction works too: `toStandardJsonSchema(validator)` writes a built
+validator back out as a Draft-07 or 2020-12 document. Targets, what happens to a
+rule that cannot be expressed, and the ordering it needs are on
+[the JSON Schema page](https://luq.dev/json-schema#emit).
+
 ## Standard Schema
 
 Luq implements [Standard Schema v1](https://standardschema.dev). Anything that
