@@ -54,7 +54,8 @@ function entryOf(path: string): FieldEntry {
     path,
     defaultOf: null,
     applyDefaultToNull: true,
-    collectRules: (_context: ChainBuildContext) => [],
+    normalize: null,
+    collectRules: (_context: ChainBuildContext) => ({ rules: [], calls: [] }),
   };
 }
 
@@ -141,9 +142,10 @@ describe("compileDeclarations", () => {
       path,
       defaultOf: null,
       applyDefaultToNull: true,
+      normalize: null,
       collectRules: () => {
         order.push(path);
-        return [];
+        return { rules: [], calls: [] };
       },
     }));
     compileDeclarations(entries, undefined);
@@ -160,10 +162,10 @@ describe("compileDeclarations", () => {
     const plan = compileDeclarations(
       [{ ...entryOf("a"), defaultOf: () => "x" }],
       undefined
-    );
+    ).plan;
     expect(plan.hasDefaults).toBe(true);
-    expect(compileDeclarations([entryOf("a")], undefined).hasDefaults).toBe(
-      false
-    );
+    expect(
+      compileDeclarations([entryOf("a")], undefined).plan.hasDefaults
+    ).toBe(false);
   });
 });

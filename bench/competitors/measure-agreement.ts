@@ -1,20 +1,21 @@
 // ===========================================================================
 // bench/competitors/measure-agreement.ts
 //
-// 速度を測る前に、**同じ答えを出しているか** を数える。
+// Before measuring speed, count **whether they give the same answer**.
 //
-// assert-reference-agreement.ts は手書き参照に対してこれを表明として書き、
-// 一致しなければビルドを落とす。競合に対しては落とさない — 落とすべきでない
-// からである。ライブラリごとに `email` の厳しさは違い、それは実装の優劣では
-// なく仕様の違いで、こちらが直せるものでもない。
+// Against the hand-written reference this is an assertion and a disagreement
+// fails the build. Against a competitor it must not: how strict a library's
+// `email` rule is differs between libraries, which is a difference in
+// specification rather than in quality, and not ours to fix.
 //
-// 代わりに数えて報告する。時間を測るのは全員が一致した値だけにし、食い違った
-// 値は件数と中身を残す。どちらも消さない:
-//   * 一致した値だけで測る  -> 比較が「同じ仕事」に対するものになる
-//   * 食い違いを報告に出す  -> 「速いが違う判定をしている」が読者に見える
+// So it is counted and reported instead. Only values everyone agreed on are
+// timed, and the disagreements are kept, both the count and the values:
+//   * timing only agreed values -> the comparison is over the same work
+//   * reporting disagreements   -> "faster, but judging differently" is visible
 //
-// 片方だけやると誠実さが失われる。全部同じプールで測れば「相手が手を抜いて
-// 速い」を見逃し、食い違いを隠せば「なぜ数が合わないか」が説明できない。
+// Doing one without the other loses the honesty of it. Time everything and a
+// competitor that is fast because it does less goes unnoticed; hide the
+// disagreements and the counts can no longer be explained.
 // ===========================================================================
 import { BENCH_SHAPES } from "../shapes/index";
 import type { BenchShape, BenchShapeName } from "../shapes/bench-shape.types";
@@ -22,7 +23,7 @@ import type { Competitor } from "./competitor.types";
 
 export interface Disagreement {
   readonly value: unknown;
-  /** Luq がどう答えたか。競合はその逆を答えている。 */
+  /** What Luq answered. The competitor answered the opposite. */
   readonly luqSaid: boolean;
 }
 
@@ -38,11 +39,12 @@ function judgeWithLuq(shape: BenchShape, value: unknown): boolean {
 }
 
 /**
- * 一つの shape と一つの競合について、受理プールと棄却プールの全値を突き合わせる。
+ * For one shape and one competitor, compares every value in the accepted and
+ * rejected pools.
  *
- * Luq 側は毎回 build し直さない — 一度だけ組んで使い回す。ここは計測ではない
- * ので速度は問題にならないが、build ごとに違う validator を使うと「どの
- * validator の答えか」が曖昧になる。
+ * The Luq side is built once and reused. Speed does not matter here, this
+ * being no measurement, but a fresh validator per value would leave it
+ * ambiguous which validator gave an answer.
  */
 export function measureShapeAgreement(
   shape: BenchShape,
@@ -82,5 +84,5 @@ export function measureAllAgreement(
   return Object.freeze(results);
 }
 
-/** 使い回すために、Luq 側の判定を一度だけ取る。 */
+/** Takes the Luq verdict once, to be reused. */
 export { judgeWithLuq };

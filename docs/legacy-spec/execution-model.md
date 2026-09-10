@@ -1,290 +1,433 @@
 # execution-model
 
-## 全体像（実測に基づく事実）
+## The whole picture, from measurement
 
-`build()` は `src/core/builder/core/field-builder.ts:190-227` で `createValidatorFactory(plugins).buildOptimizedValidator(processedDefinitions)` を呼ぶ。返るのは `TransformAwareValidator<T, TTransformed>` = `{ validate, parse, pick, validateRaw?, parseRaw? }`。
+`build()` calls
+`createValidatorFactory(plugins).buildOptimizedValidator(processedDefinitions)`
+(field-builder.ts 190-227) and returns a
+`TransformAwareValidator<T, TTransformed>` — `{ validate, parse, pick, validateRaw?, parseRaw? }`.
 
-### build() 時に「本当に」事前計算しているもの（引き継ぐ価値がある）
-1. **フィールドごとの validator レコード列の確定**。`createFieldContext(path, plugins)` にビルダー関数を1回通し、`_validators: ValidatorRecord[]` と `_transforms: TransformFn[]` を配列として固定する（`unified-validator.ts:66-77`）。実行時にはこの配列を回すだけ。
-2. **フィールドアクセサの事前コンパイル**。`createNestedValueAccessor(path)` / `field-accessor-optimized.ts:createAccessor` が、パス深さ 0〜5 を専用クロージャに展開（`obj?.[k1]?.[k2]?.[k3]`）、6以上はループ。**`new Function` は使っていない**（CSP-safe）。setter も同様に事前生成。
-3. **存在チェッカ (`createFieldExistenceChecker`) の事前コンパイル**（`validator-factory.ts:994-1021`）。`in` 演算子ベースで、`undefined` が入っている場合と欠損を区別する。
-4. **エラーコード / メッセージ生成関数のプリフェッチ**。`errorCodes[i] = validator.code || validator.pluginName || "VALIDATION_ERROR"` を配列に落とす。
-5. **配列バッチ階層 (`NestedArrayBatchInfo`) の構築**。`buildNestedArrayHierarchy` が `items[*].name` 等のパスから「配列パス → 直下要素フィールド群 → 子配列」の木を作り、要素フィールドごとのアクセサを事前生成する。
+### What `build()` genuinely precomputes, and is worth keeping
 
-### 実行時にやっていること
+1. **The list of validator records per field.** The builder function is run once
+   through `createFieldContext(path, plugins)`, fixing `_validators` and
+   `_transforms` as arrays (unified-validator.ts 66-77). At validation time
+   those arrays are simply walked.
+2. **Path accessors compiled in advance.** `createNestedValueAccessor(path)` and
+   `createAccessor` expand depths 0 to 5 into a dedicated closure
+   (`obj?.[k1]?.[k2]?.[k3]`) and loop beyond that. **No `new Function`** — this
+   is CSP-safe. Setters are generated the same way.
+3. **An existence checker compiled in advance**
+   (`createFieldExistenceChecker`, validator-factory.ts 994-1021), based on the
+   `in` operator, so an explicit undefined is distinguished from absence.
+4. **Error codes and message functions prefetched**:
+   `errorCodes[i] = validator.code || validator.pluginName || "VALIDATION_ERROR"`
+   into an array.
+5. **The array batch hierarchy.** `buildNestedArrayHierarchy` builds, from paths
+   like `items[*].name`, a tree of array path → its element fields → child
+   arrays, with an accessor generated in advance per element field.
+
+### What happens at validation time
+
 `validate(value, options)`:
-- `value == null` → 即 `Result.error([{path:"", code:"REQUIRED", message:"Value is required"}])`
-- `fieldOptionsMap`（`.default()` 等）があれば **入力を浅くコピーして default を適用**してから検証する
-- STEP1: 配列バッチ（要素をインデックス展開して検証）
-- STEP2: fast フィールド群
-- STEP3: slow フィールド群（欠損チェック＋暗黙 REQUIRED を含む）
-- エラーがあれば `Result.error(errors)`、なければ `Result.ok(value)`（**元オブジェクトをそのまま返す**）
 
-`parse(value, options)`: 同じ順序だが `transformedData = { ...obj }`（**浅いコピー1回だけ**）に対して transform 結果を `setNestedValue` で書き戻す。ネストしたオブジェクト／配列要素は共有参照なので、**入力の入れ子を破壊する**（`array-batch-optimizer` 側は要素ごとに `{...element}` するが、`nested-array-processor` は object でない要素をそのまま通す）。
+- `value == null` returns immediately with
+  `[{path:"", code:"REQUIRED", message:"Value is required"}]`
+- with a field options map (from `.default()` and the like), **the input is
+  shallow-copied and the defaults applied** before validating
+- step 1: the array batches, expanding elements by index
+- step 2: the fast field group
+- step 3: the slow field group, including the existence check and the implicit
+  REQUIRED
+- errors give `Result.error(errors)`, and none gives `Result.ok(value)`,
+  **returning the original object as it is**
 
-### 短絡（abort）の2階層 — これが本質的な意味論
-**2レベルある。両方ともデフォルト true。**
-- `abortEarly`（オブジェクトレベル）: `options?.abortEarly !== false`。最初にエラーが出たフィールドで `Result.error` を返して残りのフィールドを検証しない。
-- `abortEarlyOnEachField`（フィールドレベル）: `options?.abortEarlyOnEachField !== false`。1フィールド内の複数バリデータ（`.required().min(3).pattern(...)`）のうち最初の失敗で打ち切る。false なら同一フィールドの全違反を集める。
+`parse(value, options)` follows the same order but writes transform results back
+into `transformedData = { ...obj }` — **one shallow copy** — with
+`setNestedValue`. Nested objects and array elements are shared references, so
+**it mutates the input's inner structure**: the array batch optimiser does
+`{...element}` per element, and the nested array processor passes a
+non-object element straight through.
 
-`test/integration/abort-early-real-world.test.ts:75-90` が「`abortEarly:false, abortEarlyOnEachField:true` → フィールドごとに1件ずつ全フィールド分」というフォームUX向けの組み合わせを明示的にテストしている。これが引き継ぐべき中核仕様。
+### Two levels of abort — this is the essential semantics
 
-**例外**: 配列要素の検証だけは `effectiveAbortEarlyOnEachField = false` を**ハードコードで強制**している（`array-batch-optimizer.ts:235`、`nested-array-processor.ts:393`）。すなわち「配列要素内は必ず全フィールド検証する」。要素間は `abortEarly` に従う。
+**There are two, and both default to true.**
 
-### 実行順序の保証（現状は保証されていない）
-エラー順は **配列バッチ → fast フィールド → slow フィールド** で、`.v()` の宣言順ではない。fast/slow の割り当ては `Map` の挿入順に依存する。新実装は「宣言順」を明示的に保証すべき（後述の openQuestions）。
+- `abortEarly`, at the object level: `options?.abortEarly !== false`. It returns
+  `Result.error` at the first field to produce an error and validates no
+  further field.
+- `abortEarlyOnEachField`, at the field level:
+  `options?.abortEarlyOnEachField !== false`. Among several validators on one
+  field (`.required().min(3).pattern(...)`) it stops at the first failure. With
+  false it collects every violation on that field.
 
-### "strategy" は何種類あり、何で切り替わるか
-`ValidationStrategy` enum（`strategy-factory.ts:16-21`）は **4種類**: `FAST_SEPARATED`, `DEFINITION_ORDER`, `ARRAY_BATCH`, `HOISTED_OPTIMIZED`。
+An integration test pins the combination
+`{abortEarly: false, abortEarlyOnEachField: true}` — one error per field across
+every field — as the arrangement a form wants. That is the core specification
+to carry forward.
 
-しかし**実際に効いているのは高々2種類、しかもフィールド単位ではなくスキーマ全体で1つ**。`execution-strategy-selector.ts:33-37` に `// TODO: Support per-field strategy analysis` とあり、`analyzeFields()` が返す**単一の** `StrategyAnalysis` を全フィールドに配っている。`analyzeFields` の判定は:
-- どれか1つでも配列要素パスを含む → `ARRAY_BATCH`（→ 全フィールドが slow 扱い）
-- どれか1つでも transform を含む → `DEFINITION_ORDER`（→ 全フィールドが slow 扱い）
-- それ以外 → `FAST_SEPARATED`（→ 全フィールドが fast 扱い）
+**One exception**: validating array elements **hard-codes**
+`effectiveAbortEarlyOnEachField = false` (array-batch-optimizer.ts 235,
+nested-array-processor.ts 393). Every field of an element is always validated;
+between elements, `abortEarly` still applies.
 
-`HOISTED_OPTIMIZED` はどこからも生成されない。`ARRAY_BATCH` / `DEFINITION_ORDER` に対応する `IValidationStrategy` 実装（`createArrayBatchStrategy` / `createMultiFieldStrategy` / `createStrategy` / `createOptimalStrategy` / `createSingleFieldStrategy`）は**一切呼ばれない**（grep 済み: `strategy-factory` からのインポートは `analyzeFields` / `StrategyAnalysis` / `ValidationStrategy` のみ）。
+### Ordering is not currently guaranteed
 
-さらに `buildUnifiedValidators` は `createUnifiedValidator(..., "fast_separated", accessor)` を**常にハードコード**で渡す（`validator-factory.ts:344-352`）。つまり strategy 分析の唯一の実効果は「fast マップに入るか slow マップに入るか」だけ。
+Errors come out in the order array batches, then fast fields, then slow fields —
+not in `.v()` declaration order. Which group a field lands in depends on a
+`Map`'s insertion order. The new implementation should guarantee declaration
+order explicitly.
 
-**そして fast/slow は性能差ではなく意味論差を生んでいる**（これが最大の罠）:
-- fast パス: 欠損フィールドの存在チェックをしない。プラグインが判断する。
-- slow パス: `fieldExistenceCache` で存在チェックし、**「欠損 かつ optional でない かつ required プラグインもない」なら暗黙の `REQUIRED` エラーを自動生成する**（`validator-factory.ts:1284-1295`）。
+### How many strategies there are, and what switches between them
 
-同じスキーマでも「配列や transform を1つ足すと全フィールドが slow に落ち、暗黙 REQUIRED が発火するようになる」。これは仕様として維持不能。新実装は「暗黙 REQUIRED を出すか否か」を strategy と切り離し、明示的な規則にすること。
+The `ValidationStrategy` enum (strategy-factory.ts 16-21) has **four values**:
+`FAST_SEPARATED`, `DEFINITION_ORDER`, `ARRAY_BATCH`, `HOISTED_OPTIMIZED`.
 
-さらに `analyzeFields` の transform 検出は `builderFunction.toString()` に正規表現 `/\.(\w+)\(/g` をかけてメソッド名を抜くソース文字列解析（`strategy-factory.ts:530-541`）。eval ではないので CSP は破らないが、`.toString()` はミニファイ・トランスパイル・カバレッジ計装で壊れる。捨てる。
+**At most two do anything, and not per field — one for the whole schema.**
+execution-strategy-selector.ts 33-37 carries a
+`// TODO: Support per-field strategy analysis`, and `analyzeFields()` hands its
+**single** `StrategyAnalysis` to every field. What it decides:
 
-### unified / ultra-fast / raw の3バリアント — 実測した使用状況
-| モジュール | 実際に使われるか | 内容 |
+- any field containing an array element path → `ARRAY_BATCH`, so every field
+  counts as slow
+- any field containing a transform → `DEFINITION_ORDER`, so every field counts
+  as slow
+- otherwise → `FAST_SEPARATED`, so every field counts as fast
+
+`HOISTED_OPTIMIZED` is generated from nowhere. The `IValidationStrategy`
+implementations for `ARRAY_BATCH` and `DEFINITION_ORDER` —
+`createArrayBatchStrategy`, `createMultiFieldStrategy`, `createStrategy`,
+`createOptimalStrategy`, `createSingleFieldStrategy` — are **never called**; the
+only imports from strategy-factory are `analyzeFields`, `StrategyAnalysis` and
+`ValidationStrategy`.
+
+And `buildUnifiedValidators` **always hard-codes**
+`createUnifiedValidator(..., "fast_separated", accessor)` (validator-factory.ts
+344-352). So the only effect the strategy analysis has is which map a field
+goes into, fast or slow.
+
+**And fast against slow is a difference in MEANING, not in speed** — the worst
+trap here:
+
+- the fast path does no existence check for a missing field; the plugins decide
+- the slow path checks existence through `fieldExistenceCache` and
+  **generates an implicit `REQUIRED` error when a field is missing, is not
+  optional, and has no required plugin either** (validator-factory.ts
+  1284-1295)
+
+So for one schema, "adding one array or one transform drops every field into
+slow and starts firing implicit REQUIRED errors". That cannot be maintained as
+a specification. The new implementation must separate "does an implicit
+REQUIRED happen" from any strategy and make it an explicit rule.
+
+The transform detection inside `analyzeFields` also works by running a regular
+expression `/\.(\w+)\(/g` over `builderFunction.toString()` to pull method names
+out (strategy-factory.ts 530-541). It is not eval and does not break CSP, but
+`.toString()` breaks under minification, transpilation and coverage
+instrumentation. Discard it.
+
+### The unified / ultra-fast / raw trio, as measured
+
+| Module | Actually used? | What it is |
 |---|---|---|
-| `optimization/unified-validator.ts` | **使われる（唯一の実路）** | フィールド単位バリデータの実体。内部でさらに3分岐 |
-| `builder/raw-validator.ts` | **環境変数でのみ到達** | `process.env.LUQ_ULTRA_FAST === "true"` または `global.__LUQ_ULTRA_FAST__ === true` かつ配列バッチなし かつ validator 総数 ≤50 のときだけ（`validator-factory.ts:462-471`） |
-| `builder/ultra-fast-validator.ts` | **完全な死骸** | `createUltraFastSingleFieldValidator` / `createUltraFastMultiFieldValidator` は validator-factory の 48-50 行で import されるだけで**一度も呼ばれない**（grep 済み） |
+| `optimization/unified-validator.ts` | **yes, the only live route** | the per-field validator, branching three ways internally |
+| `builder/raw-validator.ts` | **only through an environment variable** | reached only when `process.env.LUQ_ULTRA_FAST === "true"` or `global.__LUQ_ULTRA_FAST__ === true`, with no array batch and at most 50 validators (validator-factory.ts 462-471) |
+| `builder/ultra-fast-validator.ts` | **entirely dead** | `createUltraFastSingleFieldValidator` and `createUltraFastMultiFieldValidator` are imported at validator-factory.ts 48-50 and **never called** |
 
-`unified-validator` の内部分岐（`createUnifiedValidator`, 79-105行）:
-1. skip プラグインなし & transform なし & validator ≤10 → `createUltraFastValidator`（1個/2個/N個で特殊化、成功時は凍結済みシングルトン `ULTRA_FAST_VALID_RESULT` を返して**アロケーションゼロ**）
-2. skip なし & transform あり & validator ≤10 & transform ≤5 → `createOptimizedTransformValidator`（1v1t / 2v1t を手展開）
-3. それ以外 → `executeFastSeparated`（validate→transform の2相）または `executeDefinitionOrder`（skip プラグインがある場合。宣言順で1本のループ）
+The internal branching in `createUnifiedValidator` (79-105):
 
-`executeInDefinitionOrder = strategy === "definition_order" || hasSkipPlugins`。strategy は常に `"fast_separated"` なので、**実質「skip 系プラグイン（`skip` / `validateIf` = `shouldSkipAllValidation`）を使ったフィールドだけが definition-order 実行になる」**。
+1. no skip plugin, no transform, at most 10 validators →
+   `createUltraFastValidator`, specialised for one, two and N, returning the
+   frozen singleton `ULTRA_FAST_VALID_RESULT` on success — **zero allocation**
+2. no skip, with transforms, at most 10 validators and 5 transforms →
+   `createOptimizedTransformValidator`, hand-expanded for one-validator and
+   two-validator cases with one transform
+3. otherwise → `executeFastSeparated`, validating then transforming in two
+   phases, or `executeDefinitionOrder` when a skip plugin is present, in one
+   loop in declaration order
 
-### 1.2M ops/sec を生んでいた実際の要素（再現すべきもの）
-1. **成功パスでオブジェクトを一切作らない**。凍結シングルトン `{valid:true, errors:[]}` を返す。
-2. **エラーメッセージを失敗時にのみ計算する**（`computeErrorMessage`）。
-3. **アクセサをビルド時に閉包へ焼き込む**（実行時の `split(".")` ゼロ）。
-4. **validator 数で関数を特殊化**（1個・2個・N個）。
-5. **`validate` は transform 相を完全にスキップする**（`VALIDATE_MODE`）。`parse` だけ transform を走らせる。
-6. **配列を1回だけ読み、その要素に対して全フィールドをまとめて検証する**（配列バッチの本質。同じ配列を N フィールド分 N 回走査しない）。
+`executeInDefinitionOrder = strategy === "definition_order" || hasSkipPlugins`,
+and since the strategy is always `"fast_separated"`, **in practice only a field
+using a skip-family plugin runs in definition order**.
 
-### 配列バッチ最適化が実際に速くしていたこと
-`array-batch-optimizer.ts` 冒頭のコメントが意図を書いている: `customer.addresses.type/.name/.street` の3フィールドを別々に処理すると配列を3回走査する。バッチは「配列を1回取得 → 各要素について type/name/street をまとめて検証」に畳む。**これは正しい最適化で、新実装でも再現すべき**（データ指向のループ交換）。
+### What actually produced the published throughput, and should be reproduced
 
-`nested-array-processor` は任意深さの `a[*].b[*].c` を階層化し、`items[0].tags[2]` のような**インデックス入りの正確なエラーパス**を組み立てる。これも仕様として引き継ぐ。
+1. **No object is created on the success path** — a frozen singleton
+   `{valid:true, errors:[]}` comes back.
+2. **An error message is computed only on failure** (`computeErrorMessage`).
+3. **Accessors are baked into closures at build time**, so nothing calls
+   `split(".")` at validation time.
+4. **Functions are specialised by validator count** — one, two, N.
+5. **`validate` skips the transform phase entirely**; only `parse` runs it.
+6. **An array is read once and all its element fields validated together**,
+   rather than walking the same array once per field.
 
-**ただし実装は最適化を自ら殺している**: `createArrayBatchValidator(batchInfo, allValidators)` が `executeValidate` / `executeParse` の**ループ内**で呼ばれている（`validator-factory.ts:1112`, `1419`, `1453`）。つまりバッチバリデータを **validate() のたびに再構築**している。「ビルド時に事前計算」という設計意図が実装で守られていない。これが README の complex 43K ops/sec（simple の 1/28）の主因の一つと見てよい。
+### What the array batch optimisation actually made faster
 
-### ビルド時コストの実測
-`builderFunction` は1フィールドあたり**最低6回**実行される: `build()` で1回（結果は `rules` に捨てられる）、`fieldsWithBuilders` の optional/required 判定で1回、`buildUnifiedValidators` が3回呼ばれ（slow / fast / all）そのうち該当する2呼び出しでそれぞれ本体1回＋`createUnifiedValidator` 内部1回。ビルド結果のキャッシュもない。
+The comment at the top of array-batch-optimizer.ts states the intent: handling
+`customer.addresses.type`, `.name` and `.street` separately walks the array
+three times. Batching folds it into "fetch the array once, then validate type,
+name and street together per element". **That is a correct optimisation and
+should be reproduced** — loop interchange, data-oriented.
 
-### CSP 安全性の穴（重要）
-`src/types/array-type-analysis.ts:196` に **`new Function(...)` がある**（多次元配列用のループ生成器）。`validator-factory.ts:46` と `array-batch-optimizer.ts:20` は型 `ArrayStructureInfo` しか使っていないが `import type` ではないため**モジュールが実行時バンドルに載る**。README の「CSP-safe: no eval/Function」は現状バンドル上は嘘になり得る。新実装ではこのファイルごと廃棄し、`import type` 規律を徹底すること。
+The nested array processor turns an arbitrarily deep `a[*].b[*].c` into a
+hierarchy and assembles **an error path carrying the real indices**, like
+`items[0].tags[2]`. That is a specification to keep too.
 
-### 再入不可（並行実行で壊れる）共有可変状態
-性能の名目で導入された可変シングルトンが複数あり、これらは**捨てるべき**:
-- `ultra-fast-validator.ts:12-13` `SUCCESS_RESULT` / `ERROR_RESULT` をモジュールスコープで使い回し
-- `unified-validator.ts:701` `const singleError = {path, code, message}` をバリデータ間で使い回し
-- `unified-validator.ts:961-977` `validateError` / `parseError` / `parseSuccess` を事前確保して毎回上書き（`parseSuccess.data = transform(value)` → 前回の結果を保持したオブジェクトを返す）
-- `validator-factory.ts:705` `const errors: any[] = []` をクロージャで共有し `errors.length = 0` でリセット（`.slice()` で防御しているが脆い）
+**But the implementation kills its own optimisation**:
+`createArrayBatchValidator(batchInfo, allValidators)` is called **inside**
+`executeValidate` and `executeParse`'s loops (validator-factory.ts 1112, 1419,
+1453), so the batch validator is **rebuilt on every validate()**. The design
+intent of precomputing at build time is not honoured by the implementation, and
+it is fair to call this one of the main reasons the complex shape measured so
+much slower than the simple one.
 
-### 死んでいる／壊れているコード（この領域）
-- `src/core/optimization/array-batch-validator.ts`（214行）: **どこからも import されていない**
-- `src/core/optimization/core/validation-engine.ts`（763行）/ `field-utils.ts`: `strategy-factory` からしか参照されず、`strategy-factory` の該当関数は呼ばれない → 実質全死
-- `src/core/builder/ultra-fast-validator.ts`（258行）: 全死
-- `strategy-factory.ts` の `IValidationStrategy` / `createFastSeparatedStrategy` / `createDefinitionOrderStrategy` / `createArrayBatchStrategy` / `createMultiFieldStrategy` / `createStrategy` / `createOptimalStrategy` / `createSingleFieldStrategy` / `createArrayBatchStrategyFromFields`: 全死
-- `validator-factory.ts` 内の `validateArrayElementField` / `parseArrayElementField` / `hasOptionalValidator`: 定義のみで参照ゼロ
-- `array-batch-optimizer.ts` の legacy パス（209-363行）: `result.isValid()` を呼ぶが `UnifiedValidator` の返り値には `isValid` メソッドがない → 到達すれば **TypeError で落ちる**
-- `unified-validator.ts` の静的メッセージ事前計算（682-695行）: `field-context.ts:409` が `messageFactory` に必ずフォールバック `(() => "Validation failed")` を入れるため `isDynamic` が**常に true**。最適化が一度も発火しない
-- `raw-validator.ts` の `validate()`（フィールド2個以上）: `validateRaw` の boolean だけを見て `{path:"", code:"VALIDATION_ERROR", message:"Validation failed"}` を返す。**エラーのパスも原因も失われる**。ultra-fast モードは意味論的に等価ではない
+### The measured cost of building
 
-### エラーパスの不整合（新実装で必ず決着させること）
-同じ `items[*].name` が、通る経路によって別のパスを報告する:
-- 配列バッチ経路（`nested-array-processor`）→ `items[0].name`（インデックス入り、正しい）
-- 非バッチ経路（`validator-factory.ts:validateArrayElementPath:2016`）→ `error.path || elementPath` で、validator が返す `error.path` はパターン文字列 `items[*].name` なのでそちらが勝つ → **`items[0].name` にならない**
+A builder function runs **at least six times per field**: once in `build()`,
+whose result is thrown away into `rules`; once for the optional/required
+decision in `fieldsWithBuilders`; and, across the three `buildUnifiedValidators`
+calls (slow, fast, all), once in the body and once inside
+`createUnifiedValidator` for each of the two that apply. Nothing caches the
+result.
 
-## 引き継ぐ契約 (25件)
+### A hole in the CSP guarantee
+
+`src/types/array-type-analysis.ts:196` contains **`new Function(...)`**, a loop
+generator for multi-dimensional arrays. validator-factory.ts:46 and
+array-batch-optimizer.ts:20 use only the type `ArrayStructureInfo` from it, and
+because they do not write `import type`, **the module ends up in the runtime
+bundle**. The README's "CSP-safe: no eval or Function" can therefore be false
+in the shipped bundle. Discard the file entirely and be strict about
+`import type`.
+
+### Shared mutable state, which breaks under re-entry
+
+Several mutable singletons introduced in the name of speed. All of them go:
+
+- ultra-fast-validator.ts 12-13: `SUCCESS_RESULT` and `ERROR_RESULT` reused at
+  module scope
+- unified-validator.ts 701: `const singleError = {path, code, message}` reused
+  across validators
+- unified-validator.ts 961-977: `validateError`, `parseError` and
+  `parseSuccess` allocated once and overwritten each time —
+  `parseSuccess.data = transform(value)` returns an object still holding the
+  previous result
+- validator-factory.ts 705: an `errors` array shared through a closure and
+  reset with `errors.length = 0`, defended with `.slice()` but fragile
+
+### Dead or broken code in this area
+
+- `src/core/optimization/array-batch-validator.ts` (214 lines): **imported from
+  nowhere**
+- `src/core/optimization/core/validation-engine.ts` (763 lines) and
+  `field-utils.ts`: referenced only from strategy-factory, whose relevant
+  functions are never called — substantially all dead
+- `src/core/builder/ultra-fast-validator.ts` (258 lines): all dead
+- strategy-factory.ts's `IValidationStrategy`,
+  `createFastSeparatedStrategy`, `createDefinitionOrderStrategy`,
+  `createArrayBatchStrategy`, `createMultiFieldStrategy`, `createStrategy`,
+  `createOptimalStrategy`, `createSingleFieldStrategy` and
+  `createArrayBatchStrategyFromFields`: all dead
+- validator-factory.ts's `validateArrayElementField`, `parseArrayElementField`
+  and `hasOptionalValidator`: defined, referenced zero times
+- array-batch-optimizer.ts's legacy path (209-363): it calls
+  `result.isValid()`, and the unified validator's return value has no
+  `isValid` method — reaching it **throws a TypeError**
+- unified-validator.ts's static message precomputation (682-695):
+  field-context.ts:409 always supplies a `(() => "Validation failed")` fallback
+  for `messageFactory`, so `isDynamic` is **always true** and the optimisation
+  never fires
+- raw-validator.ts's `validate()` for two or more fields: it looks only at
+  `validateRaw`'s boolean and returns
+  `{path:"", code:"VALIDATION_ERROR", message:"Validation failed"}`, **losing
+  both the path and the cause**. The ultra-fast mode is not semantically
+  equivalent.
+
+### Inconsistent error paths, to be settled
+
+One `items[*].name` reports a different path depending on the route taken:
+
+- the array batch route (nested-array-processor) gives `items[0].name`, with the
+  index, which is correct
+- the non-batch route (validator-factory.ts, `validateArrayElementPath`:2016)
+  uses `error.path || elementPath`, and the validator's own `error.path` is the
+  pattern string `items[*].name`, which wins — so it **never becomes
+  `items[0].name`**
+
+## Contracts to preserve (25)
 
 ### must-preserve (17)
 
 #### TransformAwareValidator<T, TTransformed>
-- 出典: `src/core/builder/plugins/plugin-types.ts:1133-1147`
-- 形: { validate(value: Partial<T> | unknown, options?: ValidationOptions): Result<T>; parse(value: Partial<T> | unknown, options?: ParseOptions): Result<TTransformed>; pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>> }
-- 意味: build() の戻り値。validate は入力をそのまま Result.ok に載せて返す（transform を適用しない）。parse は transform を適用した新しいオブジェクトを返す。pick は単一フィールド用のサブバリデータを返す。
+- Source: `src/core/builder/plugins/plugin-types.ts:1133-1147`
+- Shape: { validate(value: Partial<T> | unknown, options?: ValidationOptions): Result<T>; parse(value: Partial<T> | unknown, options?: ParseOptions): Result<TTransformed>; pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>> }
+- Meaning: what build() returns. validate puts the input into Result.ok as it is, applying no transform; parse returns a new object with the transforms applied; pick returns a sub-validator for one field.
 
 #### ValidationOptions
-- 出典: `src/types/index.ts:41-53`
-- 形: { abortEarly?: boolean; abortEarlyOnEachField?: boolean; messageFactory?: MessageFactory; translate?: (key: string, params?: Record<string, unknown>) => string; context?: Record<string, unknown> }
-- 意味: abortEarly / abortEarlyOnEachField はいずれも既定 true。実装は `options?.abortEarly !== false` という判定なので、undefined と true が同じ意味になる。messageFactory / translate / context は型に存在するが execution-model 側では読まれていない（validator-factory は abortEarly 系しか参照しない）。
+- Source: `src/types/index.ts:41-53`
+- Shape: { abortEarly?: boolean; abortEarlyOnEachField?: boolean; messageFactory?: MessageFactory; translate?: (key: string, params?: Record<string, unknown>) => string; context?: Record<string, unknown> }
+- Meaning: abortEarly and abortEarlyOnEachField both default to true, decided as `options?.abortEarly !== false`, so undefined and true mean the same. messageFactory, translate and context exist in the type and are not read here — validator-factory reads only the abort options.
 
-#### abortEarly（オブジェクトレベル短絡）
-- 出典: `src/core/builder/validator-factory.ts:1060, 1102, 1176, 1291, 1316`
-- 形: abortEarly?: boolean  // default true
-- 意味: true のとき、最初にエラーを出したフィールドの時点で残りのフィールドを検証せず Result.error を返す。false のとき全フィールドを検証してエラーを蓄積する。
+#### abortEarly, the object-level abort
+- Source: `src/core/builder/validator-factory.ts:1060, 1102, 1176, 1291, 1316`
+- Shape: abortEarly?: boolean, default true
+- Meaning: when true, the first field to produce an error ends validation and Result.error is returned; when false, every field is validated and errors accumulate.
 
-#### abortEarlyOnEachField（フィールド内短絡）
-- 出典: `src/core/optimization/unified-validator.ts:118,141,571-591 / test/integration/abort-early-real-world.test.ts:75-90`
-- 形: abortEarlyOnEachField?: boolean  // default true
-- 意味: true のとき、1つのフィールドに連鎖した複数バリデータのうち最初の失敗で打ち切り、そのフィールドのエラーは1件になる。false のとき同一フィールドの全違反を集める。abortEarly と直交し、`{abortEarly:false, abortEarlyOnEachField:true}` は「全フィールドについて代表エラー1件ずつ」というフォーム UX 向けの組み合わせで、テストで固定されている。
+#### abortEarlyOnEachField, the field-level abort
+- Source: `src/core/optimization/unified-validator.ts:118,141,571-591`
+- Shape: abortEarlyOnEachField?: boolean, default true
+- Meaning: when true, several validators chained on one field stop at the first failure, giving that field one error; when false, every violation on the field is collected. It is orthogonal to abortEarly, and `{abortEarly: false, abortEarlyOnEachField: true}` — one representative error per field across every field — is the form-facing combination, pinned by a test.
 
 #### Result<T>
-- 出典: `src/types/result.ts:86-158, 234-340`
-- 形: { isValid(): boolean; readonly valid: boolean; isError(): boolean; unwrap(): T; unwrapOr(d: T): T; unwrapOrElse(fn): T; map<U>(fn): Result<U>; flatMap<U>(fn): Result<U>; tap(fn): Result<T>; tapError(fn): Result<T>; data(): T | undefined; readonly errors: ValidationError[]; toPlainObject(): { valid: boolean; data?: T; errors: ValidationError[] } }
-- 意味: validate / parse の戻り値。成功時は errors が空配列、失敗時は data() が undefined。unwrap() は失敗時に LuqValidationException を投げる。Result.ok は prototype ベース（Object.create(successProto)）で成功パスのアロケーションを抑えている。`valid` は isValid() の後方互換 getter。
+- Source: `src/types/result.ts:86-158, 234-340`
+- Shape: { isValid(): boolean; readonly valid: boolean; isError(): boolean; unwrap(): T; unwrapOr(d: T): T; unwrapOrElse(fn): T; map<U>(fn): Result<U>; flatMap<U>(fn): Result<U>; tap(fn): Result<T>; tapError(fn): Result<T>; data(): T | undefined; readonly errors: ValidationError[]; toPlainObject(): { valid: boolean; data?: T; errors: ValidationError[] } }
+- Meaning: what validate and parse return. On success errors is an empty array; on failure data() is undefined. unwrap() throws LuqValidationException on failure. Result.ok is prototype-based (`Object.create(successProto)`) to hold down allocation on the success path. `valid` is a backward-compatibility getter for isValid().
 
 #### ValidationError
-- 出典: `src/types/index.ts:25-30`
-- 形: { path: string; message: string; code: string; paths(): string[] }
-- 意味: 公開エラー形。`paths()` は関数（配列ではない）。code は validator の `code` → `pluginName` → "VALIDATION_ERROR" の順にフォールバック。path はフィールドパス、配列要素の場合はインデックス入り（items[0].name）が正。
+- Source: `src/types/index.ts:25-30`
+- Shape: { path: string; message: string; code: string; paths(): string[] }
+- Meaning: the published error shape. `paths()` is a function, not an array. The code falls back from the validator's `code` to its `pluginName` to "VALIDATION_ERROR". The path is a field path, and for an array element the correct form carries the index (`items[0].name`).
 
-#### REQUIRED（ルートレベル）
-- 出典: `src/core/builder/validator-factory.ts:1029-1038, 1336-1345`
-- 形: value == null → Result.error([{ path: "", code: "REQUIRED", message: "Value is required", paths: () => [""] }])
-- 意味: validate/parse に null / undefined を渡したときの固定応答。path は空文字列。
+#### REQUIRED at the root
+- Source: `src/core/builder/validator-factory.ts:1029-1038, 1336-1345`
+- Shape: value == null → Result.error([{ path: "", code: "REQUIRED", message: "Value is required", paths: () => [""] }])
+- Meaning: the fixed answer when null or undefined is handed to validate or parse. The path is the empty string.
 
-#### validate は transform を適用しない / parse のみ適用する
-- 出典: `src/constants.ts:10-12 / src/core/optimization/unified-validator.ts:594-603`
-- 形: VALIDATE_MODE = "validate" | PARSE_MODE = "parse"
-- 意味: validate は検証相だけを実行して transform 相をスキップし、入力オブジェクトをそのまま Result.ok に載せる。parse は検証成功後に transform を順に適用し、書き換えた新オブジェクトを返す。この分離が validate の速度を生んでいる中核。
+#### validate applies no transform; only parse does
+- Source: `src/constants.ts:10-12 / src/core/optimization/unified-validator.ts:594-603`
+- Shape: VALIDATE_MODE = "validate", PARSE_MODE = "parse"
+- Meaning: validate runs only the validation phase, skips the transform phase, and puts the input object into Result.ok as it is. parse applies the transforms in order after validation succeeds and returns the rewritten object. That separation is the core of validate's speed.
 
-#### フィールド内の実行順序
-- 出典: `src/core/optimization/unified-validator.ts:107-110, 218-338, 514-655`
-- 形: validators を宣言順に実行 → (parse 時のみ) transforms を宣言順に実行
-- 意味: 既定は「全 validator → 全 transform」の2相（fast_separated）。skip 系プラグイン（shouldSkipAllValidation を持つもの）が含まれるフィールドだけ、validator と transform を宣言順で1本のパイプラインとして実行する（definition_order）。
+#### The order within a field
+- Source: `src/core/optimization/unified-validator.ts:107-110, 218-338, 514-655`
+- Shape: run the validators in declaration order, then (in parse only) the transforms in declaration order
+- Meaning: the default is two phases, all validators then all transforms. Only a field containing a skip-family plugin — one carrying shouldSkipAllValidation — runs its validators and transforms as one pipeline in declaration order.
 
-#### skip セマンティクス（shouldSkipAllValidation）
-- 出典: `src/core/optimization/unified-validator.ts:260-268, 556-565 / src/core/plugin/skip.ts:80 / src/core/plugin/validateIf.ts:123`
-- 形: validator.shouldSkipAllValidation?(value, rootData): boolean
-- 意味: true を返した時点で、そのフィールドの以降の validator を全てスキップして成功扱いにする（break）。skipPlugin / validateIfPlugin が生成する。
+#### The skip semantics (shouldSkipAllValidation)
+- Source: `src/core/optimization/unified-validator.ts:260-268, 556-565 / src/core/plugin/skip.ts:80 / src/core/plugin/validateIf.ts:123`
+- Shape: validator.shouldSkipAllValidation?(value, rootData): boolean
+- Meaning: returning true skips every later validator on that field and counts it as a success — a break. skipPlugin and validateIfPlugin produce it.
 
-#### skipForNull / skipForUndefined セマンティクス
-- 出典: `src/core/optimization/unified-validator.ts:232-252, 529-550, 1186-1197 / src/core/plugin/nullable.ts:74 / src/core/plugin/optional.ts:76`
-- 形: validator.skipForNull?: true / validator.skipForUndefined?: true
-- 意味: フィールドのどれか1つの validator がこのフラグを持ち、かつ値が null（/ undefined）のとき、そのフィールドは検証も transform も全てスキップして成功扱いになり、parse では元の値をそのまま返す（transform をかけない）。nullablePlugin が skipForNull、optionalPlugin / optionalIfPlugin が skipForUndefined を立てる。
+#### The skipForNull / skipForUndefined semantics
+- Source: `src/core/optimization/unified-validator.ts:232-252, 529-550, 1186-1197 / src/core/plugin/nullable.ts:74 / src/core/plugin/optional.ts:76`
+- Shape: validator.skipForNull?: true, validator.skipForUndefined?: true
+- Meaning: when any one validator on a field carries the flag and the value is null (or undefined), the field skips both validation and transformation and counts as a success, and parse returns the original value without transforming it. nullablePlugin sets skipForNull; optionalPlugin and optionalIfPlugin set skipForUndefined.
 
-#### 内部 validator レコード形
-- 出典: `src/core/builder/context/field-context.ts:395-450`
-- 形: { check: (value, rootData) => boolean; name: string; code: string; pluginName: string; getErrorMessage?: (value, path, rootData) => string; messageFactory: (issueContext) => string; inputType; outputType; metadata; shouldSkipAllValidation?; shouldSkipValidation?; shouldSkipFurtherValidation?; skipForNull?; skipForUndefined?; __isRecursive?; recursive?; params? }
-- 意味: プラグインと実行エンジンの間の唯一の契約。check は同期の boolean 述語で第2引数にルートデータを受ける（実際の呼び出しは2引数のみ。validation-engine が想定していた第3引数 arrayContext は実路では渡されていない）。エラーメッセージは getErrorMessage 優先、なければ messageFactory。両方が throw した場合は `Validation failed for ${path}` にフォールバックする。
+#### The internal validator record
+- Source: `src/core/builder/context/field-context.ts:395-450`
+- Shape: { check: (value, rootData) => boolean; name: string; code: string; pluginName: string; getErrorMessage?: (value, path, rootData) => string; messageFactory: (issueContext) => string; inputType; outputType; metadata; shouldSkipAllValidation?; shouldSkipValidation?; shouldSkipFurtherValidation?; skipForNull?; skipForUndefined?; __isRecursive?; recursive?; params? }
+- Meaning: the one contract between a plugin and the engine. `check` is a synchronous boolean predicate taking the root data second — and only two arguments are ever passed, the third `arrayContext` the validation engine assumed never reaching the live route. Messages prefer getErrorMessage, falling back to messageFactory, and if both throw, to `Validation failed for ${path}`.
 
-#### エラーメッセージの遅延計算
-- 出典: `src/core/optimization/unified-validator.ts:881-906`
-- 形: computeErrorMessage(validator, value, path, rootData): string
-- 意味: メッセージは検証が失敗したときにのみ生成する。成功パスでは一切呼ばない。getErrorMessage / messageFactory が例外を投げた場合も検証は落とさず既定文言にフォールバックする。
+#### Lazy message computation
+- Source: `src/core/optimization/unified-validator.ts:881-906`
+- Shape: computeErrorMessage(validator, value, path, rootData): string
+- Meaning: a message is produced only when validation failed, never on the success path. An exception from getErrorMessage or messageFactory does not fail the validation; it falls back to the default wording.
 
-#### パスアクセサのビルド時コンパイル（CSP-safe）
-- 出典: `src/core/plugin/utils/field-accessor-optimized.ts:26-80`
-- 形: createAccessor(pathSegments: readonly string[]): (obj: unknown) => unknown
-- 意味: 深さ 0〜5 を専用クロージャ（obj?.[k1]?.[k2]...）に展開、6以上はループ。実行時に split(".") をしない。new Function / eval を使わずに達成している点が CSP-safe の実体。setter も同様。
+#### Path accessors compiled at build time, CSP-safe
+- Source: `src/core/plugin/utils/field-accessor-optimized.ts:26-80`
+- Shape: createAccessor(pathSegments: readonly string[]): (obj: unknown) => unknown
+- Meaning: depths 0 to 5 expand into a dedicated closure (`obj?.[k1]?.[k2]...`) and deeper ones loop, so nothing calls `split(".")` at validation time. Achieving that without new Function or eval is what being CSP-safe actually consists of. Setters likewise.
 
-#### 配列バッチ（ループ交換）最適化
-- 出典: `src/core/builder/array-batch-optimizer.ts:1-16, 270-360 / src/core/builder/nested-array-processor.ts:383-620`
-- 形: arrayPath ごとに { elementFields: string[], accessors: Map<field, accessor>, childArrays } を持ち、配列を1回だけ読んで各要素について全 elementFields を検証する
-- 意味: N 個の要素フィールドがあっても配列走査は1回。フィールドごとに配列を走査し直さない。これが complex スキーマ性能の中核的な意図。
+#### The array batch, loop interchange
+- Source: `src/core/builder/array-batch-optimizer.ts:1-16, 270-360 / src/core/builder/nested-array-processor.ts:383-620`
+- Shape: per array path, `{ elementFields: string[], accessors: Map<field, accessor>, childArrays }`, reading the array once and validating every element field per element
+- Meaning: however many element fields there are, the array is walked once. It is not re-walked per field. This is the central intent behind the complex schema's performance.
 
-#### 配列要素エラーパスのインデックス展開
-- 出典: `src/core/builder/nested-array-processor.ts:410-412, 552`
-- 形: パターン `items[*].name` → 実エラーパス `items[0].name`、多階層は `a[0].b[2].c`
-- 意味: エラーの path は宣言パターンではなく実インデックスに展開されていなければならない。任意深さの入れ子配列で親のインデックスを引き継いで組み立てる。
+#### Expanding an array element's error path to real indices
+- Source: `src/core/builder/nested-array-processor.ts:410-412, 552`
+- Shape: the pattern `items[*].name` becomes the real path `items[0].name`, and deeper nesting `a[0].b[2].c`
+- Meaning: an error path must carry the real indices rather than the declared pattern, assembled at any depth by carrying the parent's index down.
 
-#### 空配列の扱い
-- 出典: `src/core/builder/array-batch-optimizer.ts:262-266 / src/core/optimization/core/strategy-factory.ts:254-257`
-- 形: arrayData.length === 0 → 要素検証をスキップし、配列自身の validator（minLength 等）だけを走らせる
-- 意味: 空配列に対して要素レベルの required 等を発火させない。配列本体レベルの検証は別途走る。
+#### Empty arrays
+- Source: `src/core/builder/array-batch-optimizer.ts:262-266 / src/core/optimization/core/strategy-factory.ts:254-257`
+- Shape: `arrayData.length === 0` skips element validation and runs only the array's own validators, such as minLength
+- Meaning: an element-level required does not fire against an empty array. Validation of the array itself still runs.
 
 ### should-preserve (7)
 
 #### ParseOptions
-- 出典: `src/types/index.ts:58-71`
-- 形: ValidationOptions & { transforms?: Record<string, (value: unknown) => unknown> }
-- 意味: parse 用。`transforms` フィールドは型に存在するが execution-model のどこからも読まれていない（デッド）。
+- Source: `src/types/index.ts:58-71`
+- Shape: ValidationOptions & { transforms?: Record<string, (value: unknown) => unknown> }
+- Meaning: for parse. The `transforms` field exists in the type and is read nowhere in the execution model — dead.
 
-#### 配列要素内は abortEarlyOnEachField を常に false に強制
-- 出典: `src/core/builder/array-batch-optimizer.ts:235 / src/core/builder/nested-array-processor.ts:393`
-- 形: effectiveAbortEarlyOnEachField = false
-- 意味: 配列要素の検証では、呼び出し側の abortEarlyOnEachField によらず要素内の全フィールドを検証する。要素間の打ち切りは abortEarly に従う。
+#### Array elements always force abortEarlyOnEachField to false
+- Source: `src/core/builder/array-batch-optimizer.ts:235 / src/core/builder/nested-array-processor.ts:393`
+- Shape: effectiveAbortEarlyOnEachField = false
+- Meaning: validating an array element validates every field of that element regardless of what the caller passed. Aborting between elements still follows abortEarly.
 
-#### 成功結果のゼロアロケーション
-- 出典: `src/core/optimization/unified-validator.ts:869-876`
-- 形: const ULTRA_FAST_VALID_RESULT = Object.freeze({ valid: true, errors: [] })
-- 意味: フィールド検証が成功したときに凍結済みシングルトンを返し、オブジェクト生成を避ける。1.2M ops/sec を支える中核テクニック。凍結しているので呼び出し側が書き換えられない点も重要。
+#### Zero allocation on success
+- Source: `src/core/optimization/unified-validator.ts:869-876`
+- Shape: const ULTRA_FAST_VALID_RESULT = Object.freeze({ valid: true, errors: [] })
+- Meaning: a field validating successfully returns a frozen singleton rather than allocating. It is the central technique behind the published throughput, and freezing it also stops a caller mutating it.
 
-#### 配列本体の検証失敗時は要素検証をスキップ
-- 出典: `src/core/builder/validator-factory.ts:1091-1108`
-- 形: 配列パス自身の validator が失敗 → continue（要素ループに入らない）
-- 意味: `items` が配列でない／required 違反のとき、`items[*].name` のエラーを重ねて出さない。
+#### A failing array skips its element validation
+- Source: `src/core/builder/validator-factory.ts:1091-1108`
+- Shape: the array path's own validator failing continues past the element loop
+- Meaning: when `items` is not an array or violates required, errors from `items[*].name` are not piled on top.
 
-#### default 値の適用タイミング
-- 出典: `src/core/builder/validator-factory.ts:509-521, 1044-1057, 1352-1362`
-- 形: applyDefault(currentValue, fieldOptions, { allValues }) を検証前に適用
-- 意味: validate / parse のどちらでも、検証を始める前に fieldOptions の default を適用した（浅くコピーした）オブジェクトに対して検証を行う。validate では default 適用後のオブジェクトを検証しつつ Result.ok には元の value を返す（＝ validate は default を結果に反映しない）。parse は反映する。
+#### When a default is applied
+- Source: `src/core/builder/validator-factory.ts:509-521, 1044-1057, 1352-1362`
+- Shape: applyDefault(currentValue, fieldOptions, { allValues }) before validating
+- Meaning: in both validate and parse, validation runs against a shallow copy with the field options' defaults applied. validate validates the copy while returning the ORIGINAL value in Result.ok, so a default does not reach validate's result; parse's result does carry it.
 
 #### pick(key)
-- 出典: `src/core/builder/validator-factory.ts:2641-2760`
-- 形: pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>  // { validate(value, allValues?, options?), parse(value, allValues?, options?) } を返す
-- 意味: 単一フィールド（および `key[*]...` / `key.*...` / `key....` に前方一致する派生パス群）だけを検証するサブバリデータを返す。定義が見つからないキーに対しては常に成功するバリデータを返す。返り値は Result ではなく `{ valid, value, errors }` のプレーン形である点に注意（validate/parse とは別の形）。
+- Source: `src/core/builder/validator-factory.ts:2641-2760`
+- Shape: pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>, returning { validate(value, allValues?, options?), parse(value, allValues?, options?) }
+- Meaning: a sub-validator covering one field and the derived paths sharing its prefix (`key[*]...`, `key.*...`, `key....`). For a key with no definition it returns a validator that always succeeds. Note that it returns a plain `{ valid, value, errors }` rather than a Result — a different shape from validate and parse.
 
-#### objectRecursively の再帰実行モデル
-- 出典: `src/core/builder/validator-factory.ts:328-331, 2061-2115 / src/core/plugin/objectRecursively.ts:115`
-- 形: validator.__isRecursive === true, validator.recursive = { targetFieldPath: string | "__Self" | "__Element", maxDepth?: number }  // maxDepth 既定 10
-- 意味: 深さが maxDepth を超えたら成功として打ち切る。WeakSet で訪問済みオブジェクトを追跡し循環参照を成功扱いで打ち切る。`__Self` は「ルートの全フィールドバリデータを入れ子オブジェクトに再適用」、`__Element` は配列要素に対する同様の適用を意味する。再帰中はフィールド間で abort early しない。
+#### The recursion model of objectRecursively
+- Source: `src/core/builder/validator-factory.ts:328-331, 2061-2115 / src/core/plugin/objectRecursively.ts:115`
+- Shape: validator.__isRecursive === true, validator.recursive = { targetFieldPath: string | "__Self" | "__Element", maxDepth?: number }, maxDepth defaulting to 10
+- Meaning: exceeding maxDepth stops as a success. Visited objects are tracked in a WeakSet, and a cycle stops as a success too. `__Self` reapplies the root's field validators to a nested object, `__Element` does the same to array elements. Fields do not abort early during recursion.
 
 ### optional (1)
 
-#### 空スキーマの挙動
-- 出典: `src/core/builder/validator-factory.ts:263-281`
-- 形: fieldDefinitions.length === 0 → validate: () => Result.ok({}), parse: (v) => Result.ok(v)
-- 意味: フィールドを1つも宣言しないビルダーは常に成功する。validate は入力を無視して空オブジェクトを返す（parse は入力をそのまま返す）という非対称がある。
+#### An empty schema
+- Source: `src/core/builder/validator-factory.ts:263-281`
+- Shape: `fieldDefinitions.length === 0` gives `validate: () => Result.ok({})` and `parse: (v) => Result.ok(v)`
+- Meaning: a builder declaring no field always succeeds. There is an asymmetry: validate ignores the input and returns an empty object, while parse returns the input as it is.
 
-## 振る舞い規則
+## Behavioural rules
 
-- build() は純粋な事前計算フェーズであること。実行時に構築してよいオブジェクトはエラー配列と（parse の）出力オブジェクトだけ。旧実装が createArrayBatchValidator を validate() のループ内で毎回呼んでいたような「実行時構築」は禁止。
-- build() 中に各フィールドのビルダー関数を実行するのは 1 回だけにすること。旧実装は最低 6 回実行していた。ビルダー関数の副作用に依存してはならないが、多重実行を前提にもしないこと。
-- 実行時の速度は次の 6 点で担保する: (1) 成功時に凍結シングルトン結果を返しアロケーションゼロ、(2) エラーメッセージは失敗時のみ計算、(3) パスアクセサ／セッタはビルド時にクロージャへ焼き込み実行時 split をしない、(4) validate は transform 相を完全にスキップ、(5) 配列は1回だけ走査して要素の全フィールドをまとめて検証、(6) 失敗が起きるまでは分岐を最小に保つ。
-- validator 数 1/2/N での関数手展開（旧 createUltraFastValidator の 1個・2個特殊化）は、実測ベンチで有意差が出た場合にのみ導入すること。旧実装はこの手展開でコード量を数倍にしたが、効果を測った形跡がない。既定は素直な for ループ1本。
-- abortEarly と abortEarlyOnEachField は 2 レベル独立の短絡制御として維持し、両方とも既定 true。判定は `!== false` ではなく明示的な既定値代入（`const abortEarly = options?.abortEarly ?? true`）で書くこと。
-- 配列要素の内部は abortEarlyOnEachField を無視して常に全フィールドを検証する。この非対称は意図的な仕様なので保つが、コード内でハードコードするのではなく名前の付いた定数／規則として表現すること。
-- エラーの順序は .v() の宣言順に一致させること。旧実装は「配列バッチ → fast マップ → slow マップ」という内部データ構造の都合で順序が決まっており、これは仕様として保証されていなかった。新実装は単一の順序付きフィールドリストを唯一の真実とすること。
-- フィールドの実行経路（fast/slow のような内部分類）が検証の意味論を変えてはならない。旧実装は slow パスにだけ暗黙の REQUIRED エラー生成があり、スキーマに配列や transform を 1 つ足すと全フィールドの挙動が変わった。欠損フィールドの扱いはプラグイン（required / optional）だけが決めること。
-- 「暗黙 REQUIRED」を残すか否かを設計時に一度だけ決め、全フィールドに一様に適用すること。フィールドが欠損しているかどうかの判定は `in` ベースの存在チェック（undefined が明示的に入っている場合と欠損を区別する）で行う。
-- 配列要素のエラーパスは必ず実インデックスに展開する（items[0].name）。パターン文字列（items[*].name）がエラーとして外に出てはならない。旧実装は経路によってどちらも出ていた。
-- eval / new Function を絶対に使わない。型だけを使うモジュールは `import type` で読み、実行時バンドルに載せないこと。旧実装は src/types/array-type-analysis.ts の new Function をバンドルに載せていた。
-- モジュールスコープや validator スコープの可変シングルトン結果オブジェクトを作らないこと。成功結果の共有は Object.freeze された不変値に限る。旧実装の SUCCESS_RESULT / ERROR_RESULT / singleError / parseSuccess は返した後に上書きされる再入不可な設計だった。
-- parse の入力非破壊性を明示的に決めること。旧実装は `{ ...obj }` の浅いコピーしかせず、入れ子オブジェクトと配列要素は入力と共有参照だったため、transform が呼び出し側のデータを書き換えていた。
-- validator の check は同期の純粋述語 (value, rootData) => boolean に固定する。副作用・非同期・throw を前提にしない（throw はメッセージ生成側でのみ握り潰す）。
-- 実行エンジンのバリアントは 1 つに統一すること。旧実装の unified / raw / ultra-fast の 3 バリアントは、片方が死んでおり、もう片方は意味論が非等価だった。
-- 環境変数やグローバル変数で実行モードを切り替えないこと（LUQ_ULTRA_FAST）。挙動が実行環境で変わり、意味論も非等価だった。
+- build() is a pure precomputation phase. The only objects that may be constructed at validation time are the error array and, for parse, the output object. Building at validation time — as the previous implementation did by calling createArrayBatchValidator inside validate()'s loop — is forbidden.
+- Run each field's builder function exactly once during build(). The previous implementation ran it at least six times. Do not depend on a builder function's side effects, and do not assume repeated execution either.
+- Speed at validation time rests on six things: return a frozen singleton on success so nothing is allocated; compute an error message only on failure; bake path accessors and setters into closures at build time so nothing splits a string at validation time; have validate skip the transform phase entirely; walk an array once and validate all its element fields together; and keep branching minimal until something fails.
+- Hand-expanding functions by validator count — the previous one-validator and two-validator specialisations — should be introduced only where a measured benchmark shows a significant difference. The previous implementation multiplied the code several times over with no sign of the effect being measured. The default is one straightforward for loop.
+- Keep abortEarly and abortEarlyOnEachField as two independent levels of abort, both defaulting to true. Write the decision as an explicit default (`const abortEarly = options?.abortEarly ?? true`) rather than as `!== false`.
+- Inside an array element, ignore abortEarlyOnEachField and always validate every field. The asymmetry is deliberate and stays, but express it as a named constant or rule rather than hard-coding it.
+- Errors must come out in `.v()` declaration order. The previous implementation's order followed internal data structures — array batches, then the fast map, then the slow map — and was never guaranteed. One ordered field list should be the single truth.
+- A field's execution route (an internal fast/slow classification) must not change the meaning of validation. The previous implementation generated an implicit REQUIRED only on the slow path, so adding one array or one transform to a schema changed every field's behaviour. Only the plugins — required and optional — decide what a missing field means.
+- Decide once, at design time, whether an implicit REQUIRED exists at all, and apply it uniformly. Decide whether a field is missing with an `in`-based existence check, distinguishing an explicit undefined from absence.
+- An array element's error path must always carry the real index (`items[0].name`). A pattern string (`items[*].name`) must never escape as an error. The previous implementation emitted both, depending on the route.
+- Never use eval or new Function. Read a module used only for its types with `import type`, so it stays out of the runtime bundle. The previous implementation shipped a new Function in the bundle.
+- Do not create a mutable singleton result object at module or validator scope. Share a success result only as a frozen immutable value. The previous SUCCESS_RESULT, ERROR_RESULT, singleError and parseSuccess were overwritten after being returned — a design that cannot be re-entered.
+- Decide explicitly whether parse leaves its input untouched. The previous implementation made only a shallow `{ ...obj }` copy, sharing nested objects and array elements with the input, so a transform rewrote the caller's data.
+- Fix a validator's check as a synchronous pure predicate, `(value, rootData) => boolean`. Do not build on side effects, asynchrony or throwing — a throw is swallowed only on the message-producing side.
+- Have one engine variant. Of the previous three — unified, raw and ultra-fast — one was dead and another was not semantically equivalent.
+- Do not switch execution mode on an environment variable or a global. Behaviour then differs by environment, and the two modes were not equivalent.
 
-## 引き継がないもの
+## Not carried forward
 
-- **src/core/builder/ultra-fast-validator.ts（258行）全体** — createUltraFastSingleFieldValidator / createUltraFastMultiFieldValidator は validator-factory.ts:48-50 で import されているだけで、リポジトリ全体で一度も呼び出されていない（grep で確認）。加えてモジュールスコープの SUCCESS_RESULT / ERROR_RESULT を使い回すため再入不可。完全な死骸。
-- **src/core/optimization/array-batch-validator.ts（214行）全体** — src/ 全体を grep してもこのファイルを import しているモジュールが 1 つも存在しない。
-- **src/core/optimization/core/validation-engine.ts（763行）と field-utils.ts** — strategy-factory.ts からしか参照されておらず、その strategy-factory の該当関数群（createFastSeparatedStrategy 等）は実路から一度も呼ばれない。validateHoisted / reconstructErrors（エラーインデックスだけ返して後からメッセージを再構成する遅延化）は着想としては良いが、実装は使われた形跡がなく、unified-validator 側の「失敗時のみメッセージ計算」で同じ効果が既に得られている。
-- **ValidationStrategy enum の 4 値と IValidationStrategy 抽象（strategy-factory.ts）** — HOISTED_OPTIMIZED はどこからも生成されない。ARRAY_BATCH / DEFINITION_ORDER に対応する IValidationStrategy 実装は createStrategy / createOptimalStrategy / createSingleFieldStrategy 経由でしか作られず、その 3 関数はどこからも呼ばれない。実効的には「fast マップに入るか slow マップに入るか」の 1 ビットしかなく、それすらフィールド単位ではなくスキーマ全体で 1 個。抽象が支えているものが何もない。
-- **selectOptimalStrategies / groupByStrategy による fast/slow の 2 マップ分割** — execution-strategy-selector.ts:33-37 に `// TODO: Support per-field strategy analysis` とあり、全フィールドに同一の StrategyAnalysis を配っている。しかも分割の唯一の実効果は「slow パスにだけ暗黙 REQUIRED 生成がある」という意味論差で、性能差ではない。スキーマに配列や transform を 1 つ足すだけで全フィールドの検証意味論が変わる、という維持不能なバグを生んでいる。
-- **builderFunction.toString() + 正規表現によるプラグイン呼び出し抽出（strategy-factory.ts:530-541 extractPluginCalls / isTransformPlugin）** — ソース文字列解析はミニファイ、トランスパイル、カバレッジ計装、bind されたクロージャで壊れる。transform の有無はビルダー関数を 1 回実行して _transforms.length を見れば正確に分かる（実際 unified-validator はそうしている）。二重の判定ロジックがあり片方が不正確。
-- **raw-validator.ts と LUQ_ULTRA_FAST 環境変数 / global.__LUQ_ULTRA_FAST__ 経路** — 実行環境の環境変数で検証の意味論が変わる。しかも非等価: フィールド 2 個以上の raw validate() は validateRaw の boolean だけを見て `{path:"", code:"VALIDATION_ERROR", message:"Validation failed"}` という情報ゼロのエラーを返す（raw-validator.ts:355-368, 456-467）。どのフィールドがなぜ落ちたか分からない。「速いモード」と称して壊れたモードを配っている。
-- **TransformAwareValidator の optional メンバ validateRaw? / parseRaw?** — README にもドキュメントにも記載がなく（grep 済み）、LUQ_ULTRA_FAST モードでしか実体が入らないので実質常に undefined。型に現れる意味がない。
-- **array-batch-optimizer.ts の legacy パス（209-363行）** — `result.isValid()` を呼んでいるが（312行）、UnifiedValidator が返すのは `{ valid, errors }` のプレーンオブジェクトで isValid メソッドを持たない。到達すれば TypeError で落ちる。_nestedInfo が常に付く現在の経路では到達しないが、死んだうえに壊れている。
-- **src/types/array-type-analysis.ts の ArrayTypeAnalyzer.generateOptimizedValidator / createNestedLoopValidator / generateNestedLoopCode（new Function によるループ生成）** — new Function は CSP 違反であり README の「CSP-safe: no eval/Function」と真っ向から矛盾する。呼び出し元は存在しないが、validator-factory.ts:46 と array-batch-optimizer.ts:20 が値インポート構文で（import type ではなく）このモジュールを読んでいるため実行時バンドルに載る。多次元配列は普通の再帰ループで書けば十分。
-- **unified-validator.ts の validator 数 1個・2個の手展開特殊化（706-786行）および createOptimizedTransformValidator の 1v1t / 2v1t 手展開（953-1110行）** — 同じロジックを 4〜6 回書き写しており、片方だけ直すバグ（実際 skipForNull チェックが parse 側 1114-1197 行にしか入っておらず、1v1t / 2v1t 特殊化パスには入っていない）を既に生んでいる。V8 は単純な for ループを十分に最適化する。効果測定の根拠なくコードを 5 倍にしている。
-- **unified-validator.ts:682-695 の「静的エラーメッセージの事前計算」** — field-context.ts:409 が messageFactory に必ず `(() => "Validation failed")` をフォールバックで入れるため、isDynamic[i] は常に true。この分岐は一度も static 側に落ちない。動かない最適化。
-- **モジュール／クロージャスコープの可変結果オブジェクト（unified-validator.ts:701 singleError, 961-977 validateError/parseError/parseSuccess, ultra-fast-validator.ts:12-13 SUCCESS_RESULT/ERROR_RESULT, validator-factory.ts:705 共有 errors 配列）** — 返したオブジェクトが次の呼び出しで書き換わる。parseSuccess.data は前回の transform 結果を保持したまま返る。呼び出し側が結果を保持する／同一バリデータを入れ子で呼ぶ／並行に呼ぶと壊れる。得られるアロケーション削減より正しさの損失が大きい。
-- **validator-factory.ts 内の validateArrayElementField / parseArrayElementField / hasOptionalValidator** — 定義のみで参照ゼロ（grep でカウント 1）。hasOptionalValidator にはコメントアウトされた console.log デバッグが 6 行残っている。
-- **validator-factory.ts 1137-1154 / 1227-1244 の「親が空配列ならスキップ」ループ** — fast ループと slow ループに完全にコピペで重複しており、しかもフィールドパスの各接頭辞について getNestedValue を毎回呼ぶ O(depth) の走査を全フィールド × 毎回の validate() で行う。ホットパスに置かれた線形探索。配列の入れ子構造はビルド時に分かるのだから、実行時に文字列を split して親を辿り直す必要がない。
-- **validator-factory.ts の 3 回の buildUnifiedValidators 呼び出し（slow 用 / fast 用 / all 用）と 230-240 行の「allValidators から fast/slow マップを事後的に上書きする」パッチ** — 同じ validator を 3 セット作り、そのあと [*] を含むパスだけ後から差し替えるという構造。フィールドごとに 1 個の validator を持つ単一のマップがあれば足りる。ビルド時間の 3 倍化と、どのマップが正しいのか分からない状態を生んでいる。
-- **コード中の「V8 optimization:」コメント（unified-validator.ts と validator-factory.ts に数十箇所）** — 大半が根拠のない儀式（「for...of より for が速い」「ローカル変数に取ると速い」）で、いくつかは実際には最適化になっていない（凍結オブジェクトを返してから .errors を map するなど）。コメントが実装の正しさを保証しているかのように見せているが、測定の裏付けがない。新実装ではベンチマークで示せない最適化コメントを書かないこと。
-- **build() が def.builderFunction(context) を 1 回実行して結果を FieldDefinition.rules に詰める処理（field-builder.ts:202-222）** — rules フィールドは validator-factory 側で一切読まれない。ビルダー関数の実行 1 回分を丸ごと捨てている。
+- **All of src/core/builder/ultra-fast-validator.ts (258 lines)** — its two exports are imported at validator-factory.ts 48-50 and called nowhere in the repository. It also reuses module-scope SUCCESS_RESULT and ERROR_RESULT, so it cannot be re-entered. Entirely dead.
+- **All of src/core/optimization/array-batch-validator.ts (214 lines)** — not one module in src imports it.
+- **src/core/optimization/core/validation-engine.ts (763 lines) and field-utils.ts** — referenced only from strategy-factory.ts, whose relevant functions (createFastSeparatedStrategy and the rest) are never reached from the live route. `validateHoisted` and `reconstructErrors`, deferring message construction by returning only error indices, are a good idea whose implementation shows no sign of use — and the same effect is already achieved by computing messages only on failure.
+- **The four values of the ValidationStrategy enum and the IValidationStrategy abstraction** — HOISTED_OPTIMIZED is generated from nowhere; the implementations for ARRAY_BATCH and DEFINITION_ORDER are constructed only through three functions that nothing calls. In practice it is one bit — which map a field goes into — and even that is decided once per schema rather than per field. The abstraction supports nothing.
+- **Splitting fields into fast and slow maps through selectOptimalStrategies / groupByStrategy** — execution-strategy-selector.ts 33-37 carries its own TODO and hands every field the same analysis. The split's only real effect is a difference in MEANING, the implicit REQUIRED existing on the slow path alone, and not one in speed. It produces the unmaintainable bug where adding one array or transform changes every field's validation semantics.
+- **Extracting plugin calls from `builderFunction.toString()` with a regular expression** (strategy-factory.ts 530-541) — source-string analysis breaks under minification, transpilation, coverage instrumentation and a bound closure. Whether a field has a transform is known exactly by running the builder function once and reading `_transforms.length`, which is what the unified validator already does. Two decision paths existed and one of them was wrong.
+- **raw-validator.ts and the LUQ_ULTRA_FAST environment variable / global** — validation semantics changing with the environment, and not equivalently: with two or more fields, raw `validate()` looks only at `validateRaw`'s boolean and returns an information-free `{path:"", code:"VALIDATION_ERROR", message:"Validation failed"}` (raw-validator.ts 355-368, 456-467). Which field failed and why are both lost. A broken mode was shipped under the name of a fast one.
+- **TransformAwareValidator's optional validateRaw? and parseRaw?** — mentioned in neither the README nor the documentation, and populated only in the ultra-fast mode, so in practice always undefined. There is no reason for them to appear in the type.
+- **array-batch-optimizer.ts's legacy path (209-363)** — it calls `result.isValid()` at line 312, and the unified validator returns a plain `{ valid, errors }` with no such method, so reaching it throws a TypeError. It is unreachable on the current route, so it is dead as well as broken.
+- **ArrayTypeAnalyzer's generateOptimizedValidator / createNestedLoopValidator / generateNestedLoopCode in src/types/array-type-analysis.ts** — `new Function` violates CSP and contradicts the README head-on. Nothing calls them, but validator-factory.ts:46 and array-batch-optimizer.ts:20 import the module with value syntax rather than `import type`, so it reaches the runtime bundle. A multi-dimensional array is fine as an ordinary recursive loop.
+- **The one-validator and two-validator hand expansions in unified-validator.ts (706-786) and the 1v1t / 2v1t expansions in createOptimizedTransformValidator (953-1110)** — the same logic copied four to six times, which has already produced a bug fixed in only one copy: the skipForNull check exists on the parse side at 1114-1197 and not in the specialised paths. V8 optimises a simple for loop perfectly well. The code was multiplied fivefold with no measurement behind it.
+- **The "static error message precomputation" at unified-validator.ts 682-695** — field-context.ts:409 always supplies a `(() => "Validation failed")` fallback for messageFactory, so `isDynamic[i]` is always true and the branch never takes the static side. An optimisation that does not run.
+- **Mutable result objects at module or closure scope** (unified-validator.ts 701's singleError, 961-977's validateError / parseError / parseSuccess, ultra-fast-validator.ts 12-13's SUCCESS_RESULT / ERROR_RESULT, validator-factory.ts 705's shared errors array) — a returned object is overwritten by the next call, and `parseSuccess.data` comes back still holding the previous transform's result. It breaks when a caller keeps a result, when one validator is called inside another, and under concurrency. The correctness lost outweighs the allocation saved.
+- **validator-factory.ts's validateArrayElementField, parseArrayElementField and hasOptionalValidator** — defined and referenced zero times. hasOptionalValidator also carries six lines of commented-out debug logging.
+- **The "skip when the parent array is empty" loops at validator-factory.ts 1137-1154 and 1227-1244** — copied verbatim into both the fast and slow loops, and calling getNestedValue for every prefix of a field path, an O(depth) walk performed for every field on every validate(). A linear search on the hot path. The nesting structure of arrays is known at build time, so nothing needs to split a string and re-walk to the parent at validation time.
+- **The three buildUnifiedValidators calls (slow, fast, all) and the patch at 230-240 that overwrites the fast and slow maps from allValidators afterwards** — three sets of the same validators, with the paths containing `[*]` swapped in later. One ordered map with one validator per field is enough. It triples build time and leaves it unclear which map is authoritative.
+- **The "V8 optimization:" comments** — dozens across unified-validator.ts and validator-factory.ts, mostly ritual with nothing behind them ("for is faster than for...of", "taking a local is faster"), and some of them not optimisations at all (returning a frozen object and then mapping over `.errors`). They give the appearance of guaranteeing the implementation's correctness with no measurement behind them. Write no optimisation comment that a benchmark cannot demonstrate.
+- **build() running `def.builderFunction(context)` once and storing the result in `FieldDefinition.rules` (field-builder.ts 202-222)** — the rules field is never read by validator-factory. A whole execution of the builder function is thrown away.
 
-## 公開シンボル (49)
+## Published symbols (49)
 
 `Builder`, `.use()`, `.for<T>()`, `.v(path, builderFn)`, `.field()`, `.useField()`, `.strict()`, `.build()`, `TransformAwareValidator`, `validate(value, options?)`, `parse(value, options?)`, `pick(key)`, `ValidationOptions`, `ParseOptions`, `abortEarly`, `abortEarlyOnEachField`, `messageFactory`, `translate`, `context`, `transforms`, `Result`, `Result.ok`, `Result.error`, `Result<T>.isValid()`, `Result<T>.isError()`, `Result<T>.valid`, `Result<T>.errors`, `Result<T>.unwrap()`, `Result<T>.unwrapOr()`, `Result<T>.unwrapOrElse()`, `Result<T>.map()`, `Result<T>.flatMap()`, `Result<T>.tap()`, `Result<T>.tapError()`, `Result<T>.data()`, `Result<T>.toPlainObject()`, `ValidationError`, `ValidationError.path`, `ValidationError.code`, `ValidationError.message`, `ValidationError.paths()`, `LuqValidationException`, `REQUIRED`, `VALIDATION_ERROR`, `PARSE_ERROR`, `FieldValidator`, `NestedKeyOf`, `TypeOfPath`, `ApplyFieldTransforms`
-

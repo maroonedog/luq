@@ -1,9 +1,11 @@
 import * as ts from "typescript";
 
 /**
- * ソーステキストが名指しするモジュール指定子をすべて集める。
- * static import / export-from / import type / dynamic import() / require() を拾う。
- * `import type` も 1 件として数える (設計上、禁止領域からの型 import も違反)。
+ * Collects every module specifier a source text names: static imports,
+ * export-from, type imports, dynamic import() and require().
+ *
+ * A type import counts. Importing a type from a forbidden area is a violation
+ * by design, the same as importing a value.
  */
 export function readImportSpecifiers(
   sourceText: string,

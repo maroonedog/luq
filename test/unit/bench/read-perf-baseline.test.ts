@@ -1,5 +1,6 @@
-// 床の読み取りが黙って空を返すと、ゲートは何も落とさないまま緑になる。
-// 「落ちる」ことのほうが要件なので、壊した baseline で throw することを固定する。
+// A floor reader that quietly answers nothing leaves the gate green while
+// failing nothing. Failing is the requirement, so throwing on a broken
+// baseline is what gets pinned.
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -43,30 +44,30 @@ const COMPLETE = {
 };
 
 describe("readPerfBaseline", () => {
-  it("記録されている実物を読める", () => {
+  it("reads the real recorded file", () => {
     const baseline = readPerfBaseline(PERF_BASELINE_PATH);
     expect(baseline.referenceRatio.length).toBeGreaterThan(0);
   });
 
-  it("ファイルが無ければ throw する", () => {
+  it("throws when the file is missing", () => {
     expect(() =>
       readPerfBaseline(path.join(os.tmpdir(), "no-such.json"))
     ).toThrow(PerfBaselineUnreadableError);
   });
 
-  it("JSON として壊れていれば throw する", () => {
+  it("throws when the JSON is broken", () => {
     withFile("{ not json", (file) => {
       expect(() => readPerfBaseline(file)).toThrow(PerfBaselineUnreadableError);
     });
   });
 
-  it("referenceRatio が空なら throw する — 床の無いゲートは全通過になるため", () => {
+  it("throws on an empty referenceRatio, a gate with no floor passing everything", () => {
     withFile(JSON.stringify({ ...COMPLETE, referenceRatio: [] }), (file) => {
       expect(() => readPerfBaseline(file)).toThrow(PerfBaselineUnreadableError);
     });
   });
 
-  it("ratioFloor が 0 なら throw する", () => {
+  it("throws on a ratioFloor of 0", () => {
     const zeroFloor = {
       ...COMPLETE,
       referenceRatio: [{ ...ONE_RATIO, ratioFloor: 0 }],
@@ -76,7 +77,7 @@ describe("readPerfBaseline", () => {
     });
   });
 
-  it("BOM 付きでも読める", () => {
+  it("reads a file with a BOM", () => {
     withFile(`﻿${JSON.stringify(COMPLETE)}`, (file) => {
       expect(readPerfBaseline(file).referenceRatio).toHaveLength(1);
     });
@@ -84,7 +85,7 @@ describe("readPerfBaseline", () => {
 });
 
 describe("findRecordedFloor", () => {
-  it("shape・operation・受理/拒否の3つが揃った行の床だけを返す", () => {
+  it("returns a floor only for rows carrying shape, operation and outcome", () => {
     const baseline = readPerfBaseline(PERF_BASELINE_PATH);
     const accepted = findRecordedFloor(baseline, "multiField", {
       operation: "validate",
@@ -99,9 +100,9 @@ describe("findRecordedFloor", () => {
     expect(accepted).not.toBe(rejected);
   });
 
-  // 除外そのものを固定する。singleField の床を戻すとここが落ちるので、
-  // 「なぜ外したか」を読まずに戻すことはできない。
-  it("singleField には床が無い（参照が測定下限を下回るため比率ゲートの対象外）", () => {
+  // Pins the exclusion itself. Restoring the singleField floor fails this, so
+  // it cannot be restored without reading why it was removed.
+  it("has no floor for singleField, the reference falling below the measurement floor", () => {
     const baseline = readPerfBaseline(PERF_BASELINE_PATH);
     for (const inputIsAccepted of [true, false]) {
       for (const operation of ["validate", "parse"] as const) {
@@ -115,7 +116,7 @@ describe("findRecordedFloor", () => {
     }
   });
 
-  it("記録の無い組み合わせには undefined を返す", () => {
+  it("answers undefined for a combination that was not recorded", () => {
     withFile(JSON.stringify(COMPLETE), (file) => {
       const baseline = readPerfBaseline(file);
       expect(

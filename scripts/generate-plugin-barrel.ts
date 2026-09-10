@@ -22,9 +22,13 @@ function toRelativeSpecifier(entry: PluginCatalogEntry): string {
 }
 
 /**
- * 全プラグインを1箇所から再 export する barrel (公開サブパス "./plugins" の実体)。
- * 名前はカタログがエントリファイルから実際に読んだシンボルだけなので、
- * 存在しない symbol を書けない。旧実装の「barrel 72 / exports 57」の乖離はここで消える。
+ * The barrel re-exporting every plugin from one place, behind the "./plugins"
+ * subpath.
+ *
+ * The names are only the symbols the catalog actually read from the entry
+ * files, so a symbol that does not exist cannot be written. That is what
+ * closes the gap the previous major had between what its barrel named and what
+ * its exports map published.
  */
 export function renderPluginBarrel(catalog: PluginCatalog): string {
   if (catalog.entries.length === 0) {
@@ -50,7 +54,7 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const changed = generatePluginBarrel(REPOSITORY_ROOT);
     console.error(
-      `${PLUGIN_BARREL_OUTPUT}: ${changed ? "更新しました" : "変更なし"}`
+      `${PLUGIN_BARREL_OUTPUT}: ${changed ? "updated" : "unchanged"}`
     );
     return 0;
   });

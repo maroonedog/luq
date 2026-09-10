@@ -1,6 +1,6 @@
-// readOnly: 「更新の書き込みでは値を持ってはいけない」。
-// 操作は RuleContext.external で渡す (旧実装の第3引数 context はどの実行パスも
-// 渡していなかった)。
+// readOnly: a field must carry no value on an update write. The operation
+// arrives through the external context. A previous release declared a third
+// parameter for it that no path ever passed.
 import { Builder } from "../../../../src/index";
 import { readOnlyPlugin } from "../../../../src/plugins/read-only/index";
 
@@ -18,17 +18,17 @@ const validator = Builder()
   .build();
 
 describe("readOnly", () => {
-  it("外部コンテキストが無ければ通る", () => {
+  it("passes when there is no external context", () => {
     expect(validator.validate(RECORD).valid).toBe(true);
   });
 
-  it("新規作成 (isUpdate なし) の書き込みでは通る", () => {
+  it("passes on a create write, where nothing says update", () => {
     expect(
       validator.validate(RECORD, { external: { operation: "write" } }).valid
     ).toBe(true);
   });
 
-  it("更新の書き込みで値を持っていれば落ちる", () => {
+  it("fails when an update write carries a value", () => {
     const result = validator.validate(RECORD, {
       external: { operation: "write", isUpdate: true },
     });
@@ -41,21 +41,21 @@ describe("readOnly", () => {
     );
   });
 
-  it("operation を書かなければ write 扱い (旧実装の既定)", () => {
+  it("treats an unstated operation as a write, as it always did", () => {
     const result = validator.validate(RECORD, {
       external: { isUpdate: true },
     });
     expect(result.valid).toBe(false);
   });
 
-  it("更新でも値が無ければ通る", () => {
+  it("passes on an update carrying no value", () => {
     const result = validator.validate({ name: "ada" } as unknown as Row, {
       external: { operation: "write", isUpdate: true },
     });
     expect(result.valid).toBe(true);
   });
 
-  it("読み出しでは通る", () => {
+  it("passes on a read", () => {
     expect(
       validator.validate(RECORD, {
         external: { operation: "read", isUpdate: true },
@@ -63,14 +63,14 @@ describe("readOnly", () => {
     ).toBe(true);
   });
 
-  it("options.code と messageFactory を尊重する", () => {
+  it("honours options.code and messageFactory", () => {
     const custom = Builder()
       .use(readOnlyPlugin)
       .for<Row>()
       .v("id", (b) =>
         b.string.readOnly({
           code: "READ_ONLY",
-          messageFactory: (msgCtx) => `${msgCtx.path} は変更できません`,
+          messageFactory: (msgCtx) => `${msgCtx.path} cannot be changed`,
         })
       )
       .build();
@@ -80,6 +80,6 @@ describe("readOnly", () => {
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("READ_ONLY");
-    expect(result.issues[0]?.message).toBe("id は変更できません");
+    expect(result.issues[0]?.message).toBe("id cannot be changed");
   });
 });

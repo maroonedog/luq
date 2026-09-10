@@ -49,19 +49,21 @@ export type ChainMethod<
             define: (b: FieldSlots<TRoot, B, X>) => AnyChain,
             options?: RuleOptions<Sig["context"]>
           ) => FieldChain<B, S, TRoot, TValue, CoverWith<TState, X>>
-        : // 引数2の型が引数1で決まる、という形はここでしか書けない。
-          // ResolveArgs は各引数を固定の TRoot/TValue に対して独立に解決する
-          // ので、引数どうしの依存を表せない。GuardOut と同じ扉である。
+        : // "the second argument's type follows from the first" can only be
+          // expressed here. Argument resolution treats each argument
+          // independently against a fixed root and value, so it cannot carry a
+          // dependency between arguments. Same door the guard arm uses.
           //
-          // `const M` が対応表をリテラルで捕まえ、BundleOf がそこから束の型を
-          // 組む。別名を経由するのは飾りではない: 束をパス文字列でキーすると
-          // `.v("user.name")` がパスとして構造解釈され、束の中を探しに行って
-          // 見つからない。別名は素の識別子なので、その衝突が起きない。
+          // `const M` captures the table as a literal, and the bundle type is
+          // built from it. Going through aliases is not decoration: keyed by
+          // path strings, `"user.name"` would be read structurally and looked
+          // for inside the flat bundle, where it is not. An alias is a bare
+          // identifier, so that collision cannot happen.
           [Sig["out"]] extends [StitchOut]
-          ? // 宣言したパスの集合から、述語が受け取る束の型を組む。
-            // `const F` がタプルをリテラルで捕まえるので、PickPaths が
-            // キーごとに値の型を引ける — ここを Record<string, unknown> に
-            // していたのが、この腕を足すまでの stitch である。
+          ? // Builds the predicate's bundle type from the declared path set.
+            // `const F` captures the tuple as a literal, which is what lets
+            // the value type be looked up per key rather than falling back to
+            // Record<string, unknown>.
             <const F extends readonly (FieldPath<TRoot> & string)[]>(
               fields: F,
               check: (

@@ -18,32 +18,30 @@ describe("runCheckAndExit", () => {
     errorSpy.mockRestore();
   });
 
-  it("戻り値をそのまま終了コードにする", () => {
+  it("uses the return value as the exit code", () => {
     runCheckAndExit(() => 0);
     expect(exitSpy).toHaveBeenCalledWith(0);
     runCheckAndExit(() => 1);
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
-  it("例外はメッセージだけ出して 1 で終わる", () => {
+  it("prints only the message for an exception and exits 1", () => {
     runCheckAndExit(() => {
-      throw new Error("src/plugins/array: index.ts がありません。");
+      throw new Error("src/plugins/array: no index.ts.");
     });
-    expect(errorSpy).toHaveBeenCalledWith(
-      "src/plugins/array: index.ts がありません。"
-    );
+    expect(errorSpy).toHaveBeenCalledWith("src/plugins/array: no index.ts.");
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
-  it("Error でない値が投げられても 1 で終わる", () => {
+  it("exits 1 for a thrown value that is not an Error", () => {
     runCheckAndExit(() => {
-      throw "壊れた";
+      throw "broken";
     });
-    expect(errorSpy).toHaveBeenCalledWith("壊れた");
+    expect(errorSpy).toHaveBeenCalledWith("broken");
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
-  it("スタックトレースは出さない", () => {
+  it("prints no stack trace", () => {
     runCheckAndExit(() => {
       throw new Error("boom");
     });

@@ -1,5 +1,5 @@
-// 旧サブパス ./plugins/readOnlyWriteOnly が指す互換モジュール。
-// 2つのプラグインが同じ実体として届くことだけを見る。
+// The compatibility module behind the older ./plugins/readOnlyWriteOnly
+// subpath. All that is checked is that both plugins arrive as the same values.
 import {
   readOnlyPlugin,
   writeOnlyPlugin,
@@ -7,13 +7,13 @@ import {
 import { readOnlyPlugin as fromOwnSubpath } from "../../../src/plugins/read-only/index";
 import { writeOnlyPlugin as writeFromOwnSubpath } from "../../../src/plugins/write-only/index";
 
-describe("readOnlyWriteOnly 互換サブパス", () => {
-  it("readOnly と writeOnly の両方を再 export する", () => {
+describe("the readOnlyWriteOnly compatibility subpath", () => {
+  it("re-exports both readOnly and writeOnly", () => {
     expect(readOnlyPlugin).toBe(fromOwnSubpath);
     expect(writeOnlyPlugin).toBe(writeFromOwnSubpath);
   });
 
-  it("旧実装と違い writeOnly も到達可能", () => {
+  it("makes writeOnly reachable, which a previous release did not", () => {
     expect(writeOnlyPlugin.method).toBe("writeOnly");
     expect(readOnlyPlugin.method).toBe("readOnly");
   });

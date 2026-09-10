@@ -1,29 +1,31 @@
 // ===========================================================================
 // L10 src/standard-schema/split-issue-path.ts
 //
-// Luq の issue path ("items[1].productId") を Standard Schema の path
-// (["items", 1, "productId"]) に開く。
+// Opens an issue path ("items[1].productId") into the spec's segment list
+// (["items", 1, "productId"]).
 //
-// 方向に注意: これは formatIssuePath の逆で、宣言パス (parseFieldPath が
-// 読む "items[*].productId") のパーサではない。issue path には [*] が
-// 決して現れず、代わりに実インデックスが入る。二つの文法を一つの関数で
-// 扱おうとすると、[*] を 0 と読むような取り違えが静かに入るので分けてある。
+// Mind the direction: this reverses issue-path FORMATTING, and is not a parser
+// for declared paths. An issue path never contains [*] — it carries the real
+// index instead. Handling both grammars in one function is how [*] quietly
+// starts being read as 0, so they are kept apart.
 //
-// 配列インデックスは number として出す。仕様の PropertyKey は
-// string | number | symbol を許し、消費側 (フォームライブラリ) は
-// 添字を number として受け取る前提で書かれているため。
+// Array indices come out as numbers. The spec's PropertyKey allows
+// string | number | symbol, and the consumers — form libraries — are written
+// expecting a number.
 // ===========================================================================
 
-/** 開いた結果。オブジェクトのキーは string、配列の添字は number。 */
+/** The opened path: object keys as strings, array indices as numbers. */
 export type IssuePathSegments = readonly (string | number)[];
 
 const INDEX_PATTERN = /^\[(\d+)\]/;
 
 /**
- * ルート ("") は空配列。空配列は仕様上「ルート自身への issue」を意味する。
+ * The root ("") is the empty list, which the spec reads as an issue on the
+ * root itself.
  *
- * 解釈できない形が来たら、握り潰さずに path 全体を1つの文字列セグメントとして
- * 返す。issue を落とすより、開けなかったことが分かる形で渡すほうがまし。
+ * A shape that cannot be interpreted comes back as the whole path in one
+ * string segment rather than being swallowed. Handing over something visibly
+ * unopened beats dropping the issue.
  */
 export function splitIssuePath(path: string): IssuePathSegments {
   if (path === "") return [];
@@ -58,7 +60,7 @@ export function splitIssuePath(path: string): IssuePathSegments {
   return expectKey ? [path] : segments;
 }
 
-/** キーは "." か "[" の手前まで。どちらも無ければ末尾まで。 */
+/** A key runs to the next "." or "[", or to the end when there is neither. */
 function findKeyEnd(rest: string): number {
   const dot = rest.indexOf(".");
   const bracket = rest.indexOf("[");

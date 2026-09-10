@@ -10,26 +10,26 @@
 // ===========================================================================
 
 /**
- * `Object.prototype` 上に同名のものがあるキー。
+ * Keys that share a name with something on `Object.prototype`.
  *
- * **これはもう拒否リストではない。** 以前はこの3つを宣言パスに書けなくして
- * いたが、その拒否は過剰だった。危険なのは書き込みだけで、しかも本当に危ない
- * のは "__proto__" ひとつである:
+ * **This is no longer a deny list.** Refusing these in a declared path was
+ * over-broad: only writing is dangerous, and of the three only "__proto__"
+ * really is.
  *
- *   読み取り  create-value-reader.ts が hasOwnProperty.call で own プロパティ
- *             しか読まないので、プロトタイプは最初から辿らない
- *   書き込み  `target[key] = value` は "__proto__" のとき Object.prototype の
- *             **アクセサ** を呼び、own プロパティを作らずプロトタイプを差し替える。
- *             "constructor" と "prototype" はデータプロパティなので代入でも
- *             own プロパティになるだけで、汚染にはならない
+ *   reading  own properties only, checked with hasOwnProperty.call, so the
+ *            prototype chain is never walked to begin with
+ *   writing  `target[key] = value` on "__proto__" invokes the ACCESSOR on
+ *            Object.prototype: it creates no own property and swaps the
+ *            prototype instead. "constructor" and "prototype" are data
+ *            properties, so assigning them only makes an own property and
+ *            pollutes nothing
  *
- * create-value-writer.ts が代入をやめて defineProperty に移したことで、
- * この経路が閉じた。したがって名前で拒否する必要が無くなり、
- * `{ "properties": { "__proto__": ... } }` のようなスキーマを検証できる
- * ようになった (JSON-Schema-Test-Suite の properties.json が要求している)。
+ * Writing through defineProperty instead of assignment closes that route.
+ * Refusing by name became unnecessary, which is what allows a schema like
+ * `{ "properties": { "__proto__": ... } }` to be validated at all.
  *
- * リスト自体は残す。テストが「この3つを書いても Object.prototype が汚れない」
- * ことを名指しで確認するのに使う (test/unit/path/create-value-writer.test.ts)。
+ * The list stays. Tests use it to name the keys they check Object.prototype
+ * against.
  */
 export const RESERVED_SEGMENTS: readonly string[] = Object.freeze([
   "__proto__",
@@ -86,9 +86,5 @@ export function assertDeclarableKey(key: string, source: string): void {
         "bracket form and it must trail a key"
     );
   }
-  // 予約セグメントの拒否はここから外した。理由は RESERVED_SEGMENTS の
-  // コメントに書いてある。要約すると、危険なのは書き込みだけで、その書き込みは
-  // create-value-writer.ts が defineProperty に移したので安全になった。
-  // 名前で拒否する必要が無くなり、JSON Schema が "__proto__" というキーを
-  // 持つオブジェクトを検証できるようになった。
+  // Reserved segments are deliberately NOT refused here. See RESERVED_SEGMENTS.
 }

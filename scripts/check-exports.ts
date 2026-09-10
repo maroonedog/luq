@@ -8,10 +8,10 @@ import { readPublishedExportMap } from "./catalog/read-package-json";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
 
 /**
- * superset: 生成マップが公開済みマップを含んでいること。
- *   ブランチ上でプラグインを足しても package.json を再生成していない状態を許すが、
- *   公開済みサブパスが消えたり指し先が変わったりしたら落ちる。
- * exact: 両者が完全一致していること。ゲートで使う。
+ * superset: the generated map contains the published one. This tolerates a
+ *   branch that added a plugin without regenerating package.json, but fails if
+ *   a published subpath disappears or starts pointing somewhere else.
+ * exact: the two match completely. This is what the gate uses.
  */
 export type ExportCheckMode = "superset" | "exact";
 
@@ -36,7 +36,7 @@ export function findExportMismatches(
     .map((subpath) => ({
       kind: "unpublished" as const,
       subpath,
-      detail: "生成されているのに package.json#/exports にありません",
+      detail: "generated but absent from package.json#/exports",
     }));
   return [...mismatches, ...unpublished];
 }
@@ -52,7 +52,7 @@ function comparePublishedEntry(
       {
         kind: "missing",
         subpath,
-        detail: "公開済みなのにカタログから生成されません",
+        detail: "published but not generated from the catalog",
       },
     ];
   }
@@ -61,7 +61,7 @@ function comparePublishedEntry(
       {
         kind: "different",
         subpath,
-        detail: `期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(target)}`,
+        detail: `expected ${JSON.stringify(expected)}, got ${JSON.stringify(target)}`,
       },
     ];
   }
@@ -72,7 +72,7 @@ export function parseExportCheckMode(argv: readonly string[]): ExportCheckMode {
   const flag = argv.find((argument) => argument.startsWith("--mode="));
   const mode = flag === undefined ? "superset" : flag.slice("--mode=".length);
   if (mode !== "superset" && mode !== "exact") {
-    throw new Error(`--mode は superset か exact です (received: ${mode})`);
+    throw new Error(`--mode must be superset or exact (received: ${mode})`);
   }
   return mode;
 }
@@ -82,11 +82,11 @@ if (require.main === module) {
     const mode = parseExportCheckMode(process.argv.slice(2));
     const mismatches = findExportMismatches(REPOSITORY_ROOT, mode);
     if (mismatches.length === 0) {
-      console.error(`exports 検査 (--mode=${mode}): 違反なし`);
+      console.error(`Exports check (--mode=${mode}): no violations`);
       return 0;
     }
     console.error(
-      `exports 検査 (--mode=${mode}) 違反 ${mismatches.length} 件:`
+      `Exports check (--mode=${mode}): ${mismatches.length} violations:`
     );
     for (const mismatch of mismatches) {
       console.error(`  ${mismatch.subpath}: ${mismatch.detail}`);

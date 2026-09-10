@@ -70,12 +70,12 @@ export function fail(detail: IssueDetail): CheckOutcome {
 }
 
 /**
- * クロスフィールドの判定が返せるもの。真偽だけでも、メッセージ付きでもよい。
+ * What a cross-field check may answer: a boolean, or a boolean with a message.
  *
- * ここ (L0) にあるのは、チェーン層が `stitch` の呼び出し側の型を組むときに
- * 参照するからである。プラグイン (L7) に置いたままだと L3 -> L7 の import に
- * なり、層が逆流する。プラグイン側の `StitchOutcome` はこれの別名で、
- * 公開名は変えていない。
+ * It lives at the bottom layer because the chain layer needs it to build the
+ * caller-facing type of `stitch`. Left in the plugin, that would be an import
+ * running outward from the chain, which no layer may do. The plugin's
+ * `StitchOutcome` is an alias of this one, so the public name is unchanged.
  */
 export interface CrossFieldOutcome {
   readonly valid: boolean;
@@ -127,15 +127,15 @@ export function isStringArray(value: unknown): value is readonly string[] {
 }
 
 /**
- * 文字列の長さをコードポイントで数える。
+ * Counts a string's length in code points.
  *
- * `.length` は UTF-16 のコード単位を数えるので、絵文字や星域文字が 2 と数えられる。
- * JSON Schema §6.3.1 は minLength / maxLength をコードポイントで数えると定めており、
- * 利用者が「3文字」と書くときに期待するのもコードポイントのほう。
+ * `.length` counts UTF-16 code units, so an emoji or any astral character
+ * counts as two. JSON Schema §6.3.1 defines minLength / maxLength in code
+ * points, and code points are also what someone writing "three characters"
+ * means.
  *
- * 1.x は `.length` を使っていた (docs/legacy-spec/plugin-catalog-core.md が
- * 「暗黙の挙動で、まわりに落ちるテストがある。明示的な決定にすべき」と記録している)。
- * ここでその決定をした。星域文字を含む文字列では 1.x と判定が変わる。
+ * This is a deliberate decision, not an inherited one: strings containing
+ * astral characters are judged differently than under the legacy `.length`.
  */
 export function countCodePoints(value: string): number {
   let count = 0;

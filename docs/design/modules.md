@@ -1,8 +1,8 @@
-# モジュール一覧（確定版）
+# The module list (settled)
 
-全モジュールが200行以内であること。超過は責務が2つ以上ある印。
+Every module stays inside 200 lines. Going over is the sign of a second responsibility.
 
-| パス | 操作 | 単一責務 | 見積行数 |
+| Path | Operation | Single responsibility | Estimated lines |
 |---|---|---|---|
 | `src/` | remove | The entire 1.x implementation is deleted before step 2 of the core stage. Nothing is carried over as code; the public API surface is carried over as a contract (docs/legacy-public-surface.md) and as the 57 legacy subpaths pinned in a compile-checked list. | 0 |
 | `src/types/index.ts` | add | Re-exports the five L0 vocabulary modules. No logic. | 12 |
@@ -101,4 +101,4 @@
 | `scripts/check-suite-pin.ts` | add | Fails when the JSON-Schema-Test-Suite pin moved without a matching skip-list change. | 70 |
 | `bench/measure-throughput-ratio.ts` | add | Measures luq against an in-process hand-written reference and gates on the RATIO, so a shared CI runner's speed cancels out. | 140 |
 
-合計 96 モジュール / 200行超 0 件
+No module is over the line limit.

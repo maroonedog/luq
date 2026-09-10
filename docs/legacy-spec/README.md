@@ -1,10 +1,12 @@
-# 旧実装から引き継ぐ仕様（抽出結果）
+# What this implementation inherits from the previous major
 
-旧 `src/` を削除する前に、14領域から抽出した「引き継ぐべき仕様」を記録したもの。
-実装時はこのディレクトリと [legacy-public-surface.md](../legacy-public-surface.md) を一次資料とする。
-旧実装そのものは `git show master:src/<path>` で参照できる。
+Recorded before the previous `src/` was deleted: the behaviour worth inheriting,
+extracted from fourteen areas. This directory and
+[legacy-public-surface.md](../legacy-public-surface.md) are the primary sources
+during implementation. The previous implementation itself is reachable through
+`git show`.
 
-| 領域 | must-preserve | 公開シンボル | 振る舞い規則 | 捨てるもの |
+| Area | must-preserve | Published symbols | Behavioural rules | Dropped |
 |---|---|---|---|---|
 | [build-and-distribution](build-and-distribution.md) | 64 | 83 | 19 | 20 |
 | [execution-model](execution-model.md) | 17 | 49 | 16 | 18 |
@@ -21,4 +23,4 @@
 | [anti-patterns](anti-patterns.md) | 7 | 67 | 40 | 20 |
 | [test-intent-unit](test-intent-unit.md) | 29 | 170 | 28 | 10 |
 
-**合計 must-preserve 契約: 269件**
+**Total must-preserve contracts**

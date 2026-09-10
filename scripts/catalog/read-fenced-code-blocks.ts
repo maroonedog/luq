@@ -14,7 +14,7 @@ export interface FencedCodeBlock {
   readonly code: string;
 }
 
-/** Markdown のコードフェンスを取り出す。TypeScript/JavaScript のものだけ。 */
+/** Extracts Markdown code fences, TypeScript and JavaScript only. */
 export function readFencedCodeBlocks(
   markdown: string
 ): readonly FencedCodeBlock[] {

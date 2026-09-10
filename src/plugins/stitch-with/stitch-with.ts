@@ -1,37 +1,35 @@
 // ===========================================================================
 // L7  src/plugins/stitch-with/stitch-with.ts — EXPERIMENTAL.
-// `stitch` の型付き後継。クロスフィールド検証のためのメソッドである。
+// The typed successor to `stitch`, for cross-field validation.
 //
-// stitch の核は「**複数のフィールドを1つの判定にまとめる**」ことなので、
-// 主体は束そのものであって、別名ごとではない。別名ごとにルールを並べる形も
-// 書けるが、それでは `total === price * quantity` が書けず、stitch では
-// なくなる。
+// The point of stitching is to bring SEVERAL FIELDS INTO ONE JUDGEMENT, so
+// the subject is the bundle itself and not each alias. Listing rules per alias
+// is writable but cannot express `total === price * quantity`, at which point
+// it is no longer stitching.
 //
-// stitch との違いは一点だけである。stitch は束を
-// `Readonly<Record<string, unknown>>` として手書きの述語に渡すので、束の中身に
-// ついて型が何も言わない。ここでは束が対応表から組まれて **型が付く**:
+// One difference from `stitch`. There the bundle reaches the predicate as
+// `Readonly<Record<string, unknown>>`, so the type says nothing about its
+// contents. Here the bundle is assembled from a mapping and IS TYPED:
 //
 //     .v("total", (b) => b.number.stitchWith(
 //       { cost: "price", count: "quantity" },
 //       (f) => f.object.custom((bundle) => bundle.cost * bundle.count === 100)
 //     ))
 //
-// `bundle` は `{ cost: number; count: number }` であって Record ではない。
-// メンバー名を綴り違えれば、型を取り違えれば、コンパイルエラーになる。
+// `bundle` is `{ cost: number; count: number }`, not a Record. Misspell a
+// member or mistake its type and it fails to compile.
 //
-// なぜ別名を経由するのか。束をパス文字列でキーすると、その文字列は宣言の場で
-// **パスとして** 解釈される: `"user.name"` は束の中の `user.name` を探しに
-// 行き、束は平たいので見つからない (実測して分かった)。別名は素の識別子なので
-// その衝突が起きず、参照できるのは宣言した別名だけになる。
+// Why aliases rather than paths as keys. A path string used as a bundle key is
+// interpreted AS A PATH where it is declared, so `"user.name"` goes looking
+// for `user.name` inside the bundle and never finds it, the bundle being
+// flat. An alias is a bare identifier, so that collision cannot happen and the
+// only things referable are the aliases actually declared.
 //
-// このファイルに判定は無い。サブチェーンは NarrowedChain と同じ経路で
-// `readonly Rule[]` に解決され、branch がそれを枝にし、エンジンが走らせる。
-// 束専用の収集器をコアに置く案も作って動かしたが、実測でコアが 220 B 増えた
-// (7,590 -> 7,810 B)。stitchWith を使わない利用者が払う形なので採らなかった。
-// 既存の経路に乗せると追加は 0 B である。
-//
-// 1.x が同じ責務の実装を3つ持っていたのは、ここで「もう1つ書く」を選んだ
-// からである。
+// No judgement happens in this file. The sub-chain resolves to
+// `readonly Rule[]` through the same route a narrowed chain takes, and the
+// engine runs it. A bundle-specific collector in the core was built and
+// measured; it added bytes to everyone who never stitches, so this rides the
+// existing route instead and adds none.
 // ===========================================================================
 import { PASS, fail, isPlainObject } from "../../types";
 import type { MessageContextExtra } from "../../types";
@@ -41,7 +39,7 @@ import { createValueReader, parseFieldPath } from "../../path/index";
 import type { ValueReader } from "../../path/index";
 import type { BundleOut, NarrowedChain } from "../../plugin-kit/marker.types";
 
-/** 別名 -> ルートのパス。実行時はただの文字列の対応表である。 */
+/** Alias to a path from the root. At run time, a table of strings. */
 export type BundleAliasMap = Readonly<Record<string, string>>;
 
 export interface StitchWithExtra extends MessageContextExtra {
@@ -75,7 +73,7 @@ function readMembers(aliasMap: BundleAliasMap): readonly BundleMember[] {
   );
 }
 
-/** ルートから束を組む。枝の主体はこのオブジェクトになる。 */
+/** Assembles the bundle from the root; this object is the branch's subject. */
 function collectBundle(
   members: readonly BundleMember[],
   root: unknown
@@ -101,7 +99,7 @@ export const stitchWithPlugin = /*#__PURE__*/ definePlugin<{
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
       branches: [branch(BUNDLE_BRANCH_LABEL, rules)],
-      // 主体の値は見ない。見るのはルートから組んだ束だけである。
+      // The field's own value is not read. Only the assembled bundle is.
       combine: (runners) => {
         const runner = runners[0];
         if (runner === undefined) return () => PASS;

@@ -23,7 +23,7 @@ const MANIFEST_ENTRY_TYPE = [
   "}",
 ];
 
-/** 1エントリ1行。プラグインが71個に増えても max-lines 200 に収まる。 */
+/** One line per entry, so the generated file stays inside the line limit. */
 function renderEntry(entry: PluginCatalogEntry): string {
   const fields = [
     `directoryName: ${JSON.stringify(entry.directoryName)}`,
@@ -36,9 +36,10 @@ function renderEntry(entry: PluginCatalogEntry): string {
 }
 
 /**
- * src/plugins/manifest.generated.ts をレンダリングする。
- * データだけを持ち、プラグイン本体を import しない
- * (manifest が実体を import すると L7 から L8 への上向き import が生まれる)。
+ * Renders the plugin manifest.
+ *
+ * It holds data and imports no plugin: importing one would create an import
+ * running outward from the plugin layer, which no layer may do.
  */
 export function renderPluginManifest(catalog: PluginCatalog): string {
   const body =
@@ -66,7 +67,7 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const changed = generatePluginManifest(REPOSITORY_ROOT);
     console.error(
-      `${PLUGIN_MANIFEST_OUTPUT}: ${changed ? "更新しました" : "変更なし"}`
+      `${PLUGIN_MANIFEST_OUTPUT}: ${changed ? "updated" : "unchanged"}`
     );
     return 0;
   });

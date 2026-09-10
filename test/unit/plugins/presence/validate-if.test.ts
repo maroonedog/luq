@@ -1,4 +1,5 @@
-// validateIf はゲート。閉じたらそのフィールドの check も transform も走らない。
+// validateIf is a gate. Closed, neither a check nor a transform runs for that
+// field.
 import { Builder } from "../../../../src/index";
 import { validateIfPlugin } from "../../../../src/plugins/validate-if";
 import { stringMinPlugin } from "../../../../src/plugins/string-min";
@@ -14,21 +15,22 @@ describe("validateIf", () => {
     .v("title", (b) => b.string.validateIf((root) => root.published).min(5))
     .build();
 
-  it("条件が真なら後続の check が走る", () => {
+  it("runs the later checks when the condition is true", () => {
     const result = validateTitle.validate({ published: true, title: "ab" });
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("stringMin");
   });
 
-  it("条件が偽なら後続の check が走らない", () => {
+  it("runs none of them when it is false", () => {
     expect(
       validateTitle.validate({ published: false, title: "ab" }).valid
     ).toBe(true);
   });
 
-  // 旧実装は validator ループの break だったので、チェーン上の位置で結果が変わった。
-  it("チェーン上の位置に依存しない", () => {
+  // Implemented as a break in the validator loop, the result depended on
+  // where in the chain it was written.
+  it("does not depend on its position in the chain", () => {
     const gateLast = Builder()
       .use(validateIfPlugin)
       .use(stringMinPlugin)
@@ -43,7 +45,7 @@ describe("validateIf", () => {
     );
   });
 
-  it("閉じたゲートは transform も止める", () => {
+  it("has a closed gate stop transforms as well", () => {
     const validator = Builder()
       .use(validateIfPlugin)
       .use(transformPlugin)
@@ -64,7 +66,7 @@ describe("validateIf", () => {
     expect(open.data.title).toBe("AB");
   });
 
-  it("ゲート自身は issue を出さない", () => {
+  it("has the gate itself report no issue", () => {
     const result = validateTitle.validate({ published: false, title: "" });
     expect(result.valid).toBe(true);
     expect(result.issues).toEqual([]);

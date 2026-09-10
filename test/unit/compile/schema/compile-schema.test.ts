@@ -141,7 +141,7 @@ describe("a malformed declaration fails at BUILD time, naming the path", () => {
     );
   });
 
-  it("配列要素の中の __proto__ も受け付ける", () => {
+  it("accepts __proto__ inside an array element too", () => {
     expect(() =>
       compile([{ path: "items[*].__proto__", rules: [] }])
     ).not.toThrow(PathSyntaxError);
@@ -228,6 +228,7 @@ function collectCompiledParts(plan: ValidationPlan): readonly unknown[] {
         arrays: node.nested,
         hasTransforms: false,
         hasDefaults: false,
+        hasNormalizers: false,
       })
     );
   }

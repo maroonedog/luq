@@ -1,6 +1,6 @@
 /**
- * JSON テキストのトップレベルメンバ1件の値だけを差し替える。
- * 他のバイトは1文字も動かさない (package.json の整形や項目順を壊さないため)。
+ * Replaces the value of exactly one top-level member of a JSON text, moving
+ * no other byte — so package.json keeps its formatting and its key order.
  */
 export function spliceJsonMember(
   sourceText: string,
@@ -12,7 +12,7 @@ export function spliceJsonMember(
   );
   const keyMatch = keyPattern.exec(sourceText);
   if (keyMatch === null) {
-    throw new Error(`JSON にメンバ "${memberName}" がありません。`);
+    throw new Error(`the JSON has no member "${memberName}".`);
   }
   const valueStart = keyMatch.index + keyMatch[0].length;
   const valueEnd = findValueEnd(sourceText, valueStart, memberName);
@@ -31,7 +31,7 @@ function findValueEnd(
   const opener = sourceText[valueStart];
   if (opener !== "{" && opener !== "[") {
     throw new Error(
-      `メンバ "${memberName}" の値がオブジェクトでも配列でもありません。`
+      `the value of "${memberName}" is neither an object nor an array.`
     );
   }
   const closer = opener === "{" ? "}" : "]";
@@ -53,14 +53,14 @@ function findValueEnd(
       if (depth === 0) return index + 1;
     }
   }
-  throw new Error(`メンバ "${memberName}" の値が閉じていません。`);
+  throw new Error(`the value of "${memberName}" is not closed.`);
 }
 
 function escapeForRegExp(text: string): string {
   return text.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** JSON.stringify と同じ整形で、指定インデントの中に収まる値テキストを作る。 */
+/** Renders a value the way JSON.stringify does, fitting the given indent. */
 export function renderJsonValue(value: unknown, indentLevel: number): string {
   const rendered = JSON.stringify(value, null, 2);
   const pad = "  ".repeat(indentLevel);

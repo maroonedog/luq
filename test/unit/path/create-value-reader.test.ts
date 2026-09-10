@@ -101,7 +101,7 @@ describe("createValueReader — template validation is a BUILD-time gate", () =>
     );
   });
 
-  it("手で組んだテンプレートに __proto__ があっても受け付ける（読みは own のみ）", () => {
+  it("accepts __proto__ in a hand-built template, reading own properties only", () => {
     expect(() =>
       createValueReader([
         { kind: "key", key: "a" },

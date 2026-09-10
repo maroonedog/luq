@@ -1,12 +1,13 @@
 // ===========================================================================
-// L8  src/json-schema/ref-scope.ts — `$ref` がどこから読まれているか。
+// L8  src/json-schema/ref-scope.ts — where a `$ref` is being read from.
 //
-// `$ref` の意味は書かれた場所で変わる。`$id` がベース URI を動かすので、
-// 同じ `"b.json"` でも隣にどの `$id` があるかで別の文書を指す。したがって
-// 解決に必要なのはルート文書ではなく **場所** であり、それがこの型である。
+// What a `$ref` means depends on where it was written. `$id` moves the base
+// URI, so the same `"b.json"` names a different document depending on which
+// `$id` stands beside it. Resolving therefore needs a **place**, not the root
+// document — and this type is that place.
 //
-// これが無かったので `$id` は unsupported だった: resolveRef はルートしか
-// 受け取らず、ルートには「今どのベースの中にいるか」を書く場所が無い。
+// Without it `$id` cannot be supported at all: given only the root, there is
+// nowhere to record which base the reader is currently inside.
 // ===========================================================================
 import type { Draft07Schema } from "./draft07.types";
 import { isSchemaObject } from "./draft07.types";

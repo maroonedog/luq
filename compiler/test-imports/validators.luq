@@ -1,6 +1,6 @@
-// validators.luq - バリデーション関数のエクスポート
+// validators.luq - exports of validation functions
 
-// Named export - バリデーション関数
+// Named export - validation functions
 export function validateEmail(value: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -15,7 +15,7 @@ export interface EmailValidator {
     email: string;
 }
 
-// デフォルトエクスポート
+// Default export
 export default interface UserValidator {
     @required @min(3) @max(100)
     name: string;

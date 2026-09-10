@@ -30,6 +30,7 @@ function declare(path: string): RelativeDeclaration {
     fieldPath: path,
     defaultOf: null,
     applyDefaultToNull: true,
+    normalize: null,
   };
 }
 
@@ -176,6 +177,7 @@ describe("the node is data, frozen and inert", () => {
         fieldPath: "items[*].name",
         defaultOf: null,
         applyDefaultToNull: true,
+        normalize: null,
       },
     ]).arrays[0]!;
     compileArrayNode(group, CONTEXT);

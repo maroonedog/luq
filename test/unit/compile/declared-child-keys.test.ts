@@ -71,7 +71,7 @@ describe("indexDeclaredChildKeys", () => {
     );
   });
 
-  it("__proto__ を含む宣言も受け付ける", () => {
+  it("accepts a declaration containing __proto__", () => {
     expect(() => indexDeclaredChildKeys(["__proto__.polluted"])).not.toThrow(
       PathSyntaxError
     );

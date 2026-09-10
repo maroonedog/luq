@@ -1,8 +1,8 @@
-// Standard Schema v1 の型が仕様とずれていないことと、Luq の
-// InferInput / InferOutput が宣言どおりに出ることを固定する。
+// Pins that the Standard Schema v1 types have not drifted from the spec, and
+// that InferInput / InferOutput come out as declared.
 //
-// 仕様パッケージ (@standard-schema/spec) に依存していないので、ずれても
-// 誰も教えてくれない。ここが唯一の見張り。
+// The spec package is not a dependency, so nothing reports a drift. This is
+// the only watch on it.
 import { Builder } from "../../../src/index";
 import { requiredPlugin } from "../../../src/plugins/required";
 import { stringMinPlugin } from "../../../src/plugins/string-min";
@@ -29,9 +29,9 @@ const accountSchema = toStandardSchema(
     .build()
 );
 
-// ---- 仕様の形 ------------------------------------------------------------
+// ---- the shape the spec asks for -----------------------------------------
 
-/** 消費側は `schema: StandardSchemaV1` を受け取る。代入できなければ意味が無い。 */
+/** A consumer takes `schema: StandardSchemaV1`. Not being assignable to that makes all of it pointless. */
 export type AssignableToSpec = Assert<
   Extends<typeof accountSchema, StandardSchemaV1>
 >;
@@ -47,9 +47,9 @@ export type VendorIsString = Assert<
 // ---- Infer ---------------------------------------------------------------
 
 /**
- * ここが Luq の主張そのもの。他のライブラリはスキーマから型を推論するので
- * InferInput が「スキーマが受け入れる形」になるが、Luq は .for<T>() で
- * 受け取った型をそのまま運ぶので、利用者が書いた型と一致する。
+ * This is the claim itself. Other libraries infer the type from the schema,
+ * so their InferInput is "the shape the schema accepts". Here the type given
+ * to .for<T>() is carried through, so it equals the type the user wrote.
  */
 export type InputIsTheDeclaredType = Assert<
   Equals<InferStandardInput<typeof accountSchema>, Account>
@@ -59,7 +59,7 @@ export type OutputIsTheDeclaredType = Assert<
   Equals<InferStandardOutput<typeof accountSchema>, Account>
 >;
 
-// ---- transform があるとき Output が変わる --------------------------------
+// ---- Output changes when there is a transform ----------------------------
 
 const trimmedSchema = toStandardSchema(
   Builder()
@@ -75,43 +75,43 @@ export type TransformKeepsInput = Assert<
 >;
 
 /**
- * 既知の欠落を固定する。**Output が Input と同じになっている。**
+ * Pins a KNOWN GAP: **Output currently equals Input.**
  *
- * 実行時は transform が効いて name は number になるのに、型は string のまま。
- * 原因は Standard Schema 側ではなく builder 側で、field-builder.types.ts の
- * `build(): Validator<T>` が第2型引数 TParsed を渡しておらず、常に既定値の
- * T に落ちるため。1.x には ApplyFieldTransforms という機構があったが、
- * 書き直しで引き継がれていない。
+ * At run time the transform applies and the field becomes a number, while the
+ * type still says string. The cause is on the builder side, not the Standard
+ * Schema side: build() does not pass the parsed type through, so it always
+ * falls back to the declared one.
  *
- * ここを直したらこのアサートは落ちる。そのとき下の期待を { name: number } に
- * 変えること。落ちること自体が「直った」の合図になるよう、あえて現状で固定する。
+ * Fixing that makes this assertion fail. That is deliberate — the failure is
+ * the signal that it was fixed. Change the expectation then.
  */
 export type TransformOutputIsNotTrackedYet = Assert<
   Equals<InferStandardOutput<typeof trimmedSchema>, { name: string }>
 >;
 
-// ---- validate の戻り ------------------------------------------------------
+// ---- what validate returns -----------------------------------------------
 
 const outcome = accountSchema["~standard"].validate({});
 
 /**
- * 仕様は同期・非同期の両方を許すが、Luq は常に同期で返す。ここが Promise を
- * 含む型に戻ると、消費側が await と絞り込みを書く羽目になる。
+ * The spec permits both synchronous and asynchronous; this is always
+ * synchronous. Let a Promise back into this type and every consumer has to
+ * write an await and a narrowing.
  */
 export type ValidateIsSynchronous = Assert<
   Equals<typeof outcome extends Promise<unknown> ? true : false, false>
 >;
 
-// 成功枝でだけ value が読める。
+// value is readable on the success branch only.
 if (!("issues" in outcome) || outcome.issues === undefined) {
   const value: Account = outcome.value;
   void value;
 } else {
-  // @ts-expect-error 失敗枝に value は無い
+  // @ts-expect-error the failure branch has no value
   void outcome.value;
 }
 
-// ---- Validator としても使える --------------------------------------------
+// ---- it is still usable as a Validator -----------------------------------
 
 export type StillAValidator = Assert<
   Extends<typeof accountSchema, { validate: unknown; parse: unknown }>

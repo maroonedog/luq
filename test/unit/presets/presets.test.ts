@@ -1,8 +1,9 @@
-// プリセットは「名前 -> プラグイン」のオブジェクトそのものである。
+// A preset is exactly an object mapping names to plugins.
 //
-// ここで固定するのは三つ。束が実際に使えること、混ぜても衝突しないこと、
-// そして **中身が偶然変わらないこと** — プリセットはバイト数を払うものなので、
-// 誰かが1個足したらサイズ予算に出るべきで、テストが黙っていてはいけない。
+// Three things: that a bundle is actually usable, that mixing bundles does not
+// collide, and that **the membership does not change by accident**. A preset
+// costs bytes, so adding one plugin should show up in the size budget, and the
+// tests must not stay quiet about it.
 import { Builder } from "../../../src/index";
 import {
   arrays,
@@ -37,8 +38,8 @@ describe("a preset is a plugin bag", () => {
   });
 
   it("can be combined, and a duplicate does not replace what is registered", () => {
-    // use() と同じ first-wins。プリセットが既に入っているものを黙って
-    // 置き換えることはない。
+    // First-wins, as use() is. A preset silently replaces nothing already
+    // registered.
     const validator = Builder()
       .useAll(presence)
       .useAll(strings)
@@ -65,8 +66,8 @@ describe("a preset is a plugin bag", () => {
 });
 
 describe("what each preset carries", () => {
-  // 中身を数えるのではなく名前で固定する。増減はサイズ予算に出るので、
-  // ここが「増えたことに気づかない」経路にならないようにする。
+  // Pinned by name rather than by count, so this cannot become the route by
+  // which an addition goes unnoticed.
   it("presence", () => {
     expect(Object.keys(presence).sort()).toEqual([
       "nullable",
@@ -112,8 +113,8 @@ describe("what each preset carries", () => {
   });
 
   it("names every plugin under the key the plugin calls itself", () => {
-    // 名前がずれると use() の first-wins が効かなくなる (別名で二重登録
-    // されてしまう) ので、キーと plugin.name の一致を固定する。
+    // A key that disagrees with the plugin's own name registers it twice
+    // under two names and defeats first-wins, so the two are pinned equal.
     for (const [key, plugin] of Object.entries(everydayRules)) {
       expect(plugin.name).toBe(key);
     }

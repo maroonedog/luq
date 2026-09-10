@@ -10,7 +10,7 @@ const finite = Builder()
   .build();
 
 describe("numberFinite", () => {
-  it("有限の数を通す (小数を含む)", () => {
+  it("accepts a finite number, decimals included", () => {
     expect(finite.validate({ value: 0 }).valid).toBe(true);
     expect(finite.validate({ value: -3.25 }).valid).toBe(true);
     expect(finite.validate({ value: Number.MAX_SAFE_INTEGER }).valid).toBe(
@@ -18,7 +18,7 @@ describe("numberFinite", () => {
     );
   });
 
-  it("Infinity を弾く", () => {
+  it("rejects Infinity", () => {
     const validationResult = finite.validate({
       value: Number.POSITIVE_INFINITY,
     });
@@ -36,12 +36,12 @@ describe("numberFinite", () => {
     );
   });
 
-  it("NaN を弾く", () => {
+  it("rejects NaN", () => {
     expect(finite.validate({ value: Number.NaN }).valid).toBe(false);
   });
 
-  // numberInteger との違い: 小数は finite では通る。
-  it("小数は integer とは違って通る", () => {
+  // The difference from the integer check: a decimal is finite.
+  it("accepts a decimal, unlike the integer check", () => {
     expect(finite.validate({ value: 1.5 }).valid).toBe(true);
   });
 });

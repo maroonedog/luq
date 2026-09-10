@@ -1,16 +1,16 @@
 import { splitIssuePath } from "../../../src/standard-schema/split-issue-path";
 
 describe("splitIssuePath", () => {
-  it("ルートは空配列", () => {
-    // 仕様上、空配列は「ルート自身への issue」を意味する。
+  it("gives the root the empty list", () => {
+    // The spec reads the empty list as an issue on the root itself.
     expect(splitIssuePath("")).toEqual([]);
   });
 
-  it("単一のキー", () => {
+  it("opens a single key", () => {
     expect(splitIssuePath("name")).toEqual(["name"]);
   });
 
-  it("ネストしたキー", () => {
+  it("opens nested keys", () => {
     expect(splitIssuePath("user.address.street")).toEqual([
       "user",
       "address",
@@ -18,11 +18,11 @@ describe("splitIssuePath", () => {
     ]);
   });
 
-  it("配列の添字は number になる", () => {
+  it("makes an array index a number", () => {
     expect(splitIssuePath("items[1]")).toEqual(["items", 1]);
   });
 
-  it("配列要素のフィールド", () => {
+  it("opens a field of an array element", () => {
     expect(splitIssuePath("items[1].productId")).toEqual([
       "items",
       1,
@@ -30,11 +30,11 @@ describe("splitIssuePath", () => {
     ]);
   });
 
-  it("多段の添字", () => {
+  it("opens indices at several levels", () => {
     expect(splitIssuePath("matrix[0][2]")).toEqual(["matrix", 0, 2]);
   });
 
-  it("深いネストと添字の混在", () => {
+  it("opens deep nesting mixed with indices", () => {
     expect(splitIssuePath("orders[3].items[0].sku")).toEqual([
       "orders",
       3,
@@ -44,33 +44,33 @@ describe("splitIssuePath", () => {
     ]);
   });
 
-  it("添字は文字列ではなく number として出る", () => {
+  it("emits an index as a number and not as a string", () => {
     const segments = splitIssuePath("items[10].name");
     expect(typeof segments[1]).toBe("number");
     expect(segments[1]).toBe(10);
   });
 
-  it("2桁以上の添字", () => {
+  it("opens an index of two digits or more", () => {
     expect(splitIssuePath("items[123]")).toEqual(["items", 123]);
   });
 
-  describe("解釈できない形は握り潰さず、丸ごと1セグメントで返す", () => {
-    // issue を落とすより、開けなかったことが分かる形で渡すほうがまし。
+  describe("a shape it cannot interpret comes back whole, in one segment", () => {
+    // Handing over something visibly unopened beats dropping the issue.
     it.each([
-      ["先頭がドット", ".name"],
-      ["末尾がドット", "name."],
-      ["連続したドット", "a..b"],
-      ["閉じない括弧", "items[1"],
-      ["添字が数字でない", "items[x]"],
-      ["空の添字", "items[]"],
-      ["宣言用のワイルドカード", "items[*].name"],
+      ["a leading dot", ".name"],
+      ["a trailing dot", "name."],
+      ["two dots in a row", "a..b"],
+      ["an unclosed bracket", "items[1"],
+      ["a non-numeric index", "items[x]"],
+      ["an empty index", "items[]"],
+      ["a declaration wildcard", "items[*].name"],
     ])("%s", (_label, path) => {
       expect(splitIssuePath(path)).toEqual([path]);
     });
   });
 
-  it("宣言パスの [*] を 0 と読み違えない", () => {
-    // 二つの文法を一つの関数で扱うと、この取り違えが静かに入る。
+  it("does not misread a declaration's [*] as 0", () => {
+    // Handling both grammars in one function is how this slips in quietly.
     expect(splitIssuePath("items[*].name")).not.toEqual(["items", 0, "name"]);
   });
 });

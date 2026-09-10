@@ -47,22 +47,24 @@ export interface FieldCompileRequest {
   readonly fieldPath: string;
   readonly defaultOf: ((root: unknown) => unknown) | null;
   readonly applyDefaultToNull: boolean;
+  readonly normalize: ((value: unknown) => unknown) | null;
   readonly planRef: PlanRef;
   readonly eraseComposite: CompositeEraser;
 }
 
-/** 添字はここでは入らない。開いている添字は実行時に接頭辞が持つ。 */
+/** No indices here: an open index is carried by the run-time prefix. */
 const NO_INDICES: readonly number[] = Object.freeze([]);
 
 export function compileField(request: FieldCompileRequest): CompiledField {
   const byKind = splitRulesByKind(request.rules);
   const hasDefault = request.defaultOf !== null;
-  const needsWriter = byKind.transforms.length > 0 || hasDefault;
+  // Normalizing replaces the value too, so it needs a writer just as default does.
+  const needsWriter =
+    byKind.transforms.length > 0 || hasDefault || request.normalize !== null;
   const template = Object.freeze(request.template);
-  // read を先に作る。ワイルドカードを含むテンプレートを拒むのは
-  // createValueReader の役目で、それより先に formatIssuePath を呼ぶと
-  // 「添字が足りない」という RangeError が、本来の PathSyntaxError を
-  // 追い越して出てしまう (テストがそれを捕まえた)。
+  // The reader is made first. Refusing a template that still holds a wildcard
+  // is the reader's job; formatting the path before that raises a "not enough
+  // indices" RangeError which overtakes the PathSyntaxError that should win.
   const read = createValueReader(template);
   const field: CompiledField = {
     template,
@@ -71,6 +73,7 @@ export function compileField(request: FieldCompileRequest): CompiledField {
     write: needsWriter ? createValueWriter(template) : null,
     defaultOf: request.defaultOf,
     applyDefaultToNull: request.applyDefaultToNull,
+    normalize: request.normalize,
     presence: resolvePresence(byKind.presences),
     presenceOverrides: resolveConditionalPresence(byKind.conditionalPresences),
     gates: byKind.gates,
@@ -103,6 +106,7 @@ export function compileFieldDeclaration(
     defaultOf: declaration.defaultOf ?? null,
     applyDefaultToNull:
       declaration.applyDefaultToNull ?? APPLIES_DEFAULT_TO_NULL_BY_DEFAULT,
+    normalize: declaration.normalize ?? null,
     planRef,
     eraseComposite,
   });

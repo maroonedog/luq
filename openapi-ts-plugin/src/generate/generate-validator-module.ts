@@ -1,11 +1,11 @@
 // ===========================================================================
 // openapi-ts-plugin/src/generate/generate-validator-module.ts
 //
-// スキーマ1つ → Luq のバリデータを1つ export するモジュールのソース。
+// One schema to the source of a module exporting one validator.
 //
-// 平坦化は本体の flattenSchema をそのまま使う。生成コードと実行時の
-// fromJsonSchema が同じ関数でパスを決めるので、「生成物では items[*].sku
-// なのに実行時は別の形」という食い違いが構造的に起きない。
+// Flattening reuses the library's own. The generated code and the run-time
+// conversion decide paths with the same function, which makes it structurally
+// impossible for the two to disagree about what a path looks like.
 // ===========================================================================
 import { flattenSchema } from "../../../src/json-schema/flatten-schema";
 import { readChildSchemas } from "../../../src/json-schema/schema-to-declarations";
@@ -38,11 +38,11 @@ const PRESENCE_OPTIONAL: ChainCall = {
 };
 
 export interface GenerateOptions {
-  /** 生成する const の名前。例 "validateOrder"。 */
+  /** The name of the const to generate, e.g. "validateOrder". */
   readonly validatorName: string;
-  /** `.for<T>()` に入れる型の名前。例 'components["schemas"]["Order"]'。 */
+  /** The type name to put in `.for<T>()`, e.g. 'components["schemas"]["Order"]'. */
   readonly typeExpression: string;
-  /** 型を import する行。省略すると型は既に見えている前提になる。 */
+  /** The line importing that type. Omitted, the type is assumed in scope. */
   readonly typeImport?: string;
 }
 
@@ -54,8 +54,8 @@ function toFieldChain(
   const calls: ChainCall[] = [isRequired ? PRESENCE_REQUIRED : PRESENCE_OPTIONAL];
   const skipped: SkippedKeyword[] = [];
 
-  // キーワードの出現順ではなくキー順で回す。スキーマの書き方でチェーンの
-  // 並びが変わると、生成物の差分がノイズだらけになるため。
+  // Walked in key order rather than order of appearance. Letting how the
+  // schema was written decide the chain order fills every diff with noise.
   for (const keyword of Object.keys(schema).sort()) {
     const outcome = keywordToChainCall(
       keyword,
@@ -88,8 +88,8 @@ function renderImports(
 }
 
 /**
- * 取りこぼしたキーワードは生成物の先頭にコメントで残す。生成器が黙って
- * 落としたものを、読む人が生成物だけで把握できるようにするため。
+ * Skipped keywords are listed in a comment at the top of the output, so a
+ * reader can see what the generator dropped without leaving the file.
  */
 function renderSkippedNotice(
   skipped: readonly (SkippedKeyword & { path: string })[]
@@ -100,7 +100,7 @@ function renderSkippedNotice(
   );
   return [
     "//",
-    "// このスキーマのうち、規則にしなかったキーワード:",
+    "// Keywords in this schema that did not become rules:",
     ...lines,
     "",
   ].join("\n");
@@ -112,9 +112,9 @@ export function generateValidatorModule(
 ): GeneratedModule {
   const declarations = flattenSchema(schema, readChildSchemas);
   const fields = declarations.map((declaration) => {
-    // flattenSchema の isRequired はルート直下だけを見る。ネストした required は
-    // 実行時ではオブジェクト側の規則になっており、チェーンにその受け皿が無い。
-    // 祖先がすべて必須なときだけ .required() に落とせる (resolve-required-path.ts)。
+    // Flattening reports isRequired for the root's own keys only. A nested
+    // required is a rule on the object at run time, and the chain has nowhere
+    // to put that. See resolve-required-path.ts for when it can be lowered.
     const safelyRequired =
       declaration.isRequired || isSafelyRequired(schema, declaration.path);
     const field = toFieldChain(
@@ -132,9 +132,10 @@ export function generateValidatorModule(
         {
           keyword: "required",
           reason:
-            "親スキーマは必須と書いているが、祖先に必須でないオブジェクトがあるため " +
-            ".required() にすると親ごと不在のときに誤って落ちる。Draft-07 は存在する値にしか " +
-            "サブスキーマを適用しないので optional にした",
+            "the parent schema marks it required, but an ancestor object is " +
+            "not, so .required() would wrongly reject a document missing that " +
+            "ancestor; Draft-07 applies a subschema only to a value that " +
+            "exists, so this was emitted as optional",
         },
       ],
     };

@@ -21,7 +21,7 @@ function readLock(root: string): PluginCatalogLock {
 }
 
 describe("buildPluginCatalogLock", () => {
-  it("プラグイン0件のロックが作れる (数のゲートが最初から生きる)", () => {
+  it("builds a lock for no plugins, so the count gate is live from the start", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       const lock = buildPluginCatalogLock(root);
       expect(lock.pluginCount).toBe(0);
@@ -30,7 +30,7 @@ describe("buildPluginCatalogLock", () => {
     });
   });
 
-  it("数はカタログから導出され、どこにも書かれていない", () => {
+  it("derives the count from the catalog and writes it nowhere", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const lock = buildPluginCatalogLock(root);
       expect(lock.pluginCount).toBe(lock.plugins.length);
@@ -38,7 +38,7 @@ describe("buildPluginCatalogLock", () => {
     });
   });
 
-  it("サブパス / ディレクトリ / 段を記録する", () => {
+  it("records the subpath, the directory and the tier", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(buildPluginCatalogLock(root).plugins).toContainEqual({
         subpath: "./plugins/jsonSchema",
@@ -53,7 +53,7 @@ describe("buildPluginCatalogLock", () => {
     });
   });
 
-  it("export キーには互換エイリアスも含まれる", () => {
+  it("includes the compatibility aliases among the export keys", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       const lock = buildPluginCatalogLock(root);
       expect(lock.exportKeys).toContain("./plugins/readOnlyWriteOnly");
@@ -63,7 +63,7 @@ describe("buildPluginCatalogLock", () => {
 });
 
 describe("generatePluginCatalogLock", () => {
-  it("末尾改行つきの JSON を書く", () => {
+  it("writes JSON with a trailing newline", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(generatePluginCatalogLock(root)).toBe(true);
       expect(
@@ -73,14 +73,14 @@ describe("generatePluginCatalogLock", () => {
     });
   });
 
-  it("2回目は変更なしになる", () => {
+  it("reports no change on a second run", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(generatePluginCatalogLock(root)).toBe(true);
       expect(generatePluginCatalogLock(root)).toBe(false);
     });
   });
 
-  it("プラグインが増えたら数が動く", () => {
+  it("moves the count when a plugin is added", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       generatePluginCatalogLock(root);
       writeSeedFile(

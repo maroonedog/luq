@@ -3,7 +3,7 @@
 
 export const packageInfo = {
   name: "@maroonedog/luq",
-  version: "2.1.0",
-  tag: "v2.1.0",
+  version: "2.2.0",
+  tag: "v2.2.0",
   install: "npm install @maroonedog/luq",
 } as const;

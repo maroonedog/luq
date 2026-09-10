@@ -1,4 +1,4 @@
-// orFail は否定的ゲート: 条件が真なら値に関わらず失敗させる。
+// orFail is a negative gate: a true condition fails whatever the value is.
 import { Builder } from "../../../../src/index";
 import { orFailPlugin } from "../../../../src/plugins/or-fail";
 
@@ -11,7 +11,7 @@ const validatePayload = Builder()
   .build();
 
 describe("orFail", () => {
-  it("条件が真なら値があるだけで失敗する", () => {
+  it("fails on a present value alone when the condition is true", () => {
     const result = validatePayload.validate({
       env: "production",
       debugToken: "t",
@@ -26,26 +26,27 @@ describe("orFail", () => {
     });
   });
 
-  it("条件が偽なら何もしない", () => {
+  it("does nothing when the condition is false", () => {
     expect(
       validatePayload.validate({ env: "dev", debugToken: "t" }).valid
     ).toBe(true);
   });
 
-  it("値の中身は一切見ない", () => {
+  it("never looks at the value's contents", () => {
     expect(
       validatePayload.validate({ env: "production", debugToken: "" }).valid
     ).toBe(false);
   });
 
-  it("options.messageFactory で固定文言を差し替えられる", () => {
+  it("lets options.messageFactory replace the fixed wording", () => {
     const validator = Builder()
       .use(orFailPlugin)
       .for<Payload>()
       .v("debugToken", (b) =>
         b.string.orFail((root) => root.env === "production", {
           code: "DEBUG_FIELD_FORBIDDEN",
-          messageFactory: (context) => `${context.path} は本番で使えません`,
+          messageFactory: (context) =>
+            `${context.path} cannot be used in production`,
         })
       )
       .build();
@@ -53,6 +54,8 @@ describe("orFail", () => {
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("DEBUG_FIELD_FORBIDDEN");
-    expect(result.issues[0]?.message).toBe("debugToken は本番で使えません");
+    expect(result.issues[0]?.message).toBe(
+      "debugToken cannot be used in production"
+    );
   });
 });

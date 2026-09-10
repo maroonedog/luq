@@ -46,7 +46,11 @@ describe("collectFieldRules", () => {
           .required()
           .transform((value) => value)
     );
-    expect(ruleCodes(rules)).toEqual(["stringMin", "required", "transform"]);
+    expect(ruleCodes(rules.rules)).toEqual([
+      "stringMin",
+      "required",
+      "transform",
+    ]);
   });
 
   it("freezes the rule list it hands to L4", () => {
@@ -55,9 +59,9 @@ describe("collectFieldRules", () => {
       chainContext,
       (b) => b.string.required()
     );
-    expect(Object.isFrozen(rules)).toBe(true);
+    expect(Object.isFrozen(rules.rules)).toBe(true);
     expect(() => {
-      (rules as unknown as unknown[]).push(rules[0]!);
+      (rules.rules as unknown as unknown[]).push(rules.rules[0]!);
     }).toThrow();
   });
 
@@ -77,7 +81,7 @@ describe("collectFieldRules", () => {
     );
     expect(outer).toBe(1);
     expect(inner).toBe(1);
-    expect(ruleCodes(rules)).toEqual(["required", "arrayContains"]);
+    expect(ruleCodes(rules.rules)).toEqual(["required", "arrayContains"]);
   });
 
   it("hands the plugin the field path and the declared sibling keys", () => {
@@ -88,7 +92,7 @@ describe("collectFieldRules", () => {
     );
     // requiredPlugin does not surface the context, so assert through the rule
     // it produced: the code fell back to the plugin name resolved in build.
-    expect(expectPresence(rules[0]).code).toBe("required");
+    expect(expectPresence(rules.rules[0]).code).toBe("required");
   });
 
   it("throws FieldChainResultError when the callback returns a non-chain", () => {

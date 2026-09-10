@@ -1,36 +1,37 @@
 // ===========================================================================
 // openapi-ts-plugin/src/generate/chain-call.types.ts
 //
-// 生成されるチェーン1本分の中間表現。文字列を直接組み立てず一度ここを通すのは、
-// 「どのプラグインを import する必要があるか」を後から数えられるようにするため。
-// 文字列連結だけで書くと、import 漏れが実行時ではなく利用者の tsc で初めて出る。
+// The intermediate form of one generated chain. Going through it instead of
+// concatenating strings is what makes the set of plugins to import countable
+// afterwards. Built by concatenation, a missing import first shows up in the
+// user's compiler rather than here.
 // ===========================================================================
 
-/** チェーンに生えるメソッド1回分の呼び出し。 */
+/** One call of one method on the chain. */
 export interface ChainCall {
-  /** 呼ぶメソッド名。例 "min"。 */
+  /** The method to call, e.g. "min". */
   readonly method: string;
-  /** そのまま出力する引数のソース。例 ["3"]。空なら `.min()`。 */
+  /** The argument source, emitted verbatim, e.g. ["3"]. Empty gives `.min()`. */
   readonly args: readonly string[];
   /**
-   * このメソッドを生やすプラグインの export 名。例 "stringMinPlugin"。
-   * import 文はこれを集めて作る。
+   * The export name of the plugin carrying this method, e.g.
+   * "stringMinPlugin". The import statements are built by collecting these.
    */
   readonly pluginExport: string;
-  /** import 元のサブパス。例 "@maroonedog/luq/plugins/stringMin"。 */
+  /** The subpath to import it from, e.g. "@maroonedog/luq/plugins/stringMin". */
   readonly pluginSubpath: string;
 }
 
-/** 1フィールド分の宣言。`.v(path, b => b.<slot>....)` になる。 */
+/** One field's declaration, becoming `.v(path, b => b.<slot>....)`. */
 export interface FieldChain {
-  /** `.v()` の第1引数。例 "items[*].sku"。 */
+  /** The first argument of `.v()`, e.g. "items[*].sku". */
   readonly path: string;
-  /** `b.` のあとに来るスロット名。例 "string"。 */
+  /** The slot name following `b.`, e.g. "string". */
   readonly slot: string;
   readonly calls: readonly ChainCall[];
   /**
-   * 出力しなかったキーワードと理由。捨てたことを黙らせないために持ち回る。
-   * 生成物のコメントにも出す。
+   * The keywords not emitted, with reasons. Carried through so that dropping
+   * one is never silent, and printed in a comment in the output.
    */
   readonly skipped: readonly SkippedKeyword[];
 }
@@ -42,8 +43,8 @@ export interface SkippedKeyword {
 
 export interface GeneratedModule {
   readonly source: string;
-  /** 生成に使ったプラグインの export 名（重複なし、ソート済み）。 */
+  /** The export names of the plugins used, deduplicated and sorted. */
   readonly pluginExports: readonly string[];
-  /** 全フィールド分の取りこぼし。呼び出し側が報告に使う。 */
+  /** Everything skipped, across all fields, for the caller to report. */
   readonly skipped: readonly (SkippedKeyword & { readonly path: string })[];
 }

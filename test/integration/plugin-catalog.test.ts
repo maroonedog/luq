@@ -1,20 +1,21 @@
 // ===========================================================================
-// カタログ全体の通し確認。
+// The whole catalog, end to end.
 //
-// プラグインは互いを import できない (隔離規約) ので、どのプラグイン自身も
-// 「隣と名前がぶつかっていないか」「自分の公開サブパスが解決するか」を検査
-// できない。ここがその唯一の観測点で、見るのは宣言ではなく実物である:
+// Plugins may not import one another, so no plugin can check whether its name
+// collides with a sibling or whether its own published subpath resolves. This
+// is the only vantage point for that, and it looks at the real thing rather
+// than at declarations:
 //
-//   1. カタログの全プラグインを1つの Builder に .use() し、9スロットすべての
-//      メソッド面を実際に組む。メソッド衝突は PluginMethodCollisionError。
-//   2. そこから validator を build して validate() / parse() を走らせる。
-//   3. 生成物4種 (manifest / barrel / package.json#exports / lock) が
-//      ディスク上のディレクトリ構造と一致する。
-//   4. 1.x で公開されていたサブパスが1つも消えていない
-//      (README の `@maroonedog/luq/plugins` を含む。1.x では解決不能だった)。
+//   1. every plugin in the catalog goes into one Builder, and the method
+//      surface of all nine slots is actually assembled. A method collision
+//      raises PluginMethodCollisionError.
+//   2. a validator is built from that and actually run.
+//   3. all four generated artefacts agree with the directory structure on disk.
+//   4. no subpath a previous release published has disappeared, the barrel
+//      included — which used to be unresolvable.
 //
-// .use() は型で書いてある。71 個を1本に連ねた型が破綻しないこと自体が、
-// この段の受け入れ条件のひとつ。
+// The .use() chain is written out in types. That a chain of this length does
+// not break the type checker is itself one of the things being accepted here.
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
@@ -145,26 +146,26 @@ function collectPluginSources(directory: string = PLUGIN_ROOT): string[] {
   });
 }
 
-describe("カタログ: バレルが実物のプラグインを出す", () => {
-  it("バレルの export はすべてプラグインオブジェクト", () => {
+describe("catalog: the barrel exports real plugins", () => {
+  it("exports nothing that is not a plugin object", () => {
     const exported = Object.keys(catalogBarrel);
     expect(exported.length).toBeGreaterThan(0);
     expect(catalogPlugins).toHaveLength(exported.length);
   });
 
-  it("バレルの export 名は manifest が読んだシンボルと1対1", () => {
+  it("names exactly the symbols the manifest read", () => {
     const fromManifest = PLUGIN_MANIFEST.flatMap(
       (entry) => entry.exportedSymbols
     ).sort();
     expect(Object.keys(catalogBarrel).sort()).toEqual(fromManifest);
   });
 
-  it("プラグイン名は重複しない", () => {
+  it("has no duplicate plugin name", () => {
     const names = catalogPlugins.map((plugin) => plugin.name).sort();
     expect([...new Set(names)]).toEqual(names);
   });
 
-  it("1スロットに同じメソッド名を出すプラグインは2つとない", () => {
+  it("has no two plugins offering the same method on one slot", () => {
     const claimed = new Map<string, string>();
     for (const plugin of catalogPlugins) {
       for (const slot of plugin.slots) {
@@ -176,9 +177,9 @@ describe("カタログ: バレルが実物のプラグインを出す", () => {
     expect(claimed.size).toBeGreaterThan(catalogPlugins.length);
   });
 
-  it("stitch はちょうど1つ", () => {
-    // 1.x は stitch.ts / stitch-typed.ts / stitchSimple.ts の3実装を抱え、
-    // どれが公開されるかは import 順で決まっていた。
+  it("has exactly one stitch", () => {
+    // A previous release carried three implementations of it, and which one
+    // was published depended on import order.
     const stitches = catalogPlugins.filter(
       (plugin) => plugin.name === "stitch"
     );
@@ -191,9 +192,9 @@ describe("カタログ: バレルが実物のプラグインを出す", () => {
   });
 });
 
-describe("カタログ: 9スロットぶんのメソッド面が組める", () => {
-  // スロット面は遅延ゲッターなので、9つを1つずつ触らないと attachSlotMethods
-  // が走らない。触れば衝突はその場で PluginMethodCollisionError になる。
+describe("catalog: the method surface assembles for all nine slots", () => {
+  // A slot surface is a lazy getter, so the methods are not attached until
+  // each of the nine is touched. Touching one raises a collision on the spot.
   const everyPluginSurface = (): ReturnType<typeof createBuilderSurface> =>
     catalogPlugins.reduce(
       (builder, plugin) => builder.use(plugin),
@@ -217,7 +218,7 @@ describe("カタログ: 9スロットぶんのメソッド面が組める", () =
       });
   });
 
-  it("string スロットには string を宣言した全プラグインのメソッドが生える", () => {
+  it("gives the string slot every method declared for string", () => {
     everyPluginSurface()
       .for()
       .v("value", (slots) => {
@@ -248,7 +249,7 @@ interface Account {
   readonly nickname?: string;
 }
 
-/** カタログの71個すべてを載せた Builder。型がここで破綻しないことも検証。 */
+/** A Builder carrying every plugin in the catalog. That the types survive it is part of the test. */
 const catalogBuilder = Builder()
   .use(arrayContainsPlugin)
   .use(arrayEachPlugin)
@@ -367,14 +368,14 @@ const validAccount: Account = {
   nickname: "  Countess  ",
 };
 
-describe("カタログ: 利用者が書くとおりに動く", () => {
-  it("6カテゴリのプラグインが1本の宣言で協調する", () => {
+describe("catalog: it behaves the way a user would write it", () => {
+  it("lets plugins from six categories cooperate in one declaration", () => {
     const outcome = accountValidator.validate(validAccount);
     expect(outcome.issues).toEqual([]);
     expect(outcome.valid).toBe(true);
   });
 
-  it("カテゴリをまたいだ違反がそれぞれのパスに出る", () => {
+  it("reports a violation from each category at its own path", () => {
     const outcome = accountValidator.validate(
       {
         ...validAccount,
@@ -401,13 +402,13 @@ describe("カタログ: 利用者が書くとおりに動く", () => {
       "meta",
       "name",
       "ratio",
-      // .each() は composite で、報告は自分のコードとパスで1件。
-      // 要素ごとの issue が欲しいときは "tags[*]" を .v() で宣言する。
+      // .each() is a composite and reports once, under its own code and path.
+      // Declaring "tags[*]" with .v() is what gives per-element issues.
       "tags",
     ]);
   });
 
-  it("code は既定でプラグイン名になる", () => {
+  it("defaults a code to the plugin's name", () => {
     const outcome = accountValidator.validate(
       { ...validAccount, email: "nope", age: 1 },
       { abortEarly: false }
@@ -419,14 +420,14 @@ describe("カタログ: 利用者が書くとおりに動く", () => {
     ]);
   });
 
-  it("transform は parse() にだけ効く", () => {
+  it("applies a transform in parse() and nowhere else", () => {
     const validated = accountValidator.validate(validAccount);
     const parsed = accountValidator.parse(validAccount);
     expect(validated.valid && validated.data.nickname).toBe("  Countess  ");
     expect(parsed.valid && parsed.data.nickname).toBe("Countess");
   });
 
-  it("欠損は required が捕まえる", () => {
+  it("catches a missing field with required", () => {
     const outcome = accountValidator.validate({}, { abortEarly: false });
     expect(outcome.valid).toBe(false);
     if (outcome.valid) throw new Error("expected a rejection");
@@ -436,8 +437,8 @@ describe("カタログ: 利用者が書くとおりに動く", () => {
   });
 });
 
-describe("カタログ: 派生物がディレクトリ構造と一致する", () => {
-  it("manifest のエントリはすべて実在する index.ts を指す", () => {
+describe("catalog: the generated artefacts agree with the directories", () => {
+  it("has every manifest entry pointing at an index.ts that exists", () => {
     for (const entry of PLUGIN_MANIFEST) {
       expect(fs.existsSync(path.join(REPOSITORY_ROOT, entry.entryFile))).toBe(
         true
@@ -445,9 +446,9 @@ describe("カタログ: 派生物がディレクトリ構造と一致する", ()
     }
   });
 
-  // isolated 段だけを見る。extension 段の2つは src/json-schema/extensions/ に
-  // 住んでおり (verification.md A6)、src/plugins の直下には現れない。
-  it("src/plugins の直下は isolated 段のプラグインディレクトリと生成物だけ", () => {
+  // The isolated tier only. The extensions live under the JSON Schema layer
+  // and never appear directly under src/plugins.
+  it("holds nothing under src/plugins but isolated plugins and generated files", () => {
     const children = fs.readdirSync(PLUGIN_ROOT, { withFileTypes: true });
     const directories = children
       .filter((entry) => entry.isDirectory())
@@ -465,7 +466,7 @@ describe("カタログ: 派生物がディレクトリ構造と一致する", ()
     expect(files).toEqual(["index.generated.ts", "manifest.generated.ts"]);
   });
 
-  it("extension 段の2つは src/json-schema/extensions/ にだけ住む", () => {
+  it("keeps the extension-tier plugins under the extensions directory alone", () => {
     const extensions = PLUGIN_MANIFEST.filter(
       (entry) => entry.tier === "extension"
     );
@@ -480,7 +481,7 @@ describe("カタログ: 派生物がディレクトリ構造と一致する", ()
     }
   });
 
-  it("lock はディレクトリ数と export キーを記録している", () => {
+  it("records the directory count and the export keys in the lock", () => {
     expect(catalogLock.pluginCount).toBe(PLUGIN_MANIFEST.length);
     expect(catalogLock.exportKeys).toEqual(Object.keys(packageJson.exports));
     expect(catalogLock.plugins.map((entry) => entry.subpath).sort()).toEqual(
@@ -489,14 +490,13 @@ describe("カタログ: 派生物がディレクトリ構造と一致する", ()
   });
 });
 
-describe("カタログ: 公開サブパスが全部解決する", () => {
+describe("catalog: every published subpath resolves", () => {
   const exportKeys = Object.keys(packageJson.exports);
 
-  it("7つの固定キーが公開されている (README の ./plugins を含む)", () => {
-    // 1.x では `@maroonedog/luq/plugins` が exports に無く、README の
-    // Quick Start の import が Node の exports 制限下で解決できなかった。
-    // `./field-rule` は step 32 で追加。dist には出ていたのにどの export キーも
-    // 指しておらず、利用者から到達できなかった。
+  it("publishes all seven fixed keys, the barrel included", () => {
+    // The barrel was once missing from the exports map, so the import the
+    // README's Quick Start recommended did not resolve. `./field-rule` was in
+    // the same position: shipped in dist with no export key pointing at it.
     expect(exportKeys).toEqual(
       expect.arrayContaining([
         ".",
@@ -510,7 +510,7 @@ describe("カタログ: 公開サブパスが全部解決する", () => {
     );
   });
 
-  it("プラグインサブパスはディレクトリか互換エイリアスに解決する", () => {
+  it("resolves every plugin subpath to a directory or a compatibility alias", () => {
     const aliasDirectory = path.join(REPOSITORY_ROOT, "src", "subpath-aliases");
     const bySubpath = new Map(
       PLUGIN_MANIFEST.map((entry) => [`./plugins/${entry.subpathName}`, entry])
@@ -533,7 +533,7 @@ describe("カタログ: 公開サブパスが全部解決する", () => {
     }
   });
 
-  it("互換サブパス ./plugins/readOnlyWriteOnly は両方のシンボルを出す", () => {
+  it("exports both symbols from the compatibility subpath", () => {
     const alias: unknown = require("../../src/subpath-aliases/read-only-write-only");
     expect(Object.keys(alias as Record<string, unknown>).sort()).toEqual([
       "readOnlyPlugin",
@@ -541,9 +541,9 @@ describe("カタログ: 公開サブパスが全部解決する", () => {
     ]);
   });
 
-  it("1.x で公開されていたサブパスが1つも消えていない", () => {
-    // ./plugins/jsonSchema と ./plugins/jsonSchemaFullFeature は extension 段
-    // (build-order ステップ26) が持ち主で、この段にはまだディレクトリが無い。
+  it("has lost no subpath a previous release published", () => {
+    // The two JSON Schema subpaths belong to the extension tier, which has no
+    // directory at this tier.
     const legacyDocument = fs.readFileSync(
       path.join(REPOSITORY_ROOT, "docs", "legacy-public-surface.md"),
       "utf8"

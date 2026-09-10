@@ -59,10 +59,10 @@ export function declareObjectRules(
   }
   const additional = schema.additionalProperties;
   if (typeof additional === "boolean") {
-    // §6.5.4 の対象は「properties にも patternProperties にも該当しない」キー。
-    // キーワード束縛は自分の値 (boolean) しか運べないので、パターンがある
-    // ときだけプラグインを直接呼ぶ。束縛のほうは残す: キーワード表と
-    // 「そのメソッドが実在する」というコンパイル時のゲートはそちらが持つ。
+    // §6.5.4 applies to the keys matched by neither properties nor
+    // patternProperties. A keyword binding can only carry its own value, so
+    // when patterns are present the plugin is called directly. The binding
+    // stays: it holds the keyword table and the check that the method exists.
     chain = applyAdditionalPropertiesBoolean(chain, schema, additional);
   }
   return readRules(chain);

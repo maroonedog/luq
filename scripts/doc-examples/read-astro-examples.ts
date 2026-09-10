@@ -1,17 +1,20 @@
 // ===========================================================================
 // scripts/doc-examples/read-astro-examples.ts
 //
-// docs-site の .astro ページからコード例を取り出し、Markdown のコード例と
-// まったく同じ DocExample として返す。以降の扱い（exports マップ越しの型検査、
-// must-fail の突き合わせ）は Markdown と共通の経路に乗る。
+// Pulls the code examples out of the site's .astro pages and returns them as
+// exactly the same DocExample a Markdown example produces, so everything after
+// this — type-checking through the exports map, matching must-fail — runs on
+// one shared path.
 //
-// これが要るのは、docs-site が check:docs の外に置かれていたからである。
-// 1.x のサイトは `result.isValid()` を 31 箇所、`result.errors` を 16 箇所
-// 載せたまま緑だった。誰も読まなかったのではなく、読む仕組みが無かった。
+// It is needed because the site used to sit outside the documentation checks.
+// The previous major's site advertised methods that no longer existed, in
+// dozens of places, and every build stayed green. Nobody failed to read it;
+// there was nothing that read it.
 //
-// 対象は「フロントマターで宣言され」かつ「typescript として CodeBlock に
-// 渡されている」定数だけ。bash や json の例、どこからも表示されない定数は
-// 落とす。期待値の書き方は read-astro-directives.ts にある。
+// Only constants declared in the frontmatter AND handed to a code block as
+// typescript are taken. Shell and JSON examples, and constants nothing
+// displays, are dropped. How expectations are written is in
+// read-astro-directives.ts.
 // ===========================================================================
 import * as fs from "fs";
 import * as path from "path";
@@ -27,7 +30,7 @@ import type { DocExampleScan } from "./read-doc-examples";
 
 const CHECKED_LANGUAGES = new Set(["ts", "tsx", "typescript"]);
 
-/** 走査対象の .astro を集める。ファイル直指定もディレクトリも受ける。 */
+/** Collects the .astro files to scan. Accepts a file or a directory. */
 export function collectAstroFiles(absolutePath: string): string[] {
   if (!fs.existsSync(absolutePath)) return [];
   if (!fs.statSync(absolutePath).isDirectory()) {
@@ -44,9 +47,9 @@ function countLines(text: string): number {
 }
 
 /**
- * `with` が指す定数のコードを、指された順に連ねる。指した先がさらに `with`
- * を持つ場合はそれも先に置く。同じ定数を2度は置かない（前置きが重複すると
- * 再宣言でコンパイルが落ちる）。
+ * Concatenates the code of the constants `with` names, in the order named,
+ * putting a constant's own `with` ahead of it. Never twice: a duplicated
+ * prelude fails to compile on the redeclaration.
  */
 function buildPrelude(
   lines: readonly string[],
@@ -68,7 +71,7 @@ function buildPrelude(
   return parts.join("\n");
 }
 
-/** 1つの .astro からコード例を取り出す。 */
+/** Extracts the code examples from one .astro file. */
 export function readAstroExamples(
   repositoryRoot: string,
   absoluteFile: string
@@ -103,7 +106,7 @@ export function readAstroExamples(
         file,
         startLine: constant.startLine,
         kind: "unknownDirective",
-        detail: `luq-example: with が指す定数がこのファイルに無い: ${missing.join(", ")}`,
+        detail: `luq-example: with names a constant this file does not have: ${missing.join(", ")}`,
       });
       continue;
     }
@@ -117,8 +120,9 @@ export function readAstroExamples(
       file,
       startLine: constant.startLine,
       language,
-      // 補間を含む例は、表示されるコードがビルド時にしか決まらないので静的に
-      // は検査できない。黙って落とさず skip として数え、報告に残す。
+      // An example with interpolation only settles at build time, so it
+      // cannot be checked statically. Counted as skipped and reported, never
+      // dropped in silence.
       expectation: constant.hasInterpolation ? "skip" : directives.expectation,
       reason: directives.reason,
       code:
@@ -130,7 +134,7 @@ export function readAstroExamples(
   return { examples, violations };
 }
 
-/** 走査根 (docs-site/src) をまとめて読む。 */
+/** Reads the whole scan root at once. */
 export function readAllAstroExamples(
   repositoryRoot: string,
   astroRoots: readonly string[]

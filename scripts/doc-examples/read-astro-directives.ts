@@ -1,19 +1,22 @@
 // ===========================================================================
 // scripts/doc-examples/read-astro-directives.ts
 //
-// コード例の宣言の直前に積まれた `// luq-example: ...` を読む。
+// Reads the `// luq-example: ...` lines stacked above an example's
+// declaration.
 //
-// 3語ある:
-//   skip <理由>        検査しない。断片（キャレット注記だけの行など）専用。
-//   must-fail <理由>   コンパイルが通ってはならない。「1.x の書き方」「型が
-//                      弾く書き方」を載せている箇所がこれで、通ったらページの
-//                      主張が事実と違うということなので落とす。
-//   with <定数名> <理由>
-//                      その定数のコードを前置きして検査する。ページ上は
-//                      「直前のブロックで作った validator を使う」短い抜粋の
-//                      ままにしておきたいが、抜粋のままでは型検査ができない。
-//                      表示と検査を分けるのはここだけで、表示されるコードを
-//                      書き換えるわけではない。
+// Three words:
+//   skip <reason>       not checked. For fragments only, such as a line that
+//                       is just a caret annotation.
+//   must-fail <reason>  must NOT compile. Used where a page shows how it used
+//                       to be written, or a form the types refuse; if it
+//                       compiles, the page's claim is untrue and this fails.
+//   with <const> <reason>
+//                       checked with that constant's code prepended. A page
+//                       wants to stay a short excerpt that uses the validator
+//                       built in the block above, and an excerpt cannot be
+//                       type-checked on its own. This is the only place
+//                       display and checking diverge, and the displayed code
+//                       is not rewritten.
 // ===========================================================================
 import type { DocExampleExpectation } from "./doc-example.types";
 
@@ -24,7 +27,7 @@ export interface AstroExampleDirectives {
   readonly expectation: DocExampleExpectation;
   readonly preludeNames: readonly string[];
   readonly reason: string;
-  /** 読めなかったディレクティブ。行番号は 1 始まりのファイル行。 */
+  /** A directive that could not be read. The line number is 1-based in the file. */
   readonly problems: readonly DirectiveProblem[];
 }
 
@@ -40,7 +43,7 @@ interface DirectiveLine {
   readonly rest: string;
 }
 
-/** 宣言行の上に連なるディレクティブ行を、上から順に返す。 */
+/** The directive lines above a declaration, in top-to-bottom order. */
 function collectDirectiveLines(
   lines: readonly string[],
   declarationLine: number
@@ -67,9 +70,10 @@ function toProblem(
 }
 
 /**
- * 宣言行 (1 始まり) を受け、その上のディレクティブをまとめて解釈する。
- * 何も無ければ「理由なしで compiles を要求」。理由の無いディレクティブと
- * 未知の語は違反にする — 無言で検査を外す道を残さないため。
+ * Takes the declaration line, 1-based, and interprets the directives above it.
+ * With none, the example must compile and needs no reason. A directive with no
+ * reason, or an unknown word, is a violation: there must be no silent way to
+ * opt out of the check.
  */
 export function readAstroExampleDirectives(
   lines: readonly string[],
@@ -87,7 +91,7 @@ export function readAstroExampleDirectives(
           toProblem(
             directive,
             "directiveWithoutReason",
-            `luq-example: ${directive.word} には理由を書くこと`
+            `luq-example: ${directive.word} needs a reason`
           )
         );
         continue;
@@ -105,7 +109,7 @@ export function readAstroExampleDirectives(
           toProblem(
             directive,
             "unknownDirective",
-            "luq-example: with には前置きする定数名を書くこと"
+            "luq-example: with needs the name of the constant to prepend"
           )
         );
         continue;
@@ -115,7 +119,7 @@ export function readAstroExampleDirectives(
           toProblem(
             directive,
             "directiveWithoutReason",
-            `luq-example: with ${name} には理由を書くこと`
+            `luq-example: with ${name} needs a reason`
           )
         );
         continue;
@@ -128,7 +132,7 @@ export function readAstroExampleDirectives(
       toProblem(
         directive,
         "unknownDirective",
-        `未知のディレクティブ "${directive.word}"。使えるのは skip / must-fail / with`
+        `unknown directive "${directive.word}"; use skip, must-fail or with`
       )
     );
   }

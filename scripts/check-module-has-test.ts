@@ -8,8 +8,8 @@ import { runCheckAndExit } from "./catalog/run-check-and-exit";
 import { findExercisedModules } from "./module-coverage/find-exercised-modules";
 
 /**
- * index.ts は再 export のみ、*.types.ts は型のみ、*.generated.ts は派生物。
- * いずれも実行時の振る舞いを持たないので、それ自体のテストを要求しない。
+ * An index re-exports, a .types file is types only, a .generated file is
+ * derived. None has run-time behaviour of its own, so none needs its own test.
  */
 export function isTestExemptModule(fileName: string): boolean {
   return (
@@ -19,7 +19,7 @@ export function isTestExemptModule(fileName: string): boolean {
   );
 }
 
-/** src/a/b.ts -> test/unit/a/b.test.ts。違反を報告するときの推奨置き場。 */
+/** src/a/b.ts -> test/unit/a/b.test.ts, suggested when reporting a violation. */
 export function toSiblingTestPath(sourceRelativePath: string): string {
   const withoutSourceRoot = sourceRelativePath.replace(/^src\//, "");
   return `test/unit/${withoutSourceRoot.replace(/\.ts$/, ".test.ts")}`;
@@ -31,11 +31,12 @@ export interface ModuleWithoutTest {
 }
 
 /**
- * カバレッジ率の代わりに構造で担保する。落ちるのは「テストが1つも触っていない」ときだけ。
+ * Structure instead of a coverage percentage. It fails only when NO test
+ * touches a module at all.
  *
- * 判定は findExercisedModules に委ねる（規則の説明はそちらのヘッダにある）。
- * 「決められた名前のファイルが在るか」ではなく「実行時テストがそのモジュールに
- * 到達しているか」を見るので、空のスタブでは通らず、テストの置き場も縛らない。
+ * What is checked is whether a run-time test reaches the module, not whether a
+ * file with a particular name exists. An empty stub therefore does not pass,
+ * and nothing constrains where tests live.
  */
 export function findModulesWithoutTest(
   repositoryRoot: string,
@@ -56,15 +57,13 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const missing = findModulesWithoutTest(REPOSITORY_ROOT);
     if (missing.length === 0) {
-      console.error("モジュール到達検査: 違反なし");
+      console.error("Module reachability: no violations");
       return 0;
     }
-    console.error(
-      `実行時テストが到達していないモジュール ${missing.length} 件:`
-    );
+    console.error(`${missing.length} modules no run-time test reaches:`);
     for (const entry of missing) {
       console.error(
-        `  ${entry.module} — 例えば ${entry.suggestedTest} を書くこと`
+        `  ${entry.module} — write ${entry.suggestedTest}, for instance`
       );
     }
     return 1;

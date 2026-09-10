@@ -7,14 +7,14 @@ composes with everything in the rest of the guide.
 
 ## Conformance, measured
 
-**828 / 929 = 89.13%** of the official
+**929 / 929 = 100.00%** of the official
 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
 draft7 required tests. Skipped cases are counted as **failures**, and the skip
 list is asserted to be exactly the failing set — so a case cannot be hidden to
 raise the number. A validator that returned `true` unconditionally scores
-59.31% on this corpus.
+59.31% on this corpus, which is the figure to read this one against.
 
-The per-keyword breakdown and all 101 failures are in
+The per-keyword breakdown, and what closed each cause that used to fail, are in
 [../json-schema-conformance.md](../json-schema-conformance.md).
 
 ## One import: `jsonSchemaFullFeature`
@@ -120,20 +120,109 @@ through no other route.
 
 ### Which one to use
 
-Measured with the same esbuild + gzip method as the README's size table:
+Both entries are measured on every build and live in one place — the size table
+in [the README](../../README.md#bundle-size). Reading them: `jsonSchema` on its
+own is not a usable configuration, because `.jsonSchema()` needs a bag of
+plugins behind it, and once you supply one the "tree-shakeable" route saves
+nothing worth having.
 
-| Entry | gzip |
-|---|---:|
-| `Builder` + `jsonSchemaPlugin`, no bag | 18,992 B |
-| `Builder` + `jsonSchemaPlugin` + a working 49-plugin bag | 21,371 B |
-| `Builder` + `jsonSchemaFullFeaturePlugin` | 21,383 B |
-
-The first row is not a usable configuration — `.jsonSchema()` needs a bag. Once
-you supply one, the "tree-shakeable" route is **12 bytes** smaller than the
-bundled one. So: use `jsonSchemaFullFeature`, and reach for `./plugins/jsonSchema`
-when you want the per-field chain method, not to save bytes. The two share one
+So: use `jsonSchemaFullFeature`, and reach for `./plugins/jsonSchema` when you
+want the per-field chain method, not to save bytes. The two share one
 implementation; `jsonSchemaFullFeaturePlugin.build` calls
 `jsonSchemaPlugin.build`.
+
+## The other direction: writing a document out
+
+Everything above reads a document in. `toStandardJsonSchema` writes one out. It
+takes a built validator and returns it with a `~standard.jsonSchema` converter
+attached; what comes back is still a Standard Schema, so the same value goes on
+working anywhere that takes one.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { optionalPlugin } from "@maroonedog/luq/plugins/optional";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { toStandardJsonSchema } from "@maroonedog/luq/standard-schema";
+
+type Account = { name: string; email: string; age?: number };
+
+const account = toStandardJsonSchema(
+  Builder()
+    .use(requiredPlugin)
+    .use(optionalPlugin)
+    .use(stringMinPlugin)
+    .use(stringEmailPlugin)
+    .use(numberMinPlugin)
+    .for<Account>()
+    .v("name", (b) => b.string.required().min(2))
+    .v("email", (b) => b.string.required().email())
+    .v("age", (b) => b.number.optional().min(18))
+    .build()
+);
+
+const document = account["~standard"].jsonSchema.input({
+  target: "draft-2020-12",
+});
+```
+
+`document` is then:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "minLength": 2 },
+    "email": { "type": "string", "format": "email" },
+    "age": { "type": "number", "minimum": 18 }
+  },
+  "required": ["name", "email"]
+}
+```
+
+Four things decide how it behaves.
+
+**Two targets, and no guessing.** `draft-2020-12` and `draft-07`. Anything else
+throws `UnsupportedJsonSchemaTargetError`. `openapi-3.0` descends from draft-04
+and is a different lineage, so it is not admitted on a resemblance: writing
+draft-07 silently when 2020-12 was asked for hands the caller a document they
+will read under the wrong rules.
+
+**`input` and `output` return the same schema.** The spec asks for the input
+type and the output type separately, and for a validator carrying a transform
+they genuinely differ — but a Luq declaration does not carry a transform's
+*result* type, because a function's return value is unknowable without running
+it. Inventing a second shape would be a lie, so a field declaring a transform
+counts as unwritable instead.
+
+**An unwritable declaration throws, by default.** What comes out gets used for
+validation by whoever receives it, so a silently dropped `.custom()` produces a
+schema that admits values it must not, with no trace of the omission — the
+missing constraint is then discovered by the incident it causes. Emitting for
+documentation or for a form layout rather than for validation is a legitimate
+thing to want, and it is available by asking:
+
+<!-- luq-example: skip — continues the block above, so `account` is not declared here -->
+
+```ts
+account["~standard"].jsonSchema.input({
+  target: "draft-07",
+  libraryOptions: { unrepresentable: "omit" },
+});
+```
+
+The lax choice is never the default, and having made it stays visible in the
+calling code.
+
+**Import before you build.** The record of declared calls is made as the chain
+is walked, and importing `@maroonedog/luq/standard-schema` is what asks the
+chain to keep one — it does not on its own, so that nothing is charged to
+callers who never emit. A `build()` that runs before the import therefore
+produces no record, and `DeclarationsUnavailableError` says so, naming both
+causes.
 
 ## What it does not do
 
@@ -141,10 +230,12 @@ implementation; `jsonSchemaFullFeaturePlugin.build` calls
   any rule runs, so a converted `{"type":"string"}` cannot itself reject `null`.
   Nullability is the field's presence policy; the converter declares
   `.optional()` for every non-required property, which is what expresses it.
-- **The 101 failing suite cases.** They are enumerated, each with a cause, in
+- **`optional/` in the suite.** The measured corpus is the required tests; the
+  optional directory is excluded, and what that leaves out is named in
   [../json-schema-conformance.md](../json-schema-conformance.md). Nothing is
-  silently skipped: the skip list is compile-checked against the failing set in
-  both directions, so a skipped case that starts passing fails the build too.
+  silently skipped inside the measured set: the skip list is compile-checked
+  against the failing set in both directions, so a skipped case that starts
+  passing fails the build too.
 
 ## What 1.x got wrong here
 

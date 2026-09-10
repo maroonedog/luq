@@ -1,7 +1,8 @@
-// 公開APIの通し確認。実装の内部ではなく、利用者が書くとおりのコードで動くことを見る。
-// 旧実装では README の Quick Start が3箇所で壊れていた (build() が関数ではなく
-// オブジェクトを返す / result.issues が存在しない / import パスが exports に無い)。
-// ここが落ちたら、それは利用者から見えるふるまいが壊れたということ。
+// The public API, end to end, written the way a user writes it rather than
+// reaching into the implementation. A previous release's Quick Start was
+// broken in three places at once: build() returning an object rather than a
+// function, a result property that did not exist, and an import path absent
+// from the exports map. A failure here means user-visible behaviour broke.
 import { Builder } from "../../src/index";
 import { requiredPlugin } from "../../src/plugins/required";
 import { numberMinPlugin } from "../../src/plugins/number-min";
@@ -18,7 +19,7 @@ type Order = {
   items: { productId: string }[];
 };
 
-describe("独立検証: README の Quick Start", () => {
+describe("independent check: the README's Quick Start", () => {
   const validateUser = Builder()
     .use(requiredPlugin)
     .use(stringMinPlugin)
@@ -28,7 +29,7 @@ describe("独立検証: README の Quick Start", () => {
     .v("age", (b) => b.number.required().min(18))
     .build();
 
-  it("有効な値を通す", () => {
+  it("accepts a valid value", () => {
     const result = validateUser.validate({
       name: "John",
       age: 25,
@@ -37,7 +38,7 @@ describe("独立検証: README の Quick Start", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("短すぎる名前を弾き、path を出す", () => {
+  it("rejects a name that is too short, and reports its path", () => {
     const result = validateUser.validate({
       name: "Jo",
       age: 25,
@@ -49,9 +50,9 @@ describe("独立検証: README の Quick Start", () => {
     }
   });
 
-  // 引き継いだ仕様 (docs/legacy-spec/execution-model.md): abortEarly は既定 true で、
-  // 最初にエラーが出たフィールドで打ち切る。
-  it("既定では最初に落ちたフィールドで打ち切る", () => {
+  // Inherited behaviour: abortEarly defaults to true and stops at the first
+  // field that reports an error.
+  it("stops at the first failing field by default", () => {
     const result = validateUser.validate({
       name: "Jo",
       age: 3,
@@ -63,7 +64,7 @@ describe("独立検証: README の Quick Start", () => {
     }
   });
 
-  it("abortEarly: false なら全フィールドの違反を集める", () => {
+  it("collects every field's violation when abortEarly is false", () => {
     const result = validateUser.validate(
       { name: "Jo", age: 3, email: "j@example.com" },
       { abortEarly: false }
@@ -77,12 +78,12 @@ describe("独立検証: README の Quick Start", () => {
     }
   });
 
-  it("required が欠損を捕まえる", () => {
+  it("has required catch a missing value", () => {
     const result = validateUser.validate({ age: 25, email: "j@example.com" });
     expect(result.valid).toBe(false);
   });
 
-  it("入力オブジェクトを変更しない", () => {
+  it("does not modify the input object", () => {
     const input = { name: "John", age: 25, email: "j@example.com" };
     const snapshot = JSON.stringify(input);
     validateUser.validate(input);
@@ -90,7 +91,7 @@ describe("独立検証: README の Quick Start", () => {
   });
 });
 
-describe("独立検証: ネストと配列ワイルドカード", () => {
+describe("independent check: nesting and array wildcards", () => {
   const validateOrder = Builder()
     .use(requiredPlugin)
     .use(stringMinPlugin)
@@ -99,7 +100,7 @@ describe("独立検証: ネストと配列ワイルドカード", () => {
     .v("items[*].productId", (b) => b.string.required().min(5))
     .build();
 
-  it("ネストしたフィールドを検証する", () => {
+  it("validates a nested field", () => {
     const result = validateOrder.validate({
       customer: { name: "A" },
       items: [{ productId: "PROD-1" }],
@@ -112,7 +113,7 @@ describe("独立検証: ネストと配列ワイルドカード", () => {
     }
   });
 
-  it("配列要素の issue path が実インデックスになる", () => {
+  it("gives an array element's issue path the real index", () => {
     const result = validateOrder.validate({
       customer: { name: "Acme" },
       items: [{ productId: "PROD-1" }, { productId: "X" }],
@@ -128,7 +129,7 @@ describe("独立検証: ネストと配列ワイルドカード", () => {
     }
   });
 
-  it("全部有効なら通る", () => {
+  it("passes when everything is valid", () => {
     const result = validateOrder.validate({
       customer: { name: "Acme" },
       items: [{ productId: "PROD-1" }, { productId: "PROD-2" }],
@@ -137,8 +138,8 @@ describe("独立検証: ネストと配列ワイルドカード", () => {
   });
 });
 
-describe("独立検証: CSP-safe", () => {
-  it("src/ のどこにも eval / new Function が無い", () => {
+describe("independent check: CSP-safe", () => {
+  it("has no eval and no new Function anywhere in src/", () => {
     const fs = require("fs") as typeof import("fs");
     const nodePath = require("path") as typeof import("path");
     const walk = (dir: string): string[] =>

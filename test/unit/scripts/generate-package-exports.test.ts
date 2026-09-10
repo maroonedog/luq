@@ -25,7 +25,7 @@ const SUFFIX = SEED_PACKAGE_JSON.slice(
 );
 
 describe("renderPackageJsonWithExports", () => {
-  it("exports 以外のフィールドを1バイトも動かさない", () => {
+  it("moves no byte of any field but exports", () => {
     const updated = renderPackageJsonWithExports(SEED_PACKAGE_JSON, {
       ".": "./dist/index.js",
     });
@@ -38,7 +38,7 @@ describe("renderPackageJsonWithExports", () => {
     expect(updated).toContain('"files": ["dist"]');
   });
 
-  it("差し替えた JSON はそのまま読み直せる", () => {
+  it("leaves the replaced JSON readable", () => {
     const updated = renderPackageJsonWithExports(SEED_PACKAGE_JSON, {
       "./plugins/uuid": {
         types: "./dist/plugins/uuid.d.ts",
@@ -56,7 +56,7 @@ describe("renderPackageJsonWithExports", () => {
 });
 
 describe("generatePackageExports", () => {
-  it("カタログどおりの exports を書き込む", () => {
+  it("writes the exports the catalog describes", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(generatePackageExports(root)).toBe(true);
       expect(readPublishedExportMap(root)).toEqual(
@@ -65,7 +65,7 @@ describe("generatePackageExports", () => {
     });
   });
 
-  it("プラグイン0件でも固定キー9件を書き込む", () => {
+  it("writes the nine fixed keys even with no plugins", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       generatePackageExports(root);
       expect(Object.keys(readPublishedExportMap(root))).toEqual([
@@ -82,7 +82,7 @@ describe("generatePackageExports", () => {
     });
   });
 
-  it("2回目は変更なしになる (冪等)", () => {
+  it("reports no change on a second run, being idempotent", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(generatePackageExports(root)).toBe(true);
       const first = readSeedFile(root, "package.json");
@@ -91,7 +91,7 @@ describe("generatePackageExports", () => {
     });
   });
 
-  it("プラグインが増えたら次の生成で自動的に拾う", () => {
+  it("picks up an added plugin on the next generation", () => {
     withSeedTree(EMPTY_PLUGIN_TREE, (root) => {
       generatePackageExports(root);
       expect(

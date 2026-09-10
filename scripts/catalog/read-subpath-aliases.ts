@@ -6,8 +6,9 @@ import { SUBPATH_ALIASES } from "./plugin-source-roots";
 export const SUBPATH_ALIAS_DIRECTORY = "src/subpath-aliases";
 
 /**
- * 互換エイリアスは、その互換モジュールが実在するときだけ公開サブパスになる。
- * まだ存在しない転送先を exports に書くと、解決できないサブパスを公開してしまう。
+ * A compatibility alias becomes a published subpath only when its module
+ * actually exists. Writing a target that does not exist yet into the exports
+ * map publishes a subpath that cannot resolve.
  */
 export function readSubpathAliases(
   repositoryRoot: string,

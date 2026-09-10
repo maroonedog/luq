@@ -1,35 +1,36 @@
 import * as path from "path";
 import type { PluginSourceRoot, SubpathAlias } from "./plugin-catalog.types";
 
-/** scripts/catalog/ から2つ上がリポジトリルート。 */
+/** Two levels up from here is the repository root. */
 export const REPOSITORY_ROOT = path.resolve(__dirname, "..", "..");
 
 /**
- * プラグインディレクトリの走査対象。ここに無いものはプラグインではない。
+ * Where plugin directories are looked for. Anything outside these is not a
+ * plugin.
  *
- * src/json-schema/** のうち extensions/ の外は「JSON Schema 層のモジュール」であって
- * プラグインディレクトリではない。走査根を extensions/ に限定することで、
- * それが構造的に保証される (設計の決着事項)。
- * src/subpath-aliases/ も同じ理由で走査されない。
+ * Within the JSON Schema layer, only the extensions directory holds plugins;
+ * everything else there is a module of that layer. Limiting the scan root to
+ * the extensions directory guarantees that structurally rather than by
+ * convention. Settled design.
  */
 export const PLUGIN_SOURCE_ROOTS: readonly PluginSourceRoot[] = [
   { tier: "isolated", directory: "src/plugins" },
   { tier: "extension", directory: "src/json-schema/extensions" },
 ];
 
-/** ディレクトリを持たない互換サブパス。1.x の ./plugins/readOnlyWriteOnly を残す。 */
+/** A compatibility subpath with no directory, keeping a name an earlier release published. */
 export const SUBPATH_ALIASES: readonly SubpathAlias[] = [
   { subpathName: "readOnlyWriteOnly", moduleName: "read-only-write-only" },
 ];
 
 /**
- * プラグイン以外の固定 export キー。順序はそのまま package.json に出る。
+ * The fixed export keys that are not plugins. Their order is the order they
+ * appear in package.json.
  *
- * `./field-rule` は step 32 で追加した。src/field-rule/** は実装もテストも
- * あり dist にも出ていたのに、どの export キーも指しておらず利用者からは
- * 到達できなかった (1.x は createFieldRule / createPluginRegistry / useField を
- * ルートから公開していた)。出荷物に入っているのに import できないものを
- * 残すか消すかの二択で、消さずに公開する方を選んだ。
+ * `./field-rule` was added after the fact: the code was implemented, tested
+ * and shipped in dist, yet no export key pointed at it, so a user could not
+ * reach it. Faced with shipping something unimportable or deleting it,
+ * publishing it was the choice.
  */
 export const FIXED_EXPORT_KEYS: readonly string[] = [
   ".",

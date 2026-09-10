@@ -1,9 +1,9 @@
 // ===========================================================================
-// bench/competitors/yup-subjects.ts — yup で書いた同じ規則。
+// bench/competitors/yup-subjects.ts — the same rules, written in yup.
 //
-// yup の `isValidSync` は既定で型強制 (coercion) をするので、`strict: true`
-// を渡している。そうしないと「文字列 "34" を数値として受ける」ことになり、
-// 同じ規則を測っていないことになる。
+// yup's `isValidSync` coerces by default, so `strict: true` is passed.
+// Without it the string "34" is accepted as a number, and the rules being
+// measured are no longer the same rules.
 // ===========================================================================
 import * as yup from "yup";
 import type { Competitor, CompetitorSubject } from "./competitor.types";

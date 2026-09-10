@@ -58,19 +58,19 @@ function writeInto(
  * numeric key here is a Record key.
  */
 /**
- * キーを own プロパティとして置く。**代入演算子を使わない。**
+ * Places a key as an own property. **Never with the assignment operator.**
  *
- * `copy[key] = value` は key が "__proto__" のとき Object.prototype の
- * アクセサ (setter) を呼び、own プロパティを作る代わりにプロトタイプを
- * 差し替えてしまう。defineProperty はアクセサを見ずに own プロパティを
- * 定義するので、"__proto__" という名前のプロパティを安全に持てる。
+ * `copy[key] = value` on "__proto__" invokes the accessor on
+ * Object.prototype: instead of creating an own property it swaps the
+ * prototype. defineProperty ignores accessors and defines the own property, so
+ * a property actually named "__proto__" can be held safely.
  *
- * "constructor" と "prototype" は Object.prototype 上でデータプロパティ
- * なので代入でも own プロパティになるが、キーごとに分岐すると分岐のほうを
- * 間違えるので一律にこちらを通す。
+ * "constructor" and "prototype" are data properties, so assignment would only
+ * make own properties of them — but branching per key is how the branch gets
+ * written wrong, so everything goes through this one path.
  *
- * これが「宣言パスに __proto__ を書けるようにする」の前提。書き込みが安全に
- * なったので、パス文法の側で拒否する必要が無くなった (reserved-segment.ts)。
+ * This is what makes writing safe, and therefore what makes refusing these
+ * names in the path grammar unnecessary. See reserved-segment.ts.
  */
 function putOwnProperty(
   target: Record<string, unknown>,
@@ -103,8 +103,8 @@ function copyWith(
     copy[index] = value;
     return copy;
   }
-  // スプレッドは own の列挙可能プロパティを CreateDataProperty で写すので、
-  // ここでは setter は動かない。危ないのは下の代入だけ。
+  // Spread copies own enumerable properties with CreateDataProperty, so no
+  // setter runs here. Only assignment is dangerous.
   const copy: Record<string, unknown> = { ...container };
   putOwnProperty(copy, key, value);
   return copy;

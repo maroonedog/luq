@@ -54,13 +54,13 @@ describe("classifyPluginImport", () => {
     ["../../../outside-the-repo", "unresolved"],
   ];
 
-  it.each(isolatedCases)("%s は %s に分類される", (specifier, area) => {
+  it.each(isolatedCases)("classifies %s as %s", (specifier, area) => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(classifyFromStringMin(root, specifier)).toBe(area);
     });
   });
 
-  it("自パッケージ名経由の import も src の領域に落ちる", () => {
+  it("classifies an import through the package's own name into the src areas", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(
         classifyFromStringMin(root, "@maroonedog/luq/json-schema/keyword-map")
@@ -71,7 +71,7 @@ describe("classifyPluginImport", () => {
     });
   });
 
-  it("他プラグインの内部ファイルはエントリと区別される", () => {
+  it("distinguishes another plugin's internal file from its entry", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(classifyFromStringMin(root, "../uuid")).toBe("plugin-entry");
       expect(
@@ -86,7 +86,7 @@ describe("classifyPluginImport", () => {
     });
   });
 
-  it("extension からは json-schema 層とプラグインエントリが見える", () => {
+  it("lets an extension see the JSON Schema layer and the plugin entries", () => {
     withSeedTree(SEED_PLUGIN_TREE, (root) => {
       expect(classifyFromExtension(root, "../../keyword-map")).toBe(
         "json-schema"
@@ -102,7 +102,7 @@ describe("classifyPluginImport", () => {
 });
 
 describe("ALLOWED_AREAS_BY_TIER", () => {
-  it("isolated の許可集合は plugin-kit / types / path / 自ディレクトリだけ", () => {
+  it("permits an isolated plugin only plugin-kit, types, path and its own directory", () => {
     expect([...ALLOWED_AREAS_BY_TIER.isolated].sort()).toEqual([
       "own-directory",
       "path",
@@ -111,7 +111,7 @@ describe("ALLOWED_AREAS_BY_TIER", () => {
     ]);
   });
 
-  it("extension は json-schema とプラグインエントリを加えるだけ", () => {
+  it("adds only the JSON Schema layer and the plugin entries for an extension", () => {
     expect([...ALLOWED_AREAS_BY_TIER.extension].sort()).toEqual([
       "json-schema",
       "own-directory",
@@ -135,12 +135,12 @@ describe("ALLOWED_AREAS_BY_TIER", () => {
     "plugin-internal",
   ];
 
-  it.each(forbiddenEverywhere)("%s はどちらの段でも禁止", (area) => {
+  it.each(forbiddenEverywhere)("forbids %s at either tier", (area) => {
     expect(isAllowedArea("isolated", area)).toBe(false);
     expect(isAllowedArea("extension", area)).toBe(false);
   });
 
-  it("isolated では兄弟プラグインと json-schema が禁止", () => {
+  it("forbids a sibling plugin and the JSON Schema layer at the isolated tier", () => {
     expect(isAllowedArea("isolated", "plugin-entry")).toBe(false);
     expect(isAllowedArea("isolated", "json-schema")).toBe(false);
     expect(isAllowedArea("extension", "plugin-entry")).toBe(true);

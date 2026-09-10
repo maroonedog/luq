@@ -1,11 +1,11 @@
 // ===========================================================================
 // L8  src/json-schema/declare-additional-properties.ts
-// `additionalProperties` の2つの形と、その対象を決める `patternProperties`。
+// Both forms of `additionalProperties`, and the `patternProperties` that
+// decides what they apply to.
 //
-// declare-object-keywords.ts から切り出した。あちらが 200 行を超えたのが
-// きっかけだが、境界としても妥当: §6.5.4 の「properties にも
-// patternProperties にも該当しないキー」という定義は、この2つの形と
-// patternProperties の3者だけで閉じている。
+// These three close over each other: §6.5.4 defines the subject as the keys
+// matched by neither `properties` nor `patternProperties`, so nothing else
+// is needed to answer it and nothing else needs to know how.
 // ===========================================================================
 import type { Rule } from "../plugin-kit/compiled-rule";
 import { applyKeywordBinding } from "./apply-keyword-binding";
@@ -17,8 +17,8 @@ import type { StructuralContext } from "./structural-expansion.types";
 const NO_RULES: readonly Rule[] = Object.freeze([]);
 
 /**
- * `patternProperties` のキー、つまり正規表現の文字列。
- * additionalProperties が「該当しないキー」を選ぶのに要る。
+ * The keys of `patternProperties`, which are regular expression strings.
+ * additionalProperties needs them to pick out the keys that match none.
  */
 export function patternPropertyKeys(
   schema: Draft07SchemaObject
@@ -29,11 +29,11 @@ export function patternPropertyKeys(
 }
 
 /**
- * BOOLEAN 形。
+ * The BOOLEAN form.
  *
- * キーワード束縛は自分の値 (boolean) しか運べないので、パターンがあるときだけ
- * プラグインを直接呼ぶ。束縛のほうは残す: キーワード表と「そのメソッドが
- * 実在する」というコンパイル時のゲートはそちらが持っている。
+ * A keyword binding can only carry its own value, so when patterns are present
+ * the plugin is called directly. The binding stays either way: it is what
+ * holds the keyword table and the compile-time check that the method exists.
  */
 export function applyAdditionalPropertiesBoolean(
   chain: ConverterChain<"object">,
@@ -46,7 +46,7 @@ export function applyAdditionalPropertiesBoolean(
     : chain.additionalProperties(allowed, undefined, patterns);
 }
 
-/** SCHEMA 形: 宣言にもパターンにも該当しない値が、そのスキーマに従う。 */
+/** The SCHEMA form: whatever matches neither a declaration nor a pattern follows it. */
 export function declareAdditionalPropertiesSchema(
   schema: Draft07SchemaObject,
   context: StructuralContext

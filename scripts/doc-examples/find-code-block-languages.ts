@@ -1,15 +1,16 @@
 // ===========================================================================
 // scripts/doc-examples/find-code-block-languages.ts
 //
-// `<CodeBlock code={xExample} language="bash" />` を読み、定数名から言語への
-// 対応を作る。型検査の対象を決めるのはこの言語であって、定数の名前ではない。
+// Reads the code-block markup and maps each constant name to its language.
+// The language is what decides whether an example is type-checked; the
+// constant's name is not.
 //
-// 対応の無い定数（どの CodeBlock からも参照されていないもの）は表示されない
-// コード例なので、検査対象にしない。language を省いた呼び出しは CodeBlock の
-// 既定値と同じ typescript として扱う（docs-site/src/components/CodeBlock.astro）。
+// A constant no code block references is an example nothing displays, so it is
+// not checked. A call that omits the language is treated as typescript, which
+// is the component's own default.
 // ===========================================================================
 
-/** CodeBlock が language を省かれたときに使う既定値。 */
+/** The language the code-block component uses when none is given. */
 export const DEFAULT_CODE_BLOCK_LANGUAGE = "typescript";
 
 const CODE_BLOCK_ELEMENT = /<CodeBlock\b([\s\S]*?)\/>/g;
@@ -17,8 +18,9 @@ const CODE_PROPERTY = /\bcode=\{([A-Za-z_$][A-Za-z0-9_$]*)\}/;
 const LANGUAGE_PROPERTY = /\blanguage="([A-Za-z0-9+-]*)"/;
 
 /**
- * 定数名 -> 言語。同じ定数が2箇所で違う言語で表示されることは無い前提だが、
- * 起きたときは最初の1つを採る（検査対象が増える方向にしか効かない）。
+ * Constant name to language. One constant shown in two languages is not
+ * expected; if it happens, the first wins, which can only widen what is
+ * checked.
  */
 export function findCodeBlockLanguages(
   text: string

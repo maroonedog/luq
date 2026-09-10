@@ -70,16 +70,15 @@ export interface ReferenceRatioRecord {
   /**
    * Run-to-run noise on each side, so the floor's margin can be judged.
    *
-   * null は「測っていない」の意味。CI 用の床 (config/perf-baseline.ci.json) は
-   * GitHub Actions のログに出た比率から起こしたもので、ログに spread が無い。
-   * 0 を書くと「ばらつきが無かった」という嘘になるので null にしてある。
-   * CI 上で record を回せるようになったら実測値が入る。
+   * null means "not measured". The CI floors were recovered from ratios in a
+   * run log, which carries no spread; writing 0 would claim there was no
+   * variance. A real figure lands here once recording can run in CI.
    */
   readonly luqSpreadPercent: number | null;
   readonly referenceSpreadPercent: number | null;
   /** Spread of the interleaved per-pair ratios: what the floor answers to. */
   readonly ratioSpreadPercent: number | null;
-  /** null は spread が無いので静かかどうかを判定できないことを表す。 */
+  /** null: with no spread, whether the run was quiet cannot be decided. */
   readonly isQuiet: boolean | null;
 }
 

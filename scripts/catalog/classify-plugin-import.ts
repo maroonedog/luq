@@ -3,7 +3,7 @@ import * as path from "path";
 import type { PluginSourceRoot, PluginTier } from "./plugin-catalog.types";
 import { PLUGIN_SOURCE_ROOTS } from "./plugin-source-roots";
 
-/** 閉じた領域集合。ここに無い import は存在しない。 */
+/** The closed set of areas. An import outside it does not exist. */
 export type ImportArea =
   | "own-directory"
   | "plugin-kit"
@@ -22,7 +22,7 @@ export type ImportArea =
   | "external"
   | "unresolved";
 
-/** 段ごとの許可集合。例外リストは持たない。 */
+/** What each tier permits. There is no exception list. */
 export const ALLOWED_AREAS_BY_TIER: Readonly<
   Record<PluginTier, readonly ImportArea[]>
 > = {
@@ -43,9 +43,9 @@ export function isAllowedArea(tier: PluginTier, area: ImportArea): boolean {
 
 export interface PluginImportSite {
   readonly repositoryRoot: string;
-  /** import 元ファイルの posix 相対パス。 */
+  /** The importing file's posix relative path. */
   readonly importingFile: string;
-  /** そのファイルが属するプラグインディレクトリの posix 相対パス。 */
+  /** The posix relative path of the plugin directory that file belongs to. */
   readonly pluginDirectory: string;
   readonly specifier: string;
   readonly packageName: string;
@@ -63,7 +63,7 @@ export function classifyPluginImport(site: PluginImportSite): ImportArea {
   );
 }
 
-/** 拡張子なしの posix 相対パス、"external"、または解決不能を表す null。 */
+/** An extensionless posix relative path, "external", or null for unresolvable. */
 function resolveSpecifier(site: PluginImportSite): string | "external" | null {
   const { specifier, packageName } = site;
   if (specifier.startsWith(".")) {
@@ -116,7 +116,7 @@ function classifyResolvedModule(
   return "other-source";
 }
 
-/** 他プラグインのエントリか、その内部ファイルか。自分のディレクトリは判定済み。 */
+/** Another plugin's entry, or a file inside it. The own directory is already decided. */
 function classifyAgainstRoots(
   resolved: string,
   roots: readonly PluginSourceRoot[]

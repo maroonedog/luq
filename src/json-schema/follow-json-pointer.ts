@@ -1,11 +1,10 @@
 // ===========================================================================
-// L8  src/json-schema/follow-json-pointer.ts — RFC 6901 のポインタを辿る。
+// L8  src/json-schema/follow-json-pointer.ts — walks an RFC 6901 pointer.
 //
-// `$ref` のうち **場所** を表す部分だけを担う。どの文書を見るかは
-// schema-registry.ts と resolve-ref.ts の仕事で、ここは「その文書の中の
-// どこか」だけを答える。分けてあるのは、`$id` によるベース URI の話と
-// ポインタの復号の話が別物であり、混ぜると 200 行を超えて両方読みにくく
-// なるからである。
+// Answers only WHERE INSIDE a document, never WHICH document. Choosing the
+// document is a separate job, kept separate because base-URI arithmetic and
+// pointer decoding are different problems and neither reads well once they
+// share a file.
 // ===========================================================================
 import { isArray, isPlainObject } from "../types";
 
@@ -15,18 +14,18 @@ function decodePointerToken(token: string): string {
 }
 
 /**
- * `$ref` は URI で、ポインタはそのフラグメント。RFC 6901 §6 は
- * 「フラグメントの規則でパーセント符号化されている」と定めるので、
- * **スラッシュで割る前にフラグメント全体を復号する**。
+ * A `$ref` is a URI and the pointer is its fragment. RFC 6901 §6 says the
+ * fragment is percent-encoded by the fragment rules, so **the whole fragment
+ * is decoded before splitting on slashes**.
  *
- * 順序が意味を持つ。`#/definitions/percent%25field` は復号して
- * `/definitions/percent%field` になり、そこで割ってトークンを得る。
- * 先に割ってからトークンごとに復号すると `%25` は復号されるが、
- * `%2F` が「区切りとしてのスラッシュ」に戻る仕様どおりの挙動にならない。
+ * The order matters. `#/definitions/percent%25field` decodes to
+ * `/definitions/percent%field` and is split from there. Splitting first and
+ * decoding each token does decode `%25`, but then `%2F` turns back into a
+ * separator, which is not what the spec says it means.
  *
- * 壊れたパーセント列 (`%zz`) は decodeURIComponent が投げるので、
- * 復号できないポインタはそのまま扱う。ここで投げると、ポインタが1つ
- * 壊れているだけで文書全体が読めなくなる。
+ * decodeURIComponent throws on a malformed sequence like `%zz`, and a
+ * pointer that cannot be decoded is used as-is. Throwing here would make one
+ * broken pointer take the whole document down.
  */
 function decodeFragment(pointer: string): string {
   try {
@@ -40,8 +39,8 @@ function decodeFragment(pointer: string): string {
 export function toPointerTokens(fragment: string): readonly string[] {
   const pointer = decodeFragment(fragment);
   if (pointer === "") return [];
-  // "/" は「ルート直下の空文字キー」であって空のトークン列ではない。
-  // ここを [] にすると `{"": ...}` を指すポインタがルートに化ける。
+  // "/" is the empty-string key directly under the root, not an empty token
+  // list. Returning [] here would turn a pointer at `{"": ...}` into the root.
   return pointer.split("/").slice(1).map(decodePointerToken);
 }
 
@@ -61,14 +60,15 @@ export function stepInto(current: unknown, token: string): unknown {
 }
 
 /**
- * ポインタを辿りながら、**途中で跨いだ `$id` を数える**。
+ * Walks the pointer while **counting every `$id` crossed on the way**.
  *
- * `#/definitions/baz/definitions/bar` の `baz` が `$id: "folder/"` を持つとき、
- * `bar` の中に書かれた相対 `$ref` は folder/ の下で解決されなければならない。
- * 着地したノードの `$id` だけを見ると、通過したノードの分が落ちる。
+ * When an intermediate node along the path carries `$id: "folder/"`, a
+ * relative `$ref` written deeper in must resolve under folder/. Looking only
+ * at the `$id` of the node landed on loses every node passed through.
  *
- * ベースをどう進めるかは呼び出し側が渡す (`advance`)。この関数は「どのノードを
- * どの順に跨いだか」だけを知っていればよく、URI の演算は持たない。
+ * How the base advances is supplied by the caller. This function only needs
+ * to know which nodes were crossed and in what order; it does no URI
+ * arithmetic of its own.
  */
 export function walkPointer<TScope>(
   fragment: string,

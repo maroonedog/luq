@@ -1,19 +1,19 @@
 // ===========================================================================
-// L8  src/json-schema/uri-reference.ts — `$id` と `$ref` の URI 演算。
+// L8  src/json-schema/uri-reference.ts — the URI arithmetic of `$id`/`$ref`.
 //
-// Draft-07 §8.2 の `$id` はベース URI を立て、`$ref` はその上で解決される。
-// つまり `$ref` は「文書内のポインタ」ではなく **URI 参照** であり、
-// 同じ文字列でも、どの `$id` の下に書かれたかで別の場所を指す。
+// Draft-07 §8.2 makes `$id` establish a base URI that `$ref` resolves
+// against. A `$ref` is therefore a **URI reference** and not a pointer within
+// a document: the same string points somewhere else depending on which `$id`
+// it was written under.
 //
-// 解決は WHATWG URL に任せる。RFC 3986 §5.3 を手で書き直しても、
-// パーセント符号化・ドットセグメント・スキーム相対 (`//host/x`) の三つで
-// 必ずずれる — そして URL はブラウザにも Node にもある標準グローバルで、
-// eval も new Function も使わない (check:no-dynamic-code が見ている)。
+// Resolution is delegated to the WHATWG URL. Rewriting RFC 3986 §5.3 by hand
+// goes wrong on percent-encoding, dot segments and scheme-relative
+// (`//host/x`) every time — and URL is a standard global in both browsers and
+// Node, needing neither eval nor new Function.
 //
-// ネットワークには**触れない**。ここにあるのは文字列演算だけで、
-// 解決した URI をどう手に入れるかは呼び出し側の責任である
-// (schema-registry.ts の externalDocuments)。スキーマが書いた URI で
-// このプロセスがソケットを開くことは無い。
+// **Nothing here touches the network.** This is string arithmetic; how a
+// resolved URI is actually obtained is the caller's responsibility. A URI
+// written in a schema never causes this process to open a socket.
 // ===========================================================================
 
 /** A URI with its fragment split off. `resource` is what identifies a document. */

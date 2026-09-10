@@ -4,13 +4,15 @@ import Header, { navItems } from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import { bundleSize } from '../data/bundle-size';
 import { conformance as measured } from '../data/conformance';
 
 /**
  * Sources for every figure and every name on this page:
  *
  *   docs/json-schema-conformance.md        conformance, corpus pin, failures
- *   docs/guide/json-schema.md              the two front doors, the size table
+ *   docs/guide/json-schema.md              the two front doors, the size table,
+ *                                          and the emit direction
  *   src/json-schema/keyword-map-*.ts       keyword -> bind / structural / unsupported
  *   src/json-schema/format-map.ts          the twenty format names
  *   config/plugin-catalog.lock.json        the plugin subpath names
@@ -19,9 +21,9 @@ import { conformance as measured } from '../data/conformance';
  */
 
 const conformance = {
-  // Luq 自身の実測はすべて config/json-schema-suite.json から来る。
-  // ここに書き写していた頃、適合率が上がったあともこのページだけ
-  // 828/929 = 89.13% を表示し続けていた。
+  // Every figure for this library is read from the conformance measurement.
+  // Typed in by hand, this page once went on showing an old pass rate long
+  // after the real one had gone up.
   passed: measured.passingCases,
   total: measured.caseCount,
   percent: measured.percent,
@@ -33,7 +35,7 @@ const conformance = {
   validPercent: measured.validPercent,
   invalidPassed: measured.passingInvalidCases,
   invalidPercent: measured.invalidPercent,
-  // 1.x の実測。過去の記録なので動かない。
+  // Measured on the previous major. A historical record, so it does not move.
   legacyPassed: 536,
   legacyPercent: '57.70',
   legacyInvalidPassed: 24,
@@ -125,7 +127,46 @@ export async function loadValidator() {
   return fromJsonSchema(schema);
 }`;
 
-// luq-example: skip — .v() 呼び出し1行だけの断片で、単体では文にならない
+const emitExample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { optionalPlugin } from "@maroonedog/luq/plugins/optional";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { toStandardJsonSchema } from "@maroonedog/luq/standard-schema";
+
+type Account = { name: string; email: string; age?: number };
+
+const account = toStandardJsonSchema(
+  Builder()
+    .use(requiredPlugin)
+    .use(optionalPlugin)
+    .use(stringMinPlugin)
+    .use(stringEmailPlugin)
+    .use(numberMinPlugin)
+    .for<Account>()
+    .v("name", (b) => b.string.required().min(2))
+    .v("email", (b) => b.string.required().email())
+    .v("age", (b) => b.number.optional().min(18))
+    .build()
+);
+
+const document = account["~standard"].jsonSchema.input({
+  target: "draft-2020-12",
+});`;
+
+const emitOutput = `{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "minLength": 2 },
+    "email": { "type": "string", "format": "email" },
+    "age": { "type": "number", "minimum": 18 }
+  },
+  "required": ["name", "email"]
+}`;
+
+// luq-example: skip — a one-line .v() fragment, not a statement on its own
 const nullPresenceExample = `// A converted { "type": "string" } cannot itself reject null: absence is
 // settled before any rule runs, so nullability is the field's PRESENCE policy.
 // The converter writes .optional() for every non-required property; a
@@ -796,43 +837,15 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
     <section id="which-door" class="mb-16 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">Which one to use</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        <code>./plugins/jsonSchema</code> is billed as the tree-shakeable half. Measured with the
-        same esbuild and gzip method as the rest of the size table, it is not — supplying a working
-        bag costs 12 bytes <em>less</em> than importing the bundle, which is 0.06%.
+        <code>./plugins/jsonSchema</code> is billed as the tree-shakeable half, and measured it
+        is not: it gzips to {bundleSize.jsonSchemaPlugin.gzip} against
+        {bundleSize.jsonSchemaFullFeature.gzip} for the bundle — and that first figure is the
+        plugin <em>alone</em>, which cannot validate a document without a bag of plugins behind
+        it. Both entries, with their ceilings, are on
+        <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
+          >the bundle size table</a
+        >.
       </p>
-
-      <div class="md-card md-card-outlined overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[38rem] border-collapse text-body-medium">
-            <thead>
-              <tr class="border-b border-outline-variant text-label-large text-on-surface-variant">
-                <th class="px-4 py-3 text-left font-medium">Entry</th>
-                <th class="px-4 py-3 text-right font-medium">gzip</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-b border-outline-variant/60">
-                <td class="px-4 py-3 font-mono text-body-small text-on-surface-variant">
-                  Builder + jsonSchemaPlugin, no bag
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-on-surface-variant">18,992 B</td>
-              </tr>
-              <tr class="border-b border-outline-variant/60">
-                <td class="px-4 py-3 font-mono text-body-small text-on-surface">
-                  Builder + jsonSchemaPlugin + a working 49-plugin bag
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-on-surface">21,371 B</td>
-              </tr>
-              <tr>
-                <td class="px-4 py-3 font-mono text-body-small text-on-surface">
-                  Builder + jsonSchemaFullFeaturePlugin
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-on-surface">21,383 B</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
         The first row is not a usable configuration: <code>.jsonSchema()</code> needs a bag. So use
@@ -841,6 +854,78 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         <a class="text-primary underline underline-offset-2" href="/benchmarks#json-schema-size">
           The method behind these figures is on the benchmarks page.
         </a>
+      </p>
+    </section>
+
+    <!-- ================= Emitting ================= -->
+    <section id="emit" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">The other direction</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        Everything above reads a document in. <code>toStandardJsonSchema</code> writes one out:
+        it takes a built validator and returns it with a
+        <code>~standard.jsonSchema</code> converter attached. What comes back is still a
+        <code>StandardSchemaV1</code>, so the same value goes on working anywhere that takes one.
+      </p>
+
+      <div class="mb-8">
+        <CodeBlock code={emitExample} fileName="account-schema.ts" />
+      </div>
+
+      <p class="mb-3 max-w-3xl text-body-medium text-on-surface-variant">
+        <code>document</code> is then:
+      </p>
+      <div class="mb-8">
+        <CodeBlock code={emitOutput} language="json" fileName="account.schema.json" />
+      </div>
+
+      <h3 class="mb-3 text-title-large text-on-surface">Four things to know</h3>
+      <div class="mb-8 grid gap-4 sm:grid-cols-2">
+        <div class="md-card md-card-filled p-5">
+          <p class="mb-1 text-title-small text-on-surface">Two targets, no guessing</p>
+          <p class="text-body-medium text-on-surface-variant">
+            <code>draft-2020-12</code> and <code>draft-07</code>. Anything else throws
+            <code>UnsupportedJsonSchemaTargetError</code> — <code>openapi-3.0</code> descends from
+            draft-04 and is a different lineage, so it is not admitted on a guess. Writing
+            draft-07 silently when 2020-12 was asked for hands you a document you will read
+            under the wrong rules.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-5">
+          <p class="mb-1 text-title-small text-on-surface">
+            <code>input</code> and <code>output</code> return the same schema
+          </p>
+          <p class="text-body-medium text-on-surface-variant">
+            A Luq declaration does not carry a transform's <em>result</em> type — a function's
+            return value is unknowable without running it — so a second shape would be invented
+            rather than derived. A field declaring a transform counts as unwritable instead.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-5">
+          <p class="mb-1 text-title-small text-on-surface">An unwritable rule throws</p>
+          <p class="text-body-medium text-on-surface-variant">
+            What comes out gets used for validation by whoever receives it, and a silently
+            dropped <code>.custom()</code> produces a schema that admits values it must not, with
+            no trace of the omission. Emitting for documentation or for a form layout instead?
+            Ask for it: <code>libraryOptions: &#123; unrepresentable: "omit" &#125;</code>.
+          </p>
+        </div>
+        <div class="md-card md-card-filled p-5">
+          <p class="mb-1 text-title-small text-on-surface">Import before you build</p>
+          <p class="text-body-medium text-on-surface-variant">
+            The record of declared calls is made as the chain is walked, and importing
+            <code>@maroonedog/luq/standard-schema</code> is what asks for it — the chain does not
+            keep one on its own. A <code>build()</code> evaluated first produces no record, and
+            <code>DeclarationsUnavailableError</code> says so, naming both causes.
+          </p>
+        </div>
+      </div>
+
+      <p class="max-w-3xl text-body-medium text-on-surface-variant">
+        The cost of that record is one null check per chain step when nothing is imported: no
+        <code>DeclaredCall</code> is built and no array is copied. The
+        <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
+          >bundle size table</a
+        > carries the figure.
       </p>
     </section>
 

@@ -62,9 +62,9 @@ describe("stringMin", () => {
     expect(issue.message).toBe("text: 1 < 3");
   });
 
-  // min(0) は「下限を課さない」であって「一文字以上」ではない。走査は
-  // min に届いた時点で止めるので、空文字列ではループ本体が一度も回らない —
-  // 早期脱出に書き換えたとき、この境界だけが素通りして穴が開いた。
+  // min(0) imposes no lower bound; it does not mean "at least one character".
+  // The walk stops as soon as min is reached, so on an empty string the loop
+  // body never runs — the one boundary an early exit leaves open.
   it.each([
     ["", true],
     ["a", true],
@@ -77,15 +77,16 @@ describe("stringMin", () => {
     expect(isAccepted(noBound, value)).toBe(expected);
   });
 
-  // 走査を打ち切っても actual は真の長さを報告しなければならない。落ちる値は
-  // 定義上 min より短いので、打ち切りは起きない — それを固定しておく。
+  // Stopping early must not stop actual reporting the true length. A failing
+  // value is by definition shorter than min, so the walk never stops early on
+  // one — pinned here.
   it("reports the true length as actual, even though the walk can stop early", () => {
     const issue = firstIssue(atLeastThree, "ab");
     expect(issue.message).toContain("2");
   });
 
-  // 符号位置で数える契約は変えていない。星座面の一文字は UTF-16 では 2 単位で、
-  // .length を使うと min(2) を通ってしまう。
+  // The contract to count code points is unchanged. One astral character is
+  // two UTF-16 units, so .length would let it past min(2).
   it("counts code points, not UTF-16 units", () => {
     const atLeastTwo = Builder()
       .use(stringMinPlugin)

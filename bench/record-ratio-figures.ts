@@ -44,19 +44,19 @@ import type {
 const FIRST_FLOOR_FRACTION = 0.75;
 
 /**
- * 比率ゲートに載せない形状。
+ * The shapes kept off the ratio gate.
  *
- * singleField の参照実装の正味コストは約 2 ns/call で、ハーネス自身のプール
- * 回転コスト (約 1 ns/call) と同じ桁にある。比率は「luq / 手書き検証器」では
- * なく「luq / ハーネスのループ速度」に近づき、measure-reference-work.ts の
- * カナリアは健全時でも shareOfFloor 0.843 までしか下がらない — 他の4形状
- * (multiField 0.13 / nested 0.28 / array・jsonSchema 0.01) と桁違いに薄く、
- * PR #15 の CI で実際に 1.090 を記録して発火した。閾値調整では直らない
- * (測定下限の問題である)。絶対値は throughput[] に残る。
+ * On singleField the reference's own work is a couple of nanoseconds per call,
+ * the same order as the harness's own loop overhead. The ratio then stops
+ * meaning "luq against a hand-written validator" and starts meaning "luq
+ * against the harness's loop". The canary that watches for this leaves far
+ * less headroom on singleField than on any other shape, and has fired in CI.
+ * It is a measurement floor, not a threshold to tune. The absolute figures
+ * stay in throughput[].
  *
- * **ここに書いてあるのは、以前これが記録済みファイルの手編集だったから
- * である。** 手で消された除外は bench:record を一度回せば黙って戻り、実際に
- * 戻った。除外の理由が記録器の中にあれば、録り直しても消えない。
+ * **This lives in the recorder because it used to be a hand edit of the
+ * recorded file.** An exclusion deleted by hand comes back silently the next
+ * time the recording runs, and it did. Kept here, re-recording cannot lose it.
  */
 const SHAPES_OUTSIDE_THE_RATIO_GATE: readonly string[] = ["singleField"];
 

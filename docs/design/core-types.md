@@ -1,7 +1,8 @@
-# 中核型仕様（確定版）
+# The core type specification (settled)
 
-実コンパイル検証済み。これが実装エージェントへの唯一の型仕様。
-検証記録は [verification.md](verification.md) を参照。
+Verified by actually compiling it. This is the one type specification the
+implementation follows. The verification record is in
+[verification.md](verification.md).
 
 CONFIRMED CORE TYPES — every line below was compiled together with tsc 5.8.3 under
 `--strict --noUncheckedIndexedAccess --noImplicitOverride --noFallthroughCasesInSwitch --noUnusedLocals`

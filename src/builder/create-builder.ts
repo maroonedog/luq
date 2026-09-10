@@ -62,9 +62,8 @@ export function createBuilderSurface(): BuilderSurface {
       return surface;
     },
     useAll(plugins) {
-      // 順序は Object.values の列挙順。first-wins なので、同じ名前が二度
-      // 来ても最初のものが残る — プリセットが既に登録したものを黙って
-      // 置き換えることはない。
+      // In enumeration order, first-wins: a name arriving twice keeps the
+      // first one, so a preset never silently replaces what is registered.
       for (const plugin of Object.values(plugins)) {
         registerPlugin(registration.plugins, plugin);
       }

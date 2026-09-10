@@ -1,7 +1,8 @@
-// `$id` と `$ref` の URI 演算。
+// The URI arithmetic of `$id` and `$ref`.
 //
-// ここが効くのは「同じ `$ref` 文字列が、書かれた場所によって別の場所を指す」
-// という一点であり、それを外すと外部参照は静かに間違った文書を読む。
+// It matters for exactly one thing: the same `$ref` string names a different
+// place depending on where it was written. Get that wrong and an external
+// reference quietly reads the wrong document.
 import {
   nextBaseUri,
   normalizeUri,
@@ -69,8 +70,8 @@ describe("resolveUriReference", () => {
   });
 
   it("returns the reference unchanged when there is no base to resolve against", () => {
-    // 最も多い場合: `$id` を書いていない文書。ここで推測すると、ローカルな
-    // `#/definitions/x` が存在しない絶対 URI に化ける。
+    // The common case: a document with no `$id`. Guessing one here turns a
+    // local pointer into an absolute URI that does not exist.
     expect(resolveUriReference("", "#/definitions/x")).toBe("#/definitions/x");
     expect(resolveUriReference("", "folder/int.json")).toBe("folder/int.json");
   });
@@ -96,8 +97,8 @@ describe("nextBaseUri", () => {
   });
 
   it("leaves the base alone for an ANCHOR $id", () => {
-    // §8.2.3: `$id: "#name"` は名前であってベースではない。ベースだと扱うと、
-    // その隣に書かれた `$ref` が黙って別の場所を指す。
+    // §8.2.3: `$id: "#name"` is a name, not a base. Treated as a base, a
+    // `$ref` written beside it quietly points somewhere else.
     expect(nextBaseUri("http://x/a.json", "#name")).toBe("http://x/a.json");
   });
 

@@ -2,15 +2,15 @@ use luq_compiler::lexer::{tokenize, TokenKind};
 
 #[test]
 fn test_incomplete_decorator() {
-    // ユーザーが"@"だけ入力した状態
+    // The user has typed nothing but "@"
     let input = "@";
     let result = tokenize(input);
     
     println!("Input: {:?}", input);
     println!("Result: {:?}", result);
     
-    // 現在の実装ではエラーになる可能性が高い
-    // 理想的には、少なくとも"@"トークンは返すべき
+    // The current implementation is likely to error here
+    // Ideally it should return at least the "@" token
     match result {
         Ok(tokens) => {
             println!("Success! Tokens: {:?}", tokens);
@@ -18,14 +18,14 @@ fn test_incomplete_decorator() {
         }
         Err(errors) => {
             println!("Failed with errors: {:?}", errors);
-            // エラーでもオートコンプリートには部分的な結果が必要
+            // Even on an error, autocomplete needs a partial result
         }
     }
 }
 
 #[test]
 fn test_incomplete_interface() {
-    // ユーザーが"interface"を入力途中
+    // The user is halfway through typing "interface"
     let inputs = vec![
         "inter",
         "interface",
@@ -42,12 +42,12 @@ fn test_incomplete_interface() {
         match result {
             Ok(tokens) => {
                 println!("Success! Token count: {}", tokens.len());
-                // 部分的でもトークンが返ることを確認
+                // Check that tokens come back even when partial
                 assert!(tokens.len() > 0);
             }
             Err(errors) => {
                 println!("Failed with {} errors", errors.len());
-                // エラーでもこの時点までのトークンが必要
+                // Even on an error, the tokens up to this point are needed
             }
         }
     }
@@ -55,10 +55,10 @@ fn test_incomplete_interface() {
 
 #[test]
 fn test_consecutive_autocomplete_calls() {
-    // 連続でオートコンプリートを呼び出すシミュレーション
+    // Simulates calling autocomplete repeatedly
     let base_input = "interface User {\n  @";
     
-    // ユーザーが連続で候補を探している状況
+    // The user keeps asking for candidates
     let completions = vec![
         format!("{}", base_input),
         format!("{}r", base_input),
@@ -80,7 +80,7 @@ fn test_consecutive_autocomplete_calls() {
             }
             Err(errors) => {
                 println!("Failed! First error: {:?}", errors.first());
-                // ここでオートコンプリートが動作しない
+                // Autocomplete stops working here
             }
         }
     }
@@ -88,11 +88,11 @@ fn test_consecutive_autocomplete_calls() {
 
 #[test]
 fn test_error_in_middle_of_file() {
-    // ファイルの途中にエラーがある場合
+    // When there is an error in the middle of a file
     let input = r#"
         interface User {
             name: string;
-            @@@invalid@@@  // エラー
+            @@@invalid@@@  // error
             age: number;
         }
         
@@ -109,15 +109,15 @@ fn test_error_in_middle_of_file() {
         }
         Err(errors) => {
             println!("Failed with {} errors", errors.len());
-            // エラーがあっても、前後の有効な部分は解析されるべき
-            // 現在の実装では全体が失敗する
+            // Even with an error, the valid parts before and after should be parsed
+            // The current implementation fails on the whole file
         }
     }
 }
 
 #[test]
 fn test_multiple_errors() {
-    // 複数のエラーがある場合
+    // When there are several errors
     let input = r#"
         interface User {
             @@@error1
@@ -136,7 +136,7 @@ fn test_multiple_errors() {
         }
         Err(errors) => {
             println!("Error count: {}", errors.len());
-            // 理想的には全てのエラーを収集すべき
+            // Ideally it should collect every error
             assert!(errors.len() >= 1);
         }
     }
@@ -144,7 +144,7 @@ fn test_multiple_errors() {
 
 #[test]
 fn test_unclosed_string() {
-    // 文字列が閉じられていない場合
+    // When a string is left unclosed
     let input = r#"
         interface User {
             name: "unclosed string
@@ -160,14 +160,14 @@ fn test_unclosed_string() {
         }
         Err(errors) => {
             println!("Failed as expected: {:?}", errors.first());
-            // 文字列エラー後も他のトークンを解析すべき
+            // Other tokens should still be parsed after a string error
         }
     }
 }
 
 #[test]
 fn test_partial_comment() {
-    // コメントが不完全な場合
+    // When a comment is incomplete
     let inputs = vec![
         "// partial comment without newline",
         "/* unclosed comment",
@@ -178,7 +178,7 @@ fn test_partial_comment() {
         println!("\n=== Testing: {:?} ===", input);
         let result = tokenize(input);
         
-        // コメントの場合は比較的寛容であるべき
+        // Comments should be treated relatively leniently
         match result {
             Ok(tokens) => {
                 println!("Success with {} tokens", tokens.len());

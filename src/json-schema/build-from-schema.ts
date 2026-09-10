@@ -85,8 +85,14 @@ export function buildFieldEntries(
     path: declaration.path,
     defaultOf: null,
     applyDefaultToNull: false,
-    collectRules: (chain: ChainBuildContext) =>
-      collectDeclaredRules(declaration, bag, schema, chain),
+    normalize: null,
+    // No record of declared calls: what is assembled here comes from a
+    // document, and nobody called a chain method. null rather than the empty
+    // list is what lets a writer say "not known" instead of "none".
+    collectRules: (chain: ChainBuildContext) => ({
+      rules: collectDeclaredRules(declaration, bag, schema, chain),
+      calls: null,
+    }),
   }));
 }
 

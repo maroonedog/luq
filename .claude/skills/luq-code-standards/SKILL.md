@@ -1,126 +1,228 @@
 ---
 name: luq-code-standards
-description: Luq リポジトリの TypeScript コード規約 — 1クラス1責務・1ファイル200行以内・厳格な命名・as any 禁止。src/ 配下の TypeScript を新規作成・リファクタリング・レビューするときに必ず読むこと。ファイル分割、責務の切り出し、型付けの判断、命名の決定をする前に参照する。
+description: TypeScript code standards for the Luq repository — one responsibility per class, 200 lines per file, strict naming, no `as any`, and comments that stay inside their own file. Read this before creating, refactoring, or reviewing any TypeScript under src/, and before deciding how to split a file, carve out a responsibility, type something, or name it.
 ---
 
-# Luq コード規約
+# Luq code standards
 
-`src/` 配下の TypeScript に適用する。既存コードがこれに違反していても、触った箇所は規約に合わせて直す。
+Applies to TypeScript under `src/`. Where existing code breaks a rule, bring the
+part you touched into line — do not leave it because its neighbours are wrong.
 
-## 1. 1ファイル200行以内
+**Write everything in English**: comments, commit messages, PR bodies, docs,
+config notes, test names. The repository had both languages mixed file by file
+and sometimes inside one file, which makes it unreadable to contributors and
+unsearchable for everyone.
 
-- コメント・空行を含めて **200行** が上限（`eslint max-lines` で強制）。
-- 超えたら「分割する」のではなく「**責務が2つ以上ある**」と読む。責務の境界で切る。
-- 行数を減らすために1行に詰め込むのは違反。prettier の整形結果で200行に収まる設計にする。
+## 1. 200 lines per file
 
-### 分割の型
-| 症状 | 切り出し先 |
-|---|---|
-| 分岐の塊が特定の型だけを扱う | その型専用のモジュール（`string-length-validator.ts` 等） |
-| 「準備 → 実行 → 整形」が1関数に同居 | 各ステップを別ファイルの純粋関数へ |
-| 定数テーブル・エラーメッセージが混在 | `*-messages.ts` / `*-constants.ts` |
-| 型定義がロジックと同居 | `*.types.ts` |
+- **200 lines** including comments and blank lines (enforced by `eslint max-lines`).
+- Over the limit does not mean "split it", it means "**this file has two or more
+  responsibilities**". Cut on the responsibility boundary.
+- Packing statements onto one line to get under the limit is a violation. Design
+  so the formatted result fits.
 
-## 2. 1クラス1責務
+### Where the cut usually goes
 
-- 1ファイルにクラスは1つまで（`max-classes-per-file: 1`）。
-- クラスの説明に「〜と〜をする」が入ったら分割する。
-- 状態を持つ必要がないならクラスにしない。純粋関数 + 型で表現する（Luq は関数合成が主軸のライブラリで、無用なクラスは tree-shaking を壊す）。
-- 「Manager」「Handler」「Helper」「Util」「Processor」「Service」で終わるクラス名は、責務が言語化できていない印。禁止（下記の命名規約）。
+| Symptom                                         | Extract to                                            |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| A block of branches that only handles one type  | A module for that type (`string-length-validator.ts`) |
+| "prepare → run → format" living in one function | One pure function per step, one file each             |
+| Constant tables or error messages mixed in      | `*-messages.ts` / `*-constants.ts`                    |
+| Type declarations living beside logic           | `*.types.ts`                                          |
 
-## 3. 命名は厳格に、抽象名を使わない
+## 2. One responsibility per class
 
-**禁止する語**（単体でも接尾辞でも）:
-`util` / `utils` / `helper` / `helpers` / `manager` / `handler` / `processor` / `service` / `common` / `misc` / `stuff` / `data` / `info` / `item` / `temp` / `tmp` / `obj` / `val` / `res` / `ret` / `foo`
+- One class per file (`max-classes-per-file: 1`).
+- If describing the class needs an "and", split it.
+- No class where no state is needed. Use pure functions and types — Luq composes
+  functions, and a needless class breaks tree-shaking.
+- A class name ending in Manager / Handler / Helper / Util / Processor / Service
+  is a sign the responsibility was never put into words. Banned (see §3).
 
-**置き換え方**: 「何を」「どうする」かを名前に入れる。
+## 3. Name strictly, never abstractly
 
-| ✗ | ✓ |
-|---|---|
-| `FieldHelper` | `FieldPathResolver` |
-| `validateData(d)` | `validateEmailFormat(email)` |
-| `processItem(x)` | `compileFieldRuleToValidator(rule)` |
-| `getInfo()` | `getPluginMetadata()` |
+**Banned words** (alone or as a suffix):
+`util` / `utils` / `helper` / `helpers` / `manager` / `handler` / `processor` /
+`service` / `common` / `misc` / `stuff` / `data` / `info` / `item` / `temp` /
+`tmp` / `obj` / `val` / `res` / `ret` / `foo`
+
+**How to replace one**: put "what" and "does what" into the name.
+
+| ✗                 | ✓                                       |
+| ----------------- | --------------------------------------- |
+| `FieldHelper`     | `FieldPathResolver`                     |
+| `validateData(d)` | `validateEmailFormat(email)`            |
+| `processItem(x)`  | `compileFieldRuleToValidator(rule)`     |
+| `getInfo()`       | `getPluginMetadata()`                   |
 | `handleResult(r)` | `mergeIssuesIntoResult(issues, result)` |
-| `utils/index.ts` | `field-path/parse-field-path.ts` |
+| `utils/index.ts`  | `field-path/parse-field-path.ts`        |
 
-**規則**:
-- 関数 = 動詞句。boolean を返すなら `is` / `has` / `can` / `should` で始める。
-- 変数 = 中身が特定できる名詞。`result` 単体は不可、`validationResult` にする。
-- 型・インターフェース = 名詞句。`I` 接頭辞は付けない。
-- ファイル名 = kebab-case で、export する主要シンボルと一致させる（`FieldPathResolver` → `field-path-resolver.ts`）。
-- 略語は既知のもの（`json`, `url`, `id`, `uri`, `dsl`）のみ。自作の略語は禁止。
+**Rules**:
 
-## 4. `as any` 禁止（原則）
+- Function = verb phrase. Start with `is` / `has` / `can` / `should` when it
+  returns a boolean.
+- Variable = a noun you can identify the contents from. `result` alone is not
+  allowed; `validationResult` is.
+- Type and interface = noun phrase. No `I` prefix.
+- File name = kebab-case, matching the main exported symbol
+  (`FieldPathResolver` → `field-path-resolver.ts`).
+- Abbreviate only what is already standard (`json`, `url`, `id`, `uri`, `dsl`).
+  Never invent one.
 
-- `as any`、`: any`、`any[]`、`Function` 型、`@ts-ignore` は使わない。
-- **代替手段**（上から順に検討する）:
-  1. 正しい型を書く / ジェネリクスで受ける
-  2. `unknown` + 型ガード関数（`isValidationIssue(x): x is ValidationIssue`）
-  3. 判別可能ユニオン（`{ kind: "string"; ... } | { kind: "number"; ... }`）
-  4. 具体型への `as`（`as any` ではなく `as StringFieldBuilder`）
-- **例外を使う場合**は、同じ行の直前に理由コメントと抑制を書く。理由なしの抑制はレビューで落とす。
+## 4. No `as any`
+
+- No `as any`, `: any`, `any[]`, the `Function` type, or `@ts-ignore`.
+- **Try these in order**:
+  1. Write the real type, or take it as a generic
+  2. `unknown` plus a type guard (`isValidationIssue(x): x is ValidationIssue`)
+  3. A discriminated union (`{ kind: "string"; ... } | { kind: "number"; ... }`)
+  4. A cast to the concrete type (`as StringFieldBuilder`, never `as any`)
+- **If you must suppress**, put the reason on the line above. A suppression with
+  no reason gets rejected in review.
   ```ts
-  // 理由: プラグインの動的合成のため、この地点では型を静的に決定できない。
-  // 呼び出し側の `use()` シグネチャで型安全性を担保している。
+  // Plugins are composed dynamically, so the type cannot be settled here.
+  // The `use()` signature on the calling side is what keeps this sound.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ```
-- 型パズルを `any` で回避しない。回避したくなったら、それは型設計の破綻のサインなので設計を直す。
+- Do not dodge a type puzzle with `any`. Wanting to is the signal that the type
+  design is broken — fix the design.
 
-## 5. その他
+## 5. A comment must stand on its own inside its file
 
-- 1ファイル = 1つの公開概念。`index.ts` は re-export だけ置き、実装を書かない。
-- 循環インポートを作らない。
-- 公開 API のシグネチャと既存テストを壊さない。壊す必要があるときは先に申告する。
-- 変更後は必ず以下を通す:
+This is the rule that gets broken most, and nothing catches it.
+
+**A comment may explain what THIS file decides, and why.** It may not explain
+this file by narrating what other files contain. The moment it does, an edit
+somewhere else makes it a lie, and no test, lint rule, or reviewer will notice —
+the comment is still self-consistent, just wrong.
+
+**Banned in a comment:**
+
+| ✗                                                                                                       | Why it rots                                      |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Restating another file's contents ("`run-field.ts` applies the default, then normalize, then presence") | That order changes there, not here               |
+| A measured number owned elsewhere ("core-only is 8,208 B", "45–54% of the garbage")                     | The measurement is re-taken and this copy is not |
+| A count of things that live elsewhere ("the four callers", "all 77 plugins", "three pages say this")    | Someone adds a fifth                             |
+| Narrating another layer's design to justify this one                                                    | That layer gets refactored                       |
+| A changelog of what this file used to do, or what was tried and reverted                                | Belongs in git history                           |
+
+**Allowed:**
+
+- A bare pointer: `// See declared-call.types.ts.` A pointer survives an edit to
+  the target; a summary of the target does not.
+- What this file's own code does, and the reason the decision went this way.
+- A constraint this file must satisfy, stated as a rule rather than as a story
+  about who else depends on it.
+- A number this file itself owns, next to the code that produces it.
+
+**Example.** A port declaration:
+
+```ts
+// ✗ — every sentence rots somewhere else
+// L3 declares the PORT, and standard-schema/declaration-recorder.ts installs it
+// when to-standard-json-schema.ts is loaded. Measured: core-only went 8,190 B
+// to 8,208 B, so the 18 B is compression ratio, not volume — the object literal
+// keys that disappeared also appear elsewhere in the bundle.
+
+// ✓ — true regardless of what any other file does
+// The chain records nothing by itself. Whoever wants the declared calls
+// installs a recorder here first; with none installed the chain does not build
+// the record and does not copy it.
+```
+
+Where the removed explanation is genuinely worth keeping, it belongs somewhere
+that is maintained with the thing it describes: measurements next to the
+measurement config, cross-layer design in `docs/design/`, history in git.
+
+**Do not duplicate.** One topic, one owner. If two files would say the same
+thing, one of them says it and the other points.
+
+## 6. A pull request or an issue states the result, not the review
+
+**Write what the code does now, as fact.** Never write what someone pointed
+out, what was wrong before, whose comment prompted it, or how many rounds it
+took. The review is a conversation; the pull request is a record of the change.
+
+| ✗                                                             | ✓                                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| "As pointed out in review, the recorder was on the core path" | "The recorder is installed by the JSON Schema entry point; the core carries one null check" |
+| "My first estimate was wrong: it does not save bytes"         | "core-only measures 8,208 B, 18 B above the previous figure"                                |
+| "Fixed the bug where normalize ran after presence"            | "normalize runs after default and before presence"                                          |
+| "Reviewer asked for tests, so 11 were added"                  | "11 tests pin the ordering, the absence handling and the write-back contract"               |
+
+A defect that is being FIXED IN THIS CHANGE is part of the result, so name it —
+in one line, as a fact about the code, with no account of how it was found.
+What never belongs is the review itself: who said what, in what order, and what
+was believed before.
+
+The same applies to a measurement that came out against expectation. Publish
+the number and what follows from it. Do not publish the expectation.
+
+**Why.** A pull request is read later by someone deciding whether a change is
+safe, and by whoever bisects to it. Neither needs the discussion; both need the
+resulting behaviour stated plainly. Narrating the review also makes the record
+about the people rather than about the code.
+
+## 7. Everything else
+
+- One file, one public concept. `index.ts` holds re-exports and no implementation.
+- No import cycles.
+- Do not break a public signature or an existing test. Say so first if you must.
+- Before you finish:
   ```bash
   npm run lint && npm run format:check && npm test
   ```
 
-## 6. 設計思想（変えないこと）
+## 8. The design, which does not change
 
-Luq の核は変えない。リファクタリングは「同じ思想を、より正確な型と小さな責務で表現し直す」こと。
+Luq's core stays as it is. A refactor re-expresses the same design with more
+precise types and smaller responsibilities.
 
-- **ビルダー連鎖 API**: `Builder().use(plugin).for<T>().v(field, b => ...).build()`
-- **プラグイン単位の tree-shaking**: プラグインは独立モジュール、副作用なし、静的に到達可能
-- **CSP-safe**: `eval` / `new Function` を絶対に使わない
-- **既存の TypeScript 型をそのまま使う**: スキーマ再定義を強要しない
-- **JSON Schema Draft-07 互換**
+- **Builder chain API**: `Builder().use(plugin).for<T>().v(field, b => ...).build()`
+- **Per-plugin tree-shaking**: plugins are independent modules, side-effect free,
+  statically reachable
+- **CSP-safe**: never `eval` or `new Function`
+- **Existing TypeScript types are the schema**: no redeclaration required
+- **JSON Schema Draft-07 compatible**
 
-## 7. 型テストの制約（実測に基づく）
+## 9. Limits on type-level tests (measured)
 
-型レベルのテストは書き方を誤るとコンパイラを止める。以下は実測値。
+A type-level test written the wrong way stops the compiler.
 
-### `FieldPath<T>` の往復型テストは有界フィクスチャに限定する
+### Round-trip tests on `FieldPath<T>` need a bounded fixture
 
-「`FieldPath<T>` が生成する全リテラル P について `ValueAtPath<T,P>` が `never` でない」という
-往復性質の検証は、パス数 × 深さで instantiation が効く。
+Checking "for every literal P that `FieldPath<T>` produces, `ValueAtPath<T,P>` is
+not `never`" costs instantiations proportional to paths × depth.
 
-| 対象 | instantiations | 時間 | 結果 |
-|---|---|---|---|
-| 幅6 × 深さ5 のモデル | — | 1.95s | 通る |
-| 幅8 × 深さ6 のモデル | 9,200,000 | 16.5s / 2.2GB | **TS2589 で失敗** |
+| Subject                   | Instantiations | Time          | Result                |
+| ------------------------- | -------------- | ------------- | --------------------- |
+| Model of width 6, depth 5 | —              | 1.95s         | passes                |
+| Model of width 8, depth 6 | 9,200,000      | 16.5s / 2.2GB | **fails with TS2589** |
 
-**現実サイズのモデルにこの型テストを掛けてはいけない。** 有界なフィクスチャに固定すること。
+**Never point this test at a realistically sized model.** Pin it to a bounded
+fixture.
 
-型ジェネレータ自体は速い（幅8×深さ6のモデルで 718,933 instantiations / 0.64s）。
-実利用（3段配列ワイルドカードを含む13フィールドの builder）も 248,782 / 0.69s。
-制約は**テスト側だけ**であり、ライブラリの利用者に影響しない。
+The generator itself is fast (718,933 instantiations / 0.64s on the width-8
+depth-6 model), and so is real use (248,782 / 0.69s for a 13-field builder with
+three levels of array wildcard). The limit is on the test, not on users.
 
-### チェーン段数はコンパイル時間にほぼ影響しない
+### Chain length barely affects compile time
 
-45プラグイン × 100フィールドで、6段チェーン 172,521 / 0.87s、25段チェーン 182,997 / 0.88s。
-「プラグインを増やすと補完が重くなる」という懸念は実測では成立しない。
-型引数を増やす設計変更をしたら再計測すること。
+With 45 plugins over 100 fields: a 6-step chain costs 172,521 / 0.87s, a 25-step
+chain 182,997 / 0.88s. "More plugins makes completion slow" does not hold when
+measured. Measure again after any change that adds type parameters.
 
-## 8. 安全機構は必ずミューテーション検証する
+## 10. Mutation-test every safety mechanism
 
-「失敗するはずのものが失敗すること」を検証したつもりで何も検証していないテストを、
-この設計は2度生んでいる。いずれも実際に壊してみて初めて発覚した。
+This design has twice produced a test that looked like it checked "this must
+fail" and checked nothing. Both times it took actually breaking the code to find
+out.
 
-- `@ts-expect-error` を書いたら、**その行が「未使用」と怒られないこと**を確認する。
-  怒られたら、失敗すべきものが通ってしまっている。
-- 型で守る仕組み（マーカーの網羅チェック、キーワード束縛の存在検査、union guard の網羅性など）を
-  作ったら、**わざと壊して期待どおりコンパイルエラーになることを確認する**。
-- 検証が「宣言だけ」で済んでいないか疑う。呼び出し側のコードを書かないと見つからない欠陥がある
-  （オプショナルなマーカー引数がマーカーを漏らす欠陥は、宣言だけの検証を3回すり抜けた）。
+- After writing `@ts-expect-error`, confirm **the line is not reported as
+  unused**. If it is, the thing that should fail is passing.
+- After building a guard in the type system (exhaustive marker checks, keyword
+  binding checks, union guard exhaustiveness), **break it on purpose and confirm
+  the compile error appears**.
+- Suspect any check that only declares. Some defects only surface once calling
+  code is written — an optional marker argument that leaked its marker slipped
+  past three declaration-only checks.

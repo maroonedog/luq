@@ -39,7 +39,7 @@ export const evenPlugin = /*#__PURE__*/ definePlugin<{
     }),
 });`;
 
-// luq-example: with minimalExample — 直前のブロックで定義した evenPlugin を bag に入れるところなので、プラグイン本体は繰り返さずに検査だけ前置きする
+// luq-example: with minimalExample — puts the evenPlugin defined in the block above into the bag, so only the check is shown rather than repeating the plugin
 const useExample = `import { Builder } from '@maroonedog/luq';
 
 type Basket = { count: number };
@@ -58,7 +58,7 @@ const signatureExample = `interface PluginSignature {
   readonly context: object;           // what messageFactory receives
 }`;
 
-// luq-example: must-fail — out マーカーと build() の戻り値が食い違う例なので、通ったらページの主張が嘘になる
+// luq-example: must-fail — the out marker disagrees with build()'s return; compiling would make the page's claim false
 const outMismatchExample = `import { definePlugin, check, PASS } from '@maroonedog/luq/plugin-kit';
 import type { PresenceShift } from '@maroonedog/luq/plugin-kit';
 

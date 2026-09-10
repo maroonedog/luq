@@ -1,5 +1,5 @@
-// fromContext は RuleContext.external を読む。旧実装では required: true が
-// 必ず失敗し、本当の実装はどの実行パスからも呼ばれていなかった。
+// fromContext reads the external context. In a previous release required:
+// true always failed, and the real implementation was reached by no path.
 import { Builder } from "../../../../src/index";
 import { fromContextPlugin } from "../../../../src/plugins/from-context/index";
 
@@ -9,7 +9,7 @@ interface Signup {
 
 const SIGNUP: Signup = { email: "ada@example.com" };
 
-describe("fromContext: 外部コンテキストがある場合", () => {
+describe("fromContext: with an external context", () => {
   const validator = Builder()
     .use(fromContextPlugin)
     .for<Signup>()
@@ -23,14 +23,14 @@ describe("fromContext: 外部コンテキストがある場合", () => {
     )
     .build();
 
-  it("check に value と external が渡り、通る", () => {
+  it("hands check the value and the external context, and passes", () => {
     const result = validator.validate(SIGNUP, {
       external: { takenEmails: "other@example.com" },
     });
     expect(result.valid).toBe(true);
   });
 
-  it("check が偽なら、その message が出る", () => {
+  it("reports check's own message when it answers false", () => {
     const result = validator.validate(SIGNUP, {
       external: { takenEmails: "ada@example.com" },
     });
@@ -41,7 +41,7 @@ describe("fromContext: 外部コンテキストがある場合", () => {
     expect(result.issues[0]?.message).toBe("Email already exists");
   });
 
-  it("root も渡る", () => {
+  it("hands it the root as well", () => {
     let seenRoot: unknown = null;
     const rootReader = Builder()
       .use(fromContextPlugin)
@@ -60,7 +60,7 @@ describe("fromContext: 外部コンテキストがある場合", () => {
   });
 });
 
-describe("fromContext: 外部コンテキストが無い場合", () => {
+describe("fromContext: with no external context", () => {
   function buildWith(options: {
     required?: boolean;
     fallbackToValid?: boolean;
@@ -71,25 +71,25 @@ describe("fromContext: 外部コンテキストが無い場合", () => {
       .for<Signup>()
       .v("email", (b) =>
         b.string.fromContext({
-          check: () => ({ valid: false, message: "呼ばれないはず" }),
+          check: () => ({ valid: false, message: "must not be called" }),
           ...options,
         })
       )
       .build();
   }
 
-  it("既定 (required: false, fallbackToValid: true) では通る", () => {
+  it("passes by default, with required false and fallbackToValid true", () => {
     expect(buildWith({}).validate(SIGNUP).valid).toBe(true);
   });
 
-  it("fallbackToValid: false なら落ちる", () => {
+  it("fails when fallbackToValid is false", () => {
     const result = buildWith({ fallbackToValid: false }).validate(SIGNUP);
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.message).toBe("Context validation failed");
   });
 
-  it("required: true なら落ちて、専用のメッセージが出る", () => {
+  it("fails with its own message when required is true", () => {
     const result = buildWith({ required: true }).validate(SIGNUP);
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -98,27 +98,27 @@ describe("fromContext: 外部コンテキストが無い場合", () => {
     );
   });
 
-  it("required: true でも external があれば check が走る (旧実装のバグ)", () => {
+  it("still runs check when required is true and a context is present", () => {
     const result = buildWith({ required: true }).validate(SIGNUP, {
       external: { anything: 1 },
     });
     expect(result.valid).toBe(false);
     if (result.valid) return;
-    expect(result.issues[0]?.message).toBe("呼ばれないはず");
+    expect(result.issues[0]?.message).toBe("must not be called");
   });
 
-  it("errorMessage は無コンテキスト時のメッセージを上書きする", () => {
+  it("lets errorMessage override the no-context message", () => {
     const result = buildWith({
       required: true,
-      errorMessage: "コンテキストを渡してください",
+      errorMessage: "pass a context",
     }).validate(SIGNUP);
     expect(result.valid).toBe(false);
     if (result.valid) return;
-    expect(result.issues[0]?.message).toBe("コンテキストを渡してください");
+    expect(result.issues[0]?.message).toBe("pass a context");
   });
 });
 
-describe("fromContext: check が投げた場合", () => {
+describe("fromContext: when check throws", () => {
   const validator = Builder()
     .use(fromContextPlugin)
     .for<Signup>()
@@ -131,7 +131,7 @@ describe("fromContext: check が投げた場合", () => {
     )
     .build();
 
-  it("黙って通さず、例外の内容を載せて失敗する", () => {
+  it("fails and carries what was thrown, rather than passing in silence", () => {
     const result = validator.validate(SIGNUP, { external: { any: true } });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -141,13 +141,13 @@ describe("fromContext: check が投げた場合", () => {
   });
 });
 
-describe("fromContext: options.code と messageFactory", () => {
+describe("fromContext: options.code and messageFactory", () => {
   const validator = Builder()
     .use(fromContextPlugin)
     .for<Signup>()
     .v("email", (b) =>
       b.string.fromContext(
-        { check: () => ({ valid: false, message: "内側" }) },
+        { check: () => ({ valid: false, message: "inner" }) },
         {
           code: "CONTEXT",
           messageFactory: (msgCtx) => `${msgCtx.code}/${msgCtx.message}`,
@@ -156,11 +156,11 @@ describe("fromContext: options.code と messageFactory", () => {
     )
     .build();
 
-  it("messageFactory は check が返した message を文脈で受け取る", () => {
+  it("gives messageFactory the message check returned, as context", () => {
     const result = validator.validate(SIGNUP, { external: { any: true } });
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("CONTEXT");
-    expect(result.issues[0]?.message).toBe("CONTEXT/内側");
+    expect(result.issues[0]?.message).toBe("CONTEXT/inner");
   });
 });

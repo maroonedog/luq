@@ -1,4 +1,5 @@
-// optionalIf は requiredIf の論理的双対。条件が偽なら空値を拒否する。
+// optionalIf is the logical dual of requiredIf: a false condition rejects an
+// empty value.
 import { Builder } from "../../../../src/index";
 import { optionalIfPlugin } from "../../../../src/plugins/optional-if";
 import { requiredPlugin } from "../../../../src/plugins/required";
@@ -14,13 +15,13 @@ const validateEmail = Builder()
   .build();
 
 describe("optionalIf", () => {
-  it("条件が真かつ空値なら通す", () => {
+  it("accepts an empty value when the condition is true", () => {
     expect(validateEmail.validate({ isGuest: true, email: "" }).valid).toBe(
       true
     );
   });
 
-  it("条件が偽かつ空値なら弾く (実質必須になる)", () => {
+  it("rejects an empty value when the condition is false, making it required in effect", () => {
     const result = validateEmail.validate({ isGuest: false, email: "" });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -32,7 +33,7 @@ describe("optionalIf", () => {
     });
   });
 
-  it("値があれば条件に関わらず通す", () => {
+  it("accepts a present value whatever the condition says", () => {
     expect(
       validateEmail.validate({ isGuest: false, email: "a@example.com" }).valid
     ).toBe(true);
@@ -41,9 +42,9 @@ describe("optionalIf", () => {
     ).toBe(true);
   });
 
-  // 旧実装は options.code をハードコードで捨て、messageFactory を一度も呼ばなかった
-  // (legacy-spec/plugin-catalog-core.md「optionalIf's discarded options」)。
-  it("options.code を尊重する (旧実装は無視していた)", () => {
+  // A previous release hard-coded the code away and never called the factory.
+  // (legacy-spec/plugin-catalog-core.md, "optionalIf's discarded options")
+  it("honours options.code, which a previous release ignored", () => {
     const validator = Builder()
       .use(optionalIfPlugin)
       .for<Account>()
@@ -57,7 +58,7 @@ describe("optionalIf", () => {
     expect(result.issues[0]?.code).toBe("EMAIL_NEEDED");
   });
 
-  it("options.messageFactory を実際に呼ぶ (旧実装は無視していた)", () => {
+  it("actually calls options.messageFactory, which a previous release ignored", () => {
     const validator = Builder()
       .use(optionalIfPlugin)
       .for<Account>()
@@ -75,23 +76,24 @@ describe("optionalIf", () => {
   });
 });
 
-/** null を含む「型では作れない入力」を通すための入口。 */
+/** A way in for inputs the types cannot construct, null among them. */
 function validateAccount(input: Record<string, unknown>) {
   return validateEmail.validate(input as unknown as Account);
 }
 
-// optionalIf も条件付き presence ルールであり、欠損と null に効く。
-// CheckRule だった頃は presence ゲートの内側に届かず、空文字しか見えなかった。
-describe("optionalIf: 欠損と null にも効く", () => {
-  it("条件が真なら欠損を通す", () => {
+// optionalIf is a conditional presence rule too, so it reaches missing values
+// and null. As a check it stayed outside the presence gate and saw only the
+// empty string.
+describe("optionalIf: reaches missing values and null", () => {
+  it("accepts a missing value when the condition is true", () => {
     expect(validateAccount({ isGuest: true }).valid).toBe(true);
   });
 
-  it("条件が真なら null を通す", () => {
+  it("accepts null when the condition is true", () => {
     expect(validateAccount({ isGuest: true, email: null }).valid).toBe(true);
   });
 
-  it("条件が偽なら欠損を拒否する", () => {
+  it("rejects a missing value when the condition is false", () => {
     const result = validateAccount({ isGuest: false });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -105,7 +107,7 @@ describe("optionalIf: 欠損と null にも効く", () => {
     ]);
   });
 
-  it("条件が偽なら null を拒否する", () => {
+  it("rejects null when the condition is false", () => {
     const result = validateAccount({ isGuest: false, email: null });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -113,8 +115,9 @@ describe("optionalIf: 欠損と null にも効く", () => {
   });
 });
 
-// optionalIf は両側に意見を持つので、条件が真なら .required() を上書きする。
-describe("optionalIf: .required() を条件付きで解除する", () => {
+// optionalIf has an opinion either way, so a true condition overrides
+// .required().
+describe("optionalIf: lifts .required() conditionally", () => {
   const validator = Builder()
     .use(optionalIfPlugin)
     .use(requiredPlugin)
@@ -122,11 +125,11 @@ describe("optionalIf: .required() を条件付きで解除する", () => {
     .v("email", (b) => b.string.required().optionalIf((root) => root.isGuest))
     .build();
 
-  it("条件が真なら欠損を通す", () => {
+  it("accepts a missing value when the condition is true", () => {
     expect(validator.validate({ isGuest: true } as Account).valid).toBe(true);
   });
 
-  it("条件が偽なら欠損を拒否する", () => {
+  it("rejects a missing value when the condition is false", () => {
     const result = validator.validate({ isGuest: false } as Account);
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -134,8 +137,9 @@ describe("optionalIf: .required() を条件付きで解除する", () => {
   });
 });
 
-// 条件が真でも空文字は「値がある」扱い。`.optional().min(3)` と同じ約束。
-describe("optionalIf: 条件が真でも空文字は後続の検査に届く", () => {
+// Even with a true condition the empty string counts as present, the same
+// promise `.optional().min(3)` makes.
+describe("optionalIf: an empty string still reaches the later checks", () => {
   const validator = Builder()
     .use(optionalIfPlugin)
     .use(stringMinPlugin)
@@ -143,11 +147,11 @@ describe("optionalIf: 条件が真でも空文字は後続の検査に届く", (
     .v("email", (b) => b.string.optionalIf((root) => root.isGuest).min(3))
     .build();
 
-  it("条件が真かつ欠損なら min は走らない", () => {
+  it("does not run min for a missing value when the condition is true", () => {
     expect(validator.validate({ isGuest: true } as Account).valid).toBe(true);
   });
 
-  it("条件が真かつ空文字なら min が走る", () => {
+  it("runs min for an empty string when the condition is true", () => {
     const result = validator.validate({ isGuest: true, email: "" });
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -155,7 +159,7 @@ describe("optionalIf: 条件が真でも空文字は後続の検査に届く", (
   });
 });
 
-describe("optionalIf: 配列要素ごとの条件", () => {
+describe("optionalIf: a per-element condition", () => {
   const validateRows = Builder()
     .use(optionalIfPlugin)
     .for<Roster>()
@@ -164,7 +168,7 @@ describe("optionalIf: 配列要素ごとの条件", () => {
     )
     .build();
 
-  it("index 0 の欠損だけが許される", () => {
+  it("permits a missing value only at index 0", () => {
     const result = validateRows.validate(
       { isDraft: true, rows: [{}, {}] } as unknown as Roster,
       { abortEarly: false }

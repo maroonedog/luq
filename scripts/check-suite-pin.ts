@@ -132,20 +132,20 @@ if (require.main === module) {
     if (violations.length === 0) {
       const pin = readSuitePin();
       console.error(
-        `スイート pin: 一致 (${pin.commit.slice(0, 12)}, ` +
-          `${pin.caseCount} ケース / skip ${pin.skipEntryCount} 件)`
+        `Suite pin: matches (${pin.commit.slice(0, 12)}, ` +
+          `${pin.caseCount} cases, ${pin.skipEntryCount} skipped)`
       );
       return 0;
     }
-    console.error(`スイート pin の不一致 ${violations.length} 件:`);
+    console.error(`Suite pin: ${violations.length} mismatches:`);
     for (const violation of violations) {
       console.error(
-        `  ${violation.subject}: 記録 ${violation.recorded} / 実際 ${violation.actual}`
+        `  ${violation.subject}: recorded ${violation.recorded}, actual ${violation.actual}`
       );
     }
     console.error(
-      "サブモジュールを動かしたときは config/json-schema-suite.json を測り直し、" +
-        "skip リストを読み直したうえで同じコミットに含めること。"
+      "After moving the submodule, re-measure config/json-schema-suite.json, " +
+        "re-read the skip list, and include both in the same commit."
     );
     return 1;
   });

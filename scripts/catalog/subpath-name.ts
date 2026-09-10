@@ -1,15 +1,15 @@
 import type { PluginTier } from "./plugin-catalog.types";
 
 /**
- * ディレクトリ名 (kebab) と公開サブパス名 (camel) の唯一の対応表。
+ * The one table mapping a directory name (kebab) to a published subpath name
+ * (camel).
  *
- * 原則は kebab <-> camel の機械変換で、往復が一致しない名前は不正として落とす。
- * 例外は3件だけ:
- *   - json-schema / json-schema-full-feature は extension 段のバンドルで、
- *     公開サブパス名が 1.x で凍結済み。派生ではなく宣言でなければならない。
- *   - read-only-write-only はディレクトリを持たない互換エイリアスのファイル名。
- * `uuid` は意図的にこの表に無い。uuid は機械変換で往復するので上書きが要らない
- * (string-uuid へのリネーム案は撤回済み)。
+ * The rule is the mechanical kebab-to-camel conversion, and a name whose round
+ * trip does not come back identical is refused. The overrides exist only where
+ * a published name was frozen by an earlier release and therefore has to be
+ * declared rather than derived.
+ *
+ * A name that round-trips mechanically must NOT be listed here.
  */
 export const SUBPATH_NAME_OVERRIDES: Readonly<Record<string, string>> = {
   "json-schema": "jsonSchema",
@@ -21,7 +21,7 @@ const KEBAB_DIRECTORY = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
 export class IrregularDirectoryNameError extends Error {
   constructor(directoryName: string, reason: string) {
-    super(`プラグインディレクトリ名 "${directoryName}" は不正です: ${reason}`);
+    super(`the plugin directory name "${directoryName}" is invalid: ${reason}`);
     this.name = "IrregularDirectoryNameError";
   }
 }
@@ -37,8 +37,8 @@ export function toKebabCase(subpathName: string): string {
 }
 
 /**
- * ディレクトリ名から公開サブパス名を決める。
- * extension 段は必ず上書き表に載っていなければならない (公開名が凍結されているため)。
+ * Decides the published subpath name from the directory name. An extension
+ * must be in the override table, its published name being frozen.
  */
 export function toSubpathName(
   directoryName: string,
@@ -49,13 +49,13 @@ export function toSubpathName(
   if (tier === "extension") {
     throw new IrregularDirectoryNameError(
       directoryName,
-      "extension 段の公開サブパス名は SUBPATH_NAME_OVERRIDES で宣言してください"
+      "an extension's published subpath name must be declared in SUBPATH_NAME_OVERRIDES"
     );
   }
   if (!KEBAB_DIRECTORY.test(directoryName)) {
     throw new IrregularDirectoryNameError(
       directoryName,
-      "kebab-case ではありません"
+      "it is not kebab-case"
     );
   }
   const camel = toCamelCase(directoryName);
@@ -63,7 +63,7 @@ export function toSubpathName(
   if (roundTripped !== directoryName) {
     throw new IrregularDirectoryNameError(
       directoryName,
-      `kebab<->camel の往復が一致しません ("${camel}" -> "${roundTripped}")`
+      `the kebab/camel round trip does not come back identical ("${camel}" -> "${roundTripped}")`
     );
   }
   return camel;

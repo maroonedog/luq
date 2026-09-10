@@ -10,11 +10,11 @@ const truthy = Builder()
   .build();
 
 describe("booleanTruthy", () => {
-  it("true を通す", () => {
+  it("accepts true", () => {
     expect(truthy.validate({ accepted: true }).valid).toBe(true);
   });
 
-  it("false を弾き、既定文言を出す", () => {
+  it("rejects false, with the default wording", () => {
     const validationResult = truthy.validate({ accepted: false });
     expect(validationResult.valid).toBe(false);
     expect(validationResult.issues).toEqual([
@@ -27,8 +27,9 @@ describe("booleanTruthy", () => {
     ]);
   });
 
-  // 名前に反して JS の truthy 判定ではなく === true の厳密比較。強制変換もしない。
-  it("boolean 以外は素通しする (欠損・null・非 boolean)", () => {
+  // Despite the name this is === true and not JavaScript truthiness. Nothing
+  // is coerced.
+  it("passes anything that is not a boolean straight through", () => {
     const loose = truthy as unknown as {
       validate(input: unknown): { valid: boolean };
     };
@@ -39,7 +40,7 @@ describe("booleanTruthy", () => {
     expect(loose.validate({ accepted: 1 }).valid).toBe(true);
   });
 
-  it("messageFactory で文言を差し替えられる", () => {
+  it("lets messageFactory replace the wording", () => {
     const custom = Builder()
       .use(booleanTruthyPlugin)
       .for<Flags>()

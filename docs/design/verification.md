@@ -1,8 +1,8 @@
-# 設計の検証記録
+# The design's verification record
 
-この設計は2度の修復ラウンドを経て、実際に TypeScript をコンパイルして検証されている。
+This design went through two repair rounds and was verified by actually compiling the TypeScript.
 
-## 解決されたブロッカー (31件)
+## Blockers resolved
 
 - A1 - PluginSignature's third parameter now defaults to `unknown`, not `Unchanged`. With the old default, AnyPlugin pinned `out` to "unchanged" and every presence/transform/guard plugin failed the definePlugin constraint with TS2344. Verified: a `readonly AnyPlugin[]` holding one plugin of each of the eight kinds compiles with no cast.
 - A2 - build() receives RUNTIME arguments, not the marker tuple. New L2 module `runtime-args.types.ts` maps FieldRef->string, FieldRefs->readonly string[], RootPredicate/RootReader/SelfReader/SelfGuard->functions over `unknown`, SelfValue->unknown, ElementChain/NarrowedChain->readonly Rule[]. L2 stays root-agnostic; nothing there names TRoot.
@@ -31,12 +31,12 @@
 - CONTRADICTION A-12 - test placement follows F-E-C2, not D: test/unit, test/type, test/integration, test/contract, bench/, tsconfig.type-test.json, one new devDependency (expect-type). D itself said this was the F owner's call.
 - CONTRADICTION A-13 - the uuid -> string-uuid rename is reverted. Directory, subpath, symbol and method all stay `uuid`, which removes a subpath override and a docs rewrite.
 - CONTRADICTION A-15 - tupleBuilder takes `(positions: readonly ElementChain[], rest?: ElementChain)`. The competing variadic form used a non-marker `ElementRuleRunner`, which the chain cannot resolve, so no call-site type could be produced for `b.tuple.builder(...)`.
-- ~~NEW - `.each()` / arrayEach does not exist and is not being added.~~ **撤回した (実装段の判断)。** `.each()` は全称量化 (Draft-07 の `items`)、`.contains()` は存在量化 (min/max 個がマッチすればよい) で意味論が異なる。この項が「同じ否定を表現できる」と言っているのは型テストの反例4件の話であって実行時の意味論ではない。加えて (a) サブチェーンの内側では `items[*]` というパス宣言が使えないため、patternProperties / dependentSchemas の中で配列要素を全称的に縛る手段が `.each()` 以外に無く、(b) コア段のコードが既に依存している (src/json-schema/json-schema-bag.types.ts が arrayEachPlugin をバッグに置き、draft07-keywords.ts の `items` の注記も 「one sub-chain per element via .each()」と書いている)。**src/plugins/array-each/ は残す。** プラグイン数は71のままで、内訳が変わる (objectAdditionalProperties と objectAdditionalPropertiesSchema が1ディレクトリを共有するため)。
+- ~~NEW - `.each()` / arrayEach does not exist and is not being added.~~ **Withdrawn during implementation.** `.each()` is universal quantification (Draft-07's `items`) and `.contains()` is existential (some number of elements must match); the two mean different things. What this item called "the same negation" was about a handful of type-test counterexamples, not about run-time meaning. Beyond that, a path declaration cannot be written inside a sub-chain, so `.each()` is the only way to constrain array elements universally within patternProperties or dependentSchemas — and the JSON Schema layer already depends on it. **src/plugins/array-each/ stays.**
 - NEW - `.required()` narrows the TYPE the same way it validates. The legacy PresenceRule rejects undefined AND null AND "", but PresenceShift had only single-flag kinds, so the type kept `| null`. A fourth kind `excludeMissing` (both flags false) is added to the registry, which forces branches in ResolveOut and is checked by the coverage proof.
 - NEW - AnyChain's phantom must be `ChainMarks<unknown, ChainState>`; `never` makes no concrete chain assignable to it.
 - NEW - Validator exposes both validate() and parse(), both returning ValidationResult<T>. validate never transforms; parse applies transforms in declaration order over a copy-on-write structure.
 
-## 残るリスク (23件)
+## Risks that remain
 
 - Only the TYPE layer is proved. Everything in coreTypeDesign compiles and the 10 negative assertions are mutation-verified, but no runtime code has been written or executed: the chain node's guard/transform arity, collect-branch-rules' once-only invariant, compileComposite's back-patching, run-branch's RunState allocation and run-recursion's cycle guard are all designs, not measurements. The first real risk of the rebuild lives there, not in the types.
 - The instantiation budget is one measurement on one machine with one chain shape. 89,190 instantiations over 45 plugins x 100 fields x 25 steps was measured BEFORE the extra bag parameter, before ChainState grew `covered`, before SlotAccepts/SlotValue were added to every slot, and before ConverterChain/BindableMethod existed — and the harness's 45 plugins were all `out: Unchanged` with one number argument, i.e. the cheapest possible shape. A chain that mixes transforms, guards and presence shifts creates more distinct FieldChain instantiations. This must be re-measured at the chain-types step (6) with a mixed-marker chain and with the real 71-plugin bag, and IDE completion latency measured with it. If it is bad, the lever is FieldSlots, not the marker design.
@@ -62,7 +62,7 @@
 - The whole type set is verified against TypeScript 5.8.3 only. The `${infer K}[*]` last-occurrence inference, `NonNullable<unknown> = {}`, method bivariance carrying AnyPlugin, and the `[A] extends [B]` non-distribution idiom are all version-sensitive behaviours. The TypeScript version must be pinned in package.json and this whole suite re-run on any major bump.
 - `declaredSiblingKeys` sees only declared PATH STRINGS. If the chain can ever introduce child declarations that never appear as a top-level path, objectAdditionalProperties will under-report its known keys there. This could not be resolved without the final chain runtime and needs a test at step 21.
 
-## ユーザー判断が要る事項 (5件)
+## Items needing a decision from the maintainer
 
 - NESTED ISSUE PATHS (public result shape — I could not decide this for you because it changes what consumers see). When a composite branch fails, its child issues are currently attached as `IssueDetail.causes` on ONE parent issue, so an allOf failure on `profile.name` reports at path `profile`. The alternative is to splice the child issues into the top-level `issues` array with the parent path prefixed, which gives much better DX but changes the issue COUNT and the paths that existing 1.x tests and consumer code assert on. Both are implementable; the shape must be chosen before the compile step (step 10) because run-branch.ts is written to it. My recommendation is splice-with-prefix, with `causes` kept for anyOf/oneOf where no single branch is 'the' failure.
 - GIT SUBMODULE FOR THE JSON-SCHEMA-TEST-SUITE. I chose a pinned submodule after disproving the npm route (@json-schema-org/tests is from 2020 and depends on a git URL). Some organisations forbid submodules in CI or in vendored builds. If yours does, say so now and I will switch to a pinned vendored copy under test/fixtures with a SHA file and a refresh script — it costs about 3 MB in the repo and one extra review step per suite bump, and it changes step 1 and step 26.

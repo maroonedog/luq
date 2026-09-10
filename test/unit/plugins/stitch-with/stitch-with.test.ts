@@ -1,11 +1,10 @@
-// EXPERIMENTAL な stitchWith の実行時の振る舞い。
+// How stitchWith behaves at run time. It is EXPERIMENTAL.
 //
-// これはクロスフィールド検証のためのメソッドである。核は「複数のフィールドを
-// **1つの判定** にまとめる」ことなので、ここで見るのはまさにそこ:
-// `total === price * quantity` のような、1フィールドずつでは書けない判定が
-// 1メソッドで書けること。
+// The point of it is bringing several fields into **one judgement**, so that
+// is what gets checked: something like `total === price * quantity`, which
+// cannot be written one field at a time, written in one method.
 //
-// 型が効いていることは test/type/plugins/stitch-with.type-test.ts が固定する。
+// That the types hold is pinned by the corresponding type test.
 import { Builder } from "../../../../src/index";
 import { requiredPlugin } from "../../../../src/plugins/required";
 import { customPlugin } from "../../../../src/plugins/custom";
@@ -54,8 +53,9 @@ describe("one method, several fields, one judgement", () => {
   });
 
   it("sees a change in ANY of the stitched fields", () => {
-    // 判定はフィールドごとに分かれていないので、どれが動いても同じ1つの
-    // 判定がやり直される。ここが「別名ごとに規則を並べる」形との違い。
+    // The judgement is not split per field, so whichever value moves, the
+    // same single judgement is redone. That is the difference from listing a
+    // rule per alias.
     const validator = buildTotalValidator();
     expect(validator.validate({ ...valid, price: 11 }).valid).toBe(false);
     expect(validator.validate({ ...valid, quantity: 11 }).valid).toBe(false);
@@ -76,8 +76,8 @@ describe("one method, several fields, one judgement", () => {
 
 describe("the bundle is read from the root, by path", () => {
   it("reads a NESTED path under its alias", () => {
-    // 別名を経由する理由。束をパス文字列でキーしていたら "user.name" が
-    // パスとして解釈され、平たい束の中を探しに行って見つからない。
+    // Why it goes through aliases: keyed by path strings, "user.name" would
+    // be read as a path and looked for inside the flat bundle, where it is not.
     const validator = Builder()
       .use(requiredPlugin)
       .use(customPlugin)
@@ -97,7 +97,8 @@ describe("the bundle is read from the root, by path", () => {
   });
 
   it("does not judge the subject's own value", () => {
-    // total 自身には required しか無いので、束が通れば total の値は問われない。
+    // total itself declares only required, so once the bundle passes, its own
+    // value is not questioned.
     const validator = Builder()
       .use(requiredPlugin)
       .use(customPlugin)
@@ -118,8 +119,8 @@ describe("the bundle is read from the root, by path", () => {
 
 describe("the sub-chain is resolved once, at build time", () => {
   it("does not re-run the callback per validation", () => {
-    // build() までは宣言 (オブジェクト) で、build() が IR に落とす。実行時は
-    // その IR を読むだけなので、利用者の callback は二度目が存在しない。
+    // Up to build() it is a declaration; build() lowers it. Validation only
+    // reads what was lowered, so the callback has no second call.
     let calls = 0;
     const validator = Builder()
       .use(requiredPlugin)

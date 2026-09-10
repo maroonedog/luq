@@ -1,9 +1,9 @@
-// README の性能表を組み立てる側を検査する。
+// Checks the side that assembles the README's performance tables.
 //
-// この表は「古い数字が自己整合している」種類の腐り方をする。29,963 ops/sec も
-// ×0.11 も、書かれた当時は本当だった。だからここで確かめるのは整合ではなく、
-// **渡した実測がそのまま行になること**、そして測れなかった形状が黙って消えず
-// 「not comparable」として残ることである。
+// These tables rot in the self-consistent way: every figure in them was true
+// when it was written. So what is checked is not consistency but that **the
+// measurement handed in becomes the row**, and that a shape which could not be
+// compared stays visible as "not comparable" rather than quietly disappearing.
 import {
   renderLegacyTable,
   renderSpreadRange,

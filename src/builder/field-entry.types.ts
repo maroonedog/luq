@@ -6,13 +6,19 @@
 // provable — nothing but compileDeclarations can reach collectRules.
 // ===========================================================================
 import type { ChainBuildContext } from "../chain/create-chain-node";
-import type { Rule } from "../plugin-kit/compiled-rule";
+import type { FieldChainOutcome } from "../chain/collect-field-rules";
+import type { FieldNormalizer } from "./field-options.types";
 
 export interface FieldEntry {
   readonly path: string;
   /** null unless `.v()`'s third argument declared a default. */
   readonly defaultOf: ((root: unknown) => unknown) | null;
   readonly applyDefaultToNull: boolean;
-  /** Runs the user's chain callback ONCE and returns its ordered rules. */
-  collectRules(context: ChainBuildContext): readonly Rule[];
+  /** null unless `.v()`'s third argument declared a normalizer. */
+  readonly normalize: FieldNormalizer | null;
+  /**
+   * Runs the user's chain callback ONCE and returns its ordered rules,
+   * together with what was declared to produce them.
+   */
+  collectRules(context: ChainBuildContext): FieldChainOutcome;
 }

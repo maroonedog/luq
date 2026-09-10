@@ -1,17 +1,18 @@
 /**
- * カタログ機構を駆動する種プラグイン。
+ * The seed plugins that drive the catalog machinery.
  *
- * ここはファイルの「内容」だけを持ち、実ファイルは write-seed-tree.ts が
- * 一時ディレクトリに書き出す。src/plugins を一切見ないので、プラグイン段の
- * エージェントが後で触るファイルとは決して衝突しない。
- * ツリーをデータで持つことで、空ディレクトリ (git が追跡できない) も
- * 「プラグイン0件」の状態として表現できる。
+ * This holds file CONTENTS only; the real files are written to a temporary
+ * directory. Nothing here reads the real plugin directories, so it cannot
+ * collide with them.
+ *
+ * Holding the tree as data is also what makes an empty directory expressible —
+ * git cannot track one — so "no plugins at all" becomes a testable state.
  */
 export type SeedFileTree = Readonly<Record<string, string>>;
 
 export const SEED_PACKAGE_NAME = "@maroonedog/luq";
 
-/** わざと風変わりな整形。exports 差し替えが他バイトを動かさないことの証拠になる。 */
+/** Deliberately odd formatting: the evidence that replacing exports moves no other byte. */
 export const SEED_PACKAGE_JSON = [
   "{",
   '  "name": "@maroonedog/luq",',
@@ -33,7 +34,7 @@ const CORE_SOURCES: SeedFileTree = {
   "src/json-schema/keyword-map.ts": "export const KEYWORD_MAP = {};\n",
 };
 
-/** ディレクトリを持たない互換サブパスの転送先。実在するときだけ公開される。 */
+/** The forwarding target of a directoryless compatibility subpath. Published only when it exists. */
 const SUBPATH_ALIAS_MODULE: SeedFileTree = {
   "src/subpath-aliases/read-only-write-only.ts":
     'export { readOnlyPlugin } from "../plugins/read-only";\n',
@@ -65,7 +66,7 @@ const JSON_SCHEMA_ENTRY = [
   "",
 ].join("\n");
 
-/** isolated 3 件 + extension 2 件 = 5 件を持つ健全なツリー。 */
+/** A healthy tree: three isolated plugins and two extensions. */
 export const SEED_PLUGIN_TREE: SeedFileTree = {
   ...CORE_SOURCES,
   ...SUBPATH_ALIAS_MODULE,
@@ -82,7 +83,7 @@ export const SEED_PLUGIN_TREE: SeedFileTree = {
     "export const jsonSchemaFullFeaturePlugin = { name: 4 };\n",
 };
 
-/** プラグインが1件も無い状態。空でも全生成物が成立することの証拠。 */
+/** No plugins at all: the evidence that every artefact still holds when empty. */
 export const EMPTY_PLUGIN_TREE: SeedFileTree = {
   ...CORE_SOURCES,
   "package.json": SEED_PACKAGE_JSON,
@@ -110,8 +111,8 @@ export const NO_PLUGIN_SYMBOL_TREE: SeedFileTree = {
 };
 
 /**
- * 接頭辞に一致するファイルを落としたツリーを作る。
- * 「プラグインを1件取り下げた」状況を、ディレクトリ削除に頼らずに表現する。
+ * A tree with the files matching a prefix removed, expressing "one plugin was
+ * withdrawn" without relying on deleting a directory.
  */
 export function omitSeedPaths(
   tree: SeedFileTree,

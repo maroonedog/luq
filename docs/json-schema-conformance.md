@@ -1,260 +1,259 @@
-# JSON Schema Draft-07 適合率（実測）
+# JSON Schema Draft-07 conformance (measured)
 
-このファイルの数値はすべて実行して数えたものである。目標に合わせて作った数は無い。
-すべての数値は `test/integration/json-schema-suite.test.ts` が
-`config/json-schema-suite.json` に対して**両方向に**表明している
-（退行も、記録されていない改善も、同じようにビルドを落とす）。
+Every number in this file was produced by running something and counting. None
+of it was written to reach a target. All of it is asserted **in both
+directions** by `test/integration/json-schema-suite.test.ts` against
+`config/json-schema-suite.json`: a regression and an unrecorded improvement
+fail the build alike.
 
-最終測定日: 2026-09-08 / ブランチ `feature/standard-schema`
-数え方は `test/json-schema/report-skip-causes.ts` を実行したもので、手では数えない。
+Counting is done by running `test/json-schema/report-skip-causes.ts`, never by
+hand.
 
 ---
 
-## 1. 見出しの数字
+## 1. The headline number
 
-**929 / 929 = 100.00%**
+The official
+[JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite),
+draft7, required tests only (`tests/draft7/optional/` is excluded).
 
-公式 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
-draft7、必須テストのみ（`tests/draft7/optional/` は含まない）。
+**A skipped case counts as a FAILURE, not a pass.** The skip list is **empty**,
+and that is structural rather than incidental: `SuiteSkipCause` is `never`, so
+writing one skip means adding a name to a type first.
 
-**skip したケースは合格ではなく「不合格」として数えている。**
-skip リストは**空**である。率を上げるために何かを除外した、ということが
-構造的に起きていない (`SuiteSkipCause` が `never` なので、skip を1件
-書き足すには型に名前を足す必要がある)。
-
-| | 件数 |
+| | Cases |
 |---|---|
-| 総ケース数 | 929 |
-| 合格 | **929** |
-| 不合格 | **0** |
-| うち skip リストに載っているもの | 0 |
-| skip リストに無い不合格 | **0** |
+| Total | 929 |
+| Passing | **929** |
+| Failing | **0** |
+| Of those, on the skip list | 0 |
+| Failing and not on the skip list | **0** |
 
-### 自明な下限との比較
+### Against the trivial floor
 
-このコーパスの期待値は「有効 551 / 無効 378」なので、
-**何を渡しても true を返すだけの検証器が 551 / 929 = 59.31% を取る。**
-適合率はこの下限と比べて初めて意味を持つ。
+The corpus expects 551 valid and 378 invalid, so **a validator that answers
+true to everything scores 551 / 929 = 59.31%.** A conformance figure only means
+something beside that floor.
 
-| | 有効と判定すべき 551件 | 無効と判定すべき 378件 | 合計 |
+| | Of the 551 that must be valid | Of the 378 that must be invalid | Total |
 |---|---|---|---|
-| 常に true を返すだけの検証器 | 551 (100%) | 0 (0%) | 551 (59.31%) |
-| **新実装** | **551 (100%)** | **378 (100%)** | **929 (100.00%)** |
+| A validator that only ever returns true | 551 (100%) | 0 (0%) | 551 (59.31%) |
+| **This implementation** | **551 (100%)** | **378 (100%)** | **929 (100.00%)** |
 
-## 2. 固定したコーパス
+## 2. The pinned corpus
 
-| 項目 | 値 |
+| Item | Value |
 |---|---|
-| submodule | `test/fixtures/json-schema-suite` |
-| commit | `f6fd52a0a95472e079cbfc6ef7f089702b80e045` |
-| ディレクトリ | `tests/draft7`（`optional/` は除外） |
-| ファイル数 | 37 |
-| グループ数 | 258 |
-| ケース数 | 929 |
-| コーパスの sha256 | `9b13470f746d823ec1644d4ece291973d27f52a09bc4c06580a1037bb2d82d47` |
+| Directory | `tests/draft7` (`optional/` excluded) |
+| Files | 37 |
+| Groups | 258 |
+| Cases | 929 |
+| Corpus sha256 | `9b13470f746d823ec1644d4ece291973d27f52a09bc4c06580a1037bb2d82d47` |
 
-submodule が動けば sha256 が変わり、`config/json-schema-suite.json`
-を測り直すまでビルドが落ちる。適合率の変更が必ずレビュー対象のコミットになる仕組み。
+Move the submodule and the sha256 changes, and the build fails until
+`config/json-schema-suite.json` is measured again. That is what makes a change
+in conformance a reviewed commit.
 
-## 3. どの入口で測ったか（重要）
+## 3. Which entry point was measured
 
-Luq には JSON Schema からの入口が **2つ** あり、コーパスは**チェーンメソッド**で測っている。
+There are **two** ways into JSON Schema, and the corpus is measured through the
+chain method.
 
-- `b.any.jsonSchemaFullFeature(document)` — 測定に使った経路。
-  コーパスのスキーマはほぼ全部ドキュメント**ルート**に制約を置くので、
-  ルートを「そのフィールド自身」として扱えるこの経路だけが全ケースを判定できる。
-  インスタンスがスカラー（数値・文字列・null）のケースも判定できる。
-- `fromJsonSchema(document)` — 関数の入口。利用者が書く形は
-  `import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";`
-  からの `fromJsonSchema<T>(schema, config?)` である
-  （bag を第1引数に取る3引数版は `src/json-schema/build-from-schema.ts` の
-  内部シグネチャで、公開されていない）。`Validator<T extends object>` を返すので
-  **オブジェクトを検証する用途に限られる**。
+- `b.any.jsonSchemaFullFeature(document)` — the route measured. Nearly every
+  schema in the corpus puts its constraints at the document **root**, and this
+  is the only route that treats the root as the field itself, so it is the only
+  one that can judge every case. It also judges cases whose instance is a
+  scalar.
+- `fromJsonSchema(document)` — the function entry point, which users write as
+  `fromJsonSchema<T>(schema, config?)`. It returns
+  `Validator<T extends object>`, so it is **for validating objects**.
 
-両者を同一部分集合で比べた実測値（インスタンスがプレーンオブジェクトの 289 ケース）:
+Measured on the same subset — the 289 cases whose instance is a plain object:
 
-| 入口 | 合格 / 289 | 率 |
+| Entry point | Passing / 289 | Rate |
 |---|---|---|
 | `b.any.jsonSchemaFullFeature(document)` | 238 | 82.35% |
 | `fromJsonSchema(document)` | 229 | 79.24% |
 
-差の 9件は `fromJsonSchema` 側の build 時失敗 49件のうち、
-メソッド経路なら判定できるもの。関数経路は「ゼロに近い」状態ではない
-（ルートキーワードは `ROOT_PATH` 対応で宣言できるようになった）。
+The 9-case difference is made up of cases the method route can judge and the
+function route rejects at build time. The function route is nowhere near zero:
+root keywords became declarable once `ROOT_PATH` was supported.
 
-### 測定に使ったグルー（隠さず書く）
+### The glue used to measure, stated rather than hidden
 
-ハーネス `test/json-schema/build-suite-validator.ts` は、
-ドキュメントが null を許さないとき対象フィールドに `.optional()` を付ける。
-`src/runtime/decide-presence.ts` が null を「どのルールより先に」決めるため、
-null の可否はルールではなく**存在ポリシー**で表現するしかないからである。
-判定は変換器と同じ `permitsNull` を使うので、ハーネスが変換器から乖離することはない。
-これは実際の呼び出し側も書く必要がある3行であり、
-「プラグインが1つのルールしか返せない」という制約の帰結である（§7 参照）。
+The harness `test/json-schema/build-suite-validator.ts` adds `.optional()` to
+the target field when the document does not permit null. Null is decided before
+any rule runs, so whether null is permitted can only be expressed as a presence
+policy. The harness decides that with the same `permitsNull` the converter
+uses, so it cannot drift from the converter.
 
-## 4. 落ちているケース: **無し**
+Those are three lines a real caller has to write too, and they follow from a
+plugin's `build()` returning one rule. See §7.
 
-| 失敗のしかた | 件数 |
+## 4. Failing cases: **none**
+
+| How it failed | Cases |
 |---|---|
-| 検証器の構築自体が例外を投げる（判定に到達しない） | **0** |
-| 構築はできたが判定が誤り | **0** |
-| `validate()` の実行時例外 | **0** |
+| Building the validator threw, so no verdict was reached | **0** |
+| Built, but judged wrongly | **0** |
+| `validate()` threw at run time | **0** |
 
-数え方は `test/json-schema/report-skip-causes.ts` を実行したもので、手では数えない。
+### The causes that have gone, recorded
 
-### ここまでに消えた原因（記録）
+No skip cause has ever been removed to move the rate. Each went when the thing
+it was waiting for arrived. A cause's name is removed from `SuiteSkipCause` as
+well, so bringing one back means adding a name to a type.
 
-skip の原因は一度も「率のために消した」ことがない。すべて、待っていたものが
-できたときに消えている。消えた原因の名前は `SuiteSkipCause` からも消して
-あるので、復活させるには型に名前を足す必要がある。
-
-| 原因 | 件数 | 何で消えたか |
+| Cause | Cases | What removed it |
 |---|---|---|
-| `external-ref` | 57 | 呼び出し側が渡した文書だけを見る `externalDocuments`。Luq は取りに行かない |
-| `reserved-path-segment` | 14 | `__proto__` を宣言できるようにした（`Object.defineProperty` で書く） |
-| `ref-pointer-escaping` | 9 | フラグメント全体を先に復号する RFC 6901 の順序 |
-| `tuple-items` | 6 | 下の1行 |
-| `null-not-observable` | 5 | `nullIsValue`: サブスキーマの中では null は不在ではなく値 |
-| `ref-identifier-scope` | 3 | `$id` がベース URI を動かすことを表すスコープ (`ref-scope.ts`) |
-| `sibling-keyword-interaction` | 3 | `additionalProperties` が `patternProperties` を見る |
-| `code-point-string-length` | 2 | 長さをコードポイントで数える |
-| `ref-chain` | 2 | 下の1行 |
-| `boolean-sub-schema` | 1 | 下の1行 |
+| `external-ref` | 57 | `externalDocuments`: only documents the caller passed in. Nothing is fetched |
+| `reserved-path-segment` | 14 | `__proto__` became declarable, written with `Object.defineProperty` |
+| `ref-pointer-escaping` | 9 | RFC 6901's order: decode the whole fragment first |
+| `tuple-items` | 6 | The single line below |
+| `null-not-observable` | 5 | `nullIsValue`: inside a subschema, null is a value and not absence |
+| `ref-identifier-scope` | 3 | A scope expressing that `$id` moves the base URI (`ref-scope.ts`) |
+| `sibling-keyword-interaction` | 3 | `additionalProperties` looks at `patternProperties` |
+| `code-point-string-length` | 2 | Lengths counted in code points |
+| `ref-chain` | 2 | The single line below |
+| `boolean-sub-schema` | 1 | The single line below |
 
-`tuple-items` / `ref-chain` / `boolean-sub-schema` の9件は同じ1行で消えた。
-`toSchemaBranch` が `context.collectSubSchemaRules` を呼んでおり、その
-context は **すでにこの `$ref` を降りて作られたもの** だったので、同じ
-`$ref` を二度目にたどった再帰ガードが自分で自分を止めていた。
-`{"items":[{"$ref":"#/definitions/x"}]}` は何も制約せず、
-`{"items":[{"type":"integer"}]}` は正しく効く、という食い違いがその印だった。
+Nine of those went with one line. `toSchemaBranch` called
+`context.collectSubSchemaRules`, and that context had **already descended
+through this `$ref`** — so the recursion guard against following one `$ref`
+twice was stopping itself. The tell was that
+`{"items":[{"$ref":"#/definitions/x"}]}` constrained nothing while
+`{"items":[{"type":"integer"}]}` worked.
 
-### 外部 `$ref` をどう通したか（Luq はネットワークに触れない）
+### How external `$ref` passes without touching the network
 
-スイートの 57件は `http://localhost:1234/...` でスキーマを配信して取りに
-行かせるものである。Luq はローダー関数ではなく **地図** を受け取る:
+Those 57 cases serve their schemas over `http://localhost:1234/...` and expect
+them to be fetched. This library takes a **map**, not a loader function:
 
 ```ts
 b.any.jsonSchemaFullFeature(document, { externalDocuments })
 ```
 
-呼び出し側が既に持っている文書だけが解決に使われる。これで三つが同時に立つ:
-スキーマに書かれた URI でプロセスがソケットを開くことがない (SSRF)、変換は
-同期のままなので `build()` は Promise を返さない、`eval` も `new Function`
-も増えないので CSP の保証が変わらない。取りに行くのは呼び出し側の仕事で、
-スイートのハーネスではそれがファイルシステムである
-(`test/json-schema/read-remote-documents.ts`)。
+Only documents the caller already holds are used in resolution, which makes
+three things true at once: a URI written in a schema can never make the process
+open a socket, conversion stays synchronous so `build()` returns no Promise,
+and no `eval` or `new Function` appears, so the CSP guarantee is unchanged.
+Fetching is the caller's job; in the suite harness the caller's fetching is a
+file system (`test/json-schema/read-remote-documents.ts`).
 
-### 再帰の展開に上限がある（実測に基づく）
+### Recursive expansion has a limit (from measurement)
 
-相互再帰する `$ref` は無限の宣言パスを持つので、展開はどこかで止まる。
-一周で止めていたときは tree -> node -> tree が2階層しか検査できなかった。
-上限を上げると、相互再帰の本数に対して指数的に高くなる。三本の相互再帰で:
+Mutually recursive `$ref`s describe infinitely many declared paths, so
+expansion stops somewhere. Stopping after one round left tree → node → tree
+checkable to only two levels. Raising the limit costs exponentially in the
+number of mutually recursive definitions. With three of them:
 
-| 展開回数 | build 時間 |
+| Expansions | Build time |
 |---|---|
 | 1 | 17 ms |
 | 2 | 55 ms |
 | 3 | 538 ms |
 | 4 | 9257 ms |
 
-コーパスが要求するのは3回（ref.json の tree は3階層目に不正値を置く）なので
-3にしてある。これは build 時に一度だけ払うコストである。加えて
-`EXPANSION_BUDGET` が変換1回あたりの `$ref` 展開総数を抑える: 深さの上限は
-深さしか縛らず、幅は文書任せになるため。公式コーパス全体がこの予算の下に
-収まるので、普通の文書では何も変わらない。
+The corpus needs three — `ref.json`'s tree puts an invalid value at the third
+level — so three is the limit. It is paid once, at build time. An expansion
+budget also caps the total number of `$ref` expansions per conversion, a depth
+limit bounding only depth and leaving breadth to the document. The whole
+official corpus fits inside that budget, so an ordinary document notices
+nothing.
 
-### skip リスト
+### The skip list
 
-`test/json-schema/suite-skip-list.ts` は **空** である。`SuiteSkipCause` は
-`never` なので、`SuiteSkip` はそもそも構築できない。skip を1件戻すには
-型に名前を足す必要があり、それはレビュアーが読む差分になる。
+`test/json-schema/suite-skip-list.ts` is **empty**, and `SuiteSkipCause` is
+`never`, so a `SuiteSkip` cannot be constructed at all. Restoring one skip
+means adding a name to a type, which is a diff a reviewer reads.
 
-**skip したケースも必ず実行される** という規則はそのまま残してある
-（`findStaleSkips`）。skip は「まだ落ちる」という表明であって、退行の隠し
-場所ではない。
+The rule that **a skipped case is still executed** stays in place
+(`findStaleSkips`). A skip asserts "this still fails"; it is not a place to
+hide a regression.
 
-## 5. 旧実装との比較（同一コーパスで再実測）
+## 5. Against the previous major, re-measured on the same corpus
 
-旧実装（`master` ブランチ、`git worktree` に取り出して実行）を
-**同じ 929 ケース**に通した実測値。
+The previous major, checked out into a `git worktree` and run against the
+**same 929 cases**.
 
 ```
 Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build()
 ```
 
-| | 旧実装 | 新実装 | 差 |
+| | Previous major | This implementation | Difference |
 |---|---|---|---|
-| 合格 / 929 | **536 (57.70%)** | **929 (100.00%)** | +393 (+42.30pt) |
-| 有効と判定すべき 551件 | 512 (92.92%) | **551 (100%)** | +39 |
-| **無効と判定すべき 378件** | **24 (6.35%)** | **378 (100%)** | **+354 (+93.65pt)** |
-| 構築が失敗したケース | 41 | 79 | |
-| 判定が誤ったケース | 352 | 22 | |
+| Passing / 929 | **536 (57.70%)** | **929 (100.00%)** | +393 (+42.30pt) |
+| Of the 551 that must be valid | 512 (92.92%) | **551 (100%)** | +39 |
+| **Of the 378 that must be invalid** | **24 (6.35%)** | **378 (100%)** | **+354 (+93.65pt)** |
+| Cases where building failed | 41 | 79 | |
+| Cases judged wrongly | 352 | 22 | |
 
-**旧実装の 57.70% は、常に true を返すだけの検証器の 59.31% を下回る。**
-無効な文書を 378件中 24件しか弾けていないためで、
-「JSON Schema 対応」と書かれていたものが実質的に何も検証していなかったことを示す。
-新実装が有効文書側でわずかに落ちる（−4）のは、外部 `$ref` を
-「黙って通す」のではなく構築時に拒否するためである。
+**The previous major's 57.70% is below the 59.31% of a validator that only ever
+returns true.** It rejected 24 of 378 invalid documents, which is what "JSON
+Schema support" amounted to. This implementation losing a little on the valid
+side is because an external `$ref` is refused at build time rather than passed
+through in silence.
 
-オブジェクトを検証する用途（インスタンスがプレーンオブジェクトの 289 ケース）に
-限った、関数入口どうしの比較:
+Restricted to validating objects — the 289 cases whose instance is a plain
+object — function entry point against function entry point:
 
-| | 旧 `fromJsonSchema` | 新 `fromJsonSchema` |
+| | Previous `fromJsonSchema` | This `fromJsonSchema` |
 |---|---|---|
-| 合格 / 289 | 155 (53.63%) | **229 (79.24%)** |
-| 構築失敗 | 31 | 49 |
+| Passing / 289 | 155 (53.63%) | **229 (79.24%)** |
+| Build failures | 31 | 49 |
 
-なお `docs/legacy-spec/json-schema-mapping.md` が記録している
-「旧実装の fromJsonSchema 統合テストは 42 スイート中 32 が失敗（10 合格）」は
-旧テストを再実行したものではなく、記録された値である。
-新実装の対応範囲（`test/unit/json-schema/**`、`test/integration/json-schema-*.test.ts`、
-および 4つの新 format プラグインのテスト）は **23 スイート / 437 テストが全て合格**する。
+## 6. Vocabulary coverage (measured)
 
-## 6. 語彙のカバレッジ（実測）
-
-| | 総数 | bind | structural | 対象外 |
+| | Total | bind | structural | Out of scope |
 |---|---|---|---|---|
-| Draft-07 キーワード | 46 | 18 | 19 | 9（すべて注釈のみのキーワード） |
-| format 名 | 20 | 20 | 0 | **0** |
+| Draft-07 keywords | 46 | 18 | 19 | 9, all annotation-only |
+| format names | 20 | 20 | 0 | **0** |
 
-- 46 は draft-07 メタスキーマの `properties` キーと完全一致することをテストが照合している。
-- format 20 = Draft-07 §7.3 の 17 + 1.x が公開していた `url` / `uuid` / `duration` の 3。
-- **format の「対象外」は 0 になった。** ステップ24〜26の時点では
-  `idn-email` / `idn-hostname` / `uri-reference` / `regex` の4つがプラグイン不在で
-  **構築時に例外**を投げており、コーパスの 24 ケースが検証器を作ることすらできなかった。
-  ステップ27でその4プラグイン（`stringIdnEmail` / `stringIdnHostname` /
-  `stringUriReference` / `stringRegex`）を追加して束縛した。
-  各プラグインの見出しには**何を検査し、何を検査しないか**が書いてある
-  （たとえば `string-idn-hostname` は IDNA2008 の派生プロパティ表と Bidi 規則を
-  検査しない、と明記している）。
-  この4つの追加だけで 804 → 828（86.54% → 89.13%）動いた。
-- キーワード束縛が名指すプラグイン: 35。`jsonSchemaFullFeature` が同梱するプラグイン: 49。
-- プラグインカタログ: 76 ディレクトリ（isolated 74 / extension 2）、
-  `package.json#/exports` は 84 キー
-  （固定 7 + `./plugins/` 配下 77 = カタログの 76 サブパス + 非推奨の別名1）。
-  「プラグインの数」は数え方が2つある: **ディレクトリ / サブパスは 76**、
-  **export されるプラグインオブジェクトは 77**（`objectAdditionalProperties` が
-  2つ export する）。バンドル予算の "all 76 plugins" は前者、
-  docs-site の「77 plugin objects across 76 subpaths」は両方を明示した形である。
-  1.x が公開していた 58 サブパスは 1つも失われていない
-  （`test/type/public-surface/json-schema.type-test.ts` が型で、
-  `test/integration/public-subpath-resolution.test.ts` が実行時で表明する）。
+- A test cross-checks that the 46 exactly match the `properties` keys of the
+  draft-07 meta-schema.
+- The 20 formats are Draft-07 §7.3's 17 plus `url`, `uuid` and `duration`,
+  which the previous major published.
+- **No format is out of scope any more.** Four of them — `idn-email`,
+  `idn-hostname`, `uri-reference` and `regex` — once had no plugin and **threw
+  at build time**, so 24 cases in the corpus could not even produce a
+  validator. Adding and binding those four plugins moved the figure from 804 to
+  828 (86.54% to 89.13%) on its own. Each plugin's header states **what it
+  checks and what it does not** — `string-idn-hostname`, for instance, states
+  that it checks neither the IDNA2008 derived property table nor the Bidi rule.
+- Plugins named by a keyword binding: 35. Plugins bundled by
+  `jsonSchemaFullFeature`: 49.
 
-## 7. 既知の限界（率に直接効くもの）
+### Two ways to count plugins
 
-- **外部・リモート `$ref` を解決しない。** 57 ケース。ネットワークを踏むローダーは
-  ライブラリの既定機能としては入れていない。
-- **`__proto__` を宣言パスの区間として受け付けない。** 14 ケース。
-  プロトタイプ汚染を防ぐための意図的な拒否であり、`decision:` 付きで記録してある。
-- **ドキュメント由来の存在ポリシーを表現する場所が無い。** プラグインの `build()` は
-  ルートを1つしか返せないため、`.jsonSchemaFullFeature(doc)` は
-  「ドキュメントが null を許すか」を表現できない。呼び出し側が `.optional()` を
-  書く必要がある（§3）。直接 5 ケース。
-- **`additionalProperties` が `patternProperties` を知らない。** 3 ケース。過剰に拒否する。
-- **再帰 `$ref` は最初の反復で止まる。** コーパスの必須テストには現れないが、
-  `tree.child.name` のような深さは検証されない。
+Both are correct and they differ by one:
 
-## 8. 再現手順
+- **76 directories / subpaths**, which is what the bundle budget's "all 76
+  plugins" means.
+- **77 exported plugin objects**, `objectAdditionalProperties` exporting two.
+
+`package.json#/exports` therefore has 84 keys: 7 fixed plus 77 under
+`./plugins/` (the 76 subpaths and one deprecated alias). None of the 58
+subpaths the previous major published has been lost, asserted in the types by
+`test/type/public-surface/json-schema.type-test.ts` and at run time by
+`test/integration/public-subpath-resolution.test.ts`.
+
+## 7. Known limits
+
+Nothing in this section costs a case in the corpus; the failing count is zero.
+These are limits a real document can still meet.
+
+- **A document's own presence policy has nowhere to be expressed.** A plugin's
+  `build()` returns one root, so `.jsonSchemaFullFeature(doc)` cannot say
+  whether the document permits null. The caller writes `.optional()`, as the
+  harness does in §3.
+- **Recursive `$ref` expands to a fixed depth.** Three levels, for the reason
+  measured above. A document nesting deeper than that is not checked all the
+  way down.
+- **An external `$ref` resolves only against `externalDocuments`.** Nothing is
+  fetched, deliberately; a caller who wants a remote schema fetches it and
+  passes it in.
+
+## 8. Reproducing this
 
 ```bash
 git submodule update --init --recursive
@@ -262,7 +261,7 @@ npm ci
 npx jest test/integration/json-schema-suite.test.ts
 ```
 
-CI は submodule を取得する必要がある（`submodules: true`）。
-コーパスが無い場合、このスイートは**緑にならず**、
-「コーパスが checkout されていない」という1本のテストが明示的に落ちる。
-測っていないのに数字が出る事故を防ぐための設計である。
+CI has to fetch the submodule (`submodules: true`). Without the corpus this
+suite does **not** go green: one test fails explicitly saying the corpus is not
+checked out. That is deliberate, so a number can never appear without something
+having been measured.

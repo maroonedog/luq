@@ -57,7 +57,7 @@ describe("matchPathPattern", () => {
     expect(() => matchPathPattern("a..b", "a.b")).toThrow(PathSyntaxError);
   });
 
-  it("__proto__ を含むパターンは受け付ける（名前での拒否はやめた）", () => {
+  it("accepts a pattern containing __proto__, refusal by name having been dropped", () => {
     expect(matchPathPattern("__proto__", "__proto__")).toBe(true);
   });
 

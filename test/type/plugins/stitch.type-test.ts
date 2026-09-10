@@ -1,12 +1,12 @@
-// `stitch` が受け取る束に、型が付いていること。
+// That the bundle `stitch` receives is typed.
 //
-// このファイルが存在する理由。宣言の時点でパスの集合は分かっているのだから、
-// 束の中身も分かっているはずである。それを `Readonly<Record<string, unknown>>`
-// に潰していた間、以下の三つはすべてコンパイルを通っていた — 綴り違いも、
-// 型の取り違えも、存在しないパスも。
+// Why this file exists: the set of paths is known at the declaration, so the
+// bundle's contents are knowable too. While it was flattened to
+// `Readonly<Record<string, unknown>>`, all three of the following compiled —
+// a misspelling, a mistaken type, and a path that does not exist.
 //
-// 否定は expect-error のディレクティブで固定してある。使われなければ TS2578
-// になるので、typecheck が通ること自体が、それらが今も落ちる証明になっている。
+// The negatives are pinned with expect-error directives. An unused one is
+// itself an error, so the type check passing is the proof they still fail.
 import { Builder } from "../../../src/index";
 import { requiredPlugin } from "../../../src/plugins/required";
 import { stitchPlugin } from "../../../src/plugins/stitch";
@@ -21,7 +21,7 @@ interface Order {
 
 const kit = Builder().use(requiredPlugin).use(stitchPlugin);
 
-// ---- POSITIVE: 束のメンバーにも value にも root にも型が付く --------------
+// ---- POSITIVE: the bundle members, the value and the root are all typed --
 export const crossField = kit
   .for<Order>()
   .v("total", (b) =>
@@ -31,8 +31,9 @@ export const crossField = kit
   )
   .build();
 
-// ドット付きのパスはブラケットで読む。述語の中はただのプロパティアクセスで、
-// フィールドパスのパーサとは無関係なので、別名は要らない。
+// A dotted path is read with brackets. Inside the predicate this is plain
+// property access with nothing to do with the path parser, so no alias is
+// needed.
 export const nested = kit
   .for<Order>()
   .v("total", (b) =>
@@ -42,8 +43,9 @@ export const nested = kit
   )
   .build();
 
-// ---- 非破壊: 束を Record として受ける旧来の述語も通る ---------------------
-// 引数の広い関数は狭い期待に代入できるので、既存の呼び出しは壊れない。
+// ---- non-breaking: a predicate taking the bundle as a Record still works -
+// A function with a wider parameter is assignable to a narrower expectation,
+// so existing calls do not break.
 const legacyCheck: StitchCheck = (fieldValues, value) => ({
   valid: typeof fieldValues["price"] === "number" && typeof value === "number",
 });
@@ -52,26 +54,26 @@ export const legacy = kit
   .v("total", (b) => b.number.stitch(["price"], legacyCheck))
   .build();
 
-// ---- NEGATIVE 1: 宣言していないパスは束に無い -----------------------------
+// ---- NEGATIVE 1: an undeclared path is not in the bundle -----------------
 kit.for<Order>().v("total", (b) =>
   b.number.stitch(["price"], (f) => ({
-    // @ts-expect-error 宣言したのは "price" だけ
+    // @ts-expect-error only "price" was declared
     valid: f.quantity > 0,
   }))
 );
 
-// ---- NEGATIVE 2: メンバーの型は守られる -----------------------------------
+// ---- NEGATIVE 2: the members keep their types ----------------------------
 kit.for<Order>().v("total", (b) =>
   b.number.stitch(["price"], (f) => ({
-    // @ts-expect-error price は number なので string のメソッドは無い
+    // @ts-expect-error price is a number and has no string method
     valid: f.price.toUpperCase() === "X",
   }))
 );
 
-// ---- NEGATIVE 3: ルートに無いパスは宣言できない ---------------------------
+// ---- NEGATIVE 3: a path not on the root cannot be declared ---------------
 kit.for<Order>().v("total", (b) =>
   b.number.stitch(
-    // @ts-expect-error "nope" は Order のパスではない
+    // @ts-expect-error "nope" is not a path of Order
     ["nope"],
     () => ({ valid: true })
   )

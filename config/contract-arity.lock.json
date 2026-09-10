@@ -1,33 +1,33 @@
 {
   "note": [
-    "プラグイン著者が書くコードが依存する面の形。scripts/check-contract-arity.ts が",
-    "src/ から読み直し、1つでも食い違ったら CI が落ちる。",
-    "ここに書いてある値はすべて src/ を TypeScript パーサで読んだ実測値であって、",
-    "設計文書からの転記ではない。設計文書と食い違う場合は driftFromDesign を読むこと。"
+    "The shape of the surface a plugin author's code depends on. scripts/check-contract-arity.ts",
+    "re-reads it from src/ and fails CI on any disagreement.",
+    "Every value here was read out of src/ with a TypeScript parser, not copied from a design",
+    "document. Where the two disagree, read driftFromDesign."
   ],
   "measuredFrom": {
     "argumentMarkerKinds": "src/plugin-kit/marker.types.ts#ArgumentMarkerRegistry",
     "outputMarkerKinds": "src/plugin-kit/marker.types.ts#OutputMarkerRegistry",
-    "outputMarkerTypeNames": "OutputMarkerRegistry の各メンバの型構築子（重複を除く）",
+    "outputMarkerTypeNames": "The type constructor of each OutputMarkerRegistry member, deduplicated",
     "presenceShiftKinds": "src/plugin-kit/marker.types.ts#PresenceShiftKind",
-    "resolveArgTypeParameterCount": "src/chain/resolve-args.types.ts#ResolveArg の型引数",
+    "resolveArgTypeParameterCount": "The type parameters of ResolveArg",
     "chainStateMembers": "src/types/index.ts#PresenceState + src/chain/chain-state.types.ts#ChainState",
     "ruleBuildContextMembers": "src/plugin-kit/rule-build-context.ts#RuleBuildContext",
-    "pluginDefinitionBuildIsMethodDeclaration": "src/plugin-kit/plugin-definition.ts#PluginDefinition の build がメソッド宣言か"
+    "pluginDefinitionBuildIsMethodDeclaration": "Whether PluginDefinition's build is written as a method declaration"
   },
   "whyEachFactIsLocked": {
-    "argumentMarkerKinds": "閉じた語彙。1つ足すと2つのリゾルバの網羅証明が同時に動く。名前も順序も含めて凍結する。",
-    "outputMarkerKinds": "build() の戻り型を決める。エントリを1つ増やすと全プラグインの out 制約が変わる。",
-    "resolveArgTypeParameterCount": "引数を1つ落としても既定値で通ってしまい、解決が黙って別物になる。",
-    "chainStateMembers": "3メンバ固定。増やすと presence の状態機械が別物になる。",
-    "ruleBuildContextMembers": "build() が受け取る唯一の入口。減らすと既存プラグインが壊れ、増やすと著者の前提が変わる。",
-    "pluginDefinitionBuildIsMethodDeclaration": "メソッド宣言だと引数が双変になる。アロー関数プロパティに書き換えると AnyPlugin が黙って壊れる（設計の決着事項）。"
+    "argumentMarkerKinds": "A closed vocabulary. Adding one moves the exhaustiveness proofs of both resolvers at once. Frozen down to the names and their order.",
+    "outputMarkerKinds": "Decides build()'s return type. One more entry changes the out constraint of every plugin.",
+    "resolveArgTypeParameterCount": "Drop a parameter and it still compiles against the default, so resolution silently becomes something else.",
+    "chainStateMembers": "Fixed at three. Add one and the presence state machine is a different machine.",
+    "ruleBuildContextMembers": "The only entrance build() gets. Removing one breaks existing plugins; adding one changes what authors may assume.",
+    "pluginDefinitionBuildIsMethodDeclaration": "A method declaration makes the parameters bivariant. Rewritten as an arrow-function property, AnyPlugin breaks silently. Settled design."
   },
   "driftFromDesign": [
-    "docs/design/build-order.md の step 7 は『引数マーカー 9個』『RuleBuildContext は5メンバ』と書いているが、実測は 11個 と 7メンバ である。",
-    "引数マーカーの +2 は propertyValueChain / propertyKeyChain。step 27 の patternProperties / propertyNames のために追加された（marker.types.ts のヘッダコメントが理由を書いている）。",
-    "RuleBuildContext の +2 は fieldPath / declaredSiblingKeys。src/json-schema/create-structural-context.ts と src/plugins/object-additional-properties/** が読んでいる。",
-    "この lock は step 32 で初めて作られた。step 7 で作られていれば上の2件は『契約の変更』として審査対象になっていたはずで、審査されなかったこと自体が記録として残る。"
+    "The design document states fewer argument markers and fewer RuleBuildContext members than src/ actually has.",
+    "The extra argument markers are propertyValueChain and propertyKeyChain, added for patternProperties and propertyNames; marker.types.ts states why.",
+    "The extra RuleBuildContext members are fieldPath and declaredSiblingKeys, both read by the structural-context builder and the additional-properties plugin.",
+    "This lock file did not exist when either was added. Had it existed, both would have been reviewed as contract changes — that they were not is itself the record."
   ],
   "contract": {
     "argumentMarkerKinds": [

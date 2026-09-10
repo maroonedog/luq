@@ -1,4 +1,5 @@
-// 公開 Builder を通した required の実挙動。宣言ではなく検証結果を見る。
+// How required behaves through the public builder. What is watched is the
+// result of validating, not the declaration.
 import { Builder } from "../../../../src/index";
 import { requiredPlugin } from "../../../../src/plugins/required";
 import { nullablePlugin } from "../../../../src/plugins/nullable";
@@ -23,25 +24,25 @@ function issuesOf(input: Partial<Shape>): readonly string[] {
   return result.valid ? [] : result.issues.map((issue) => issue.code);
 }
 
-describe("required: 欠損の定義", () => {
+describe("required: what counts as missing", () => {
   it.each([
     ["undefined", undefined],
     ["null", null],
-    ["空文字", ""],
-  ])("%s を拒否する", (_label, value) => {
+    ["the empty string", ""],
+  ])("rejects %s", (_label, value) => {
     expect(issuesOf({ text: value as string })).toEqual(["required"]);
   });
 
-  it("キーそのものが無い場合も拒否する", () => {
+  it("rejects a missing key as well", () => {
     expect(issuesOf({})).toEqual(["required"]);
   });
 
-  it("空白のみの文字列は「値がある」として通す", () => {
+  it("accepts a whitespace-only string as present", () => {
     expect(issuesOf({ text: " " })).toEqual([]);
   });
 });
 
-describe("required: falsy でも値は値", () => {
+describe("required: falsy is still a value", () => {
   const validateAll = Builder()
     .use(requiredPlugin)
     .for<Shape>()
@@ -51,7 +52,7 @@ describe("required: falsy でも値は値", () => {
     .v("nested", (b) => b.object.required())
     .build();
 
-  it("0 / false / [] / {} を全て通す", () => {
+  it("accepts 0, false, [] and {} alike", () => {
     const result = validateAll.validate({
       text: "x",
       count: 0,
@@ -63,8 +64,8 @@ describe("required: falsy でも値は値", () => {
   });
 });
 
-describe("required: code とメッセージ", () => {
-  it("既定 code はプラグイン名、既定メッセージは `<path> is required`", () => {
+describe("required: the code and the message", () => {
+  it("defaults the code to the plugin name and the message to `<path> is required`", () => {
     const result = validateText.validate({} as Shape);
     expect(result.valid).toBe(false);
     if (result.valid) return;
@@ -76,14 +77,15 @@ describe("required: code とメッセージ", () => {
     });
   });
 
-  it("options.code と options.messageFactory を尊重する", () => {
+  it("honours options.code and options.messageFactory", () => {
     const validator = Builder()
       .use(requiredPlugin)
       .for<Shape>()
       .v("text", (b) =>
         b.string.required({
           code: "TEXT_MISSING",
-          messageFactory: (context) => `${context.path}/${context.code} 必須`,
+          messageFactory: (context) =>
+            `${context.path}/${context.code} is needed`,
         })
       )
       .build();
@@ -91,11 +93,12 @@ describe("required: code とメッセージ", () => {
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("TEXT_MISSING");
-    expect(result.issues[0]?.message).toBe("text/TEXT_MISSING 必須");
+    expect(result.issues[0]?.message).toBe("text/TEXT_MISSING is needed");
   });
 
-  // severity だけが妥当性を決める。warning は issue として出るが値は棄却しない。
-  it("options.severity を尊重する", () => {
+  // Severity alone decides validity: a warning is reported as an issue and
+  // does not reject the value.
+  it("honours options.severity", () => {
     const validator = Builder()
       .use(requiredPlugin)
       .for<Shape>()
@@ -107,7 +110,7 @@ describe("required: code とメッセージ", () => {
   });
 });
 
-describe("presence の合成は順序に依存しない", () => {
+describe("composing presence does not depend on order", () => {
   function build(order: "required-first" | "nullable-first") {
     return Builder()
       .use(requiredPlugin)
@@ -125,15 +128,15 @@ describe("presence の合成は順序に依存しない", () => {
   it.each([
     ["null", null],
     ["undefined", undefined],
-    ["空文字", ""],
-    ["値あり", "abc"],
-  ])("%s の判定が両方の並びで一致する", (_label, value) => {
+    ["the empty string", ""],
+    ["a present value", "abc"],
+  ])("judges %s the same in either order", (_label, value) => {
     const first = build("required-first").validate({ text: value } as Shape);
     const second = build("nullable-first").validate({ text: value } as Shape);
     expect(second.valid).toBe(first.valid);
   });
 
-  it("required().nullable() は null を許し undefined を拒否する", () => {
+  it("has required().nullable() permit null and reject undefined", () => {
     const validator = build("required-first");
     expect(validator.validate({ text: null } as unknown as Shape).valid).toBe(
       true

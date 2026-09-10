@@ -17,7 +17,7 @@ function treeWithDoc(documentBody: string): SeedFileTree {
 }
 
 describe("findDocImportViolations", () => {
-  it("公開サブパスだけを使う例は通る", () => {
+  it("passes an example using published subpaths only", () => {
     const tree = treeWithDoc(
       markdown(
         'import { Builder } from "@maroonedog/luq";',
@@ -32,7 +32,7 @@ describe("findDocImportViolations", () => {
     });
   });
 
-  it("未公開サブパスの例を名指しで落とす", () => {
+  it("names and fails an example using an unpublished subpath", () => {
     const tree = treeWithDoc(
       markdown('import { x } from "@maroonedog/luq/plugins/doesNotExist";')
     );
@@ -48,7 +48,7 @@ describe("findDocImportViolations", () => {
     });
   });
 
-  it("内部パスを直接指す例を落とす", () => {
+  it("fails an example pointing straight at an internal path", () => {
     const tree = treeWithDoc(
       markdown('import { runPlan } from "@maroonedog/luq/runtime/run-plan";')
     );
@@ -58,7 +58,7 @@ describe("findDocImportViolations", () => {
     });
   });
 
-  it("他パッケージの import は対象外", () => {
+  it("leaves imports of other packages out of scope", () => {
     const tree = treeWithDoc(
       markdown('import { z } from "zod";', 'import * as fs from "fs";')
     );
@@ -68,7 +68,7 @@ describe("findDocImportViolations", () => {
     });
   });
 
-  it("TypeScript 以外のフェンスは読まない", () => {
+  it("reads no fence that is not TypeScript", () => {
     const tree: SeedFileTree = {
       ...SEED_PLUGIN_TREE,
       "docs/guide.md": [
@@ -84,7 +84,7 @@ describe("findDocImportViolations", () => {
     });
   });
 
-  it("入れ子のディレクトリも README も見る", () => {
+  it("looks at nested directories and at the README", () => {
     const tree: SeedFileTree = {
       ...SEED_PLUGIN_TREE,
       "docs/migration/core.md": markdown(
@@ -102,7 +102,7 @@ describe("findDocImportViolations", () => {
     });
   });
 
-  it("プラグインを足すと、それまで落ちていた例が通る", () => {
+  it("lets an example that was failing pass once its plugin is added", () => {
     const tree: SeedFileTree = {
       ...SEED_PLUGIN_TREE,
       "docs/guide.md": markdown(

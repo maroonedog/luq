@@ -78,24 +78,24 @@ export function hasRejectingIssue(issues: readonly ValidationIssue[]): boolean {
 }
 
 /**
- * 再帰しないプランのための、共有の何もしないランナー。
+ * The shared do-nothing runner for a plan that cannot recurse.
  *
- * createRecursionRunner は WeakSet と四つのクロージャを作る。プランに
- * 再帰規則が一つも無くても validate() のたびに作っていて、それが固定コストの
- * 88% を占めていた — 計測で 9.7%。プランが再帰を含むかは build() 時に
- * 分かることで、実行時に問い直すことではない。
+ * Building a real runner allocates a WeakSet and several closures. Doing that
+ * on every validate() of a plan with no recursive rule in it was most of the
+ * fixed per-call cost. Whether a plan can recurse is known at build time and
+ * is not a question to re-ask at validation time.
  *
- * 呼ばれることはない。呼ばれるのは field.recursion が null でない場合だけで、
- * そのときは planCanRecurse が true を返しているので本物が渡っている。
+ * Never actually called: a field only reaches its runner when it declares
+ * recursion, and a plan containing one gets the real runner instead.
  */
 const NO_RECURSION: RecursionRunner = () => {};
 
 /**
- * ルートのランナーが要るか。
+ * Whether the root needs a real runner.
  *
- * 見るのはルートの直下と配列ノードの要素だけでよい。合成 (oneOf など) の
- * 枝は run-branch が自前のランナーを作って入れ子のプランを回すので、
- * ここで渡すものを使わない。
+ * Only the fields directly under the root and the elements of array nodes
+ * matter. A composite branch makes its own runner for the nested plan, so it
+ * never uses the one passed from here.
  */
 function planCanRecurse(plan: ValidationPlan): boolean {
   return (

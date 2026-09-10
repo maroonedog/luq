@@ -123,7 +123,7 @@ export type ResolveOut<O, TValue, TState extends ChainState> = [O] extends [
     ? [unknown, TState]
     : [O] extends [GuardOut]
       ? [TValue, TState]
-      : // クロスフィールドの判定は主体の値も状態も動かさない。読むだけである。
+      : // A cross-field check moves neither the value nor the state. It reads.
         [O] extends [StitchOut]
         ? [TValue, TState]
         : [O] extends [BundleOut]

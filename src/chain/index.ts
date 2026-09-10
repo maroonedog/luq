@@ -13,6 +13,8 @@ export {
   type ChainBuildContext,
   type ChainNodeWiring,
 } from "./create-chain-node";
+export type { DeclaredCall } from "./declared-call.types";
+export type { DeclarationRecorder } from "./declaration-recorder.port";
 export {
   collectBranchRules,
   resolvePluginArguments,
@@ -25,6 +27,7 @@ export { buildSlotSurface, createFieldSlots } from "./create-field-slots";
 export {
   collectFieldRules,
   FieldChainResultError,
+  type FieldChainOutcome,
 } from "./collect-field-rules";
 
 export type { PluginBag, BagEntry, SlotPlugins } from "./plugin-bag.types";

@@ -9,19 +9,17 @@ import type {
 } from "./size-budget.types";
 
 /**
- * config/size-budget.json を読んで形を確かめる。
+ * Reads the size budget and checks its shape.
  *
- * JSON を `import` で取り込むと形は「TypeScript が推論した形」であって
- * 「ファイルが実際に持っている形」ではない。予算ファイルを手で書き換える
- * 運用にする以上、綴り間違いはゲートが動く前にここで落とす。
+ * Importing JSON gives the shape TypeScript inferred, not the shape the file
+ * actually has. The budget is edited by hand, so a misspelling is caught here,
+ * before the gate runs on it.
  */
 export const SIZE_BUDGET_PATH = "config/size-budget.json";
 
 function readRecord(value: unknown, where: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(
-      `${SIZE_BUDGET_PATH}: ${where} がオブジェクトではありません`
-    );
+    throw new Error(`${SIZE_BUDGET_PATH}: ${where} is not an object`);
   }
   return value as Record<string, unknown>;
 }
@@ -33,9 +31,7 @@ function readNumber(
 ): number {
   const found = source[key];
   if (typeof found !== "number" || !Number.isFinite(found)) {
-    throw new Error(
-      `${SIZE_BUDGET_PATH}: ${where}.${key} が数値ではありません`
-    );
+    throw new Error(`${SIZE_BUDGET_PATH}: ${where}.${key} is not a number`);
   }
   return found;
 }
@@ -47,9 +43,7 @@ function readString(
 ): string {
   const found = source[key];
   if (typeof found !== "string") {
-    throw new Error(
-      `${SIZE_BUDGET_PATH}: ${where}.${key} が文字列ではありません`
-    );
+    throw new Error(`${SIZE_BUDGET_PATH}: ${where}.${key} is not a string`);
   }
   return found;
 }
@@ -62,7 +56,7 @@ function readStringArray(
   const found = source[key];
   if (!Array.isArray(found) || found.some((one) => typeof one !== "string")) {
     throw new Error(
-      `${SIZE_BUDGET_PATH}: ${where}.${key} が文字列の配列ではありません`
+      `${SIZE_BUDGET_PATH}: ${where}.${key} is not an array of strings`
     );
   }
   return found as readonly string[];
@@ -133,7 +127,7 @@ export function readSizeBudget(repositoryRoot: string): SizeBudget {
   const root = readRecord(parsed, "root");
   const budgets = root["budgets"];
   if (!Array.isArray(budgets) || budgets.length === 0) {
-    throw new Error(`${SIZE_BUDGET_PATH}: budgets が空です`);
+    throw new Error(`${SIZE_BUDGET_PATH}: budgets is empty`);
   }
   return {
     budgets: budgets.map(readBundleBudget),

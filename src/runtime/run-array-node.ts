@@ -76,12 +76,12 @@ function runElements(
   const nodePath = node.renderedPath;
   const elementSink = context.sink.forArrayElements();
   const nested = target === undefined ? NO_WRITE_TARGETS : target.nested;
-  // 要素コンテキストはノードごとに一つ。7つの成員のうち要素ごとに変わるのは
-  // `item` だけで、残る6つは validate() 一回のあいだ、あるいはこのノードの
-  // あいだ動かない。毎要素で組み直していたのは、動かないものを動くものと
-  // 同じ場所に置いていたからにすぎない。**プラグインには渡らない** —
-  // プラグインが見るのは runField が組む RuleContext で、そちらは `item` を
-  // 都度読み直すので、この使い回しは外から観測できない。
+  // One element context per node. `item` is the only member that changes per
+  // element; the rest hold still for the whole node, and rebuilding them per
+  // element only happened because the fixed parts sat beside the moving one.
+  // **It never reaches a plugin** — a plugin sees the RuleContext that running
+  // a field assembles, and that reads `item` afresh, so reusing this is not
+  // observable from outside.
   const elementContext: MutableElementContext = {
     root: context.root,
     sink: elementSink,

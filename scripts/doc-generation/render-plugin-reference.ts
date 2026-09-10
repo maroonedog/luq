@@ -1,6 +1,6 @@
 import type { PluginSurfaceEntry } from "./read-plugin-surface";
 
-/** src/types が数える TypeName の全体。9つ揃っていたら「every slot」と書く。 */
+/** Every TypeName there is. A plugin covering all of them is written as "every slot". */
 const ALL_SLOTS: readonly string[] = [
   "string",
   "number",
@@ -57,7 +57,7 @@ function toRow(entry: PluginSurfaceEntry): string {
   );
 }
 
-/** 表 + 集計。行の順序はサブパス名の辞書順で、生成は決定的。 */
+/** The table plus its totals. Rows are ordered by subpath name, so generation is deterministic. */
 export function renderPluginReference(
   entries: readonly PluginSurfaceEntry[]
 ): string {

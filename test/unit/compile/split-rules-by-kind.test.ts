@@ -34,7 +34,7 @@ describe("splitRulesByKind", () => {
     expect(split.recursions).toHaveLength(1);
   });
 
-  it("条件付き presence は静的な presence と混ざらない", () => {
+  it("keeps conditional presence out of the static presence bucket", () => {
     const split = splitRulesByKind([
       requiredRule(),
       makeConditionalPresence("requiredIf", () => true),

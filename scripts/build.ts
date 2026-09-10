@@ -60,9 +60,9 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const report = buildDistribution(REPOSITORY_ROOT);
     console.error(
-      `dist: CommonJS+宣言 ${report.commonJsModuleCount} ファイル / ` +
-        `ESM ${report.esmModuleCount} ファイル / ` +
-        `サブパスエントリ ${report.subpathEntryCount} ファイル`
+      `dist: ${report.commonJsModuleCount} CommonJS+declaration files, ` +
+        `${report.esmModuleCount} ESM files, ` +
+        `${report.subpathEntryCount} subpath entries`
     );
     return 0;
   });

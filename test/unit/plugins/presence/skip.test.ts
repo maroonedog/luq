@@ -1,4 +1,4 @@
-// skip は validateIf の極性を反転しただけのゲート。
+// skip is validateIf with its polarity inverted, and nothing more.
 import { Builder } from "../../../../src/index";
 import { skipPlugin } from "../../../../src/plugins/skip";
 import { stringMinPlugin } from "../../../../src/plugins/string-min";
@@ -13,20 +13,20 @@ const validateTitle = Builder()
   .build();
 
 describe("skip", () => {
-  it("条件が真なら検証しない", () => {
+  it("validates nothing when the condition is true", () => {
     expect(validateTitle.validate({ isDraft: true, title: "ab" }).valid).toBe(
       true
     );
   });
 
-  it("条件が偽なら検証する", () => {
+  it("validates when it is false", () => {
     const result = validateTitle.validate({ isDraft: false, title: "ab" });
     expect(result.valid).toBe(false);
     if (result.valid) return;
     expect(result.issues[0]?.code).toBe("stringMin");
   });
 
-  it("validateIf と同じく位置に依存しない", () => {
+  it("does not depend on its position, as validateIf does not", () => {
     const gateLast = Builder()
       .use(skipPlugin)
       .use(stringMinPlugin)
@@ -36,7 +36,7 @@ describe("skip", () => {
     expect(gateLast.validate({ isDraft: true, title: "ab" }).valid).toBe(true);
   });
 
-  it("配列要素では要素ごとに判定できる", () => {
+  it("decides per element on an array", () => {
     type Bag = { rows: { skipMe: boolean; name: string }[] };
     const validator = Builder()
       .use(skipPlugin)

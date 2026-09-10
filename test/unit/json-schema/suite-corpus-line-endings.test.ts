@@ -1,15 +1,15 @@
-// コーパスの digest が改行コードに依存しないことを固定する。
+// Pins that the corpus digest does not depend on line endings.
 //
-// サブモジュール test/fixtures/json-schema-suite は本体の .gitattributes の
-// 外にあるので、チェックアウトされる改行はプラットフォーム依存になる。
-// Windows (core.autocrlf=true) では CRLF、Linux CI では LF。
-// 生バイトをハッシュしていたため、Windows で記録した digest が Linux CI で
-// 一致せず、PR #14 の verify が「コーパスが動いた」と誤検出して落ちた。
+// The suite submodule sits outside this repository's .gitattributes, so what
+// gets checked out is platform-dependent: CRLF on Windows, LF on a Linux
+// runner. Hashing the raw bytes therefore makes a digest recorded on one
+// platform disagree on the other, and the check reports "the corpus moved"
+// when nothing did.
 //
-// この検査が落ちたら、readSuiteCorpus が改行を正規化しなくなったということ。
+// A failure here means the corpus reader stopped normalising line endings.
 import * as crypto from "crypto";
 
-/** readSuiteCorpus と同じ正規化。ここが両者で食い違うと意味が無い。 */
+/** The same normalisation the corpus reader does. Diverging here makes this pointless. */
 function normalizeLineEndings(text: string): string {
   return text.split("\r\n").join("\n");
 }
@@ -35,12 +35,12 @@ const CRLF_FILES = LF_FILES.map((file) => ({
   text: file.text.split("\n").join("\r\n"),
 }));
 
-describe("コーパス digest の改行非依存", () => {
-  it("LF と CRLF で同じ digest になる", () => {
+describe("the corpus digest is independent of line endings", () => {
+  it("gives LF and CRLF the same digest", () => {
     expect(digestOf(CRLF_FILES)).toBe(digestOf(LF_FILES));
   });
 
-  it("正規化しなければ digest は食い違う（この検査自体が機能している証拠）", () => {
+  it("gives different digests without normalising, proving this check works", () => {
     const rawDigest = (files: readonly { name: string; text: string }[]) => {
       const digest = crypto.createHash("sha256");
       for (const file of files) {
@@ -54,7 +54,7 @@ describe("コーパス digest の改行非依存", () => {
     expect(rawDigest(CRLF_FILES)).not.toBe(rawDigest(LF_FILES));
   });
 
-  it("内容が本当に変われば digest も変わる", () => {
+  it("changes the digest when the content really changes", () => {
     const changed = [
       LF_FILES[0]!,
       { name: "ref.json", text: '[\n  { "description": "CHANGED" }\n]\n' },
@@ -62,7 +62,7 @@ describe("コーパス digest の改行非依存", () => {
     expect(digestOf(changed)).not.toBe(digestOf(LF_FILES));
   });
 
-  it("ファイル名が変われば digest も変わる", () => {
+  it("changes the digest when a file name changes", () => {
     const renamed = [
       LF_FILES[0]!,
       { name: "other.json", text: LF_FILES[1]!.text },

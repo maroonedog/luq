@@ -10,8 +10,8 @@ import { writeGeneratedFile } from "./catalog/write-generated-file";
 import { runCheckAndExit } from "./catalog/run-check-and-exit";
 
 /**
- * config/plugin-catalog.lock.json の内容。
- * CI に散らばっていたプラグイン数のハードコードを、この1ファイルに集約する。
+ * The contents of the catalog lock, which gathers into one file the plugin
+ * counts that were otherwise hard-coded across CI.
  */
 export function buildPluginCatalogLock(
   repositoryRoot: string
@@ -44,7 +44,7 @@ if (require.main === module) {
   runCheckAndExit(() => {
     const changed = generatePluginCatalogLock(REPOSITORY_ROOT);
     console.error(
-      `${PLUGIN_CATALOG_LOCK_OUTPUT}: ${changed ? "更新しました" : "変更なし"}`
+      `${PLUGIN_CATALOG_LOCK_OUTPUT}: ${changed ? "updated" : "unchanged"}`
     );
     return 0;
   });

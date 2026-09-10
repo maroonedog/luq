@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-/** 絶対パスの .ts ファイルを再帰収集する。存在しないディレクトリは空配列。 */
+/** Recursively collects .ts files as absolute paths. A missing directory gives []. */
 export function collectTypeScriptFiles(absoluteDirectory: string): string[] {
   if (!fs.existsSync(absoluteDirectory)) return [];
   const entries = fs
@@ -14,7 +14,7 @@ export function collectTypeScriptFiles(absoluteDirectory: string): string[] {
   });
 }
 
-/** OS 依存の区切りを posix に正規化した、ルートからの相対パス。 */
+/** A path relative to the root, with separators normalised to posix. */
 export function toRepositoryRelativePosix(
   repositoryRoot: string,
   absolutePath: string
