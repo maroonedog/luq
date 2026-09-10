@@ -863,7 +863,7 @@ export const plugins: readonly PluginInfo[] = [
     ],
     "tier": "isolated",
     "parameters": [],
-    "description": "Declares the field as an object slot, so the object rules can be chained onto it.",
+    "description": "**Deprecated, and inert.** Entering `b.object` already checks that the value is a plain object, under the code `objectType`, so this rule answers PASS for everything. Drop the import and the `.object()` call: the field goes on rejecting arrays, `null` and primitives either way.",
     "example": {
       "declarations": [
         "settings: { theme: string };"
@@ -872,7 +872,7 @@ export const plugins: readonly PluginInfo[] = [
       "uses": [
         "requiredPlugin"
       ],
-      "chain": "object.required().object()",
+      "chain": "object.required()",
       "imports": [],
       "prelude": []
     }

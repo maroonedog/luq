@@ -238,6 +238,37 @@ export const filled = settingsValidator.parse({});
 1.x's `.v("language", b => b.string.optional(), "en")` shorthand — is gone; pass
 `{ default: "en" }`.
 
+## What entering a slot checks
+
+`b.<slot>` decides which methods the chain offers, and it also seeds the chain
+with one rule: the value is of that type. So a field declared `b.number` and
+handed a string reports `numberType`, even with no value rule on it at all.
+
+| Slot | Code | Accepts |
+|---|---|---|
+| `b.string` | `stringType` | `typeof value === "string"` |
+| `b.number` | `numberType` | `typeof value === "number"` — `NaN` included |
+| `b.boolean` | `booleanType` | `typeof value === "boolean"` |
+| `b.date` | `dateType` | `value instanceof Date` |
+| `b.array` | `arrayType` | `Array.isArray(value)` |
+| `b.object` | `objectType` | a plain object: not an array, not `null` |
+
+`tuple`, `union` and `any` seed nothing. `any` accepts everything by
+definition, and the other two are settled by the branches declared inside them.
+
+Two things it deliberately leaves alone:
+
+- **`undefined` and `null` pass it.** Absence belongs to `required` /
+  `optional` / `nullable`, which run in the same list. A missing field reports
+  `required`, not a type error.
+- **`NaN` is a number.** The rule answers the type question only; `min`,
+  `integer` and `finite` are where you say what you think of `NaN`.
+
+This is also why a value rule never re-decides the type: `.min(18)` answers
+PASS for `"abc"` because the slot has already reported it. One invalid value
+produces one issue, not one per rule in the chain — which is the convention
+[writing-a-plugin.md](writing-a-plugin.md) asks your own plugins to keep.
+
 ## `normalize`
 
 The other member of that third argument. A form hands over a string in a number

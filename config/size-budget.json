@@ -82,8 +82,8 @@
       "id": "core-only",
       "description": "Builder alone: the floor paid by someone who uses no plugin at all.",
       "plugins": [],
-      "gzipCeilingBytes": 8340,
-      "recordedGzipBytes": 8208,
+      "gzipCeilingBytes": 8579,
+      "recordedGzipBytes": 8447,
       "legacyGzipBytes": 17423
     },
     {
@@ -92,8 +92,8 @@
       "plugins": [
         "required"
       ],
-      "gzipCeilingBytes": 8470,
-      "recordedGzipBytes": 8338
+      "gzipCeilingBytes": 8718,
+      "recordedGzipBytes": 8586
     },
     {
       "id": "three-plugin",
@@ -103,8 +103,8 @@
         "stringMin",
         "numberMin"
       ],
-      "gzipCeilingBytes": 8850,
-      "recordedGzipBytes": 8713
+      "gzipCeilingBytes": 9049,
+      "recordedGzipBytes": 8912
     },
     {
       "id": "six-plugin",
@@ -117,8 +117,8 @@
         "numberMin",
         "numberMax"
       ],
-      "gzipCeilingBytes": 9270,
-      "recordedGzipBytes": 9124,
+      "gzipCeilingBytes": 9479,
+      "recordedGzipBytes": 9333,
       "legacyGzipBytes": 19562
     },
     {
@@ -129,8 +129,8 @@
         "optional",
         "nullable"
       ],
-      "gzipCeilingBytes": 8590,
-      "recordedGzipBytes": 8453
+      "gzipCeilingBytes": 8842,
+      "recordedGzipBytes": 8705
     },
     {
       "id": "preset-everyday",
@@ -150,8 +150,8 @@
         "arrayMaxLength",
         "arrayEach"
       ],
-      "gzipCeilingBytes": 9810,
-      "recordedGzipBytes": 9674
+      "gzipCeilingBytes": 10010,
+      "recordedGzipBytes": 9874
     },
     {
       "id": "jsonschema-plugin",
@@ -159,8 +159,8 @@
       "plugins": [
         "jsonSchema"
       ],
-      "gzipCeilingBytes": 21280,
-      "recordedGzipBytes": 21145
+      "gzipCeilingBytes": 21501,
+      "recordedGzipBytes": 21366
     },
     {
       "id": "jsonschema-full-feature",
@@ -168,15 +168,15 @@
       "plugins": [
         "jsonSchemaFullFeature"
       ],
-      "gzipCeilingBytes": 23660,
-      "recordedGzipBytes": 23536
+      "gzipCeilingBytes": 23875,
+      "recordedGzipBytes": 23751
     },
     {
       "id": "full-feature",
       "description": "Builder + every plugin in the catalog, JSON Schema extensions included: the everything ceiling.",
       "plugins": "all",
-      "gzipCeilingBytes": 26360,
-      "recordedGzipBytes": 26253
+      "gzipCeilingBytes": 26556,
+      "recordedGzipBytes": 26449
     }
   ],
   "treeShaking": {

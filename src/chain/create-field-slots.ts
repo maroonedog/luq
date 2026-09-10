@@ -12,6 +12,7 @@
 // modules below it stay acyclic.
 // ===========================================================================
 import type { TypeName } from "../types";
+import type { Rule } from "../plugin-kit/compiled-rule";
 import { eraseChainSurface } from "../core/type-erasure";
 import type { PluginBag } from "./plugin-bag.types";
 import type { FieldSlots } from "./field-slots.types";
@@ -22,6 +23,7 @@ import {
   type ChainNodeWiring,
 } from "./create-chain-node";
 import { resolvePluginArguments } from "./collect-branch-rules";
+import { slotTypeGuard } from "./slot-type-guard";
 
 const SLOT_NAMES: readonly TypeName[] = Object.freeze([
   "string",
@@ -48,9 +50,18 @@ export function buildSlotSurface(
       resolvePluginArguments(bag, context, buildSlotSurface, plugin, declared),
   };
   for (const slot of SLOT_NAMES) {
+    // The slot's own type check leads the chain, so it runs before any value
+    // rule. Those rules pass a wrong-typed value through on purpose; this is
+    // what reports it. See slot-type-guard.ts.
+    const guard =
+      context.typeDecidedElsewhere === true
+        ? null
+        : slotTypeGuard(slot, context.config.defaultSeverity);
+    const seed: readonly Rule[] =
+      guard === null ? EMPTY_RULES : Object.freeze([guard]);
     Object.defineProperty(surface, slot, {
       enumerable: true,
-      get: () => createChainNode(wiring, slot, EMPTY_RULES),
+      get: () => createChainNode(wiring, slot, seed),
     });
   }
   return surface;

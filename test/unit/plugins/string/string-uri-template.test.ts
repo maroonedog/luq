@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -35,7 +36,7 @@ describe("stringUriTemplate", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(uriTemplate, value)).toBe(true);
+    expect(passesThrough(uriTemplate, value)).toBe(true);
   });
 
   it("has an overridable code, which 1.x's FORMAT_URI_TEMPLATE was not", () => {

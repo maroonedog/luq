@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -23,7 +24,7 @@ describe("stringPattern", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(digitsOnly, value)).toBe(true);
+    expect(passesThrough(digitsOnly, value)).toBe(true);
   });
 
   it("is STATELESS across calls even for a /g pattern", () => {

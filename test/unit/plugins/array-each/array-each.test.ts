@@ -23,7 +23,10 @@ describe("arrayEach", () => {
   });
 
   it("passes a non-array through", () => {
-    expect(validator.validate({ scores: 3 }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ scores: 3 }).issues.map((issue) => issue.code)
+    ).toEqual(["arrayType"]);
   });
 
   it("nests: the inner each peels the second dimension", () => {

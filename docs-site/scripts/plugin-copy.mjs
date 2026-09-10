@@ -277,12 +277,12 @@ export const PLUGIN_COPY = {
   },
   objectPlugin: {
     description:
-      "Declares the field as an object slot, so the object rules can be chained onto it.",
+      "**Deprecated, and inert.** Entering `b.object` already checks that the value is a plain object, under the code `objectType`, so this rule answers PASS for everything. Drop the import and the `.object()` call: the field goes on rejecting arrays, `null` and primitives either way.",
     example: {
       declarations: ["settings: { theme: string };"],
       field: "settings",
       uses: ["requiredPlugin"],
-      chain: "object.required().object()",
+      chain: "object.required()",
     },
   },
   objectAdditionalPropertiesPlugin: {

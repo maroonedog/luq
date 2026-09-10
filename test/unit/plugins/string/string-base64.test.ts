@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -43,7 +44,7 @@ describe("stringBase64", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(standard, value)).toBe(true);
+    expect(passesThrough(standard, value)).toBe(true);
   });
 
   it("has an overridable code, which 1.x's FORMAT_BASE64 was not", () => {

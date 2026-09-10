@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -40,7 +41,7 @@ describe("stringAlphanumeric", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(strict, value)).toBe(true);
+    expect(passesThrough(strict, value)).toBe(true);
   });
 
   it("keeps ONE code whatever allowSpaces is", () => {

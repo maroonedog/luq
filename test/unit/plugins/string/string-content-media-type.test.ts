@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
   type StringValidator,
 } from "./string-model";
@@ -60,7 +61,7 @@ describe("stringContentMediaType", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(json, value)).toBe(true);
+    expect(passesThrough(json, value)).toBe(true);
   });
 
   it("REFUSES an unrecognisable media type at build time", () => {

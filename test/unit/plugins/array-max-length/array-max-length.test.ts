@@ -28,7 +28,10 @@ describe("arrayMaxLength", () => {
   });
 
   it("passes a non-array through", () => {
-    expect(validator.validate({ tags: 7 }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ tags: 7 }).issues.map((issue) => issue.code)
+    ).toEqual(["arrayType"]);
   });
 
   it("throws at BUILD time on a bound that is not a count", () => {

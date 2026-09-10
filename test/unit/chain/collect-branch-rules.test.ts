@@ -12,6 +12,7 @@ import { PASS } from "../../../src/types";
 import {
   builderPlugin,
   chainContext,
+  declaredRules,
   containsPlugin,
   expectComposite,
   expectGate,
@@ -47,7 +48,9 @@ const bag = {
 function rulesOf(chain: unknown): readonly Rule[] {
   const rules = readChainRules(chain);
   if (rules === undefined) throw new Error("not a chain");
-  return rules;
+  // Without the type check the slot seeds, so `[0]` is the rule the method
+  // under test built. slot-type-guard.test.ts asserts the seed.
+  return declaredRules(rules);
 }
 
 describe("collectBranchRules", () => {

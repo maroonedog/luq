@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -34,7 +35,7 @@ describe("stringDate", () => {
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
     // 1.x's FORMAT_* plugins returned FALSE here, so a nullable date field
     // reported a format error for `null`. The whole catalog now agrees.
-    expect(isAccepted(isoDate, value)).toBe(true);
+    expect(passesThrough(isoDate, value)).toBe(true);
   });
 
   it("has an overridable code, which 1.x's FORMAT_DATE was not", () => {

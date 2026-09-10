@@ -30,12 +30,22 @@ describe("booleanFalsy", () => {
   // Inherited behaviour: null, undefined and a missing value all pass.
   it("passes anything that is not a boolean straight through", () => {
     const loose = falsy as unknown as {
-      validate(input: unknown): { valid: boolean };
+      validate(input: unknown): {
+        valid: boolean;
+        issues: readonly { code: string }[];
+      };
     };
+    const codes = (input: unknown): readonly string[] =>
+      loose.validate(input).issues.map((issue) => issue.code);
+
+    // Absence and null belong to the presence rules, and neither is declared
+    // here, so both still pass untouched.
     expect(loose.validate({}).valid).toBe(true);
     expect(loose.validate({ archived: null }).valid).toBe(true);
-    expect(loose.validate({ archived: 1 }).valid).toBe(true);
-    expect(loose.validate({ archived: "yes" }).valid).toBe(true);
+
+    // The plugin objects to neither; the slot reports the type once.
+    expect(codes({ archived: 1 })).toEqual(["booleanType"]);
+    expect(codes({ archived: "yes" })).toEqual(["booleanType"]);
   });
 
   it("lets an option lower the severity", () => {
