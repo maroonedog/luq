@@ -69,7 +69,7 @@
       "description": "Builder だけ。プラグインを1つも使わない利用者が払う床。",
       "plugins": [],
       "gzipCeilingBytes": 8340,
-      "recordedGzipBytes": 8190,
+      "recordedGzipBytes": 8208,
       "legacyGzipBytes": 17423
     },
     {
@@ -79,7 +79,7 @@
         "required"
       ],
       "gzipCeilingBytes": 8470,
-      "recordedGzipBytes": 8316
+      "recordedGzipBytes": 8338
     },
     {
       "id": "three-plugin",
@@ -90,7 +90,7 @@
         "numberMin"
       ],
       "gzipCeilingBytes": 8850,
-      "recordedGzipBytes": 8696
+      "recordedGzipBytes": 8713
     },
     {
       "id": "six-plugin",
@@ -104,7 +104,7 @@
         "numberMax"
       ],
       "gzipCeilingBytes": 9270,
-      "recordedGzipBytes": 9111,
+      "recordedGzipBytes": 9124,
       "legacyGzipBytes": 19562
     },
     {
@@ -116,7 +116,7 @@
         "nullable"
       ],
       "gzipCeilingBytes": 8590,
-      "recordedGzipBytes": 8434
+      "recordedGzipBytes": 8453
     },
     {
       "id": "preset-everyday",
@@ -137,7 +137,7 @@
         "arrayEach"
       ],
       "gzipCeilingBytes": 9810,
-      "recordedGzipBytes": 9660
+      "recordedGzipBytes": 9674
     },
     {
       "id": "jsonschema-plugin",
@@ -146,7 +146,7 @@
         "jsonSchema"
       ],
       "gzipCeilingBytes": 21280,
-      "recordedGzipBytes": 21122
+      "recordedGzipBytes": 21145
     },
     {
       "id": "jsonschema-full-feature",
@@ -155,14 +155,14 @@
         "jsonSchemaFullFeature"
       ],
       "gzipCeilingBytes": 23660,
-      "recordedGzipBytes": 23502
+      "recordedGzipBytes": 23536
     },
     {
       "id": "full-feature",
       "description": "Builder + カタログの全プラグイン (JSON Schema 拡張2件を含む)。全部入りの上限。",
       "plugins": "all",
       "gzipCeilingBytes": 26360,
-      "recordedGzipBytes": 26207
+      "recordedGzipBytes": 26253
     }
   ],
   "treeShaking": {

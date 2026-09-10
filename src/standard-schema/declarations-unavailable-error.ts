@@ -12,6 +12,11 @@
 // この断りは unrepresentable の方針より強い。`omit` は「書けない宣言を
 // 落としてよい」という許しであって、「何が宣言されていたか知らないまま
 // 出してよい」ではない。
+//
+// 控えられない理由はもう一つある。控えるのは据えられた記録係の仕事で
+// (chain/declaration-recorder.port.ts)、据えるのはこのサブパスを読み込んだ
+// ときである。build() を走らせるモジュールが ./standard-schema を読み込む
+// モジュールより**先に**評価されると、その build() は控えを持たない。
 // ===========================================================================
 
 export class DeclarationsUnavailableError extends Error {
@@ -20,9 +25,12 @@ export class DeclarationsUnavailableError extends Error {
       (fieldPath === undefined
         ? "This validator carries no declarations"
         : `"${fieldPath}" carries no declarations`) +
-        ", so no JSON Schema can be emitted from it. Only a validator built " +
-        "through the builder chain records them; one from fromJsonSchema() " +
-        "was assembled from rules directly."
+        ", so no JSON Schema can be emitted from it. Two things cause " +
+        "this. A validator from fromJsonSchema() was assembled from rules " +
+        "directly and never went through the builder chain. Otherwise the " +
+        'build() ran before "@maroonedog/luq/standard-schema" was loaded — ' +
+        "import it from the module that builds the validator, or from one " +
+        "evaluated before it."
     );
     this.name = "DeclarationsUnavailableError";
   }

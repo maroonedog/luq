@@ -14,10 +14,14 @@
 //
 // The rule list is held in a WeakMap rather than on the node, so the node
 // carries exactly the members its type declares and reading the rules back
-// needs no assertion and no runtime shape check. The same store holds the
-// DECLARED CALLS — what was called with what — because a compiled rule keeps
-// the closure and not the argument, and the JSON Schema writer needs the
-// argument. See declared-call.types.ts.
+// needs no assertion and no runtime shape check.
+//
+// A node does NOT carry what was called with what. A compiled rule keeps the
+// closure and not the argument, and the JSON Schema writer needs the argument
+// (declared-call.types.ts) — but the runtime never reads it, so this file
+// builds nothing and only NOTIFIES a delegate. With no delegate installed the
+// notification is one null check per chain step. See
+// declaration-recorder.port.ts.
 // ===========================================================================
 import { isPlainObject, isString } from "../types";
 import type {
@@ -34,13 +38,12 @@ import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import type { PluginBag } from "./plugin-bag.types";
 import { REFINE_METHOD_SLOTS } from "./refine-methods.types";
 import { attachSlotMethods } from "./attach-slot-methods";
-import type { DeclaredCall } from "./declared-call.types";
+import { declarationRecorder } from "./declaration-recorder.port";
 import { readChainNode, rememberChainNode } from "./chain-node-store";
 
 const EMPTY_RECORD: Readonly<Record<string, unknown>> = Object.freeze({});
 
 export const EMPTY_RULES: readonly Rule[] = Object.freeze([]);
-export const EMPTY_CALLS: readonly DeclaredCall[] = Object.freeze([]);
 
 /** What a chain needs to build a rule, independent of which slot it is on. */
 export interface ChainBuildContext {
@@ -114,9 +117,9 @@ function nullIsAValue(severity: IssueSeverity): Rule {
 
 function createSlotMethod(
   wiring: ChainNodeWiring,
+  parent: object,
   slot: TypeName,
   rules: readonly Rule[],
-  calls: readonly DeclaredCall[],
   plugin: AnyPlugin
 ): (...args: readonly unknown[]) => unknown {
   const arity = Math.max(plugin.build.length - 1, 0);
@@ -131,30 +134,23 @@ function createSlotMethod(
       plugin.judgesNull === true
         ? [nullIsAValue(wiring.context.config.defaultSeverity), rule]
         : [rule];
-    const call: DeclaredCall = {
-      pluginName: plugin.name,
-      method: plugin.method,
-      slot,
-      args: resolved,
-    };
-    return createChainNode(
-      wiring,
-      slot,
-      [...rules, ...added],
-      [...calls, call]
-    );
+    const child = createChainNode(wiring, slot, [...rules, ...added]);
+    declarationRecorder?.record(parent, child, plugin, slot, resolved);
+    return child;
   };
 }
 
 function attachRefineMethods(
   target: Record<string, unknown>,
   wiring: ChainNodeWiring,
-  rules: readonly Rule[],
-  calls: readonly DeclaredCall[]
+  rules: readonly Rule[]
 ): void {
   for (const [methodName, slot] of Object.entries(REFINE_METHOD_SLOTS)) {
-    target[methodName] = (): unknown =>
-      createChainNode(wiring, slot, rules, calls);
+    target[methodName] = (): unknown => {
+      const child = createChainNode(wiring, slot, rules);
+      declarationRecorder?.inherit(target, child);
+      return child;
+    };
   }
 }
 
@@ -162,15 +158,14 @@ function attachRefineMethods(
 export function createChainNode(
   wiring: ChainNodeWiring,
   slot: TypeName,
-  rules: readonly Rule[],
-  calls: readonly DeclaredCall[] = EMPTY_CALLS
+  rules: readonly Rule[]
 ): Readonly<Record<string, unknown>> {
   const node: Record<string, unknown> = {};
-  attachRefineMethods(node, wiring, rules, calls);
+  attachRefineMethods(node, wiring, rules);
   attachSlotMethods(node, wiring.bag, slot, (plugin) =>
-    createSlotMethod(wiring, slot, rules, calls, plugin)
+    createSlotMethod(wiring, node, slot, rules, plugin)
   );
-  rememberChainNode(node, { rules, calls });
+  rememberChainNode(node, rules);
   return Object.freeze(node);
 }
 
@@ -178,5 +173,5 @@ export function createChainNode(
 export function readChainRules(
   candidate: unknown
 ): readonly Rule[] | undefined {
-  return readChainNode(candidate)?.rules;
+  return readChainNode(candidate);
 }

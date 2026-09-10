@@ -19,6 +19,10 @@
 //
 // 2. 書けない宣言に出会ったら既定で throw する。理由は
 //    unrepresentable-rule-error.ts に書いた。
+//
+// このモジュールを読み込むことが、連鎖に「宣言を控えよ」と伝えることでも
+// ある (declaration-recorder.ts)。控えは実行時が一度も読まないので、中核は
+// 頼まれない限り作らない。
 // ===========================================================================
 import type { Validator } from "../builder/validator.types";
 import { readDeclaredCalls } from "../builder/declared-calls-store";
@@ -27,6 +31,11 @@ import { resolveJsonSchemaTarget } from "./json-schema-target";
 import { DeclarationsUnavailableError } from "./declarations-unavailable-error";
 import { readUnrepresentablePolicy } from "./unrepresentable-rule-error";
 import { toStandardSchema, type StandardLuqSchema } from "./to-standard-schema";
+import { installJsonSchemaDeclarationRecorder } from "./declaration-recorder";
+
+// 連鎖は既定では宣言を控えない。控える相手を、ここで据える。この行は
+// build() より前に走らなければならないので、モジュールの先頭にある。
+installJsonSchemaDeclarationRecorder();
 
 /** 仕様の Options。target は必須で、libraryOptions はベンダー独自。 */
 export interface JsonSchemaOptions {

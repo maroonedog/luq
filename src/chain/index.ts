@@ -9,12 +9,12 @@ export {
 export {
   createChainNode,
   readChainRules,
-  EMPTY_CALLS,
   EMPTY_RULES,
   type ChainBuildContext,
   type ChainNodeWiring,
 } from "./create-chain-node";
 export type { DeclaredCall } from "./declared-call.types";
+export type { DeclarationRecorder } from "./declaration-recorder.port";
 export {
   collectBranchRules,
   resolvePluginArguments,

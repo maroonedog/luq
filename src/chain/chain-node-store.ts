@@ -5,31 +5,22 @@
 // そこに書いてある: ノードは型が宣言したメンバーだけを持ち、読み戻すのに
 // アサーションも実行時の形検査も要らない。
 //
-// ルールと宣言を**一つの表**に入れている。二つ持つと、同じ型検査を二度
-// 書くことになり、配布物で実測 30 B ほど増える。1本にすれば読み戻しも
-// 一度で済む。
-//
-// 二つの列は本数が揃わない。`judgesNull` なプラグインは1回の呼び出しで
-// ルールを2本足すので、添字で対応づけてはならない。
+// 持つのはルール列だけである。以前は宣言 (DeclaredCall) も同じ表に入れて
+// いたが、宣言は declaration-recorder.port.ts へ委譲した。実行時が一度も
+// 読まないものを中核に置かない、というのが分けた理由で、表を2つにした分の
+// 費用は書き出しを使う側だけが払う。
 // ===========================================================================
 import type { Rule } from "../plugin-kit/compiled-rule";
-import type { DeclaredCall } from "./declared-call.types";
 
-/** ノード1つが覚えていること。 */
-export interface ChainNodeMemo {
-  readonly rules: readonly Rule[];
-  readonly calls: readonly DeclaredCall[];
-}
-
-const memoByNode = new WeakMap<object, ChainNodeMemo>();
+const rulesByNode = new WeakMap<object, readonly Rule[]>();
 
 /** ノードを作った側だけが呼ぶ。凍結の直前に一度だけ。 */
-export function rememberChainNode(node: object, memo: ChainNodeMemo): void {
-  memoByNode.set(node, memo);
+export function rememberChainNode(node: object, rules: readonly Rule[]): void {
+  rulesByNode.set(node, rules);
 }
 
 /** 連鎖から出る唯一の道: ノードでない値には undefined。 */
-export function readChainNode(candidate: unknown): ChainNodeMemo | undefined {
+export function readChainNode(candidate: unknown): readonly Rule[] | undefined {
   if (typeof candidate !== "object" || candidate === null) return undefined;
-  return memoByNode.get(candidate);
+  return rulesByNode.get(candidate);
 }
