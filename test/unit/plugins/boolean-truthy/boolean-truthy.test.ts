@@ -31,13 +31,23 @@ describe("booleanTruthy", () => {
   // is coerced.
   it("passes anything that is not a boolean straight through", () => {
     const loose = truthy as unknown as {
-      validate(input: unknown): { valid: boolean };
+      validate(input: unknown): {
+        valid: boolean;
+        issues: readonly { code: string }[];
+      };
     };
+    const codes = (input: unknown): readonly string[] =>
+      loose.validate(input).issues.map((issue) => issue.code);
+
+    // Absence and null belong to the presence rules, and neither is declared
+    // here, so both still pass untouched.
     expect(loose.validate({}).valid).toBe(true);
     expect(loose.validate({ accepted: null }).valid).toBe(true);
-    expect(loose.validate({ accepted: 0 }).valid).toBe(true);
-    expect(loose.validate({ accepted: "" }).valid).toBe(true);
-    expect(loose.validate({ accepted: 1 }).valid).toBe(true);
+
+    // The plugin objects to none of these; the slot reports the type once.
+    expect(codes({ accepted: 0 })).toEqual(["booleanType"]);
+    expect(codes({ accepted: "" })).toEqual(["booleanType"]);
+    expect(codes({ accepted: 1 })).toEqual(["booleanType"]);
   });
 
   it("lets messageFactory replace the wording", () => {

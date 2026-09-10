@@ -110,40 +110,51 @@ should not be coerced is not coerced by accident — which is what yup's
 same normalized value; only `parse()` writes it back, so the two can never
 disagree about what they looked at.
 
-### 2. The slot is a compile-time contract, not a run-time check
+### 2. The type is checked once, by the slot, under its own code
 
-This is the difference to read twice.
+yup's `number()` is a cast and a run-time type test in one. Here the two are
+separate: casting is `normalize`, above, and the type test belongs to the slot.
 
-`b.number` decides which methods exist on the chain and is checked against your
-TypeScript type. It does **not** assert at run time that the value is a number.
-Given a value that contradicts the type, the rules do not re-decide the type and
-the field passes:
+Entering `b.number` seeds the chain with that test, so a value contradicting
+the declared type is rejected — with the code `numberType` rather than the code
+of whichever rule happened to be first:
 
-<!-- luq-example: skip — shows a run-time outcome rather than a compiling API; the values contradict the declared type on purpose -->
+<!-- luq-example: skip — shows run-time outcomes rather than a compiling API; the values contradict the declared type on purpose -->
 
 ```ts
 // age is declared `number`. Handed a value that is not one:
-ageValidator.validate({ age: "abc" } as never); // valid
-ageValidator.validate({ age: {} } as never); // valid
+ageValidator.validate({ age: "abc" } as never); // invalid, code "numberType"
+ageValidator.validate({ age: {} } as never); // invalid, code "numberType"
 ```
 
-yup would reject all of those, because yup's `number()` is a run-time type test
-as well as a cast.
+The codes are `stringType`, `numberType`, `booleanType`, `dateType`,
+`arrayType` and `objectType`. `tuple`, `union` and `any` declare no type of
+their own and seed nothing.
 
-This is deliberate: the premise is that the type is already true, so re-checking
-it on every call is work with no answer to give. It holds for data you produced
-— a form you rendered, a payload you built, a row from a client whose types are
-generated.
+Two consequences that differ from yup:
 
-**It does not hold for input you did not produce**, and for that there is a
-different door in the same library:
+- **`undefined` and `null` pass the type test.** Absence belongs to
+  `required` / `optional` / `nullable`, so a missing field reports `required`
+  rather than a type error you cannot switch off with `.optional()`. yup
+  behaves the same way, for the same reason.
+- **`NaN` is a number.** `typeof NaN === "number"`, and the type test answers
+  the type question only, so `NaN` reaches the value rules — `min` rejects it,
+  `integer` rejects it. yup rejects it during the cast instead.
+
+Only one rule reports the type. A value rule answers PASS for a value outside
+its own type, which is why `.min(18)` on `"abc"` adds nothing: one bad value
+produces one issue, not one per rule in the chain.
+
+For input whose shape you do not own at all, `fromJsonSchema` is the other
+door, and there the document decides — its `type` keyword reports under the
+code `type`, and its vocabulary is wider than a slot's (`integer`, a list of
+types, `null` as a type in its own right):
 
 ```ts
 import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
 
 type Signup = { name: string; age: number };
 
-// `type` IS enforced at run time here: a string in `age` fails with code "type".
 export const untrusted = fromJsonSchema<Signup>({
   type: "object",
   properties: {
@@ -154,12 +165,8 @@ export const untrusted = fromJsonSchema<Signup>({
 });
 ```
 
-So the rule of thumb is: `.for<T>()` for data whose shape you already own,
-`fromJsonSchema` for a body off the wire. Both return the same `Validator<T>`,
-so the rest of your code does not change between them.
-
-If you want one field checked at run time inside a hand-written chain,
-`.custom()` is the escape hatch; there is no `.type()` chain method.
+Both return the same `Validator<T>`, so the rest of your code does not change
+between them.
 
 ### 3. Results come back, they are not thrown
 

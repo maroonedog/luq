@@ -87,6 +87,9 @@ describe("arrayUnique", () => {
   });
 
   it("passes a non-array through", () => {
-    expect(validator.validate({ rows: "abc" }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ rows: "abc" }).issues.map((issue) => issue.code)
+    ).toEqual(["arrayType"]);
   });
 });

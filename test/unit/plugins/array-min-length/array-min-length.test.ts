@@ -35,7 +35,12 @@ describe("arrayMinLength", () => {
   });
 
   it("passes a non-array through: the type slot owns type errors", () => {
-    expect(validator.validate({ tags: "not an array" }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator
+        .validate({ tags: "not an array" })
+        .issues.map((issue) => issue.code)
+    ).toEqual(["arrayType"]);
     expect(validator.validate({}).valid).toBe(true);
   });
 

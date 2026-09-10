@@ -11,6 +11,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -89,7 +90,7 @@ describe("stringIdnHostname", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(idnHostname, value)).toBe(true);
+    expect(passesThrough(idnHostname, value)).toBe(true);
   });
 
   it("reports an overridable code and the documented message", () => {

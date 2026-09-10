@@ -1,21 +1,29 @@
 // ===========================================================================
 // L7  src/plugins/object/object.ts
 //
-// Legacy semantics (docs/legacy-spec/plugin-catalog-structural.md#objectPlugin):
-// the value must be a plain object — an array is not one, and neither is null.
+// DEPRECATED, and inert.
 //
-// Two legacy defects are NOT carried over:
-//   * the code was "type_mismatch", the only snake_case code in the catalog.
-//     It is now the plugin name, like every other plugin's;
-//   * the message was "Not an object", naming neither the path nor the value.
-//     The path is carried by the issue itself, so the message only has to say
-//     what was expected and what arrived.
-// null / undefined never reach a check (src/runtime/run-field.ts decides
-// absence first), so the legacy asymmetry where `.object()` alone rejected
-// undefined is gone: required/optional/nullable own that decision.
+// This plugin's whole job was "the value is a plain object". Entering
+// `b.object` now seeds the chain with that check under the code `objectType`,
+// so the decision is made before this rule is ever consulted.
+//
+// It answers PASS for everything rather than agreeing. Agreeing would put TWO
+// issues on one bad value for any caller collecting them all — a form, or
+// anything reading the Standard Schema face — and "one invalid value, one
+// issue" is the reason the whole catalog delegates type to the slot in the
+// first place. Deprecated means inert, not second opinion.
+//
+// It is kept rather than deleted because removing a published export is a
+// major's business. It costs nothing to leave: a caller who does not import it
+// does not carry it.
+//
+// The verdict a caller sees does not change. An array, a primitive and `null`
+// are rejected exactly as before; only the code and the wording move to the
+// slot. Absence was never this rule's to decide — required / optional /
+// nullable own it, and a check never sees `undefined`.
 // ===========================================================================
 import type { Unchanged } from "../../plugin-kit/marker.types";
-import { PASS, fail, isArray, isPlainObject } from "../../types";
+import { PASS } from "../../types";
 import { check } from "../../plugin-kit/create-rule";
 import { definePlugin } from "../../plugin-kit/plugin-definition";
 
@@ -23,13 +31,12 @@ export interface ObjectTypeContext {
   readonly actual: string;
 }
 
-/** "array" is worth naming: it is the mistake this plugin exists to catch. */
-function describeType(value: unknown): string {
-  if (isArray(value)) return "array";
-  if (value === null) return "null";
-  return typeof value;
-}
-
+/**
+ * @deprecated Entering `b.object` already checks this, under the code
+ * `objectType`. Drop the `.use(objectPlugin)` and the `.object()` call: the
+ * field goes on rejecting arrays, `null` and primitives, and only the issue's
+ * code and message change.
+ */
 export const objectPlugin = /*#__PURE__*/ definePlugin<{
   args: readonly [];
   out: Unchanged;
@@ -43,10 +50,9 @@ export const objectPlugin = /*#__PURE__*/ definePlugin<{
       code: ctx.code,
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
-      run: (value) =>
-        isPlainObject(value)
-          ? PASS
-          : fail({ expected: "object", actual: describeType(value) }),
+      run: () => PASS,
+      // Unreachable while run() never fails, and kept so the shape of the rule
+      // stays a rule rather than becoming a special case for the engine.
       describe: (detail) =>
         `Value must be an object, but got ${String(detail.actual)}`,
       buildMessageContext: (detail) => ({ actual: String(detail.actual) }),

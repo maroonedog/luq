@@ -26,6 +26,11 @@ describe("objectMaxProperties", () => {
   });
 
   it("passes a non-object through", () => {
-    expect(validator.validate({ config: [1, 2, 3, 4] }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator
+        .validate({ config: [1, 2, 3, 4] })
+        .issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 });

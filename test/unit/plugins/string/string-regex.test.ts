@@ -10,6 +10,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -46,7 +47,7 @@ describe("stringRegex", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(regex, value)).toBe(true);
+    expect(passesThrough(regex, value)).toBe(true);
   });
 
   it("reports an overridable code and the documented message", () => {

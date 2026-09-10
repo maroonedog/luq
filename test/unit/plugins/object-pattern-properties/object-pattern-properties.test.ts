@@ -47,6 +47,9 @@ describe("objectPatternProperties", () => {
   });
 
   it("passes a non-object through", () => {
-    expect(validator.validate({ labels: "envA" }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ labels: "envA" }).issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 });

@@ -117,6 +117,9 @@ export function createStructuralContext(
     fieldPath: seed.chain.fieldPath,
     declaredSiblingKeys: propertyKeysOf(node),
     config: seed.chain.config,
+    // The document owns the type here: `type` is a keyword with its own code
+    // and a wider vocabulary than a slot has. The slot must not add a second.
+    typeDecidedElsewhere: true,
   };
   /**
    * One descent: the node this schema really is, and the context inside it.

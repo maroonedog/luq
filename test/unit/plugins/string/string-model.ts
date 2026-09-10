@@ -48,6 +48,24 @@ export function firstIssue(
   return issue;
 }
 
+/**
+ * True when nothing but the slot's own type check objected.
+ *
+ * What these tables assert is that the PLUGIN stays out of it: a value rule
+ * answers PASS for a value outside its own type, because reporting the type
+ * belongs to the slot and a second report would mean two issues for one bad
+ * value. So they must look past `stringType` rather than at the field's
+ * verdict, which the slot legitimately fails.
+ */
+export function passesThrough(
+  validator: StringValidator,
+  value: unknown
+): boolean {
+  return issuesOf(validator, value).every(
+    (issue) => issue.code === "stringType"
+  );
+}
+
 /** Wrong types and absent values are the slot guard's and presence's job. */
 export const NON_STRINGS: readonly unknown[] = [
   undefined,

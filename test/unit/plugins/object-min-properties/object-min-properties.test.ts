@@ -28,11 +28,19 @@ describe("objectMinProperties", () => {
 
   // LEGACY BUG: `typeof value !== "object"` let an ARRAY count its indices.
   it("does not count array indices as properties", () => {
-    expect(validator.validate({ config: ["a", "b", "c"] }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator
+        .validate({ config: ["a", "b", "c"] })
+        .issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 
   it("passes a non-object through", () => {
-    expect(validator.validate({ config: "ab" }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ config: "ab" }).issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 
   it("throws at BUILD time on NaN, which legacy let through", () => {

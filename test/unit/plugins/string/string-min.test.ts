@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -31,7 +32,7 @@ describe("stringMin", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(atLeastThree, value)).toBe(true);
+    expect(passesThrough(atLeastThree, value)).toBe(true);
   });
 
   it("defaults its code to the plugin name and reports the actual length", () => {

@@ -43,6 +43,9 @@ describe("objectDependentSchemas", () => {
   });
 
   it("passes a non-object through", () => {
-    expect(validator.validate({ payment: [1] }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ payment: [1] }).issues.map((issue) => issue.code)
+    ).toEqual(["objectType"]);
   });
 });

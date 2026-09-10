@@ -4,6 +4,7 @@ import {
   NON_STRINGS,
   firstIssue,
   isAccepted,
+  passesThrough,
   type StringModel,
 } from "./string-model";
 
@@ -44,7 +45,7 @@ describe("uuid", () => {
   });
 
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
-    expect(isAccepted(anyVersion, value)).toBe(true);
+    expect(passesThrough(anyVersion, value)).toBe(true);
   });
 
   it("pins the version nibble when a version is named", () => {

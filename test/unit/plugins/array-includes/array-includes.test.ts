@@ -56,7 +56,10 @@ describe("arrayIncludes", () => {
   });
 
   it("passes a non-array through", () => {
-    expect(validator.validate({ tags: "urgent" }).valid).toBe(true);
+    // The plugin itself objects to nothing; the slot reports the type.
+    expect(
+      validator.validate({ tags: "urgent" }).issues.map((issue) => issue.code)
+    ).toEqual(["arrayType"]);
   });
 
   it("honours options.code and the {element} message context", () => {
