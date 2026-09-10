@@ -12,7 +12,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { generateValidatorModule } from "../src/generate/generate-validator-module";
-import type { Draft07Schema } from "../../src/json-schema/draft07.types";
+import type { Draft07Schema } from "@maroonedog/luq/schema-tooling";
 
 const REPOSITORY_ROOT = join(__dirname, "..", "..");
 const TSC = join(REPOSITORY_ROOT, "node_modules", "typescript", "bin", "tsc");

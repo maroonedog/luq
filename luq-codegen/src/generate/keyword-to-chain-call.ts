@@ -1,5 +1,5 @@
 // ===========================================================================
-// openapi-ts-plugin/src/generate/keyword-to-chain-call.ts
+// luq-codegen/src/generate/keyword-to-chain-call.ts
 //
 // One JSON Schema keyword to one chain call.
 //

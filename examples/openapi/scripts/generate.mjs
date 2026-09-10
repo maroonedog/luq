@@ -11,7 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
-import { generateValidatorModule } from "../../../openapi-ts-plugin/src/generate/generate-validator-module.ts";
+import { generateValidatorModule } from "@maroonedog/luq-codegen";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -38,26 +38,16 @@ execFileSync(
 const document = parse(readFileSync(SPEC, "utf8"));
 const schema = document.components.schemas.Order;
 
+// Only this script knows where openapi-typescript put the type, so it is the
+// one that says how to import it. The generator places the line itself, which
+// is why nothing here has to be prepended to the result.
 const { source, skipped } = generateValidatorModule(schema, {
   validatorName: "orderValidator",
   typeExpression: 'components["schemas"]["Order"]',
+  typeImport: 'import type { components } from "./api.generated";',
 });
 
-// The generator writes its own header and imports; only the type it was told
-// to refer to has to be brought into scope, and only this script knows where
-// openapi-typescript put it.
-const typeImport = [
-  '// The type comes from ./api.generated.ts, written by openapi-typescript out',
-  "// of the same document, so the rules and the shape cannot drift apart.",
-  'import type { components } from "./api.generated";',
-  "",
-].join("\n");
-
-writeFileSync(
-  join(OUT, "order-validator.generated.ts"),
-  `${typeImport}${source}`,
-  "utf8"
-);
+writeFileSync(join(OUT, "order-validator.generated.ts"), source, "utf8");
 
 console.log("src/api.generated.ts               written by openapi-typescript");
 console.log("src/order-validator.generated.ts   written by the Luq generator");

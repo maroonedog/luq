@@ -5,7 +5,7 @@
 // only the string and it is possible to build a broken generator that emits
 // beautiful strings.
 import { generateValidatorModule } from "../src/generate/generate-validator-module";
-import type { Draft07Schema } from "../../src/json-schema/draft07.types";
+import type { Draft07Schema } from "@maroonedog/luq/schema-tooling";
 
 const ORDER_SCHEMA: Draft07Schema = {
   type: "object",

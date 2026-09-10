@@ -194,5 +194,11 @@ src/plugins/index.generated.ts
 # ESM probe written temporarily by the dist tests
 .dist-esm-probe.mjs
 
-# openapi-ts-plugin build output
-openapi-ts-plugin/dist/
+# luq-codegen build output, and the scratch directory its two tsc
+# emits are copied out of.
+luq-codegen/dist/
+luq-codegen/.build/
+# Not committed: the lock would pin a resolution of the repository root that
+# a checkout at a different commit no longer matches, and the sub-package is
+# not published from a lockfile anyway.
+luq-codegen/package-lock.json

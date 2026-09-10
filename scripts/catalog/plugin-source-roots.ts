@@ -42,6 +42,7 @@ export const FIXED_EXPORT_KEYS: readonly string[] = [
   "./standard-schema",
   "./presets",
   "./plugins",
+  "./schema-tooling",
 ];
 
 export const PLUGIN_MANIFEST_OUTPUT = "src/plugins/manifest.generated.ts";

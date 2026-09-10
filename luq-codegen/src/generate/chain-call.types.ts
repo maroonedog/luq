@@ -1,5 +1,5 @@
 // ===========================================================================
-// openapi-ts-plugin/src/generate/chain-call.types.ts
+// luq-codegen/src/generate/chain-call.types.ts
 //
 // The intermediate form of one generated chain. Going through it instead of
 // concatenating strings is what makes the set of plugins to import countable
