@@ -39,6 +39,7 @@
     "@maroonedog/luq": "file:.."
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
