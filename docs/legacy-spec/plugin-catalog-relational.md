@@ -105,130 +105,130 @@ JSON Schema Draft-07 の if/then/else。`null`/`undefined` は無条件通過。
 - `types.ts` のフラグ型と型ガード群(`SkipAllValidationFlag`, `SkipFurtherValidationFlag`, `TransformFlag`, `NullableFlag`, `RecursiveFlag`, `ValidationResultWithFlags`, `WithFlags`, `ValidationFlags`)— 実行時は `shouldSkipAllValidation` / `__isTransform` / `skipForNull` といった別機構で処理されており、これらの型ガードは呼ばれていない。
 - `ValidatorFormat` の未使用マーカー `__isDefault` / `__isPreprocess` / `__isCoerce` / `__isStitch` / `__stitchOptions`。対応するプラグインが存在しない。
 
-## 引き継ぐ契約 (23件)
+## Contracts to preserve (23)
 
 ### must-preserve (12)
 
 #### compareField
-- 出典: `src/core/plugin/compareField.ts`
-- 形: b.<type>.compareField(fieldPath: NestedKeyOf<TObject> & string, options?: { compareFn?: (value, targetValue) => boolean; code?: string; messageFactory?: (ctx: { path; value; code; fieldPath; targetValue }) => string })
-- 意味: ドット記法パスで指定した他フィールドの値を allValues から取り出し、compareFn(自値, 相手値) で判定する。compareFn の既定は厳密等価 (===)。allValues が得られない場合は失敗。既定 code は "equals"、既定メッセージは `Value must be equal to ${fieldPath}`。
+- Source: `src/core/plugin/compareField.ts`
+- Shape: b.<type>.compareField(fieldPath: NestedKeyOf<TObject> & string, options?: { compareFn?: (value, targetValue) => boolean; code?: string; messageFactory?: (ctx: { path; value; code; fieldPath; targetValue }) => string })
+- Meaning: ドット記法パスで指定した他フィールドの値を allValues から取り出し、compareFn(自値, 相手値) で判定する。compareFn の既定は厳密等価 (===)。allValues が得られない場合は失敗。既定 code は "equals"、既定メッセージは `Value must be equal to ${fieldPath}`。
 
 #### compareFieldPlugin
-- 出典: `src/core/plugin/compareField.ts`
-- 形: export const compareFieldPlugin (name: "compareField", methodName: "compareField", category: "fieldReference", allowedTypes: string|number|boolean|date|object|array|tuple|union)
-- 意味: Builder().use(compareFieldPlugin) で .compareField() を生やす公開シンボル。src/index.ts / src/core/plugin/index.ts / package.json exports "./plugins/compareField" の 3 経路すべてから到達可能。
+- Source: `src/core/plugin/compareField.ts`
+- Shape: export const compareFieldPlugin (name: "compareField", methodName: "compareField", category: "fieldReference", allowedTypes: string|number|boolean|date|object|array|tuple|union)
+- Meaning: Builder().use(compareFieldPlugin) で .compareField() を生やす公開シンボル。src/index.ts / src/core/plugin/index.ts / package.json exports "./plugins/compareField" の 3 経路すべてから到達可能。
 
 #### stitch
-- 出典: `src/core/plugin/stitch.ts`
-- 形: b.<type>.stitch<const TFields extends readonly (NestedKeyOf<TObject> & string)[]>(fields: TFields, validate: (fieldValues: FieldsToObject<TObject, TFields>, currentValue, allValues: TObject) => { valid: boolean; message?: string }, options?: { code?: string; messageFactory?: (ctx: { path; value; code; fields; fieldValues; allValues }) => string })
-- 意味: 位置引数 3 つ。宣言したフィールドパス群の値を { [path]: 値 } に束ねて validate に渡す。fieldValues は FieldsToObject により各パスの実型が復元される(型安全が本質価値)。エラーメッセージは validate() の message が最優先、次に messageFactory、最後に `Cross-field validation failed for ${path}`。allValues 無しなら失敗。既定 code "stitch_validation_failed"。
+- Source: `src/core/plugin/stitch.ts`
+- Shape: b.<type>.stitch<const TFields extends readonly (NestedKeyOf<TObject> & string)[]>(fields: TFields, validate: (fieldValues: FieldsToObject<TObject, TFields>, currentValue, allValues: TObject) => { valid: boolean; message?: string }, options?: { code?: string; messageFactory?: (ctx: { path; value; code; fields; fieldValues; allValues }) => string })
+- Meaning: 位置引数 3 つ。宣言したフィールドパス群の値を { [path]: 値 } に束ねて validate に渡す。fieldValues は FieldsToObject により各パスの実型が復元される(型安全が本質価値)。エラーメッセージは validate() の message が最優先、次に messageFactory、最後に `Cross-field validation failed for ${path}`。allValues 無しなら失敗。既定 code "stitch_validation_failed"。
 
 #### FieldsToObject<T, K>
-- 出典: `src/types/stitch-types.ts`
-- 形: type FieldsToObject<T, K extends readonly (NestedKeyOf<T> & string)[]> = { [P in K[number]]: TypeOfPath<T, P> }
-- 意味: フィールドパスのタプルから、そのパス群の実型を持つオブジェクト型を構築する。stitch の型安全性の中核。
+- Source: `src/types/stitch-types.ts`
+- Shape: type FieldsToObject<T, K extends readonly (NestedKeyOf<T> & string)[]> = { [P in K[number]]: TypeOfPath<T, P> }
+- Meaning: フィールドパスのタプルから、そのパス群の実型を持つオブジェクト型を構築する。stitch の型安全性の中核。
 
 #### transform
-- 出典: `src/core/plugin/transform.ts, src/core/builder/plugins/plugin-types.ts:470-483`
-- 形: b.<type>.transform<TOutput>(fn: (value: 現在型) => TOutput): ChainableFieldBuilder<..., TOutput, ...>
-- 意味: 値を書き換え、チェーンの現在型を TOutput に差し替える。実行時は validator とは別配列に積まれ、全 validator が成功した後にのみ、登録順に合成適用される。parse() でのみ実行され、validate() では実行されない。transform 内の例外はキャッチされずそのまま伝播する。連鎖可能。
+- Source: `src/core/plugin/transform.ts, src/core/builder/plugins/plugin-types.ts:470-483`
+- Shape: b.<type>.transform<TOutput>(fn: (value: 現在型) => TOutput): ChainableFieldBuilder<..., TOutput, ...>
+- Meaning: 値を書き換え、チェーンの現在型を TOutput に差し替える。実行時は validator とは別配列に積まれ、全 validator が成功した後にのみ、登録順に合成適用される。parse() でのみ実行され、validate() では実行されない。transform 内の例外はキャッチされずそのまま伝播する。連鎖可能。
 
 #### TransformAwareValidator<T, TTransformed>
-- 出典: `src/core/builder/plugins/plugin-types.ts:1133`
-- 形: interface TransformAwareValidator<T extends object, TTransformed = T> { validate(value, options?): Result<T>; parse(value, options?): Result<TTransformed>; pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>; validateRaw?(value, options?): boolean; parseRaw?(value, options?): { valid; data?; error? } }
-- 意味: .build() の戻り型。validate は元の型 T を返し(変換を適用しない)、parse は変換後の型を返す、という二本立てが公開契約。
+- Source: `src/core/builder/plugins/plugin-types.ts:1133`
+- Shape: interface TransformAwareValidator<T extends object, TTransformed = T> { validate(value, options?): Result<T>; parse(value, options?): Result<TTransformed>; pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>; validateRaw?(value, options?): boolean; parseRaw?(value, options?): { valid; data?; error? } }
+- Meaning: .build() の戻り型。validate は元の型 T を返し(変換を適用しない)、parse は変換後の型を返す、という二本立てが公開契約。
 
 #### ApplyFieldTransforms<TObject, TMap>
-- 出典: `src/core/builder/plugins/plugin-types.ts:1164, src/core/builder/types/types.ts:60-166`
-- 形: type ApplyFieldTransforms<TObject, TMap> = DeepMerge<TObject, FlatMapToNested<TMap>>
-- 意味: .v() が AddFieldTransform で積み上げた「パス → 変換後型」のフラットマップを、ドット記法・配列パスを解いてネスト型に展開し、元の型に深くマージする。parse() の戻り型を決める。AddFieldTransform は変換後型が元型に代入可能なら TMap を変えない(型が実際に変わったときだけ記録)。
+- Source: `src/core/builder/plugins/plugin-types.ts:1164, src/core/builder/types/types.ts:60-166`
+- Shape: type ApplyFieldTransforms<TObject, TMap> = DeepMerge<TObject, FlatMapToNested<TMap>>
+- Meaning: .v() が AddFieldTransform で積み上げた「パス → 変換後型」のフラットマップを、ドット記法・配列パスを解いてネスト型に展開し、元の型に深くマージする。parse() の戻り型を決める。AddFieldTransform は変換後型が元型に代入可能なら TMap を変えない(型が実際に変わったときだけ記録)。
 
 #### custom
-- 出典: `src/core/plugin/custom.ts`
-- 形: b.<type>.custom(validator: (value, rootData?) => boolean | { valid: boolean; message?: string }, options?: { code?: string; messageFactory?: (ctx: MessageContext) => string })
-- 意味: 任意の述語による検証。rootData は検証中のルートオブジェクト全体。オブジェクト返しの場合その message がエラーメッセージになる。validator が例外を投げたら失敗扱い(握り潰す)。既定 code "CUSTOM_VALIDATION_FAILED"、既定メッセージ `${path} custom validation failed`。
+- Source: `src/core/plugin/custom.ts`
+- Shape: b.<type>.custom(validator: (value, rootData?) => boolean | { valid: boolean; message?: string }, options?: { code?: string; messageFactory?: (ctx: MessageContext) => string })
+- Meaning: 任意の述語による検証。rootData は検証中のルートオブジェクト全体。オブジェクト返しの場合その message がエラーメッセージになる。validator が例外を投げたら失敗扱い(握り潰す)。既定 code "CUSTOM_VALIDATION_FAILED"、既定メッセージ `${path} custom validation failed`。
 
 #### requiredIf
-- 出典: `src/core/plugin/requiredIf.ts`
-- 形: b.<type>.requiredIf(condition: (allValues: TObject, arrayContext?: ArrayContext) => boolean, options?: ValidationOptions<{ condition?: boolean }>)
-- 意味: 条件が真のときだけ必須。空判定は value === undefined || value === null || value === ""。条件が偽なら常に通過。allValues が無い場合は通過。既定 code "requiredIf"、既定メッセージ "Field is required when condition is met"。
+- Source: `src/core/plugin/requiredIf.ts`
+- Shape: b.<type>.requiredIf(condition: (allValues: TObject, arrayContext?: ArrayContext) => boolean, options?: ValidationOptions<{ condition?: boolean }>)
+- Meaning: 条件が真のときだけ必須。空判定は value === undefined || value === null || value === ""。条件が偽なら常に通過。allValues が無い場合は通過。既定 code "requiredIf"、既定メッセージ "Field is required when condition is met"。
 
 #### validateIf
-- 出典: `src/core/plugin/validateIf.ts`
-- 形: b.<type>.validateIf(condition: (allValues: TObject, arrayContext?: ArrayContext) => boolean, options?: ValidationOptions).<以降のチェーン>
-- 意味: 条件が偽なら、この呼び出し以降に登録された全ての validator をスキップする(位置依存: チェーン先頭に置く前提)。自身はエラーを生成しない。transform はスキップ対象外(validator ループの break のみ)。
+- Source: `src/core/plugin/validateIf.ts`
+- Shape: b.<type>.validateIf(condition: (allValues: TObject, arrayContext?: ArrayContext) => boolean, options?: ValidationOptions).<以降のチェーン>
+- Meaning: 条件が偽なら、この呼び出し以降に登録された全ての validator をスキップする(位置依存: チェーン先頭に置く前提)。自身はエラーを生成しない。transform はスキップ対象外(validator ループの break のみ)。
 
 #### MessageFactory / MessageContext / ValidationOptions
-- 出典: `src/core/plugin/types.ts:28-47`
-- 形: type MessageFactory<TContext = {}> = (ctx: MessageContext & TContext) => string; interface MessageContext { path: string; value: any; code: string }; interface ValidationOptions<TContext = {}> { code?: string; fieldName?: string; severity?: Severity; messageFactory?: MessageFactory<TContext> }
-- 意味: 全プラグイン共通のエラーメッセージ生成契約。プラグインごとに TContext を足して文脈を拡張する。既定コードは options.code で上書き可能。fieldName と severity は実行時に一切読まれていない死にフィールド。
+- Source: `src/core/plugin/types.ts:28-47`
+- Shape: type MessageFactory<TContext = {}> = (ctx: MessageContext & TContext) => string; interface MessageContext { path: string; value: any; code: string }; interface ValidationOptions<TContext = {}> { code?: string; fieldName?: string; severity?: Severity; messageFactory?: MessageFactory<TContext> }
+- Meaning: 全プラグイン共通のエラーメッセージ生成契約。プラグインごとに TContext を足して文脈を拡張する。既定コードは options.code で上書き可能。fieldName と severity は実行時に一切読まれていない死にフィールド。
 
 #### 実行順序契約
-- 出典: `src/core/optimization/unified-validator.ts:218-330, 505-700; src/core/builder/context/field-context.ts:344-368`
-- 形: default適用 → skipForNull/skipForUndefined短絡 → 全validatorを登録順(shouldSkipAllValidationでbreak) → 失敗なら終了 → parseモードのみ全transformを登録順に合成
-- 意味: validate() は変換を行わず元データを返す。parse() のみが変換を行う。チェーン上での .transform() の記述位置は実行順序に影響しない。nullable() が付いた field の null / optional() が付いた field の undefined は検証も変換も丸ごとスキップされ、parse では元値がそのまま返る。
+- Source: `src/core/optimization/unified-validator.ts:218-330, 505-700; src/core/builder/context/field-context.ts:344-368`
+- Shape: default適用 → skipForNull/skipForUndefined短絡 → 全validatorを登録順(shouldSkipAllValidationでbreak) → 失敗なら終了 → parseモードのみ全transformを登録順に合成
+- Meaning: validate() は変換を行わず元データを返す。parse() のみが変換を行う。チェーン上での .transform() の記述位置は実行順序に影響しない。nullable() が付いた field の null / optional() が付いた field の undefined は検証も変換も丸ごとスキップされ、parse では元値がそのまま返る。
 
 ### should-preserve (8)
 
 #### orFail
-- 出典: `src/core/plugin/orFail.ts`
-- 形: b.<type>.orFail(condition: (allValues: TObject) => boolean, options?: { code?: string; message?: string; messageFactory?: (ctx: MessageContext & { message?: string }) => string })
-- 意味: 条件が真なら値に関係なく無条件で失敗させる否定的ゲート。deprecated フィールド、本番で存在してはいけないフィールド、権限・feature flag による禁止を表現する。allValues が無い場合は通過(compareField/stitch と逆の既定)。既定 code "validation_error"、既定メッセージ "Validation failed"。
+- Source: `src/core/plugin/orFail.ts`
+- Shape: b.<type>.orFail(condition: (allValues: TObject) => boolean, options?: { code?: string; message?: string; messageFactory?: (ctx: MessageContext & { message?: string }) => string })
+- Meaning: 条件が真なら値に関係なく無条件で失敗させる否定的ゲート。deprecated フィールド、本番で存在してはいけないフィールド、権限・feature flag による禁止を表現する。allValues が無い場合は通過(compareField/stitch と逆の既定)。既定 code "validation_error"、既定メッセージ "Validation failed"。
 
 #### optionalIf
-- 出典: `src/core/plugin/optionalIf.ts`
-- 形: b.<type>.optionalIf(condition: (allValues: TObject, arrayContext?: ArrayContext) => boolean, options?: ValidationOptions)
-- 意味: 条件が真かつ値が空なら通過。条件が偽かつ値が空なら失敗(= 実質必須)。値があれば常に通過。requiredIf の論理的双対。code とメッセージがハードコードで options を無視するのは実装バグ。
+- Source: `src/core/plugin/optionalIf.ts`
+- Shape: b.<type>.optionalIf(condition: (allValues: TObject, arrayContext?: ArrayContext) => boolean, options?: ValidationOptions)
+- Meaning: 条件が真かつ値が空なら通過。条件が偽かつ値が空なら失敗(= 実質必須)。値があれば常に通過。requiredIf の論理的双対。code とメッセージがハードコードで options を無視するのは実装バグ。
 
 #### skip
-- 出典: `src/core/plugin/skip.ts`
-- 形: b.<type>.skip(condition: (allValues: TObject) => boolean, options?: ValidationOptions).<以降のチェーン>
-- 意味: validateIf の条件の極性を反転しただけ。条件が真なら以降の validator を全てスキップ。options は完全に無視される。
+- Source: `src/core/plugin/skip.ts`
+- Shape: b.<type>.skip(condition: (allValues: TObject) => boolean, options?: ValidationOptions).<以降のチェーン>
+- Meaning: validateIf の条件の極性を反転しただけ。条件が真なら以降の validator を全てスキップ。options は完全に無視される。
 
 #### fromContext
-- 出典: `src/core/plugin/fromContext.ts, src/core/builder/plugins/plugin-interfaces.ts:506`
-- 形: b.<type>.fromContext<TContext>(options: ContextValidationOptions<TContext>) — ContextValidationOptions = { validate: (value, context: TContext, allValues) => { valid: boolean; message?: string }; errorMessage?: string; code?: string; required?: boolean (既定 false); fallbackToValid?: boolean (既定 true) }
-- 意味: 外部から注入したコンテキスト(非同期に解決した重複チェック結果・在庫・権限など)を使う検証。required=true はコンテキスト必須、無ければ失敗。required=false でコンテキストが無ければ fallbackToValid を返す。validate 内の例外は失敗扱い。既定 code "context_validation"。意図は validator.withAsyncContext(ctx).validate(data) だが現行実装では非同期経路が接続されていない。
+- Source: `src/core/plugin/fromContext.ts, src/core/builder/plugins/plugin-interfaces.ts:506`
+- Shape: b.<type>.fromContext<TContext>(options: ContextValidationOptions<TContext>) — ContextValidationOptions = { validate: (value, context: TContext, allValues) => { valid: boolean; message?: string }; errorMessage?: string; code?: string; required?: boolean (既定 false); fallbackToValid?: boolean (既定 true) }
+- Meaning: 外部から注入したコンテキスト(非同期に解決した重複チェック結果・在庫・権限など)を使う検証。required=true はコンテキスト必須、無ければ失敗。required=false でコンテキストが無ければ fallbackToValid を返す。validate 内の例外は失敗扱い。既定 code "context_validation"。意図は validator.withAsyncContext(ctx).validate(data) だが現行実装では非同期経路が接続されていない。
 
 #### conditionalSchema
-- 出典: `src/core/plugin/conditionalSchema.ts`
-- 形: b.object.conditionalSchema(options: { ifSchema: JSONSchema7; thenSchema?: JSONSchema7; elseSchema?: JSONSchema7; validator?: (value, schema: JSONSchema7) => boolean; code?: string; messageFactory?: (ctx: MessageContext) => string })
-- 意味: JSON Schema Draft-07 の if/then/else。null/undefined は無条件通過。ifSchema を評価し、真なら thenSchema、偽なら elseSchema で検証。該当スキーマが無ければ通過。validator を渡せば任意のスキーマ評価器を差し込める。既定 code "CONDITIONAL_SCHEMA"。
+- Source: `src/core/plugin/conditionalSchema.ts`
+- Shape: b.object.conditionalSchema(options: { ifSchema: JSONSchema7; thenSchema?: JSONSchema7; elseSchema?: JSONSchema7; validator?: (value, schema: JSONSchema7) => boolean; code?: string; messageFactory?: (ctx: MessageContext) => string })
+- Meaning: JSON Schema Draft-07 の if/then/else。null/undefined は無条件通過。ifSchema を評価し、真なら thenSchema、偽なら elseSchema で検証。該当スキーマが無ければ通過。validator を渡せば任意のスキーマ評価器を差し込める。既定 code "CONDITIONAL_SCHEMA"。
 
 #### ArrayContext
-- 出典: `src/core/plugin/types.ts:68-75`
-- 形: interface ArrayContext<TItem = any> { index: number; item: TItem; array: TItem[] }
-- 意味: 配列要素を検証中に、条件関数へ「今どの index の、どの item を見ているか」を渡すための文脈。requiredIf/optionalIf/validateIf の条件関数第2引数として宣言されているが、本流の実行パスは一度も渡していない(常に undefined)。意図された機能としては引き継ぐ価値がある。
+- Source: `src/core/plugin/types.ts:68-75`
+- Shape: interface ArrayContext<TItem = any> { index: number; item: TItem; array: TItem[] }
+- Meaning: 配列要素を検証中に、条件関数へ「今どの index の、どの item を見ているか」を渡すための文脈。requiredIf/optionalIf/validateIf の条件関数第2引数として宣言されているが、本流の実行パスは一度も渡していない(常に undefined)。意図された機能としては引き継ぐ価値がある。
 
 #### フィールド既定値オプション
-- 出典: `src/core/builder/types/field-options.ts`
-- 形: .v(path, definition, config?: FieldConfig<T>) — FieldConfig<T> = T | (() => T) | { default?: T | (() => T); applyDefaultToNull?: boolean; description?: string; deprecated?: boolean | string; metadata?: Record<string, any> }
-- 意味: .v() の第3引数。値が undefined のとき、および applyDefaultToNull !== false のとき null のときに既定値を適用する。関数なら呼び出す。validate() / parse() の両方で、検証より前に適用される。生値を渡すショートハンドと、オプションオブジェクトの両形式を受け付ける(normalizeFieldConfig が判別)。
+- Source: `src/core/builder/types/field-options.ts`
+- Shape: .v(path, definition, config?: FieldConfig<T>) — FieldConfig<T> = T | (() => T) | { default?: T | (() => T); applyDefaultToNull?: boolean; description?: string; deprecated?: boolean | string; metadata?: Record<string, any> }
+- Meaning: .v() の第3引数。値が undefined のとき、および applyDefaultToNull !== false のとき null のときに既定値を適用する。関数なら呼び出す。validate() / parse() の両方で、検証より前に適用される。生値を渡すショートハンドと、オプションオブジェクトの両形式を受け付ける(normalizeFieldConfig が判別)。
 
 #### プラグインカテゴリ
-- 出典: `src/core/builder/plugins/plugin-types.ts:47-58, 355-483`
-- 形: type PluginCategory = "standard" | "conditional" | "transform" | "fieldReference" | "multiFieldReference" | "arrayElement" | "composable" | "composable-conditional" | "composable-directly" | "context" | "builder-extension"
-- 意味: カテゴリがチェーンメソッドの型シグネチャを決める(conditional → (condition, options?)、fieldReference → (fieldPath, options?)、multiFieldReference → (fields, validate, options?)、transform → <TOutput>(fn) で現在型を差し替え)。同時に実行時の振り分け(transform 配列 vs validator 配列)も決める。
+- Source: `src/core/builder/plugins/plugin-types.ts:47-58, 355-483`
+- Shape: type PluginCategory = "standard" | "conditional" | "transform" | "fieldReference" | "multiFieldReference" | "arrayElement" | "composable" | "composable-conditional" | "composable-directly" | "context" | "builder-extension"
+- Meaning: カテゴリがチェーンメソッドの型シグネチャを決める(conditional → (condition, options?)、fieldReference → (fieldPath, options?)、multiFieldReference → (fields, validate, options?)、transform → <TOutput>(fn) で現在型を差し替え)。同時に実行時の振り分け(transform 配列 vs validator 配列)も決める。
 
 ### optional (3)
 
 #### transform の禁止出力型ガード
-- 出典: `src/core/plugin/transform-type-restrictions.ts`
-- 形: IsForbiddenTransformOutput<T> / ForbiddenTransformError<T> / ValidateTransformOutput<T> / SafeTransformFunction<TInput,TOutput> / RestrictedTransformFunction<TInput,TOutput> / CheckTransformFunction<F>
-- 意味: transform の出力が Array<プレーンオブジェクト> または Array<プレーンオブジェクトを含むユニオン> のとき、引数型を関数ではなくエラー文字列リテラル型に置き換えてコンパイルエラーにする。Date[] / RegExp[] / 関数の配列 / 配列の配列 / プリミティブ配列は許可。ネスト配列サポートの実装都合による制約。
+- Source: `src/core/plugin/transform-type-restrictions.ts`
+- Shape: IsForbiddenTransformOutput<T> / ForbiddenTransformError<T> / ValidateTransformOutput<T> / SafeTransformFunction<TInput,TOutput> / RestrictedTransformFunction<TInput,TOutput> / CheckTransformFunction<F>
+- Meaning: transform の出力が Array<プレーンオブジェクト> または Array<プレーンオブジェクトを含むユニオン> のとき、引数型を関数ではなくエラー文字列リテラル型に置き換えてコンパイルエラーにする。Date[] / RegExp[] / 関数の配列 / 配列の配列 / プリミティブ配列は許可。ネスト配列サポートの実装都合による制約。
 
 #### Severity / SEVERITY
-- 出典: `src/core/plugin/types.ts:15-21`
-- 形: const SEVERITY = { INFO: "INFO", WARN: "WARN", ERROR: "ERROR" } as const; type Severity = "INFO" | "WARN" | "ERROR"
-- 意味: 検証の重大度。型としては公開(src/index.ts が SEVERITY を型 export)されているが、実行時の分岐に一切使われていない。
+- Source: `src/core/plugin/types.ts:15-21`
+- Shape: const SEVERITY = { INFO: "INFO", WARN: "WARN", ERROR: "ERROR" } as const; type Severity = "INFO" | "WARN" | "ERROR"
+- Meaning: 検証の重大度。型としては公開(src/index.ts が SEVERITY を型 export)されているが、実行時の分岐に一切使われていない。
 
 #### sanitize / createReplace / createReplaceAll / createDefaultValue
-- 出典: `src/core/transform/string/{sanitize,replace,defaultValue}.ts`
-- 形: sanitize(value: string): string; createReplace(searchValue: string | RegExp, replaceValue: string): (value: string) => string; createReplaceAll(searchValue: string, replaceValue: string): (value: string) => string; createDefaultValue(defaultValue: string): (value: string | null | undefined) => string
-- 意味: transform に渡す再利用可能な文字列変換関数の生成器。sanitize は & < > " ' / を HTML エンティティに置換。createReplaceAll は空文字検索時に各文字の境界へ挿入する特殊仕様を持つ。src/ のどこからも import されておらず、公開もされていない死にモジュール。
+- Source: `src/core/transform/string/{sanitize,replace,defaultValue}.ts`
+- Shape: sanitize(value: string): string; createReplace(searchValue: string | RegExp, replaceValue: string): (value: string) => string; createReplaceAll(searchValue: string, replaceValue: string): (value: string) => string; createDefaultValue(defaultValue: string): (value: string | null | undefined) => string
+- Meaning: transform に渡す再利用可能な文字列変換関数の生成器。sanitize は & < > " ' / を HTML エンティティに置換。createReplaceAll は空文字検索時に各文字の境界へ挿入する特殊仕様を持つ。src/ のどこからも import されておらず、公開もされていない死にモジュール。
 
-## 振る舞い規則
+## Behavioural rules
 
 - 実行順序は 1 つだけ定義し、全実行パスで同一であること。現行の確定意味論は「default 適用 → null/undefined 短絡 → 全 validator を登録順 → parse モードのみ全 transform を登録順」。validate() は変換を行わず元の型を返し、parse() のみが変換後の型を返す。
 - validate() の戻り型は TObject、parse() の戻り型は ApplyFieldTransforms<TObject, TMap>。この二本立ては公開契約なので維持する。
@@ -249,7 +249,7 @@ JSON Schema Draft-07 の if/then/else。`null`/`undefined` は無条件通過。
 - stitch のフィールド指定は const タプルで受け、FieldsToObject でパスごとの実型を復元する型安全性を必ず維持すること。これが stitch の存在理由。
 - non-null assertion / as any / any を使わずに、compareField・stitch のパス型(NestedKeyOf<TObject>)とパス先型(TypeOfPath<TObject, P>)を解決できること。現行は plugin() の impl に `as any` を当ててジェネリクスを通しており、その結果 compareField の compareFn オプションと orFail の message オプションがチェーン型から消えている。
 
-## 引き継がないもの
+## Not carried forward
 
 - **stitchSimple.ts (stitchSimplePlugin) と stitch-typed.ts (stitchPluginTyped / createStitchValidator)** — stitch.ts と同じ methodName "stitch" を持つ 3 重実装。どちらも index.ts から export されておらず使われていない。API 形も違う(位置引数版とオプションオブジェクト版)。1 つに決めて他は捨てる。
 - **src/core/async.experimental/from-context-plugin.ts の fromContextPlugin と conditionalRequiredCheck** — src/core/plugin/fromContext.ts と同名の重複実装。plugin() を使わない旧形式 (createMethod / validationFunction) でプラグインシステムと互換性がない。
@@ -269,7 +269,7 @@ JSON Schema Draft-07 の if/then/else。`null`/`undefined` は無条件通過。
 - **unified-validator の 4 つの実行パス(createUltraFastValidator / createOptimizedTransformValidator / executeFastSeparated / executeDefinitionOrder)と、validator 数・transform 数による分岐** — 同じ意味論を 4 回書いており、しかも「definition_order」という名前に反して transform を定義順に差し込むわけではない(validator 全部 → transform 全部)。名前と実体が乖離した最適化の残骸。意味論を 1 実装にまとめること。
 - **テスト test/unit/plugins/common/transform.test.ts、test/unit/plugins/context/fromContext.basic.test.ts** — 前者は「変換が先、validate() が変換済みデータを返す」という現行実装と真逆の仕様を assert している。後者は {valid: boolean} に対して .isValid() を呼んでおり型的に成立しない。どちらも仕様の証拠として採用してはいけない。
 
-## 公開シンボル (111)
+## Published symbols (111)
 
 `compareFieldPlugin`, `stitchPlugin`, `stitchSimplePlugin`, `stitchPluginTyped`, `createStitchValidator`, `orFailPlugin`, `customPlugin`, `transformPlugin`, `fromContextPlugin`, `conditionalSchemaPlugin`, `requiredIfPlugin`, `optionalIfPlugin`, `validateIfPlugin`, `skipPlugin`, `compareField`, `stitch`, `orFail`, `custom`, `transform`, `fromContext`, `conditionalSchema`, `requiredIf`, `optionalIf`, `validateIf`, `skip`, `ConditionalSchemaOptions`, `ContextValidationOptions`, `TypeSafeStitchOptions`, `StitchValidationFn`, `FieldsToObject`, `TupleFieldsToObject`, `MessageFactory`, `MessageContext`, `ValidationOptions`, `SEVERITY`, `Severity`, `ValidationContext`, `RecursiveContext`, `ArrayContext`, `ValidationFunctionReturnType`, `ValidationResult`, `TransformFunctionReturnType`, `ValidationFunction`, `TransformFunction`, `ExtractTypes`, `SkipAllValidationFlag`, `SkipFurtherValidationFlag`, `TransformFlag`, `NullableFlag`, `RecursiveFlag`, `ValidationResultWithFlags`, `WithFlags`, `ValidationFlags`, `ConditionalMethod`, `WithConditionalMethods`, `ValidateIfMethods`, `IsForbiddenTransformOutput`, `ForbiddenTransformError`, `ValidateTransformOutput`, `SafeTransformFunction`, `RestrictedTransformFunction`, `CheckTransformFunction`, `resolveMessage`, `emailDuplicationCheck`, `passwordConfirmation`, `inventoryCheck`, `conditionalRequired`, `createTypedContextValidator`, `ContextValidationTemplates`, `conditionalRequiredCheck`, `sanitize`, `createReplace`, `createReplaceAll`, `createDefaultValue`, `TransformAwareValidator`, `ApplyFieldTransforms`, `ApplyNestedTransforms`, `AddFieldTransform`, `ExtractFieldType`, `TransformParseResult`, `PluginCategory`, `PluginType`, `ValidatorFormat`, `TransformPluginImplementation`, `PredefinedTransformImplementation`, `ConfigurableTransformImplementation`, `GenericTransformImplementation`, `TransformValidationMethod`, `TransformResult`, `ConditionalValidationMethod`, `FieldReferenceValidationMethod`, `MultiFieldReferenceValidationMethod`, `ContextPluginImplementation`, `FieldOptions`, `FieldConfig`, `DefaultValue`, `normalizeFieldConfig`, `applyDefault`, `createAccessor`, `createFieldAccessor`, `createBatchAccessors`, `getCachedAccessor`, `VALID_RESULT`, `INVALID_RESULT`, `ERROR_SEVERITY`, `ErrorCodes`, `ErrorCode`, `plugin`, `pluginPredefinedTransform`, `pluginConfigurableTransform`, `pluginBuilderExtension`
 

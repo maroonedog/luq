@@ -69,363 +69,363 @@ The current mechanism — a hardcoded 57-name array in build.js, an emitted expo
 5. **Decide the `./plugins` barrel explicitly** (see openQuestions) — README already documents it, so either add it as a real subpath or fix the README. Do not ship a documented-but-missing specifier again.
 6. **Size budget as a build assertion, not a README sentence.** Gzip the two benchmark bundles and fail the build above a declared ceiling. Publish the *core-only* gzip figure alongside the composed figure so the "only pay for what you use" claim is checkable.
 
-## 引き継ぐ契約 (70件)
+## Contracts to preserve (70)
 
 ### must-preserve (64)
 
 #### package name @maroonedog/luq
-- 出典: `C:\projects\luq\package.json:2`
-- 形: "name": "@maroonedog/luq"
-- 意味: npm scope and package identity. All documented imports are relative to it.
+- Source: `C:\projects\luq\package.json:2`
+- Shape: "name": "@maroonedog/luq"
+- Meaning: npm scope and package identity. All documented imports are relative to it.
 
 #### root export condition map
-- 出典: `C:\projects\luq\package.json:9-13`
-- 形: ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs", "require": "./dist/index.js" }
-- 意味: Dual ESM/CJS with types condition first. Consumers do `import { Builder } from "@maroonedog/luq"`.
+- Source: `C:\projects\luq\package.json:9-13`
+- Shape: ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs", "require": "./dist/index.js" }
+- Meaning: Dual ESM/CJS with types condition first. Consumers do `import { Builder } from "@maroonedog/luq"`.
 
 #### sideEffects: false
-- 出典: `C:\projects\luq\package.json:362`
-- 形: "sideEffects": false
-- 意味: Declares every module free of import-time side effects, which is what actually enables webpack/rollup to drop unused plugin modules. The single most load-bearing distribution field for the tree-shaking claim.
+- Source: `C:\projects\luq\package.json:362`
+- Shape: "sideEffects": false
+- Meaning: Declares every module free of import-time side effects, which is what actually enables webpack/rollup to drop unused plugin modules. The single most load-bearing distribution field for the tree-shaking claim.
 
 #### per-plugin subpath export shape
-- 出典: `C:\projects\luq\package.json:14-298`
-- 形: "./plugins/<camelCaseName>": { "types": "./dist/plugins/<n>.d.ts", "import": "./dist/plugins/<n>.mjs", "require": "./dist/plugins/<n>.js" }
-- 意味: One deep-import specifier per plugin so a consumer can import exactly one plugin without pulling the barrel. The `./plugins/` prefix and the camelCase leaf name are the public contract.
+- Source: `C:\projects\luq\package.json:14-298`
+- Shape: "./plugins/<camelCaseName>": { "types": "./dist/plugins/<n>.d.ts", "import": "./dist/plugins/<n>.mjs", "require": "./dist/plugins/<n>.js" }
+- Meaning: One deep-import specifier per plugin so a consumer can import exactly one plugin without pulling the barrel. The `./plugins/` prefix and the camelCase leaf name are the public contract.
 
 #### ./plugins/required
-- 出典: `C:\projects\luq\package.json:14`
-- 形: exports requiredPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/required
+- Source: `C:\projects\luq\package.json:14`
+- Shape: exports requiredPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/required
 
 #### ./plugins/optional
-- 出典: `C:\projects\luq\package.json:19`
-- 形: exports optionalPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/optional
+- Source: `C:\projects\luq\package.json:19`
+- Shape: exports optionalPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/optional
 
 #### ./plugins/nullable
-- 出典: `C:\projects\luq\package.json:24`
-- 形: exports nullablePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/nullable
+- Source: `C:\projects\luq\package.json:24`
+- Shape: exports nullablePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/nullable
 
 #### ./plugins/stringMin
-- 出典: `C:\projects\luq\package.json:29`
-- 形: exports stringMinPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringMin
+- Source: `C:\projects\luq\package.json:29`
+- Shape: exports stringMinPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringMin
 
 #### ./plugins/stringMax
-- 出典: `C:\projects\luq\package.json:34`
-- 形: exports stringMaxPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringMax
+- Source: `C:\projects\luq\package.json:34`
+- Shape: exports stringMaxPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringMax
 
 #### ./plugins/stringEmail
-- 出典: `C:\projects\luq\package.json:39`
-- 形: exports stringEmailPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringEmail
+- Source: `C:\projects\luq\package.json:39`
+- Shape: exports stringEmailPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringEmail
 
 #### ./plugins/stringPattern
-- 出典: `C:\projects\luq\package.json:44`
-- 形: exports stringPatternPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringPattern
+- Source: `C:\projects\luq\package.json:44`
+- Shape: exports stringPatternPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringPattern
 
 #### ./plugins/stringUrl
-- 出典: `C:\projects\luq\package.json:49`
-- 形: exports stringUrlPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringUrl
+- Source: `C:\projects\luq\package.json:49`
+- Shape: exports stringUrlPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringUrl
 
 #### ./plugins/stringDate
-- 出典: `C:\projects\luq\package.json:54`
-- 形: exports stringDatePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringDate
+- Source: `C:\projects\luq\package.json:54`
+- Shape: exports stringDatePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringDate
 
 #### ./plugins/stringDatetime
-- 出典: `C:\projects\luq\package.json:59`
-- 形: exports stringDatetimePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringDatetime
+- Source: `C:\projects\luq\package.json:59`
+- Shape: exports stringDatetimePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringDatetime
 
 #### ./plugins/stringTime
-- 出典: `C:\projects\luq\package.json:64`
-- 形: exports stringTimePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringTime
+- Source: `C:\projects\luq\package.json:64`
+- Shape: exports stringTimePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringTime
 
 #### ./plugins/stringIpv4
-- 出典: `C:\projects\luq\package.json:69`
-- 形: exports stringIpv4Plugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringIpv4
+- Source: `C:\projects\luq\package.json:69`
+- Shape: exports stringIpv4Plugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringIpv4
 
 #### ./plugins/stringIpv6
-- 出典: `C:\projects\luq\package.json:74`
-- 形: exports stringIpv6Plugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringIpv6
+- Source: `C:\projects\luq\package.json:74`
+- Shape: exports stringIpv6Plugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringIpv6
 
 #### ./plugins/stringHostname
-- 出典: `C:\projects\luq\package.json:79`
-- 形: exports stringHostnamePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringHostname
+- Source: `C:\projects\luq\package.json:79`
+- Shape: exports stringHostnamePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringHostname
 
 #### ./plugins/stringDuration
-- 出典: `C:\projects\luq\package.json:84`
-- 形: exports stringDurationPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringDuration
+- Source: `C:\projects\luq\package.json:84`
+- Shape: exports stringDurationPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringDuration
 
 #### ./plugins/stringBase64
-- 出典: `C:\projects\luq\package.json:89`
-- 形: exports stringBase64Plugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringBase64
+- Source: `C:\projects\luq\package.json:89`
+- Shape: exports stringBase64Plugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringBase64
 
 #### ./plugins/stringJsonPointer
-- 出典: `C:\projects\luq\package.json:94`
-- 形: exports stringJsonPointerPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringJsonPointer
+- Source: `C:\projects\luq\package.json:94`
+- Shape: exports stringJsonPointerPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringJsonPointer
 
 #### ./plugins/stringRelativeJsonPointer
-- 出典: `C:\projects\luq\package.json:99`
-- 形: exports stringRelativeJsonPointerPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringRelativeJsonPointer
+- Source: `C:\projects\luq\package.json:99`
+- Shape: exports stringRelativeJsonPointerPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringRelativeJsonPointer
 
 #### ./plugins/stringIri
-- 出典: `C:\projects\luq\package.json:104`
-- 形: exports stringIriPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringIri
+- Source: `C:\projects\luq\package.json:104`
+- Shape: exports stringIriPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringIri
 
 #### ./plugins/stringIriReference
-- 出典: `C:\projects\luq\package.json:109`
-- 形: exports stringIriReferencePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringIriReference
+- Source: `C:\projects\luq\package.json:109`
+- Shape: exports stringIriReferencePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringIriReference
 
 #### ./plugins/stringUriTemplate
-- 出典: `C:\projects\luq\package.json:114`
-- 形: exports stringUriTemplatePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringUriTemplate
+- Source: `C:\projects\luq\package.json:114`
+- Shape: exports stringUriTemplatePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringUriTemplate
 
 #### ./plugins/stringContentEncoding
-- 出典: `C:\projects\luq\package.json:119`
-- 形: exports stringContentEncodingPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringContentEncoding
+- Source: `C:\projects\luq\package.json:119`
+- Shape: exports stringContentEncodingPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringContentEncoding
 
 #### ./plugins/stringContentMediaType
-- 出典: `C:\projects\luq\package.json:124`
-- 形: exports stringContentMediaTypePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/stringContentMediaType
+- Source: `C:\projects\luq\package.json:124`
+- Shape: exports stringContentMediaTypePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/stringContentMediaType
 
 #### ./plugins/uuid
-- 出典: `C:\projects\luq\package.json:129`
-- 形: exports uuidPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/uuid
+- Source: `C:\projects\luq\package.json:129`
+- Shape: exports uuidPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/uuid
 
 #### ./plugins/numberMin
-- 出典: `C:\projects\luq\package.json:134`
-- 形: exports numberMinPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/numberMin
+- Source: `C:\projects\luq\package.json:134`
+- Shape: exports numberMinPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/numberMin
 
 #### ./plugins/numberMax
-- 出典: `C:\projects\luq\package.json:139`
-- 形: exports numberMaxPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/numberMax
+- Source: `C:\projects\luq\package.json:139`
+- Shape: exports numberMaxPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/numberMax
 
 #### ./plugins/numberPositive
-- 出典: `C:\projects\luq\package.json:144`
-- 形: exports numberPositivePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/numberPositive
+- Source: `C:\projects\luq\package.json:144`
+- Shape: exports numberPositivePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/numberPositive
 
 #### ./plugins/numberNegative
-- 出典: `C:\projects\luq\package.json:149`
-- 形: exports numberNegativePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/numberNegative
+- Source: `C:\projects\luq\package.json:149`
+- Shape: exports numberNegativePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/numberNegative
 
 #### ./plugins/numberInteger
-- 出典: `C:\projects\luq\package.json:154`
-- 形: exports numberIntegerPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/numberInteger
+- Source: `C:\projects\luq\package.json:154`
+- Shape: exports numberIntegerPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/numberInteger
 
 #### ./plugins/numberMultipleOf
-- 出典: `C:\projects\luq\package.json:159`
-- 形: exports numberMultipleOfPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/numberMultipleOf
+- Source: `C:\projects\luq\package.json:159`
+- Shape: exports numberMultipleOfPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/numberMultipleOf
 
 #### ./plugins/booleanTruthy
-- 出典: `C:\projects\luq\package.json:164`
-- 形: exports booleanTruthyPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/booleanTruthy
+- Source: `C:\projects\luq\package.json:164`
+- Shape: exports booleanTruthyPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/booleanTruthy
 
 #### ./plugins/booleanFalsy
-- 出典: `C:\projects\luq\package.json:169`
-- 形: exports booleanFalsyPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/booleanFalsy
+- Source: `C:\projects\luq\package.json:169`
+- Shape: exports booleanFalsyPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/booleanFalsy
 
 #### ./plugins/arrayMinLength
-- 出典: `C:\projects\luq\package.json:174`
-- 形: exports arrayMinLengthPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/arrayMinLength
+- Source: `C:\projects\luq\package.json:174`
+- Shape: exports arrayMinLengthPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/arrayMinLength
 
 #### ./plugins/arrayMaxLength
-- 出典: `C:\projects\luq\package.json:179`
-- 形: exports arrayMaxLengthPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/arrayMaxLength
+- Source: `C:\projects\luq\package.json:179`
+- Shape: exports arrayMaxLengthPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/arrayMaxLength
 
 #### ./plugins/arrayUnique
-- 出典: `C:\projects\luq\package.json:184`
-- 形: exports arrayUniquePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/arrayUnique
+- Source: `C:\projects\luq\package.json:184`
+- Shape: exports arrayUniquePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/arrayUnique
 
 #### ./plugins/arrayIncludes
-- 出典: `C:\projects\luq\package.json:189`
-- 形: exports arrayIncludesPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/arrayIncludes
+- Source: `C:\projects\luq\package.json:189`
+- Shape: exports arrayIncludesPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/arrayIncludes
 
 #### ./plugins/arrayContains
-- 出典: `C:\projects\luq\package.json:194`
-- 形: exports arrayContainsPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/arrayContains
+- Source: `C:\projects\luq\package.json:194`
+- Shape: exports arrayContainsPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/arrayContains
 
 #### ./plugins/object
-- 出典: `C:\projects\luq\package.json:199`
-- 形: exports objectPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/object
+- Source: `C:\projects\luq\package.json:199`
+- Shape: exports objectPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/object
 
 #### ./plugins/objectMinProperties
-- 出典: `C:\projects\luq\package.json:204`
-- 形: exports objectMinPropertiesPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/objectMinProperties
+- Source: `C:\projects\luq\package.json:204`
+- Shape: exports objectMinPropertiesPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/objectMinProperties
 
 #### ./plugins/objectMaxProperties
-- 出典: `C:\projects\luq\package.json:209`
-- 形: exports objectMaxPropertiesPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/objectMaxProperties
+- Source: `C:\projects\luq\package.json:209`
+- Shape: exports objectMaxPropertiesPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/objectMaxProperties
 
 #### ./plugins/objectAdditionalProperties
-- 出典: `C:\projects\luq\package.json:214`
-- 形: exports objectAdditionalPropertiesPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/objectAdditionalProperties
+- Source: `C:\projects\luq\package.json:214`
+- Shape: exports objectAdditionalPropertiesPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/objectAdditionalProperties
 
 #### ./plugins/objectPropertyNames
-- 出典: `C:\projects\luq\package.json:219`
-- 形: exports objectPropertyNamesPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/objectPropertyNames
+- Source: `C:\projects\luq\package.json:219`
+- Shape: exports objectPropertyNamesPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/objectPropertyNames
 
 #### ./plugins/objectPatternProperties
-- 出典: `C:\projects\luq\package.json:224`
-- 形: exports objectPatternPropertiesPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/objectPatternProperties
+- Source: `C:\projects\luq\package.json:224`
+- Shape: exports objectPatternPropertiesPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/objectPatternProperties
 
 #### ./plugins/objectDependentRequired
-- 出典: `C:\projects\luq\package.json:229`
-- 形: exports objectDependentRequiredPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/objectDependentRequired
+- Source: `C:\projects\luq\package.json:229`
+- Shape: exports objectDependentRequiredPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/objectDependentRequired
 
 #### ./plugins/objectDependentSchemas
-- 出典: `C:\projects\luq\package.json:234`
-- 形: exports objectDependentSchemasPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/objectDependentSchemas
+- Source: `C:\projects\luq\package.json:234`
+- Shape: exports objectDependentSchemasPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/objectDependentSchemas
 
 #### ./plugins/oneOf
-- 出典: `C:\projects\luq\package.json:239`
-- 形: exports oneOfPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/oneOf
+- Source: `C:\projects\luq\package.json:239`
+- Shape: exports oneOfPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/oneOf
 
 #### ./plugins/literal
-- 出典: `C:\projects\luq\package.json:244`
-- 形: exports literalPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/literal
+- Source: `C:\projects\luq\package.json:244`
+- Shape: exports literalPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/literal
 
 #### ./plugins/compareField
-- 出典: `C:\projects\luq\package.json:249`
-- 形: exports compareFieldPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/compareField
+- Source: `C:\projects\luq\package.json:249`
+- Shape: exports compareFieldPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/compareField
 
 #### ./plugins/requiredIf
-- 出典: `C:\projects\luq\package.json:254`
-- 形: exports requiredIfPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/requiredIf
+- Source: `C:\projects\luq\package.json:254`
+- Shape: exports requiredIfPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/requiredIf
 
 #### ./plugins/validateIf
-- 出典: `C:\projects\luq\package.json:259`
-- 形: exports validateIfPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/validateIf
+- Source: `C:\projects\luq\package.json:259`
+- Shape: exports validateIfPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/validateIf
 
 #### ./plugins/skip
-- 出典: `C:\projects\luq\package.json:264`
-- 形: exports skipPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/skip
+- Source: `C:\projects\luq\package.json:264`
+- Shape: exports skipPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/skip
 
 #### ./plugins/transform
-- 出典: `C:\projects\luq\package.json:269`
-- 形: exports transformPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/transform
+- Source: `C:\projects\luq\package.json:269`
+- Shape: exports transformPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/transform
 
 #### ./plugins/tupleBuilder
-- 出典: `C:\projects\luq\package.json:274`
-- 形: exports tupleBuilderPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/tupleBuilder
+- Source: `C:\projects\luq\package.json:274`
+- Shape: exports tupleBuilderPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/tupleBuilder
 
 #### ./plugins/readOnlyWriteOnly
-- 出典: `C:\projects\luq\package.json:279`
-- 形: exports readOnlyWriteOnlyPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/readOnlyWriteOnly
+- Source: `C:\projects\luq\package.json:279`
+- Shape: exports readOnlyWriteOnlyPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/readOnlyWriteOnly
 
 #### ./plugins/custom
-- 出典: `C:\projects\luq\package.json:284`
-- 形: exports customPlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/custom
+- Source: `C:\projects\luq\package.json:284`
+- Shape: exports customPlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/custom
 
 #### ./plugins/jsonSchema
-- 出典: `C:\projects\luq\package.json:289`
-- 形: exports jsonSchemaPlugin plus the jsonSchema module's named helpers
-- 意味: Subpath specifier @maroonedog/luq/plugins/jsonSchema. Built from a directory (src/core/plugin/jsonSchema/index.ts), not a single file — the only plugin whose entry is a directory.
+- Source: `C:\projects\luq\package.json:289`
+- Shape: exports jsonSchemaPlugin plus the jsonSchema module's named helpers
+- Meaning: Subpath specifier @maroonedog/luq/plugins/jsonSchema. Built from a directory (src/core/plugin/jsonSchema/index.ts), not a single file — the only plugin whose entry is a directory.
 
 #### ./plugins/jsonSchemaFullFeature
-- 出典: `C:\projects\luq\package.json:294`
-- 形: exports jsonSchemaFullFeaturePlugin
-- 意味: Subpath specifier @maroonedog/luq/plugins/jsonSchemaFullFeature. The flagship one-import JSON Schema path documented in README line 75.
+- Source: `C:\projects\luq\package.json:294`
+- Shape: exports jsonSchemaFullFeaturePlugin
+- Meaning: Subpath specifier @maroonedog/luq/plugins/jsonSchemaFullFeature. The flagship one-import JSON Schema path documented in README line 75.
 
 #### CSP-safe artifact (no eval / no new Function in shipped code)
-- 出典: `C:\projects\luq\README.md:66`
-- 形: grep -c "new Function" dist/index.js dist/index.mjs === 0
-- 意味: Advertised differentiator vs AJV (README lines 66, 183). Holds for today's bundles despite src/types/array-type-analysis.ts:196 containing new Function, because that module is unreachable from the entry. Must become a source-level rule, not an accident.
+- Source: `C:\projects\luq\README.md:66`
+- Shape: grep -c "new Function" dist/index.js dist/index.mjs === 0
+- Meaning: Advertised differentiator vs AJV (README lines 66, 183). Holds for today's bundles despite src/types/array-type-analysis.ts:196 containing new Function, because that module is unreachable from the entry. Must become a source-level rule, not an accident.
 
 #### kebab-case source filename rule
-- 出典: `C:\projects\luq\scripts\check-filenames.js:10`
-- 形: /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)*\.ts$/ plus a ban on utils/helper/manager/handler/processor/service/common/misc/stuff/data/info/temp/tmp
-- 意味: Enforced by npm run lint:filenames over src/. Currently fails with 65 violations because every plugin file is camelCase. The new layout must satisfy it while keeping camelCase public subpath names.
+- Source: `C:\projects\luq\scripts\check-filenames.js:10`
+- Shape: /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)*\.ts$/ plus a ban on utils/helper/manager/handler/processor/service/common/misc/stuff/data/info/temp/tmp
+- Meaning: Enforced by npm run lint:filenames over src/. Currently fails with 65 violations because every plugin file is camelCase. The new layout must satisfy it while keeping camelCase public subpath names.
 
 #### root runtime export set
-- 出典: `C:\projects\luq\core-entry.ts:1-50`
-- 形: Builder, Result, createPluginRegistry, plugin, pluginPredefinedTransform, pluginConfigurableTransform, pluginBuilderExtension, globalConfig, setGlobalConfig, getGlobalConfig, resetGlobalConfig
-- 意味: What dist/index.js actually exports at runtime, verified via require(). The core entry is deliberately plugin-free — plugins arrive only through subpaths. That separation is the right idea and should be kept; what must change is that the .d.ts must agree with it.
+- Source: `C:\projects\luq\core-entry.ts:1-50`
+- Shape: Builder, Result, createPluginRegistry, plugin, pluginPredefinedTransform, pluginConfigurableTransform, pluginBuilderExtension, globalConfig, setGlobalConfig, getGlobalConfig, resetGlobalConfig
+- Meaning: What dist/index.js actually exports at runtime, verified via require(). The core entry is deliberately plugin-free — plugins arrive only through subpaths. That separation is the right idea and should be kept; what must change is that the .d.ts must agree with it.
 
 ### should-preserve (6)
 
 #### main / module / types fallback fields
-- 出典: `C:\projects\luq\package.json:5-7`
-- 形: "main": "dist/index.js", "module": "dist/index.mjs", "types": "dist/index.d.ts"
-- 意味: Legacy resolver fallback alongside the exports map. Bundlers without exports support still resolve.
+- Source: `C:\projects\luq\package.json:5-7`
+- Shape: "main": "dist/index.js", "module": "dist/index.mjs", "types": "dist/index.d.ts"
+- Meaning: Legacy resolver fallback alongside the exports map. Bundlers without exports support still resolve.
 
 #### @luq-plugin JSDoc annotation block
-- 出典: `C:\projects\luq\scripts\docs-generator\parse-annotations.ts:37`
-- 形: /** @luq-plugin @name @category @description @allowedTypes @example @params @returns @customError @since @deprecated */
-- 意味: Machine-readable plugin metadata parsed by scripts/docs-generator/parse-annotations.ts to generate docs/generated/plugins.md and plugin-summary.md; also survives into the shipped .d.ts as IDE hover text. Build must preserve comments in declaration output.
+- Source: `C:\projects\luq\scripts\docs-generator\parse-annotations.ts:37`
+- Shape: /** @luq-plugin @name @category @description @allowedTypes @example @params @returns @customError @since @deprecated */
+- Meaning: Machine-readable plugin metadata parsed by scripts/docs-generator/parse-annotations.ts to generate docs/generated/plugins.md and plugin-summary.md; also survives into the shipped .d.ts as IDE hover text. Build must preserve comments in declaration output.
 
 #### ES2020 compile target
-- 出典: `C:\projects\luq\build.js:123`
-- 形: target: "es2020"
-- 意味: Consistent across build.js esbuild calls, .swcrc jsc.target and the benchmark harness. The minimum runtime baseline the package promises.
+- Source: `C:\projects\luq\build.js:123`
+- Shape: target: "es2020"
+- Meaning: Consistent across build.js esbuild calls, .swcrc jsc.target and the benchmark harness. The minimum runtime baseline the package promises.
 
 #### files allowlist
-- 出典: `C:\projects\luq\package.json:337-339`
-- 形: "files": ["dist"]
-- 意味: Only the build output is published; .npmignore is inert alongside it. Keep the allowlist approach but narrow it to the actual artifacts.
+- Source: `C:\projects\luq\package.json:337-339`
+- Shape: "files": ["dist"]
+- Meaning: Only the build output is published; .npmignore is inert alongside it. Keep the allowlist approach but narrow it to the actual artifacts.
 
 #### npm lifecycle gates
-- 出典: `C:\projects\luq\package.json:306-318`
-- 形: "prepare": "npm run build", "prepublishOnly": "npm test && npm run lint", "verify": format:check && lint && lint:filenames && typecheck && test
-- 意味: Build runs on install-from-git; tests and lint gate publish; `verify` is the composite local gate. The intent is right even though today's lint and lint:filenames both fail.
+- Source: `C:\projects\luq\package.json:306-318`
+- Shape: "prepare": "npm run build", "prepublishOnly": "npm test && npm run lint", "verify": format:check && lint && lint:filenames && typecheck && test
+- Meaning: Build runs on install-from-git; tests and lint gate publish; `verify` is the composite local gate. The intent is right even though today's lint and lint:filenames both fail.
 
 #### gzip-based size measurement harness
-- 出典: `C:\projects\luq\bundle-size-comparison\build-all.js:128-141`
-- 形: esbuild bundle+minify+treeShaking, format esm, target es2020, platform neutral -> zlib.gzipSync(bytes)
-- 意味: How every published size number is produced. Reproducible and worth keeping as a build-time budget assertion.
+- Source: `C:\projects\luq\bundle-size-comparison\build-all.js:128-141`
+- Shape: esbuild bundle+minify+treeShaking, format esm, target es2020, platform neutral -> zlib.gzipSync(bytes)
+- Meaning: How every published size number is produced. Reproducible and worth keeping as a build-time budget assertion.
 
-## 振る舞い規則
+## Behavioural rules
 
 - Every published module must be free of import-time side effects. `"sideEffects": false` stays in package.json, and it must be true: no top-level registry mutation, no globalThis/window assignment, no env read at module scope (today src/core/builder/validator-factory.ts:463 reads process.env.LUQ_ULTRA_FAST).
 - No side-effect imports (`import "./x"`) anywhere in shipped code. Every import must bind names the module actually uses.
@@ -447,7 +447,7 @@ The current mechanism — a hardcoded 57-name array in build.js, an emitted expo
 - Bundle size is a build assertion with a declared ceiling, measured the same way as today (esbuild bundle+minify+treeShaking, esm, es2020, then zlib.gzipSync). Publish the core-only gzip figure next to the composed figure so the tree-shaking claim is checkable rather than rhetorical.
 - Compile target stays at ES2020 or newer, consistently across the JS emit, the declaration emit and the test transform.
 
-## 引き継がないもの
+## Not carried forward
 
 - **build.js's hardcoded 57-element `plugins` array as the source of truth for what gets built and exported (build.js:9-92).** — It must be edited by hand in lockstep with src/, and it already carries a special case for `jsonSchema` (a directory, not a file) plus a silent `continue` when a source file is missing. Discovery must come from the filesystem.
 - **Emitting exports-config.json and printing "Update package.json with the contents of exports-config.json" (build.js:255-261).** — A manual copy-paste step between the build and the published metadata. The two happen to match today, but nothing enforces it. The build must write package.json#exports itself, or CI must fail on any diff.
@@ -470,7 +470,7 @@ The current mechanism — a hardcoded 57-name array in build.js, an emitted expo
 - **The `verify` script as currently constituted (format:check && lint && lint:filenames && typecheck && test).** — The composition is right but it is not run: lint reports 2051 violations and lint:filenames reports 65. Keep the script, but the new repo must start green and a CI workflow must run it — .github/workflows contains only deploy-docs.yml today.
 - **bundle-size-comparison/ as a checked-in directory with its own node_modules, package-lock.json (99 KB), committed dist/ of 16 competitor bundles, and a package name of "formtailor-bundle-size-comparison".** — Stale identity (the library was renamed to Luq), committed build output, and a second dependency tree inside the repo. Keep the measurement method; do not keep the directory in this shape.
 
-## 公開シンボル (83)
+## Published symbols (83)
 
 `@maroonedog/luq`, `main`, `module`, `types`, `exports`, `sideEffects`, `files`, `license`, `repository`, `homepage`, `bugs`, `keywords`, `.`, `./plugins/required`, `./plugins/optional`, `./plugins/nullable`, `./plugins/stringMin`, `./plugins/stringMax`, `./plugins/stringEmail`, `./plugins/stringPattern`, `./plugins/stringUrl`, `./plugins/stringDate`, `./plugins/stringDatetime`, `./plugins/stringTime`, `./plugins/stringIpv4`, `./plugins/stringIpv6`, `./plugins/stringHostname`, `./plugins/stringDuration`, `./plugins/stringBase64`, `./plugins/stringJsonPointer`, `./plugins/stringRelativeJsonPointer`, `./plugins/stringIri`, `./plugins/stringIriReference`, `./plugins/stringUriTemplate`, `./plugins/stringContentEncoding`, `./plugins/stringContentMediaType`, `./plugins/uuid`, `./plugins/numberMin`, `./plugins/numberMax`, `./plugins/numberPositive`, `./plugins/numberNegative`, `./plugins/numberInteger`, `./plugins/numberMultipleOf`, `./plugins/booleanTruthy`, `./plugins/booleanFalsy`, `./plugins/arrayMinLength`, `./plugins/arrayMaxLength`, `./plugins/arrayUnique`, `./plugins/arrayIncludes`, `./plugins/arrayContains`, `./plugins/object`, `./plugins/objectMinProperties`, `./plugins/objectMaxProperties`, `./plugins/objectAdditionalProperties`, `./plugins/objectPropertyNames`, `./plugins/objectPatternProperties`, `./plugins/objectDependentRequired`, `./plugins/objectDependentSchemas`, `./plugins/oneOf`, `./plugins/literal`, `./plugins/compareField`, `./plugins/requiredIf`, `./plugins/validateIf`, `./plugins/skip`, `./plugins/transform`, `./plugins/tupleBuilder`, `./plugins/readOnlyWriteOnly`, `./plugins/custom`, `./plugins/jsonSchema`, `./plugins/jsonSchemaFullFeature`, `dist/index.js`, `dist/index.mjs`, `dist/index.d.ts`, `dist/plugins/<name>.js`, `dist/plugins/<name>.mjs`, `dist/plugins/<name>.d.ts`, `npm run build`, `npm run verify`, `npm run lint:filenames`, `npm run typecheck`, `npm run generate-docs`, `prepare`, `prepublishOnly`
 

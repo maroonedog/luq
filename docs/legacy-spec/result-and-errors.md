@@ -192,135 +192,135 @@ A discriminated union on `valid` gives narrowing for free with zero prototype tr
 | `src/types/array-type-analysis.ts` (333 L) | **Delete.** Uses `new Function` (line 196) — the only CSP violation in `src/`. Only `ArrayStructureInfo` (a type) is used in production. |
 | `src/core/global-config.ts` (98 L) | Delete or redesign — currently inert. |
 
-## 引き継ぐ契約 (24件)
+## Contracts to preserve (24)
 
 ### must-preserve (13)
 
 #### Result<T>.valid
-- 出典: `src/types/result.ts:95`
-- 形: readonly valid: boolean
-- 意味: True when validation succeeded. Property, not a method. The single most-used assertion surface: 2568 occurrences of `.valid` across test/.
+- Source: `src/types/result.ts:95`
+- Shape: readonly valid: boolean
+- Meaning: True when validation succeeded. Property, not a method. The single most-used assertion surface: 2568 occurrences of `.valid` across test/.
 
 #### Result<T>.isValid()
-- 出典: `src/types/result.ts:90`
-- 形: isValid(): boolean
-- 意味: Method form of `valid`. 864 occurrences in test/. Both spellings exist and both are used heavily; the new design must decide which is canonical (see openQuestions).
+- Source: `src/types/result.ts:90`
+- Shape: isValid(): boolean
+- Meaning: Method form of `valid`. 864 occurrences in test/. Both spellings exist and both are used heavily; the new design must decide which is canonical (see openQuestions).
 
 #### Result<T>.errors
-- 出典: `src/types/result.ts:148`
-- 形: readonly errors: ValidationError[]
-- 意味: The failure list. `result.errors[0].message` / `.code` / `.path` is the dominant consumer pattern (84 / 39 / 24 occurrences in test/). MUST be a plain array on BOTH branches — today it is a function on the success branch (verified at runtime).
+- Source: `src/types/result.ts:148`
+- Shape: readonly errors: ValidationError[]
+- Meaning: The failure list. `result.errors[0].message` / `.code` / `.path` is the dominant consumer pattern (84 / 39 / 24 occurrences in test/). MUST be a plain array on BOTH branches — today it is a function on the success branch (verified at runtime).
 
 #### ValidationError
-- 出典: `src/types/index.ts:25`
-- 形: { path: string; message: string; code: string; paths(): string[] }
-- 意味: Canonical error record. `path`, `message`, `code` are the only fields ever read by callers. `paths()` is constructed ~30 times and never invoked — drop it. The type is NOT currently exported from src/index.ts, which is a gap: users cannot annotate the errors they receive.
+- Source: `src/types/index.ts:25`
+- Shape: { path: string; message: string; code: string; paths(): string[] }
+- Meaning: Canonical error record. `path`, `message`, `code` are the only fields ever read by callers. `paths()` is constructed ~30 times and never invoked — drop it. The type is NOT currently exported from src/index.ts, which is a gap: users cannot annotate the errors they receive.
 
 #### ValidationError.code default
-- 出典: `src/core/optimization/core/validation-engine.ts:127`
-- 形: code = validator.code ?? validator.pluginName ?? "VALIDATION_ERROR"
-- 意味: The error code defaults to the plugin's own name in camelCase — "stringMin", "numberMax", "required", "arrayMinLength", "literal", "transform", "skip", "optional", "stringStartsWith", "stringEndsWith", "booleanFalsy", "unionGuard", "stringAlphanumeric". Every plugin option bag accepts `{ code }` to override it. Users branch on these strings.
+- Source: `src/core/optimization/core/validation-engine.ts:127`
+- Shape: code = validator.code ?? validator.pluginName ?? "VALIDATION_ERROR"
+- Meaning: The error code defaults to the plugin's own name in camelCase — "stringMin", "numberMax", "required", "arrayMinLength", "literal", "transform", "skip", "optional", "stringStartsWith", "stringEndsWith", "booleanFalsy", "unionGuard", "stringAlphanumeric". Every plugin option bag accepts `{ code }` to override it. Users branch on these strings.
 
 #### Error path grammar
-- 出典: `src/core/builder/validator-factory.ts:1614,1966,2014`
-- 形: "" | "a" | "a.b" | "a[0]" | "a[0].b" | "a[0][1]"
-- 意味: Dot separates object members; a bracketed decimal index attaches directly to the array field with no preceding dot; adjacent brackets for multi-dimensional arrays; a dot follows the closing bracket before a member name. Root-level failure uses the empty string. Verified against passing assertions: "items[0]", "items[2]", "grid[0][1]", "data[1].nested.inner", "user.profile.email".
+- Source: `src/core/builder/validator-factory.ts:1614,1966,2014`
+- Shape: "" | "a" | "a.b" | "a[0]" | "a[0].b" | "a[0][1]"
+- Meaning: Dot separates object members; a bracketed decimal index attaches directly to the array field with no preceding dot; adjacent brackets for multi-dimensional arrays; a dot follows the closing bracket before a member name. Root-level failure uses the empty string. Verified against passing assertions: "items[0]", "items[2]", "grid[0][1]", "data[1].nested.inner", "user.profile.email".
 
 #### Declaration wildcard path `[*]`
-- 出典: `src/types/util.ts:44`
-- 形: NestedKeyOf<T> emits `${K}[*]`, `${K}[*].${sub}`, `${K}[*][*]`
-- 意味: `.v("items[*].name", …)` declares a rule for every element. Compile-time only; error paths substitute the concrete index. Depth-limited to 5 levels and array prototype methods are excluded from the key union.
+- Source: `src/types/util.ts:44`
+- Shape: NestedKeyOf<T> emits `${K}[*]`, `${K}[*].${sub}`, `${K}[*][*]`
+- Meaning: `.v("items[*].name", …)` declares a rule for every element. Compile-time only; error paths substitute the concrete index. Depth-limited to 5 levels and array prototype methods are excluded from the key union.
 
 #### TransformAwareValidator.validate
-- 出典: `src/core/builder/plugins/plugin-types.ts:1134`
-- 形: validate(value: Partial<T> | unknown, options?: ValidationOptions): Result<T>
-- 意味: Validation only. Returns the ORIGINAL input reference on success — no transforms applied, and field `default` values are computed then discarded. Accepts `unknown`, so it is the entry point for untrusted data.
+- Source: `src/core/builder/plugins/plugin-types.ts:1134`
+- Shape: validate(value: Partial<T> | unknown, options?: ValidationOptions): Result<T>
+- Meaning: Validation only. Returns the ORIGINAL input reference on success — no transforms applied, and field `default` values are computed then discarded. Accepts `unknown`, so it is the entry point for untrusted data.
 
 #### TransformAwareValidator.parse
-- 出典: `src/core/builder/plugins/plugin-types.ts:1135`
-- 形: parse(value: Partial<T> | unknown, options?: ParseOptions): Result<TTransformed>
-- 意味: Validate + transform. Returns a shallow copy with field defaults applied and each field's transform output written back. The result type reflects transforms via ApplyNestedTransforms. This validate/parse split is a core design idea and must survive.
+- Source: `src/core/builder/plugins/plugin-types.ts:1135`
+- Shape: parse(value: Partial<T> | unknown, options?: ParseOptions): Result<TTransformed>
+- Meaning: Validate + transform. Returns a shallow copy with field defaults applied and each field's transform output written back. The result type reflects transforms via ApplyNestedTransforms. This validate/parse split is a core design idea and must survive.
 
 #### ValidationOptions.abortEarly
-- 出典: `src/types/index.ts:44`
-- 形: abortEarly?: boolean
-- 意味: Defaults to TRUE (`options?.abortEarly !== false`). Stops after the first FIELD that produces an error. Set false to collect errors from all fields.
+- Source: `src/types/index.ts:44`
+- Shape: abortEarly?: boolean
+- Meaning: Defaults to TRUE (`options?.abortEarly !== false`). Stops after the first FIELD that produces an error. Set false to collect errors from all fields.
 
 #### ValidationOptions.abortEarlyOnEachField
-- 出典: `src/types/index.ts:46`
-- 形: abortEarlyOnEachField?: boolean
-- 意味: Defaults to TRUE. Stops after the first RULE within a single field. Set false to collect every failing rule per field. Array batch processing overrides this to false internally.
+- Source: `src/types/index.ts:46`
+- Shape: abortEarlyOnEachField?: boolean
+- Meaning: Defaults to TRUE. Stops after the first RULE within a single field. Set false to collect every failing rule per field. Array batch processing overrides this to false internally.
 
 #### MessageContext
-- 出典: `src/core/plugin/types.ts:35`
-- 形: { path: string; value: any; code: string }
-- 意味: Base context handed to every plugin's `messageFactory`. Plugins widen it with constraint data — `{ min, actual }` (stringMin, numberMin, arrayMinLength, objectMinProperties), `{ max, actual }` (stringMax, numberMax, arrayMaxLength, objectMaxProperties), `{ prefix }`, `{ suffix }`, `{ pattern }`. This widened context is exactly the `expected`/`actual` data that should be persisted onto the issue instead of only being rendered into a string.
+- Source: `src/core/plugin/types.ts:35`
+- Shape: { path: string; value: any; code: string }
+- Meaning: Base context handed to every plugin's `messageFactory`. Plugins widen it with constraint data — `{ min, actual }` (stringMin, numberMin, arrayMinLength, objectMinProperties), `{ max, actual }` (stringMax, numberMax, arrayMaxLength, objectMaxProperties), `{ prefix }`, `{ suffix }`, `{ pattern }`. This widened context is exactly the `expected`/`actual` data that should be persisted onto the issue instead of only being rendered into a string.
 
 #### Per-rule messageFactory override
-- 出典: `src/core/plugin/stringMin.ts:56`
-- 形: b.string.min(8, { messageFactory: (ctx) => string, code?: string })
-- 意味: Every standard plugin accepts an options bag whose `messageFactory` replaces the default message and whose `code` replaces the default code. Verified across arrayIncludes, arrayMaxLength, arrayMinLength, arrayUnique, booleanFalsy, booleanTruthy, compareField, custom, literal, numberFinite/Integer/Max/Min/MultipleOf/Negative/Positive/Range, object*, string*. Tests assert custom codes like "CUSTOM_MIN_LENGTH", "abc-123".
+- Source: `src/core/plugin/stringMin.ts:56`
+- Shape: b.string.min(8, { messageFactory: (ctx) => string, code?: string })
+- Meaning: Every standard plugin accepts an options bag whose `messageFactory` replaces the default message and whose `code` replaces the default code. Verified across arrayIncludes, arrayMaxLength, arrayMinLength, arrayUnique, booleanFalsy, booleanTruthy, compareField, custom, literal, numberFinite/Integer/Max/Min/MultipleOf/Negative/Positive/Range, object*, string*. Tests assert custom codes like "CUSTOM_MIN_LENGTH", "abc-123".
 
 ### should-preserve (8)
 
 #### Root-null error
-- 出典: `src/core/builder/validator-factory.ts:498`
-- 形: { path: "", code: "REQUIRED", message: "Value is required" }
-- 意味: validate()/parse() called with null or undefined short-circuits to exactly this single error. Note raw-validator.ts:96 emits "Value required" instead — the wording must be unified.
+- Source: `src/core/builder/validator-factory.ts:498`
+- Shape: { path: "", code: "REQUIRED", message: "Value is required" }
+- Meaning: validate()/parse() called with null or undefined short-circuits to exactly this single error. Note raw-validator.ts:96 emits "Value required" instead — the wording must be unified.
 
 #### Result<T>.data()
-- 出典: `src/types/result.ts:143`
-- 形: data(): T | undefined
-- 意味: Returns the payload on success, undefined on failure. 87 call sites use `.data()`; ~51 test sites use `.data` as a PROPERTY (which silently yields the function object). The method/property ambiguity must be resolved — a plain `data` field on the success branch is the clean answer.
+- Source: `src/types/result.ts:143`
+- Shape: data(): T | undefined
+- Meaning: Returns the payload on success, undefined on failure. 87 call sites use `.data()`; ~51 test sites use `.data` as a PROPERTY (which silently yields the function object). The method/property ambiguity must be resolved — a plain `data` field on the success branch is the clean answer.
 
 #### Result<T>.unwrap()
-- 出典: `src/types/result.ts:107`
-- 形: unwrap(): T // throws on failure
-- 意味: Returns payload or throws. 29 call sites. Keep the method, but it MUST throw a real `Error` subclass carrying the issue array — today it throws a plain object literal with `name: "LuqValidationException"` for which `instanceof Error` is false (verified at runtime).
+- Source: `src/types/result.ts:107`
+- Shape: unwrap(): T // throws on failure
+- Meaning: Returns payload or throws. 29 call sites. Keep the method, but it MUST throw a real `Error` subclass carrying the issue array — today it throws a plain object literal with `name: "LuqValidationException"` for which `instanceof Error` is false (verified at runtime).
 
 #### TransformAwareValidator.pick
-- 出典: `src/core/builder/plugins/plugin-types.ts:1138`
-- 形: pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>
-- 意味: Extracts a single-field validator from a built object validator, keeping the rules declared for that path plus all its array-element and nested descendants. Implemented by running the full validator against `{ [key]: value }` and filtering errors by path pattern. Useful for per-field UI validation; the concept is worth keeping, the implementation is not.
+- Source: `src/core/builder/plugins/plugin-types.ts:1138`
+- Shape: pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>
+- Meaning: Extracts a single-field validator from a built object validator, keeping the rules declared for that path plus all its array-element and nested descendants. Implemented by running the full validator against `{ [key]: value }` and filtering errors by path pattern. Useful for per-field UI validation; the concept is worth keeping, the implementation is not.
 
 #### JSON Schema issue codes
-- 出典: `src/core/plugin/jsonSchema/error-generation.ts`
-- 形: SCREAMING_SNAKE keyword names
-- 意味: Complete set emitted by the JSON Schema subsystem: TYPE_MISMATCH, ENUM, CONST, FORMAT, PATTERN, MIN_LENGTH, MAX_LENGTH, CONTENT_ENCODING, CONTENT_MEDIA_TYPE, MINIMUM, MAXIMUM, EXCLUSIVE_MINIMUM, EXCLUSIVE_MAXIMUM, MULTIPLE_OF, MIN_ITEMS, MAX_ITEMS, UNIQUE_ITEMS, CONTAINS, ADDITIONAL_ITEMS, REQUIRED, MIN_PROPERTIES, MAX_PROPERTIES, ADDITIONAL_PROPERTIES, PROPERTY_NAMES, ALL_OF, ANY_OF, ONE_OF, NOT, FALSE_SCHEMA. These map 1:1 to Draft-07 keywords and should be kept verbatim.
+- Source: `src/core/plugin/jsonSchema/error-generation.ts`
+- Shape: SCREAMING_SNAKE keyword names
+- Meaning: Complete set emitted by the JSON Schema subsystem: TYPE_MISMATCH, ENUM, CONST, FORMAT, PATTERN, MIN_LENGTH, MAX_LENGTH, CONTENT_ENCODING, CONTENT_MEDIA_TYPE, MINIMUM, MAXIMUM, EXCLUSIVE_MINIMUM, EXCLUSIVE_MAXIMUM, MULTIPLE_OF, MIN_ITEMS, MAX_ITEMS, UNIQUE_ITEMS, CONTAINS, ADDITIONAL_ITEMS, REQUIRED, MIN_PROPERTIES, MAX_PROPERTIES, ADDITIONAL_PROPERTIES, PROPERTY_NAMES, ALL_OF, ANY_OF, ONE_OF, NOT, FALSE_SCHEMA. These map 1:1 to Draft-07 keywords and should be kept verbatim.
 
 #### JSON Schema error `value` / `constraint`
-- 出典: `src/core/plugin/jsonSchema/types.ts:71`
-- 形: { path; message; code; value?: any; constraint?: any }
-- 意味: The ONLY place in the library where an error carries structured data: `value` is the offending value (= actual), `constraint` is the schema keyword's value (= expected: schema.minLength, schema.maximum, schema.pattern, schema.enum, schema.const, schema.format, schema.type, schema.multipleOf, schema.minItems, schema.maxItems, schema.contains, schema.minProperties, schema.maxProperties, schema.propertyNames, schema.contentEncoding, schema.contentMediaType, schema.exclusiveMinimum, schema.exclusiveMaximum, requiredProp, schemas, true/false). This is the model to generalize to `expected`/`actual` on every issue.
+- Source: `src/core/plugin/jsonSchema/types.ts:71`
+- Shape: { path; message; code; value?: any; constraint?: any }
+- Meaning: The ONLY place in the library where an error carries structured data: `value` is the offending value (= actual), `constraint` is the schema keyword's value (= expected: schema.minLength, schema.maximum, schema.pattern, schema.enum, schema.const, schema.format, schema.type, schema.multipleOf, schema.minItems, schema.maxItems, schema.contains, schema.minProperties, schema.maxProperties, schema.propertyNames, schema.contentEncoding, schema.contentMediaType, schema.exclusiveMinimum, schema.exclusiveMaximum, requiredProp, schemas, true/false). This is the model to generalize to `expected`/`actual` on every issue.
 
 #### Public export names in this area
-- 出典: `src/index.ts:38-77`
-- 形: Result, ValidationResult, ValidationOptions, MessageContext, SEVERITY, BasicValidationResult, TransformAwareValidator, GlobalConfig, globalConfig, setGlobalConfig, getGlobalConfig, resetGlobalConfig
-- 意味: The complete set of result/error/config symbols exported from src/index.ts today. `ValidationError` and `ParseOptions` are NOT exported — a real gap, since ValidationError is the type users touch most.
+- Source: `src/index.ts:38-77`
+- Shape: Result, ValidationResult, ValidationOptions, MessageContext, SEVERITY, BasicValidationResult, TransformAwareValidator, GlobalConfig, globalConfig, setGlobalConfig, getGlobalConfig, resetGlobalConfig
+- Meaning: The complete set of result/error/config symbols exported from src/index.ts today. `ValidationError` and `ParseOptions` are NOT exported — a real gap, since ValidationError is the type users touch most.
 
 #### FieldsToObject / StitchValidationFn
-- 出典: `src/types/stitch-types.ts:18`
-- 形: FieldsToObject<T, K extends readonly (NestedKeyOf<T> & string)[]> = { [P in K[number]]: TypeOfPath<T, P> }
-- 意味: Maps a readonly tuple of field paths to a typed object of those fields' values, giving `stitch(...)` cross-field validators fully typed access to the fields they declared. Genuinely useful type-level idea; used by src/core/plugin/stitch-typed.ts and referenced from plugin-interfaces.ts and plugin-types.ts.
+- Source: `src/types/stitch-types.ts:18`
+- Shape: FieldsToObject<T, K extends readonly (NestedKeyOf<T> & string)[]> = { [P in K[number]]: TypeOfPath<T, P> }
+- Meaning: Maps a readonly tuple of field paths to a typed object of those fields' values, giving `stitch(...)` cross-field validators fully typed access to the fields they declared. Genuinely useful type-level idea; used by src/core/plugin/stitch-typed.ts and referenced from plugin-interfaces.ts and plugin-types.ts.
 
 ### optional (3)
 
 #### ResultUtils.all / any / partition
-- 出典: `src/types/result.ts:347`
-- 形: all<T>(Result<T>[]): Result<T[]>; any<T>(Result<T>[]): Result<T>; partition<T>(Result<T>[]): { valid: T[]; invalid: ValidationError[][] }
-- 意味: Combinators over arrays of results: `all` short-circuits on the first failure, `any` returns the first success or the concatenation of all errors, `partition` splits. Imported by nothing in src/ or test/. Reasonable concepts, zero proven demand.
+- Source: `src/types/result.ts:347`
+- Shape: all<T>(Result<T>[]): Result<T[]>; any<T>(Result<T>[]): Result<T>; partition<T>(Result<T>[]): { valid: T[]; invalid: ValidationError[][] }
+- Meaning: Combinators over arrays of results: `all` short-circuits on the first failure, `any` returns the first success or the concatenation of all errors, `partition` splits. Imported by nothing in src/ or test/. Reasonable concepts, zero proven demand.
 
 #### Result functional combinators
-- 出典: `src/types/result.ts:112-157`
-- 形: map, flatMap, tap, tapError, unwrapOr, unwrapOrElse, toPlainObject
-- 意味: Rust-style combinators. Only `tap`/`tapError` appear outside the definition, and only in test/demo/onSuccessPostProcess-usage-examples.ts (not a real test). `map`/`flatMap`/`unwrapOr`/`unwrapOrElse`/`toPlainObject` have zero consumers. Ship them, if at all, as tree-shakeable free functions in a separate module — not as methods every result object must carry.
+- Source: `src/types/result.ts:112-157`
+- Shape: map, flatMap, tap, tapError, unwrapOr, unwrapOrElse, toPlainObject
+- Meaning: Rust-style combinators. Only `tap`/`tapError` appear outside the definition, and only in test/demo/onSuccessPostProcess-usage-examples.ts (not a real test). `map`/`flatMap`/`unwrapOr`/`unwrapOrElse`/`toPlainObject` have zero consumers. Ship them, if at all, as tree-shakeable free functions in a separate module — not as methods every result object must carry.
 
 #### validateRaw / parseRaw
-- 出典: `src/core/builder/plugins/plugin-types.ts:1141`
-- 形: validateRaw?(value: T, o?): boolean; parseRaw?(value: T, o?): { valid: boolean; data?: TTransformed; error?: any }
-- 意味: Optional fast paths that skip the Result wrapper. `validateRaw` answers boolean only. `parseRaw`'s `error` is `any` and is sometimes a bare string ("Value required", raw-validator.ts:66) and sometimes a ValidationError object. Optional on the interface, so callers must feature-detect. If a fast path is kept, it needs one honest signature.
+- Source: `src/core/builder/plugins/plugin-types.ts:1141`
+- Shape: validateRaw?(value: T, o?): boolean; parseRaw?(value: T, o?): { valid: boolean; data?: TTransformed; error?: any }
+- Meaning: Optional fast paths that skip the Result wrapper. `validateRaw` answers boolean only. `parseRaw`'s `error` is `any` and is sometimes a bare string ("Value required", raw-validator.ts:66) and sometimes a ValidationError object. Optional on the interface, so callers must feature-detect. If a fast path is kept, it needs one honest signature.
 
-## 振る舞い規則
+## Behavioural rules
 
 - A result MUST be a discriminated union on a single boolean tag, with identical property types on both branches. The current design — a prototype object whose `errors` is a method on success and an array on failure — is a verified runtime defect, not a style choice.
 - `valid === true` implies zero issues; `valid === false` implies at least one issue. Never emit `{ valid: false, issues: [] }` and never `{ valid: true, issues: [something] }`.
@@ -341,7 +341,7 @@ A discriminated union on `valid` gives narrowing for free with zero prototype tr
 - Result helper combinators (`map`, `unwrap`, `unwrapOr`, `all`, `partition`, …) ship as separately importable pure functions, not as methods bolted onto every result object — otherwise a user who only writes `if (!r.valid)` still pays for all of them.
 - Result objects must be plain JSON-serializable data. `JSON.stringify(result)` should produce the whole result; a dedicated `toPlainObject()` should not be necessary.
 
-## 引き継がないもの
+## Not carried forward
 
 - **`src/types/result.ts` prototype-based `successProto` (`Object.create(successProto)` for the ok branch, an object literal with getters for the error branch).** — Verified at runtime: `Result.ok(x).errors` is a FUNCTION while `Result.error(e).errors` is an array, directly contradicting the declared `readonly errors: ValidationError[]`. `expect(result.errors).toHaveLength(0)` passes only because `Function.length === 0`. `Result.ok` also exposes undeclared `value` and `onSuccessPostProcess` members that `Result.error` lacks — and `validator-factory.ts:2765` reads `result.value` off a Result, which is undefined on failure. The 'V8 hidden class' rationale in the comments produced two different hidden classes, achieving the opposite of its stated goal.
 - **`LuqValidationException` and `createLuqValidationException` (`src/types/result.ts:11-38`), including the `createLuqValidationException as any as { new (...) }` cast.** — Returns a plain object literal, so `e instanceof Error` is false (verified) and there is no stack trace. The `as any as { new(...) }` cast fakes a constructor that does not exist. The symbol is not exported from `src/index.ts`, so a caller cannot even name the thing `unwrap()` throws. Replace with a real `class ValidationFailure extends Error`.
@@ -364,7 +364,7 @@ A discriminated union on `valid` gives narrowing for free with zero prototype tr
 - **The unused type-level machinery in `src/types/stitch-types.ts`: `TupleFieldsToObject`, `ValidateFieldPaths`, `CreateStitchOptions`, `createStitchOptions`, and the 40-line usage-example comment block.** — None of the four are imported anywhere; only `FieldsToObject` and `TypeSafeStitchOptions` have consumers. `TupleFieldsToObject` is a strictly worse duplicate of `FieldsToObject`. Shipped examples belong in docs, not in a type module.
 - **`ValidationResult<T>.originalValue?: T` (`src/types/index.ts:19`, `plugin-types.ts:1157`).** — Written by the internal optimization layer but never read back by any caller; it duplicates data the caller already holds and leaks an internal execution detail into a public type.
 
-## 公開シンボル (61)
+## Published symbols (61)
 
 `Result`, `ValidationResult`, `ValidationError`, `ValidationOptions`, `ParseOptions`, `MessageContext`, `MessageFactory`, `SEVERITY`, `Severity`, `TransformAwareValidator`, `FieldValidator`, `Validator`, `ValidatorStrategy`, `FieldValidationResult`, `PluginValidationResult`, `BasicValidationResult`, `ValidResult`, `InvalidResult`, `ValidationState`, `ResultUtils`, `LuqValidationException`, `createLuqValidationException`, `IndexedResult`, `createIndexedResult`, `ErrorContext`, `IndexedValidState`, `ErrorCodes`, `ErrorCode`, `ERROR_SEVERITY`, `VALID_RESULT`, `INVALID_RESULT`, `GlobalConfig`, `globalConfig`, `setGlobalConfig`, `getGlobalConfig`, `resetGlobalConfig`, `NestedKeyOf`, `TypeOfPath`, `ElementType`, `InferType`, `UnionToIntersection`, `FieldsToObject`, `TupleFieldsToObject`, `StitchValidationFn`, `TypeSafeStitchOptions`, `ValidateFieldPaths`, `CreateStitchOptions`, `createStitchOptions`, `ArrayDepth`, `ArrayElementType`, `ArrayIndexPattern`, `ArrayStructureInfo`, `ResolveArrayStructure`, `BuildTimeArrayAnalyzer`, `createTypedArrayValidator`, `ValidationContext`, `RecursiveContext`, `ArrayContext`, `ValidationFunctionReturnType`, `UnifiedValidator`, `ParseResult`
 

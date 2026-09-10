@@ -1,6 +1,6 @@
 # documented-promises
 
-読んだファイル: C:\projects\luq\README.md（214行・全読）, C:\projects\luq\docs-site\src\ 配下の全 .astro / .ts / .json（pages 13枚, components 16枚, data 3ファイル）, C:\projects\luq\docs\generated\plugins.md（2269行）, および裏取り用に C:\projects\luq\package.json の exports マップと C:\projects\luq\src\index.ts / src\types\result.ts / src\core\registry\plugin-registry.ts / src\core\plugin\*.ts の methodName 定義。
+Files read: C:\projects\luq\README.md（214行・全読）, C:\projects\luq\docs-site\src\ 配下の全 .astro / .ts / .json（pages 13枚, components 16枚, data 3ファイル）, C:\projects\luq\docs\generated\plugins.md（2269行）, および裏取り用に C:\projects\luq\package.json の exports マップと C:\projects\luq\src\index.ts / src\types\result.ts / src\core\registry\plugin-registry.ts / src\core\plugin\*.ts の methodName 定義。
 
 【ドキュメントが約束している中核】
 1. ビルダー連鎖: Builder().use(plugin...).for<T>().v(path, b => chain, options?).useField(path, rule).strict().build()。Builder() は関数（new 不要）。use() は可変長引数も受ける。use() は for() より前。重複 use は無視。順序は（多くのプラグインで）不問。
@@ -102,7 +102,7 @@ tupleBuilderPlugin :: .tupleBuilder() :: tuple
 unionGuardPlugin :: .unionGuard() :: union
 uuidPlugin :: .uuid() :: string
 validateIfPlugin :: .validateIf() :: string,number,boolean,array,object,date,union
-（加えて json-schema ページのみが約束する 70件目: jsonSchemaPlugin :: .fromJsonSchema()）
+（加えて json-schema ページのみが約束する 70目: jsonSchemaPlugin :: .fromJsonSchema()）
 README は「40+ built-in plugins」と書いているが実数は 69〜70。
 
 【JSON Schema 対応キーワード全件（docs-site/src/pages/json-schema.astro のマッピング表・全 12 カテゴリ 52 行）】
@@ -125,125 +125,125 @@ Access Control: readOnly(readOnlyWriteOnlyPlugin) / writeOnly(readOnlyWriteOnlyP
 docs サイドバー: Getting Started(Introduction=/docs/getting-started, Core Concepts, Examples & Patterns) / Guides(Custom Plugins, Troubleshooting) / API Reference(Builder API, Validator API, Plugin Registry) / Plugins(Builder Generator=/generator ※存在しない) / Tools(同上) / Future(Roadmap)。
 /plugins は静的カタログではなく「プラグインを選ぶと Builder コードを生成してコピーできる」インタラクティブ生成器で、型フィルタ（string / number / boolean / array / object / date）と検索を持つ。生成コードは import { Builder } from '@maroonedog/luq'; import { xxxPlugin } from '@maroonedog/luq'; の形（ルート一括 import）で、他ページの「サブパス個別 import が必須」という指導と矛盾する。
 
-## 引き継ぐ契約 (22件)
+## Contracts to preserve (22)
 
 ### must-preserve (15)
 
 #### Builder
-- 出典: `C:\projects\luq\README.md（20-47行）, C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（29-56, 468-497行）`
-- 形: Builder(): ChainableBuilder — use(...plugins) → for<T>() → v(path, fn, options?) / useField(path, rule) → strict() → build()
-- 意味: ファクトリ関数。new 不要。use() は for() より前に呼ぶ。可変長引数の use(a,b,c) と連鎖 .use(a).use(b) の両方を受ける。同一プラグインの重複 use は無視。use されていないプラグインのメソッドは型に現れない（コンパイルエラー）。
+- Source: `C:\projects\luq\README.md（20-47行）, C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（29-56, 468-497行）`
+- Shape: Builder(): ChainableBuilder — use(...plugins) → for<T>() → v(path, fn, options?) / useField(path, rule) → strict() → build()
+- Meaning: ファクトリ関数。new 不要。use() は for() より前に呼ぶ。可変長引数の use(a,b,c) と連鎖 .use(a).use(b) の両方を受ける。同一プラグインの重複 use は無視。use されていないプラグインのメソッドは型に現れない（コンパイルエラー）。
 
 #### for<T>()
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（57-71行）, docs\core-concepts.astro`
-- 形: for<TObject extends object>(): FieldBuilder<TObject>
-- 意味: 既存の TypeScript 型をそのまま検証対象に指定する。スキーマ再定義を強要しないという思想の中核。以降の v() のパス引数と b の型がこれで決まる。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（57-71行）, docs\core-concepts.astro`
+- Shape: for<TObject extends object>(): FieldBuilder<TObject>
+- Meaning: 既存の TypeScript 型をそのまま検証対象に指定する。スキーマ再定義を強要しないという思想の中核。以降の v() のパス引数と b の型がこれで決まる。
 
 #### v(path, builderFn, options?)
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（73-124行）`
-- 形: v(path: NestedKeyOf<T> & string, fn: (b: FieldBuilder) => Chain, options?: FieldOptions<V> | V): FieldBuilder<T>
-- 意味: フィールド検証を定義。第2引数の b は b.string / b.number / b.boolean / b.array / b.object / b.date の型別入口を持ち、そこから use 済みプラグインのメソッドだけが連鎖できる。第3引数は FieldOptions か既定値そのもののショートハンド。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（73-124行）`
+- Shape: v(path: NestedKeyOf<T> & string, fn: (b: FieldBuilder) => Chain, options?: FieldOptions<V> | V): FieldBuilder<T>
+- Meaning: フィールド検証を定義。第2引数の b は b.string / b.number / b.boolean / b.array / b.object / b.date の型別入口を持ち、そこから use 済みプラグインのメソッドだけが連鎖できる。第3引数は FieldOptions か既定値そのもののショートハンド。
 
 #### フィールドパス構文
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\troubleshooting.astro（63-186行）, docs\api\builder.astro（Field Path Syntax ボックス）`
-- 形: 'name' | 'a.b.c' | 'tags[*]' | 'items[*].name' | 'items[*].attributes.color' | 'data[*][*]' | 'customer.addresses[*].city'
-- 意味: ドット記法でネスト、[*] で配列全要素。[*] は多次元に連鎖可。特定インデックス（items[0].name, tags[0], data[0][0]）は明示的にサポートしないと宣言されている。プリミティブ配列も 'tags[*]' で各要素を検証する。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\troubleshooting.astro（63-186行）, docs\api\builder.astro（Field Path Syntax ボックス）`
+- Shape: 'name' | 'a.b.c' | 'tags[*]' | 'items[*].name' | 'items[*].attributes.color' | 'data[*][*]' | 'customer.addresses[*].city'
+- Meaning: ドット記法でネスト、[*] で配列全要素。[*] は多次元に連鎖可。特定インデックス（items[0].name, tags[0], data[0][0]）は明示的にサポートしないと宣言されている。プリミティブ配列も 'tags[*]' で各要素を検証する。
 
 #### build()
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（226-247行）, docs\examples.astro`
-- 形: build(): Validator<T>
-- 意味: バリデータを確定。生成コストは高い前提で「一度作って使い回せ」と 3 ページで指導している（examples の Performance Patterns, troubleshooting のメモリリーク項）。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（226-247行）, docs\examples.astro`
+- Shape: build(): Validator<T>
+- Meaning: バリデータを確定。生成コストは高い前提で「一度作って使い回せ」と 3 ページで指導している（examples の Performance Patterns, troubleshooting のメモリリーク項）。
 
 #### validator.validate(value, options?)
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（52-71行, API 表）`
-- 形: validate(value: unknown, options?: ValidationOptions): Result<T>
-- 意味: 検証のみ。transform は適用せず元の値を返す。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（52-71行, API 表）`
+- Shape: validate(value: unknown, options?: ValidationOptions): Result<T>
+- Meaning: 検証のみ。transform は適用せず元の値を返す。
 
 #### validator.parse(value, options?)
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（73-93行）, docs\api\builder.astro（typeInferenceExample）, docs\custom-plugins.astro, docs\examples.astro`
-- 形: parse(value: unknown, options?: ParseOptions): Result<TTransformed>
-- 意味: 検証し transform を適用した値を返す。型レベルでも変換後の型を返すことが約束されている（string→number, string→string[]）。validate と parse の差は 5 ページで繰り返し強調されており、この非対称性そのものが引き継ぐべき意味論。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（73-93行）, docs\api\builder.astro（typeInferenceExample）, docs\custom-plugins.astro, docs\examples.astro`
+- Shape: parse(value: unknown, options?: ParseOptions): Result<TTransformed>
+- Meaning: 検証し transform を適用した値を返す。型レベルでも変換後の型を返すことが約束されている（string→number, string→string[]）。validate と parse の差は 5 ページで繰り返し強調されており、この非対称性そのものが引き継ぐべき意味論。
 
 #### validator.pick(fieldPath)
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（180-219行, FieldValidator 表）`
-- 形: pick(path: NestedKeyOf<T> & string): FieldValidator<T, TypeOfPath<T, path>>; FieldValidator.validate(value, allValues?: Partial<T>, options?)
-- 意味: 構築済みバリデータから単一フィールドのバリデータを切り出す。ネストパス可。第2引数に他フィールドの値を文脈として渡せる。フォームのリアルタイム単項目検証の推奨手段で、ドキュメントは Plugin Registry より pick を優先せよと明言している。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（180-219行, FieldValidator 表）`
+- Shape: pick(path: NestedKeyOf<T> & string): FieldValidator<T, TypeOfPath<T, path>>; FieldValidator.validate(value, allValues?: Partial<T>, options?)
+- Meaning: 構築済みバリデータから単一フィールドのバリデータを切り出す。ネストパス可。第2引数に他フィールドの値を文脈として渡せる。フォームのリアルタイム単項目検証の推奨手段で、ドキュメントは Plugin Registry より pick を優先せよと明言している。
 
 #### Result<T>
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（95-172行, Result Methods 表）`
-- 形: isValid(): boolean; isError(): boolean; unwrap(): T; unwrapOr(d: T): T; unwrapOrElse(fn: (e: ValidationError[]) => T): T; map(fn): Result<U>; flatMap(fn): Result<U>; tap(fn): Result<T>; tapError(fn): Result<T>; data(): T | undefined; errors: ValidationError[]; toPlainObject(): { valid: boolean; data?: T; errors: ValidationError[] }; valid: boolean; value: T
-- 意味: 関数型 Result。unwrap() は失敗時に LuqValidationException を throw（e.name で判別、e.errors を持つ）。valid は後方互換用プロパティとして文書化。errors はプロパティとして文書化されている（現行 src は errors をプロパティ宣言とメソッド実装の両方で持つ矛盾状態）。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（95-172行, Result Methods 表）`
+- Shape: isValid(): boolean; isError(): boolean; unwrap(): T; unwrapOr(d: T): T; unwrapOrElse(fn: (e: ValidationError[]) => T): T; map(fn): Result<U>; flatMap(fn): Result<U>; tap(fn): Result<T>; tapError(fn): Result<T>; data(): T | undefined; errors: ValidationError[]; toPlainObject(): { valid: boolean; data?: T; errors: ValidationError[] }; valid: boolean; value: T
+- Meaning: 関数型 Result。unwrap() は失敗時に LuqValidationException を throw（e.name で判別、e.errors を持つ）。valid は後方互換用プロパティとして文書化。errors はプロパティとして文書化されている（現行 src は errors をプロパティ宣言とメソッド実装の両方で持つ矛盾状態）。
 
 #### ValidationError
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（117-121行）, docs\getting-started.astro, docs\examples.astro`
-- 形: { path: string; message: string; code: string }
-- 意味: path はドット記法の絶対パス（'user.email'）。code はプラグイン由来の識別子（'required', 'stringEmail', 'min_length', 'invalid_email' が例として出る — 命名規則がドキュメント内で不統一）。API レスポンスにそのまま詰める例が載っている。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（117-121行）, docs\getting-started.astro, docs\examples.astro`
+- Shape: { path: string; message: string; code: string }
+- Meaning: path はドット記法の絶対パス（'user.email'）。code はプラグイン由来の識別子（'required', 'stringEmail', 'min_length', 'invalid_email' が例として出る — 命名規則がドキュメント内で不統一）。API レスポンスにそのまま詰める例が載っている。
 
 #### ValidationOptions
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（221-238行）`
-- 形: { abortEarly?: boolean; context?: unknown }
-- 意味: abortEarly の既定は false（全エラー収集）。context は全フィールドバリデータに伝播し、context カテゴリのプラグインから読める。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\validator.astro（221-238行）`
+- Shape: { abortEarly?: boolean; context?: unknown }
+- Meaning: abortEarly の既定は false（全エラー収集）。context は全フィールドバリデータに伝播し、context カテゴリのプラグインから読める。
 
 #### fromJsonSchema(schema)
-- 出典: `C:\projects\luq\README.md（72-107行）, C:\projects\luq\docs-site\src\pages\json-schema.astro（Quick Setup 2枚）`
-- 形: Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build() / Builder().use(jsonSchemaPlugin).use(...個別プラグイン).fromJsonSchema(schema).build()
-- 意味: builder-extension プラグインが Builder 自身にメソッドを生やす（for<T>() を経由しない）。実行時に取得した任意のスキーマオブジェクトを受ける。fullFeature 版は全キーワードを内包、jsonSchemaPlugin 版は使うキーワードに対応するプラグインだけ use して tree-shaking する。この二段構えがバンドルサイズ差（31.75KB vs 26.06KB）として公表されている。
+- Source: `C:\projects\luq\README.md（72-107行）, C:\projects\luq\docs-site\src\pages\json-schema.astro（Quick Setup 2枚）`
+- Shape: Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build() / Builder().use(jsonSchemaPlugin).use(...個別プラグイン).fromJsonSchema(schema).build()
+- Meaning: builder-extension プラグインが Builder 自身にメソッドを生やす（for<T>() を経由しない）。実行時に取得した任意のスキーマオブジェクトを受ける。fullFeature 版は全キーワードを内包、jsonSchemaPlugin 版は使うキーワードに対応するプラグインだけ use して tree-shaking する。この二段構えがバンドルサイズ差（31.75KB vs 26.06KB）として公表されている。
 
 #### plugin()
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\custom-plugins.astro（26-119, 275-320行）, C:\projects\luq\README.md（109-139行）`
-- 形: plugin({ name: string; methodName: string; allowedTypes: readonly TypeName[]; category: 'standard'|'fieldReference'|'transform'|'conditional'|'multiFieldReference'|'context'; impl: (...args) => { check(value, allValues?, context?): boolean | { valid: boolean; ... }; code: string; getErrorMessage?(value, path): string; params?: unknown[] } })
-- 意味: 利用者が独自の業務ルールを型安全なチェーンメソッドとして足す唯一の口。category が ChainableFieldBuilder に渡る型変数を決めるという設計思想がページ全体の主題。transform は check が { valid, transformedValue } を返して以降の型を変える。conditional は { valid: true, __skipAllValidation: true } で残りをスキップできる。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\custom-plugins.astro（26-119, 275-320行）, C:\projects\luq\README.md（109-139行）`
+- Shape: plugin({ name: string; methodName: string; allowedTypes: readonly TypeName[]; category: 'standard'|'fieldReference'|'transform'|'conditional'|'multiFieldReference'|'context'; impl: (...args) => { check(value, allValues?, context?): boolean | { valid: boolean; ... }; code: string; getErrorMessage?(value, path): string; params?: unknown[] } })
+- Meaning: 利用者が独自の業務ルールを型安全なチェーンメソッドとして足す唯一の口。category が ChainableFieldBuilder に渡る型変数を決めるという設計思想がページ全体の主題。transform は check が { valid, transformedValue } を返して以降の型を変える。conditional は { valid: true, __skipAllValidation: true } で残りをスキップできる。
 
 #### サブパス個別 import によるプラグイン単位 tree-shaking
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\getting-started.astro（174-180行）, docs\troubleshooting.astro（24-29行）, C:\projects\luq\package.json（exports）`
-- 形: import { requiredPlugin } from '@maroonedog/luq/plugins/required'; import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
-- 意味: 「バレル / ワイルドカード import は避けよ、import * as plugins from '@maroonedog/luq/plugins' はもはやサポートしない」と getting-started と troubleshooting の両方で明言。ESM 前提。package.json exports にプラグインごとの types/import/require 3面エントリを持つのが現行形。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\getting-started.astro（174-180行）, docs\troubleshooting.astro（24-29行）, C:\projects\luq\package.json（exports）`
+- Shape: import { requiredPlugin } from '@maroonedog/luq/plugins/required'; import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
+- Meaning: 「バレル / ワイルドカード import は避けよ、import * as plugins from '@maroonedog/luq/plugins' はもはやサポートしない」と getting-started と troubleshooting の両方で明言。ESM 前提。package.json exports にプラグインごとの types/import/require 3面エントリを持つのが現行形。
 
 #### CSP-safe
-- 出典: `C:\projects\luq\README.md（66, 183行）, C:\projects\luq\docs-site\src\pages\benchmarks.astro（Key Insights, CSP バッジ列）`
-- 形: eval / new Function を一切使わない
-- 意味: AJV との差別化として README・benchmarks・トップページの全てで無条件に主張されている。動的スキーマ読み込み（fetch した JSON Schema をそのまま fromJsonSchema）と両立することが売り。破ると存在理由が消える。
+- Source: `C:\projects\luq\README.md（66, 183行）, C:\projects\luq\docs-site\src\pages\benchmarks.astro（Key Insights, CSP バッジ列）`
+- Shape: eval / new Function を一切使わない
+- Meaning: AJV との差別化として README・benchmarks・トップページの全てで無条件に主張されている。動的スキーマ読み込み（fetch した JSON Schema をそのまま fromJsonSchema）と両立することが売り。破ると存在理由が消える。
 
 ### should-preserve (5)
 
 #### FieldOptions
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（88-124行）`
-- 形: { default?: T | (() => T); applyDefaultToNull?: boolean; description?: string; deprecated?: boolean | string; metadata?: Record<string, unknown> }
-- 意味: default は関数も可（遅延既定値）。applyDefaultToNull の既定は true（null にも既定値を適用）。deprecated は文字列で理由を書ける。metadata は任意の付随情報。第3引数に生値を渡すと default のショートハンドになる。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（88-124行）`
+- Shape: { default?: T | (() => T); applyDefaultToNull?: boolean; description?: string; deprecated?: boolean | string; metadata?: Record<string, unknown> }
+- Meaning: default は関数も可（遅延既定値）。applyDefaultToNull の既定は true（null にも既定値を適用）。deprecated は文字列で理由を書ける。metadata は任意の付随情報。第3引数に生値を渡すと default のショートハンドになる。
 
 #### strict() / strictOnEditor()
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（159-224行, Strict Mode Behavior ボックス）`
-- 形: strict(): FieldBuilder<T> | { /* build() を持たないエラー型 */ }
-- 意味: 型レベルのみの全フィールド網羅チェック。実行時効果は無い。未定義フィールドが残っていると build() を持たない型を返してコンパイルを止める。チェーンのどこでも呼べ、通過後もさらに v() を足せる。strictOnEditor は別名。余剰プロパティの実行時拒否は objectAdditionalProperties(false, { allowedProperties: [...] }) の仕事だと明記されている。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\builder.astro（159-224行, Strict Mode Behavior ボックス）`
+- Shape: strict(): FieldBuilder<T> | { /* build() を持たないエラー型 */ }
+- Meaning: 型レベルのみの全フィールド網羅チェック。実行時効果は無い。未定義フィールドが残っていると build() を持たない型を返してコンパイルを止める。チェーンのどこでも呼べ、通過後もさらに v() を足せる。strictOnEditor は別名。余剰プロパティの実行時拒否は objectAdditionalProperties(false, { allowedProperties: [...] }) の仕事だと明記されている。
 
 #### pluginPredefinedTransform() / pluginConfigurableTransform()
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\custom-plugins.astro（157-273行）`
-- 形: pluginPredefinedTransform({ name, allowedTypes, impl: () => (value, ctx) => ({ valid: true, __isTransform: true, __transformFn: (v) => U }) }); pluginConfigurableTransform({ name, allowedTypes, impl: (...config) => (value, ctx) => ({ ...同上 }) })
-- 意味: 引数なし固定変換と、設定引数つき変換の作成口。ドキュメントは transform プラグインの作り方を 3 通り（plugin / predefined / configurable）と明言している。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\custom-plugins.astro（157-273行）`
+- Shape: pluginPredefinedTransform({ name, allowedTypes, impl: () => (value, ctx) => ({ valid: true, __isTransform: true, __transformFn: (v) => U }) }); pluginConfigurableTransform({ name, allowedTypes, impl: (...config) => (value, ctx) => ({ ...同上 }) })
+- Meaning: 引数なし固定変換と、設定引数つき変換の作成口。ドキュメントは transform プラグインの作り方を 3 通り（plugin / predefined / configurable）と明言している。
 
 #### 非同期検証レイヤ（experimental）
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\troubleshooting.astro（308-406行, Luq's Async Architecture ボックス）`
-- 形: import { createAsyncContext, addAsyncSupport } from '@maroonedog/luq/async.experimental'; addAsyncSupport(syncValidator); await createAsyncContext<C>().set(key, promise).build(); await validator.withAsyncContext<C>(ctx).validate(data); getAsyncContext<C>(context)
-- 意味: 「検証本体は同期のまま、非同期は前段で並列に解決して文脈として渡す」という明確な設計思想。await は全工程で一度だけ、非同期を使わないときのオーバーヘッドはゼロ、と約束している。experimental を名前に含む別エントリポイント。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\troubleshooting.astro（308-406行, Luq's Async Architecture ボックス）`
+- Shape: import { createAsyncContext, addAsyncSupport } from '@maroonedog/luq/async.experimental'; addAsyncSupport(syncValidator); await createAsyncContext<C>().set(key, promise).build(); await validator.withAsyncContext<C>(ctx).validate(data); getAsyncContext<C>(context)
+- Meaning: 「検証本体は同期のまま、非同期は前段で並列に解決して文脈として渡す」という明確な設計思想。await は全工程で一度だけ、非同期を使わないときのオーバーヘッドはゼロ、と約束している。experimental を名前に含む別エントリポイント。
 
 #### 環境要件
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\getting-started.astro（12-18, 219-224行）`
-- 形: Node.js 14.0+, TypeScript 4.1+, target ES2015+, strict/strictNullChecks 推奨, esModuleInterop, moduleResolution node
-- 意味: getting-started の Prerequisites と tsconfig 例として公開済み。TS 4.1 はテンプレートリテラル型の導入版で、パス型（NestedKeyOf）の下限を規定している。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\getting-started.astro（12-18, 219-224行）`
+- Shape: Node.js 14.0+, TypeScript 4.1+, target ES2015+, strict/strictNullChecks 推奨, esModuleInterop, moduleResolution node
+- Meaning: getting-started の Prerequisites と tsconfig 例として公開済み。TS 4.1 はテンプレートリテラル型の導入版で、パス型（NestedKeyOf）の下限を規定している。
 
 ### optional (2)
 
 #### createPluginRegistry()
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\plugin-registry.astro（29-55, 826-870行）`
-- 形: createPluginRegistry(): PluginRegistry; .use(plugin): PluginRegistry; .for<T>(): TypedPluginRegistry<T>; .createFieldRule<V>(fn, { name, description?, fieldOptions? }): FieldRule<V>; .toBuilder(): ChainableBuilder; .getPlugins(): Record<string, Plugin>
-- 意味: 再利用可能な単一フィールドルールを作り、チーム横断で共有・単体テストするための仕組み。for<T>() 後は name が T の有効パスに型制約され、型も自動推論される。ドキュメント自身が「Builder があるなら pick() を使え」と優先度を下げている。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\plugin-registry.astro（29-55, 826-870行）`
+- Shape: createPluginRegistry(): PluginRegistry; .use(plugin): PluginRegistry; .for<T>(): TypedPluginRegistry<T>; .createFieldRule<V>(fn, { name, description?, fieldOptions? }): FieldRule<V>; .toBuilder(): ChainableBuilder; .getPlugins(): Record<string, Plugin>
+- Meaning: 再利用可能な単一フィールドルールを作り、チーム横断で共有・単体テストするための仕組み。for<T>() 後は name が T の有効パスに型制約され、型も自動推論される。ドキュメント自身が「Builder があるなら pick() を使え」と優先度を下げている。
 
 #### FieldRule / useField()
-- 出典: `C:\projects\luq\docs-site\src\pages\docs\api\plugin-registry.astro（166-200, 872-900行）, docs\api\builder.astro（126-160行）`
-- 形: FieldRule<V>.validate(value, options?): Result<V>; .parse(value, options?): Result<V>; .getPluginRegistry(): PluginRegistry / builder.useField(path, rule): FieldBuilder<T>
-- 意味: ルール単体で検証でき、useField で Builder に差し込むと fieldOptions（既定値・metadata）も一緒に適用される。useField と v() は同じチェーンで混在できる。tags[*] のような配列要素パスにも使える。
+- Source: `C:\projects\luq\docs-site\src\pages\docs\api\plugin-registry.astro（166-200, 872-900行）, docs\api\builder.astro（126-160行）`
+- Shape: FieldRule<V>.validate(value, options?): Result<V>; .parse(value, options?): Result<V>; .getPluginRegistry(): PluginRegistry / builder.useField(path, rule): FieldBuilder<T>
+- Meaning: ルール単体で検証でき、useField で Builder に差し込むと fieldOptions（既定値・metadata）も一緒に適用される。useField と v() は同じチェーンで混在できる。tags[*] のような配列要素パスにも使える。
 
-## 振る舞い規則
+## Behavioural rules
 
 - Builder() は関数呼び出しで生成する。new Builder() ではない。use() は for() より前でなければならず、use していないプラグインのメソッドは型に一切現れない（実行時エラーではなくコンパイルエラーで落ちる）。この「使ったプラグインの分だけ型が生える」性質が tree-shaking の型レベルの裏返しであり、ライブラリの正体。
 - use されたプラグインは一度だけ有効になり、重複 use は無視される。use の順序は結果に影響しない（ドキュメントは『ほとんどのプラグインで』と限定しているが、順序依存を新設計に持ち込むべきではない）。
@@ -259,7 +259,7 @@ docs サイドバー: Getting Started(Introduction=/docs/getting-started, Core C
 - strict() は実行時に何もしない。余剰プロパティの実行時拒否は objectAdditionalProperties(false) の役割。この分離はドキュメントが『よくある誤解』として警告つきで明示している。
 - 既存の TypeScript 型を書き換えさせない。スキーマから型を導出する（z.infer 方式）のではなく、既に手元にある interface / type を for<T>() に渡すだけで済むこと。これがトップページ・README・core-concepts の全てで対抗軸として掲げられている一番の思想。
 
-## 引き継がないもの
+## Not carried forward
 
 - **Result の重複した二系統アクセサ（isValid() と valid、data() と value、errors プロパティと errors() メソッド、unwrap/unwrapOr/unwrapOrElse/map/flatMap/tap/tapError/onSuccessPostProcess/toPlainObject の全部盛り）** — src/types/result.ts では errors がインターフェース上はプロパティ（148行）なのに実装はメソッド（210行）という矛盾状態にあり、ドキュメントも result.errors と result.getErrors() を混用している。valid は『backward compatibility』とドキュメント自身が書いているが、まだ誰も使っていないライブラリに後方互換は存在しない。新実装は判別可能ユニオン（{ valid: true; value: T } | { valid: false; issues: ValidationIssue[] }）1 系統に決め打ちし、関数型ヘルパは必要最小限に絞るべき。
 - **result.getErrors() / getErrorMessages() / getFieldErrors() / validator.validateWithContext()** — src に一切存在しない（grep ヒット 0）。旧世代モデルが書いたドキュメント上の幻。継承する対象ではなく、削除すべき記述。
@@ -276,7 +276,7 @@ docs サイドバー: Getting Started(Introduction=/docs/getting-started, Core C
 - **ChainableFieldBuilder<TObject, TPlugins, TType, TCurrentType, TTypeState> という 5 型変数の露出** — custom-plugins.astro がこの内部型シグネチャをそのまま利用者向けドキュメントに載せている。カテゴリごとの『どんなメソッドが生えるか』という契約だけが引き継ぐ価値のある部分で、型変数の並びと名前は実装詳細。新実装で同じ形を再現する義務はない。
 - **docs-site/src/content/docs と docs-site/src/content/guides（config.ts はあるが中身が空）** — Astro のコンテンツコレクションを設定したまま 1 ファイルも入れずに放置され、実際のドキュメントは全部 pages/ 配下の .astro にハードコードされたテンプレート文字列。ページと本文が癒着しているため差分レビューも翻訳もできない。ドキュメント基盤ごと作り直す判断材料。
 
-## 公開シンボル (216)
+## Published symbols (216)
 
 `Builder`, `use`, `for`, `v`, `useField`, `strict`, `strictOnEditor`, `build`, `validate`, `parse`, `pick`, `fromJsonSchema`, `Result`, `isValid`, `isError`, `unwrap`, `unwrapOr`, `unwrapOrElse`, `map`, `flatMap`, `tap`, `tapError`, `data`, `errors`, `valid`, `value`, `toPlainObject`, `ValidationError`, `ValidationResult`, `ValidationOptions`, `ParseOptions`, `FieldOptions`, `FieldBuilder`, `FieldValidator`, `FieldRule`, `MessageContext`, `IssueContext`, `LuqValidationException`, `NestedKeyOf`, `TypeOfPath`, `TypeName`, `PluginCategory`, `PluginType`, `TypedPlugin`, `BuilderExtensionPlugin`, `BuilderExtensionMethod`, `TransformAwareValidator`, `ApplyFieldTransforms`, `ExtractFieldType`, `ExtractFieldRuleType`, `FieldRuleDefinition`, `PluginRegistry`, `TypedPluginRegistry`, `createPluginRegistry`, `createFieldRule`, `toBuilder`, `getPlugins`, `getPluginRegistry`, `plugin`, `PluginImplementation`, `pluginPredefinedTransform`, `pluginConfigurableTransform`, `pluginBuilderExtension`, `createAsyncContext`, `addAsyncSupport`, `withAsyncContext`, `getAsyncContext`, `GlobalConfig`, `globalConfig`, `setGlobalConfig`, `getGlobalConfig`, `resetGlobalConfig`, `arrayContainsPlugin`, `arrayIncludesPlugin`, `arrayMaxLengthPlugin`, `arrayMinLengthPlugin`, `arrayUniquePlugin`, `booleanFalsyPlugin`, `booleanTruthyPlugin`, `compareFieldPlugin`, `conditionalSchemaPlugin`, `customPlugin`, `fromContextPlugin`, `jsonSchemaPlugin`, `jsonSchemaFullFeaturePlugin`, `literalPlugin`, `nullablePlugin`, `numberFinitePlugin`, `numberIntegerPlugin`, `numberMaxPlugin`, `numberMinPlugin`, `numberMultipleOfPlugin`, `numberNegativePlugin`, `numberPositivePlugin`, `numberRangePlugin`, `objectPlugin`, `objectAdditionalPropertiesPlugin`, `objectDependentRequiredPlugin`, `objectDependentSchemasPlugin`, `objectMaxPropertiesPlugin`, `objectMinPropertiesPlugin`, `objectPatternPropertiesPlugin`, `objectPropertyNamesPlugin`, `objectRecursivelyPlugin`, `oneOfPlugin`, `optionalPlugin`, `optionalIfPlugin`, `orFailPlugin`, `readOnlyWriteOnlyPlugin`, `requiredPlugin`, `requiredIfPlugin`, `skipPlugin`, `stitchPlugin`, `stringAlphanumericPlugin`, `stringBase64Plugin`, `stringContentEncodingPlugin`, `stringContentMediaTypePlugin`, `stringDatePlugin`, `stringDatetimePlugin`, `stringDurationPlugin`, `stringEmailPlugin`, `stringEndsWithPlugin`, `stringExactLengthPlugin`, `stringHostnamePlugin`, `stringIpv4Plugin`, `stringIpv6Plugin`, `stringIriPlugin`, `stringIriReferencePlugin`, `stringJsonPointerPlugin`, `stringMaxPlugin`, `stringMinPlugin`, `stringPatternPlugin`, `stringRelativeJsonPointerPlugin`, `stringStartsWithPlugin`, `stringTimePlugin`, `stringUriTemplatePlugin`, `stringUrlPlugin`, `transformPlugin`, `tupleBuilderPlugin`, `unionGuardPlugin`, `uuidPlugin`, `validateIfPlugin`, `.required()`, `.optional()`, `.nullable()`, `.min()`, `.max()`, `.range()`, `.exactLength()`, `.pattern()`, `.email()`, `.url()`, `.uuid()`, `.alphanumeric()`, `.startsWith()`, `.endsWith()`, `.base64()`, `.date()`, `.datetime()`, `.time()`, `.duration()`, `.hostname()`, `.ipv4()`, `.ipv6()`, `.iri()`, `.iriReference()`, `.jsonPointer()`, `.relativeJsonPointer()`, `.uriTemplate()`, `.contentEncoding()`, `.contentMediaType()`, `.integer()`, `.finite()`, `.positive()`, `.negative()`, `.multipleOf()`, `.truthy()`, `.falsy()`, `.minLength()`, `.maxLength()`, `.unique()`, `.contains()`, `.includes()`, `.object()`, `.additionalProperties()`, `.minProperties()`, `.maxProperties()`, `.patternProperties()`, `.propertyNames()`, `.dependentRequired()`, `.dependentSchemas()`, `.recursively()`, `.oneOf()`, `.literal()`, `.custom()`, `.transform()`, `.compareField()`, `.stitch()`, `.requiredIf()`, `.optionalIf()`, `.validateIf()`, `.skip()`, `.orFail()`, `.conditionalSchema()`, `.fromContext()`, `.readOnly()`, `.tupleBuilder()`, `.unionGuard()`, `b.string`, `b.number`, `b.boolean`, `b.array`, `b.object`, `b.date`, `@maroonedog/luq`, `@maroonedog/luq/plugins/<pluginName>`
 

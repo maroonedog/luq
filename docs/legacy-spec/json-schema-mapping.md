@@ -28,7 +28,7 @@
 4. **customFormats による format 拡張**（`JsonSchemaOptions.customFormats: Record<string, (value) => boolean>`）。組み込みより優先される。
 5. **未知の format は「通す」**（`validateFormat` の最終 `return true`）。これは JSON Schema 仕様（format はデフォルト annotation）に沿った正しい判断で、引き継ぐべき。ただし `error-generation.ts` は同じ状況で `isValid = false` にしており矛盾している（下記 doNotInherit）。
 
-## format 全リスト（`formatValidators` のキー全18件、grep 済み・省略なし）
+## format 全リスト（`formatValidators` のキー全18、grep 済み・省略なし）
 
 | format | 判定規則（format-validators.ts 実装） | Draft-07 標準か | 経路A（builder）に繋がるか |
 |---|---|---|---|
@@ -59,85 +59,85 @@
 - (3) `error-generation.ts` 内のインライン switch（`email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/`、`uri: /^https?:\/\//`、`uuid` は version nibble を見ない）… エラーメッセージ生成専用で、しかも **未知 format を `isValid=false`** にしていて (1) と逆
 
 
-## 引き継ぐ契約 (14件)
+## Contracts to preserve (14)
 
 ### must-preserve (9)
 
 #### fromJsonSchema
-- 出典: `src/core/plugin/jsonSchema/plugin.ts`
-- 形: fromJsonSchema<TBuilder>(schema: JSONSchema7 | unknown, options?: JsonSchemaOptions): TBuilder — Builder 拡張メソッド。内部で this.for() を呼び、DSL 化した各フィールドを fieldBuilder.v(path, definition) で積む。戻り値は FieldBuilder なので .build() を続けて呼ぶ
-- 意味: JSON Schema を受け取り、properties を再帰的に平坦化して各フィールドのバリデータ連鎖を組み立てる。ネスト objectは 'a.b.c'、配列要素は 'items[*]'、patternProperties は '*' というパス表記になる。path==='' のルート制約フィールドは .v() から除外され、additionalProperties===false のとき fieldBuilder.strict()、dependentRequired があるとき各依存先に requiredIf(data => data[trigger] !== undefined) を追加する
+- Source: `src/core/plugin/jsonSchema/plugin.ts`
+- Shape: fromJsonSchema<TBuilder>(schema: JSONSchema7 | unknown, options?: JsonSchemaOptions): TBuilder — Builder 拡張メソッド。内部で this.for() を呼び、DSL 化した各フィールドを fieldBuilder.v(path, definition) で積む。戻り値は FieldBuilder なので .build() を続けて呼ぶ
+- Meaning: JSON Schema を受け取り、properties を再帰的に平坦化して各フィールドのバリデータ連鎖を組み立てる。ネスト objectは 'a.b.c'、配列要素は 'items[*]'、patternProperties は '*' というパス表記になる。path==='' のルート制約フィールドは .v() から除外され、additionalProperties===false のとき fieldBuilder.strict()、dependentRequired があるとき各依存先に requiredIf(data => data[trigger] !== undefined) を追加する
 
 #### jsonSchemaPlugin
-- 出典: `src/core/plugin/jsonSchema/plugin.ts`
-- 形: BuilderExtensionPlugin<"jsonSchema", "fromJsonSchema", (schema, options?) => TBuilder>。src/index.ts と ./plugins/jsonSchema サブパスから公開
-- 意味: fromJsonSchema メソッドだけを Builder に生やす最小プラグイン。実際の検証は利用者が別途 .use() した個別プラグインが担う（無い機能は黙って無視される設計）
+- Source: `src/core/plugin/jsonSchema/plugin.ts`
+- Shape: BuilderExtensionPlugin<"jsonSchema", "fromJsonSchema", (schema, options?) => TBuilder>。src/index.ts と ./plugins/jsonSchema サブパスから公開
+- Meaning: fromJsonSchema メソッドだけを Builder に生やす最小プラグイン。実際の検証は利用者が別途 .use() した個別プラグインが担う（無い機能は黙って無視される設計）
 
 #### jsonSchemaFullFeaturePlugin
-- 出典: `src/core/plugin/jsonSchemaFullFeature.ts`
-- 形: BuilderExtensionPlugin<"jsonSchemaFullFeature", "fromJsonSchema", (schema, options?) => TBuilder>。src/index.ts と ./plugins/jsonSchemaFullFeature サブパスから公開
-- 意味: extendBuilder で 45 個のプラグインを順に builderInstance.use() し、最後に jsonSchemaPlugin を use する『全部入り』。README が唯一 JSON Schema 用途として宣伝している公開シンボル。名前・振る舞い（1 import で Draft-07 全体をカバーする意図）は維持必須
+- Source: `src/core/plugin/jsonSchemaFullFeature.ts`
+- Shape: BuilderExtensionPlugin<"jsonSchemaFullFeature", "fromJsonSchema", (schema, options?) => TBuilder>。src/index.ts と ./plugins/jsonSchemaFullFeature サブパスから公開
+- Meaning: extendBuilder で 45 個のプラグインを順に builderInstance.use() し、最後に jsonSchemaPlugin を use する『全部入り』。README が唯一 JSON Schema 用途として宣伝している公開シンボル。名前・振る舞い（1 import で Draft-07 全体をカバーする意図）は維持必須
 
 #### customFormats の優先順位
-- 出典: `src/core/plugin/jsonSchema/format-validators.ts`
-- 形: validateFormat(value, format, customFormats) / applyConstraints の format 分岐
-- 意味: customFormats に同名キーがあれば組み込みより先に必ずそちらを使う。ビルダー経路では chain.refine(customFormats[format]) に流す（ただし chain.refine を実装したプラグインは src 内に存在しない → 実際には何も付かない）
+- Source: `src/core/plugin/jsonSchema/format-validators.ts`
+- Shape: validateFormat(value, format, customFormats) / applyConstraints の format 分岐
+- Meaning: customFormats に同名キーがあれば組み込みより先に必ずそちらを使う。ビルダー経路では chain.refine(customFormats[format]) に流す（ただし chain.refine を実装したプラグインは src 内に存在しない → 実際には何も付かない）
 
 #### 未知 format は検証を通す
-- 出典: `src/core/plugin/jsonSchema/format-validators.ts`
-- 形: validateFormat(...): boolean — 最終行 return true
-- 意味: 組み込みにも customFormats にも無い format 名は valid 扱い。JSON Schema 仕様（format は既定で annotation）に沿った正しい挙動
+- Source: `src/core/plugin/jsonSchema/format-validators.ts`
+- Shape: validateFormat(...): boolean — 最終行 return true
+- Meaning: 組み込みにも customFormats にも無い format 名は valid 扱い。JSON Schema 仕様（format は既定で annotation）に沿った正しい挙動
 
 #### validateValueAgainstSchema
-- 出典: `src/core/plugin/jsonSchema/validation-core.ts`
-- 形: (value: unknown, schema: JSONSchema7, customFormats?, rootSchema?) => boolean
-- 意味: Draft-07 のほぼ全体を解釈する再帰バリデータ。これがこの領域で唯一まともに動いていて、テストで意味論が保全されている資産。const/enum は deepEqual で判定、undefined は常に invalid、null は type に 'null' が含まれるか enum/const 経由でのみ valid。boolean schema（true/false）も items/allOf/anyOf/oneOf/not/if/then/else の各所で扱う
+- Source: `src/core/plugin/jsonSchema/validation-core.ts`
+- Shape: (value: unknown, schema: JSONSchema7, customFormats?, rootSchema?) => boolean
+- Meaning: Draft-07 のほぼ全体を解釈する再帰バリデータ。これがこの領域で唯一まともに動いていて、テストで意味論が保全されている資産。const/enum は deepEqual で判定、undefined は常に invalid、null は type に 'null' が含まれるか enum/const 経由でのみ valid。boolean schema（true/false）も items/allOf/anyOf/oneOf/not/if/then/else の各所で扱う
 
 #### resolveRef
-- 出典: `src/core/plugin/jsonSchema/ref-resolver.ts`
-- 形: (ref: string, rootSchema: JSONSchema7, definitions?) => JSONSchema7
-- 意味: '#' 始まりのローカル参照のみ。'#/definitions/X' と '#/$defs/X' の両方を受ける（セグメントが 'definitions' か '$defs' のとき current.definitions ?? current.$defs に降りる）。'#/properties/foo' のような一般 JSON Pointer 経路も動く。外部参照は Error('External $ref not supported: ...') を投げる。解決不能は Error('Cannot resolve $ref: ...')
+- Source: `src/core/plugin/jsonSchema/ref-resolver.ts`
+- Shape: (ref: string, rootSchema: JSONSchema7, definitions?) => JSONSchema7
+- Meaning: '#' 始まりのローカル参照のみ。'#/definitions/X' と '#/$defs/X' の両方を受ける（セグメントが 'definitions' か '$defs' のとき current.definitions ?? current.$defs に降りる）。'#/properties/foo' のような一般 JSON Pointer 経路も動く。外部参照は Error('External $ref not supported: ...') を投げる。解決不能は Error('Cannot resolve $ref: ...')
 
 #### jsonSchemaFullFeature が束ねる 45 プラグインの公開名とメソッド名
-- 出典: `src/core/plugin/jsonSchemaFullFeature.ts`
-- 形: requiredPlugin(.required) / optionalPlugin(.optional) / nullablePlugin(.nullable) / requiredIfPlugin(.requiredIf) / oneOfPlugin(.oneOf) / literalPlugin(.literal) / customPlugin(.custom) / stringMinPlugin(.min) / stringMaxPlugin(.max) / stringPatternPlugin(.pattern) / stringEmailPlugin(.email) / stringUrlPlugin(.url) / uuidPlugin(.uuid, name は "stringUuid") / stringDatePlugin(.date) / stringDatetimePlugin(.datetime) / stringIpv4Plugin(.ipv4) / stringIpv6Plugin(.ipv6) / stringHostnamePlugin(.hostname) / stringTimePlugin(.time) / stringDurationPlugin(.duration) / stringJsonPointerPlugin(.jsonPointer) / stringBase64Plugin(.base64) / stringIriPlugin(.iri) / stringIriReferencePlugin(.iriReference) / stringUriTemplatePlugin(.uriTemplate) / stringRelativeJsonPointerPlugin(.relativeJsonPointer) / stringContentEncodingPlugin(.contentEncoding) / stringContentMediaTypePlugin(.contentMediaType) / numberMinPlugin(.min) / numberMaxPlugin(.max) / numberIntegerPlugin(.integer) / numberMultipleOfPlugin(.multipleOf) / arrayUniquePlugin(.unique) / arrayMinLengthPlugin(.minLength) / arrayMaxLengthPlugin(.maxLength) / arrayContainsPlugin(.contains) / objectMinPropertiesPlugin(.minProperties) / objectMaxPropertiesPlugin(.maxProperties) / objectAdditionalPropertiesPlugin(.additionalProperties) / objectPropertyNamesPlugin(.propertyNames) / objectPatternPropertiesPlugin(.patternProperties) / objectDependentRequiredPlugin(.dependentRequired) / objectDependentSchemasPlugin(.dependentSchemas) / tupleBuilderPlugin(メソッド名は .builder, allowedTypes ['tuple']) / readOnlyWriteOnlyPlugin(.readOnly, 同ファイルに writeOnlyPlugin(.writeOnly))
-- 意味: 『どの JSON Schema キーワードがどのプラグインに落ちるか』の対応表そのもの。プラグイン名とメソッド名は利用者が直接書く公開 API なので維持必須
+- Source: `src/core/plugin/jsonSchemaFullFeature.ts`
+- Shape: requiredPlugin(.required) / optionalPlugin(.optional) / nullablePlugin(.nullable) / requiredIfPlugin(.requiredIf) / oneOfPlugin(.oneOf) / literalPlugin(.literal) / customPlugin(.custom) / stringMinPlugin(.min) / stringMaxPlugin(.max) / stringPatternPlugin(.pattern) / stringEmailPlugin(.email) / stringUrlPlugin(.url) / uuidPlugin(.uuid, name は "stringUuid") / stringDatePlugin(.date) / stringDatetimePlugin(.datetime) / stringIpv4Plugin(.ipv4) / stringIpv6Plugin(.ipv6) / stringHostnamePlugin(.hostname) / stringTimePlugin(.time) / stringDurationPlugin(.duration) / stringJsonPointerPlugin(.jsonPointer) / stringBase64Plugin(.base64) / stringIriPlugin(.iri) / stringIriReferencePlugin(.iriReference) / stringUriTemplatePlugin(.uriTemplate) / stringRelativeJsonPointerPlugin(.relativeJsonPointer) / stringContentEncodingPlugin(.contentEncoding) / stringContentMediaTypePlugin(.contentMediaType) / numberMinPlugin(.min) / numberMaxPlugin(.max) / numberIntegerPlugin(.integer) / numberMultipleOfPlugin(.multipleOf) / arrayUniquePlugin(.unique) / arrayMinLengthPlugin(.minLength) / arrayMaxLengthPlugin(.maxLength) / arrayContainsPlugin(.contains) / objectMinPropertiesPlugin(.minProperties) / objectMaxPropertiesPlugin(.maxProperties) / objectAdditionalPropertiesPlugin(.additionalProperties) / objectPropertyNamesPlugin(.propertyNames) / objectPatternPropertiesPlugin(.patternProperties) / objectDependentRequiredPlugin(.dependentRequired) / objectDependentSchemasPlugin(.dependentSchemas) / tupleBuilderPlugin(メソッド名は .builder, allowedTypes ['tuple']) / readOnlyWriteOnlyPlugin(.readOnly, 同ファイルに writeOnlyPlugin(.writeOnly))
+- Meaning: 『どの JSON Schema キーワードがどのプラグインに落ちるか』の対応表そのもの。プラグイン名とメソッド名は利用者が直接書く公開 API なので維持必須
 
 #### package.json exports サブパス
-- 出典: `package.json`
-- 形: "./plugins/jsonSchema" と "./plugins/jsonSchemaFullFeature"（前者は jsonSchema/index.ts バレルに解決）
-- 意味: README が示す唯一の JSON Schema 導入経路 import { jsonSchemaFullFeaturePlugin } from "@maroonedog/luq/plugins/jsonSchemaFullFeature"。サブパス名は維持必須
+- Source: `package.json`
+- Shape: "./plugins/jsonSchema" と "./plugins/jsonSchemaFullFeature"（前者は jsonSchema/index.ts バレルに解決）
+- Meaning: README が示す唯一の JSON Schema 導入経路 import { jsonSchemaFullFeaturePlugin } from "@maroonedog/luq/plugins/jsonSchemaFullFeature"。サブパス名は維持必須
 
 ### should-preserve (5)
 
 #### JsonSchemaOptions
-- 出典: `src/core/plugin/jsonSchema/types.ts`
-- 形: { strictRequired?: boolean; allowAdditionalProperties?: boolean; customFormats?: Record<string, (value: any) => boolean> }
-- 意味: fromJsonSchema の第2引数。実際に読まれているのは customFormats だけ（plugin.ts が convertDSLToFieldDefinition に渡す）。strictRequired と allowAdditionalProperties は src 全体を grep しても types.ts の宣言以外に出現が 0 件で完全な死にフィールド
+- Source: `src/core/plugin/jsonSchema/types.ts`
+- Shape: { strictRequired?: boolean; allowAdditionalProperties?: boolean; customFormats?: Record<string, (value: any) => boolean> }
+- Meaning: fromJsonSchema の第2引数。実際に読まれているのは customFormats だけ（plugin.ts が convertDSLToFieldDefinition に渡す）。strictRequired と allowAdditionalProperties は src 全体を grep しても types.ts の宣言以外に出現が 0 件で完全な死にフィールド
 
 #### getDetailedValidationErrors / getSpecificValidationErrors
-- 出典: `src/core/plugin/jsonSchema/error-generation.ts`
-- 形: (value, schema: JSONSchema7|boolean, customFormats?, rootSchema?, path?) => ValidationError[] / (value, schema, targetPath, customFormats?, rootSchema?) => ValidationError[]
-- 意味: エラー種別コード体系がここで定義されている: FALSE_SCHEMA, TYPE_MISMATCH, CONST, ENUM, MIN_LENGTH, MAX_LENGTH, PATTERN, FORMAT, CONTENT_ENCODING, MINIMUM, MAXIMUM, EXCLUSIVE_MINIMUM, EXCLUSIVE_MAXIMUM, MULTIPLE_OF, MIN_ITEMS, MAX_ITEMS, UNIQUE_ITEMS, ADDITIONAL_ITEMS, CONTAINS, MIN_PROPERTIES, MAX_PROPERTIES, REQUIRED, ADDITIONAL_PROPERTIES, PROPERTY_NAMES, ALL_OF, ANY_OF, ONE_OF, NOT。パスは 'a.b' と 'a[0]' の混在表記。getSpecificValidationErrors は '/a/b' 形式を 'a.b' に正規化してから前方一致（'.', '[' 区切り）でフィルタする
+- Source: `src/core/plugin/jsonSchema/error-generation.ts`
+- Shape: (value, schema: JSONSchema7|boolean, customFormats?, rootSchema?, path?) => ValidationError[] / (value, schema, targetPath, customFormats?, rootSchema?) => ValidationError[]
+- Meaning: エラー種別コード体系がここで定義されている: FALSE_SCHEMA, TYPE_MISMATCH, CONST, ENUM, MIN_LENGTH, MAX_LENGTH, PATTERN, FORMAT, CONTENT_ENCODING, MINIMUM, MAXIMUM, EXCLUSIVE_MINIMUM, EXCLUSIVE_MAXIMUM, MULTIPLE_OF, MIN_ITEMS, MAX_ITEMS, UNIQUE_ITEMS, ADDITIONAL_ITEMS, CONTAINS, MIN_PROPERTIES, MAX_PROPERTIES, REQUIRED, ADDITIONAL_PROPERTIES, PROPERTY_NAMES, ALL_OF, ANY_OF, ONE_OF, NOT。パスは 'a.b' と 'a[0]' の混在表記。getSpecificValidationErrors は '/a/b' 形式を 'a.b' に正規化してから前方一致（'.', '[' 区切り）でフィルタする
 
 #### ValidationError
-- 出典: `src/core/plugin/jsonSchema/types.ts`
-- 形: { path: string; message: string; code: string; value?: unknown; constraint?: unknown }
-- 意味: JSON Schema 由来のエラー1件を表す形。code が上記コード体系、constraint に違反したスキーマ値が入る
+- Source: `src/core/plugin/jsonSchema/types.ts`
+- Shape: { path: string; message: string; code: string; value?: unknown; constraint?: unknown }
+- Meaning: JSON Schema 由来のエラー1を表す形。code が上記コード体系、constraint に違反したスキーマ値が入る
 
 #### resolveAllRefs
-- 出典: `src/core/plugin/jsonSchema/ref-resolver.ts`
-- 形: (schema, rootSchema, visited = new Set<string>()) => JSONSchema7
-- 意味: properties / items / allOf / anyOf / oneOf / not / if / then / else を再帰的に $ref 展開する。循環参照を検出すると Error('Circular reference detected: ...') を投げる。公開されているが convertJsonSchemaToLuqDSL からは呼ばれていない
+- Source: `src/core/plugin/jsonSchema/ref-resolver.ts`
+- Shape: (schema, rootSchema, visited = new Set<string>()) => JSONSchema7
+- Meaning: properties / items / allOf / anyOf / oneOf / not / if / then / else を再帰的に $ref 展開する。循環参照を検出すると Error('Circular reference detected: ...') を投げる。公開されているが convertJsonSchemaToLuqDSL からは呼ばれていない
 
 #### formatValidators / getSupportedFormats / isFormatSupported
-- 出典: `src/core/plugin/jsonSchema/format-validators.ts`
-- 形: Record<string, (value: string) => boolean> / () => string[] / (format: string) => boolean
-- 意味: サポート format の実体テーブルと、その名前一覧を実行時に問い合わせる API。18 件（email, url, uri, uri-reference, uuid, date, date-time, time, duration, ipv4, ipv6, hostname, json-pointer, relative-json-pointer, iri, iri-reference, uri-template, regex）
+- Source: `src/core/plugin/jsonSchema/format-validators.ts`
+- Shape: Record<string, (value: string) => boolean> / () => string[] / (format: string) => boolean
+- Meaning: サポート format の実体テーブルと、その名前一覧を実行時に問い合わせる API。18 件（email, url, uri, uri-reference, uuid, date, date-time, time, duration, ipv4, ipv6, hostname, json-pointer, relative-json-pointer, iri, iri-reference, uri-template, regex）
 
-## 振る舞い規則
+## Behavioural rules
 
-- 【キーワード対応表 — Draft-07 全キーワードを1件も省略せず列挙】以下、『B』= validateValueAgainstSchema（純関数インタプリタ、テスト通過済み）、『A』= fromJsonSchema のビルダー変換経路。
+- 【キーワード対応表 — Draft-07 全キーワードを1も省略せず列挙】以下、『B』= validateValueAgainstSchema（純関数インタプリタ、テスト通過済み）、『A』= fromJsonSchema のビルダー変換経路。
 - $schema : A=無視 / B=無視。src/core/plugin/jsonSchema/ 全8ファイルを grep して出現 0 件。新実装では『読み捨てる』ことを明示的に決めること。
 - $id : A=無視 / B=無視。grep 出現 0 件。$id によるベース URI 解決は一切ない。
 - $ref : A=部分対応。convertJsonSchemaToLuqDSL の先頭とプロパティ単位で resolveSchemaRef を1段だけ呼ぶ（非再帰）。items / allOf / anyOf / oneOf / if / then / else の中の $ref は展開されないまま constraints に格納される。B=validateValueAgainstSchema 冒頭で rootSchema が渡っていれば1段解決。resolveAllRefs（再帰・循環検出付き）は公開されているがどちらの経路からも呼ばれていない。ローカル参照（'#' 始まり）のみ。外部参照は throw。
@@ -180,9 +180,9 @@
 - additionalProperties : A=ルート（path==='')で false のときだけ fieldBuilder.strict() を呼ぶ。フィールドレベルでは chain.additionalProperties(値) を呼ぶが、objectAdditionalPropertiesPlugin は options.allowedProperties（既定 []）に無いキーを全部『余分』とみなすため、allowedProperties を渡さない fromJsonSchema からの呼び出しでは全プロパティが不合格になる。LuqFieldDSL に allowedProperties フィールドが定義されているが、src 全体で一度も代入されていない（grep 済み、types.ts の宣言のみ）。B=false なら properties と patternProperties 一致キー以外を拒否、オブジェクトならそれで検証。
 - dependencies（Draft-07 の正式キーワード）: A=無視 / B=無視。jsonSchema/ 配下で grep 出現 0 件。Draft-07 では dependencies が配列（dependentRequired 相当）とスキーマ（dependentSchemas 相当）の両方を兼ねるが、どちらの形式も一切扱われない。代わりに Draft 2019-09 の dependentRequired だけが `(schema as any).dependentRequired` として読まれている。
 - propertyNames : A=chain.propertyNames(JSONSchema7) を呼ぶが、objectPropertyNamesPlugin は RegExp | string | {validator: (name)=>boolean} しか受け付けず、JSONSchema7 オブジェクトは最後の else に落ちて return false になる（＝全プロパティ名が不合格）。B=各キー名を propertyNames スキーマで検証。boolean スキーマも扱う（false ならキーが1つでもあれば不合格）。
-- if / then / else : A=extractConstraints が constraints.if/then/else に格納するが applyConstraints はこれらを一切参照しない（完全に無視）。types.ts には conditionalValidation と requiredIf という別フィールドも宣言されているが、src 全体で代入も参照も無い。B=if を評価し、true なら then、false なら else で検証して即 return。boolean スキーマも扱う。conditionalSchemaPlugin(.conditionalSchema) という専用プラグインが存在するが、src/index.ts からも core/plugin/index.ts からも export されておらず、fromJsonSchema からも呼ばれない完全な死にコード（全 src/test を grep して定義行1件のみ）。
+- if / then / else : A=extractConstraints が constraints.if/then/else に格納するが applyConstraints はこれらを一切参照しない（完全に無視）。types.ts には conditionalValidation と requiredIf という別フィールドも宣言されているが、src 全体で代入も参照も無い。B=if を評価し、true なら then、false なら else で検証して即 return。boolean スキーマも扱う。conditionalSchemaPlugin(.conditionalSchema) という専用プラグインが存在するが、src/index.ts からも core/plugin/index.ts からも export されておらず、fromJsonSchema からも呼ばれない完全な死にコード（全 src/test を grep して定義行1のみ）。
 - allOf : A=chain.custom(v => allOf.every(s => validateValueAgainstSchema(v, s))) として経路Bに丸投げ。$ref 解決用の rootSchema を渡していないため、allOf の中の $ref は解決できない。B=全部を再帰検証。boolean スキーマも扱う。error-generation は個別エラーに加えて ALL_OF エラーも重ねて出す。
-- anyOf : A=chain.custom(v => anyOf.some(...))。B=some。ルート直下に anyOf があると convertJsonSchemaToLuqDSL が path:'' のフィールド1件だけ返して即 return し、properties の走査を丸ごと飛ばす。plugin.ts は path==='' を .v() から除外するので、結果として『検証が1つも登録されていないバリデータ』が出来る。
+- anyOf : A=chain.custom(v => anyOf.some(...))。B=some。ルート直下に anyOf があると convertJsonSchemaToLuqDSL が path:'' のフィールド1だけ返して即 return し、properties の走査を丸ごと飛ばす。plugin.ts は path==='' を .v() から除外するので、結果として『検証が1つも登録されていないバリデータ』が出来る。
 - oneOf : A=chain.custom(v => 適合数 === 1)。B=適合数を数えて 1 でなければ不合格。ルート直下の場合の挙動は anyOf と同じ問題を持つ。error-generation は 0 件と 2 件以上でメッセージを分ける。
 - not : A=constraints.not に格納されるが applyConstraints では参照されない（無視）。B=not に適合したら不合格。boolean スキーマも扱う。
 - dependentRequired（Draft 2019-09）: A=ルート（path==='')でのみ、(schema as any).dependentRequired を読んで、依存先ごとに fieldBuilder.v(dep, b => b.requiredIf(data => data[trigger] !== undefined)) を積む。ネストしたオブジェクトの dependentRequired は無視。objectDependentRequiredPlugin(.dependentRequired) も同梱されているが fromJsonSchema からは呼ばれない。B=無視。
@@ -192,7 +192,7 @@
 - undefined の扱い : B は value === undefined を常に invalid とする（JSON Schema にそもそも undefined は無いという立場）。新実装ではオプショナルフィールドの未定義とどう区別するかを決める必要がある。
 - null の扱い : B は value === null のとき、type に 'null' が含まれれば即 true、含まれず enum も const も無ければ即 false、enum/const があればそちらの判定に進む。
 
-## 引き継がないもの
+## Not carried forward
 
 - **2エンジン構成そのもの（applyConstraints のビルダー変換 と validateValueAgainstSchema の再帰インタプリタ）** — 同じ JSON Schema に対して別々の答えを出す。format:'date' はインタプリタでは落ちるがビルダーでは通る（実測済み）。uniqueItems はインタプリタが deepEqual、error-generation が JSON.stringify。exclusiveMinimum の解釈も両者で微妙にずれる。新実装は『キーワード→プラグイン』の単一マッピングに一本化し、プラグインが無いキーワードは静かに無視するのではなく明示的に失敗させるか、対応プラグインを必ず用意すること。
 - **format 実装の3重化（jsonSchema/format-validators.ts / 個別 stringXxx プラグイン / error-generation.ts のインライン switch）** — 同じ format 名で3種類の正規表現が動いている。email は3つとも別物、uuid は format-validators が v1–v5・uuidPlugin が v1–v8・error-generation がバージョン無視。date-time は format-validators がタイムゾーンオフセットを拒否し stringDatetimePlugin は受け入れる。さらに未知 format の扱いが format-validators は true、error-generation は false で正反対。format 判定は1箇所（プラグイン側）に集約すべき。
@@ -200,15 +200,15 @@
 - **extractConstraints が拾ったのに applyConstraints が一度も参照しない制約群（enum, integer, contains, not, if, then, else, patternProperties, contentEncoding, contentMediaType, dependentRequired のフィールドレベル）** — 『対応しているように見えて何もしない』のが最悪。特に enum と integer と not が効かないのは JSON Schema 利用者の期待を正面から裏切る。LuqConstraints 型に『格納するが使わない』フィールドを持たせる構造自体を捨てること。
 - **LuqFieldDSL / LuqConstraints という中間 DSL 表現** — JSON Schema をほぼそのまま別名のフラット構造に写しただけで抽象化の利得が無い上、conditionalValidation / requiredIf / allowedProperties / multipleTypes など src 全体で一度も代入されない死にフィールドを抱えている。JSON Schema → プラグイン呼び出しの直接マッピングで足りる。
 - **JsonSchemaOptions の strictRequired と allowAdditionalProperties** — src 全体を grep して types.ts の宣言以外に出現が 0 件。完全な死にオプション。新実装では customFormats だけを残すか、意味が要るなら仕様を決め直すこと。
-- **conditionalSchemaPlugin（src/core/plugin/conditionalSchema.ts, 130行）** — src/index.ts からも core/plugin/index.ts からも export されておらず、jsonSchemaFullFeature にも入っておらず、src と test を全て grep して定義行1件しか出てこない完全な死にコード。しかも中の evaluateSchema は type / properties の const・enum / const / enum しか見ない別実装で、経路B とさらに矛盾する4つ目の JSON Schema 解釈系になっている。
+- **conditionalSchemaPlugin（src/core/plugin/conditionalSchema.ts, 130行）** — src/index.ts からも core/plugin/index.ts からも export されておらず、jsonSchemaFullFeature にも入っておらず、src と test を全て grep して定義行1しか出てこない完全な死にコード。しかも中の evaluateSchema は type / properties の const・enum / const / enum しか見ない別実装で、経路B とさらに矛盾する4つ目の JSON Schema 解釈系になっている。
 - **objectPropertyNamesPlugin / objectPatternPropertiesPlugin / arrayContainsPlugin / objectDependentSchemasPlugin が JSONSchema7 ではなく独自形（RegExp や (value)=>boolean や {validator})を要求している設計** — JSON Schema からの自動変換と噛み合わない。propertyNames に至っては JSONSchema7 を渡すと全プロパティ名が不合格になる。JSON Schema 由来のプラグインは JSON Schema の部分スキーマを直接受け取れる形にすること。
 - **objectAdditionalPropertiesPlugin が options.allowedProperties（既定 []）に依存する API** — 『どのプロパティが宣言済みか』はビルダーが知っている情報なのに、呼び出し側に手で渡させている。fromJsonSchema は渡していないので additionalProperties:false が常時全滅する。宣言済みフィールド集合はフレームワーク側から供給すべき。
-- **ルート直下に oneOf / anyOf / allOf があると properties の走査を打ち切って path:'' のフィールド1件だけ返す早期 return（dsl-converter.ts 23-34行）** — 結果として plugin.ts が .v() を1つも登録せず、『何も検証しないバリデータ』が黙って出来上がる。合成キーワードとプロパティ検証は共存できなければならない。
+- **ルート直下に oneOf / anyOf / allOf があると properties の走査を打ち切って path:'' のフィールド1だけ返す早期 return（dsl-converter.ts 23-34行）** — 結果として plugin.ts が .v() を1つも登録せず、『何も検証しないバリデータ』が黙って出来上がる。合成キーワードとプロパティ検証は共存できなければならない。
 - **patternProperties を 'parent.*' というリテラルのアスタリスク文字列パスに変換する方式** — '*' が本物のプロパティ名と衝突しうるし、複数パターンがあると同じパスに複数フィールドが登録される。パターン対応は別のフィールド種別として表現すべき。
 - **jsonschema-final-100-percent / jsonschema-final-assault / jsonschema-turbo-100-percent / jsonschema-surgical-100-percent / jsonschema-ultimate-final / jsonschema-final-140-lines / jsonschema-final-290-lines / jsonschema-ultra-final-266 等のカバレッジ稼ぎテスト群** — ファイル名が示す通り行数カバレッジを埋めるためだけに書かれており、内部関数（getBaseChain 等）を無理な引数で叩いていて仕様を1つも記述していない。多くはコンパイルエラーで動いてすらいない。Draft-07 の公式 JSON-Schema-Test-Suite に置き換えるべき。
 - **error-generation.ts（789行）の独立したエラー生成系** — validateValueAgainstSchema と同じ判定ロジックを丸ごと書き直しており、しかも一部（format, uniqueItems）で結論が異なる。エラーコード体系（TYPE_MISMATCH, MIN_LENGTH 等）だけは資産なので引き継ぎ、実装は検証本体からエラーを返す単一パスに統合すること。
 
-## 公開シンボル (75)
+## Published symbols (75)
 
 `fromJsonSchema`, `jsonSchemaPlugin`, `jsonSchemaFullFeaturePlugin`, `JsonSchemaOptions`, `LuqFieldDSL`, `LuqConstraints`, `ValidationError`, `resolveRef`, `resolveSchemaRef`, `resolveAllRefs`, `formatValidators`, `validateFormat`, `getSupportedFormats`, `isFormatSupported`, `validateValueAgainstSchema`, `validateType`, `validateMultipleTypes`, `validateStringConstraints`, `validateNumberConstraints`, `validateArrayConstraints`, `validateObjectConstraints`, `getDetailedValidationErrors`, `getSpecificValidationErrors`, `convertJsonSchemaToLuqDSL`, `convertDSLToFieldDefinition`, `applyConstraints`, `applyBaseType`, `getBaseChain`, `requiredPlugin`, `optionalPlugin`, `nullablePlugin`, `requiredIfPlugin`, `oneOfPlugin`, `literalPlugin`, `customPlugin`, `stringMinPlugin`, `stringMaxPlugin`, `stringPatternPlugin`, `stringEmailPlugin`, `stringUrlPlugin`, `uuidPlugin`, `stringDatePlugin`, `stringDatetimePlugin`, `stringIpv4Plugin`, `stringIpv6Plugin`, `stringHostnamePlugin`, `stringTimePlugin`, `stringDurationPlugin`, `stringJsonPointerPlugin`, `stringBase64Plugin`, `stringIriPlugin`, `stringIriReferencePlugin`, `stringUriTemplatePlugin`, `stringRelativeJsonPointerPlugin`, `stringContentEncodingPlugin`, `stringContentMediaTypePlugin`, `numberMinPlugin`, `numberMaxPlugin`, `numberIntegerPlugin`, `numberMultipleOfPlugin`, `arrayUniquePlugin`, `arrayMinLengthPlugin`, `arrayMaxLengthPlugin`, `arrayContainsPlugin`, `objectMinPropertiesPlugin`, `objectMaxPropertiesPlugin`, `objectAdditionalPropertiesPlugin`, `objectPropertyNamesPlugin`, `objectPatternPropertiesPlugin`, `objectDependentRequiredPlugin`, `objectDependentSchemasPlugin`, `tupleBuilderPlugin`, `readOnlyWriteOnlyPlugin`, `writeOnlyPlugin`, `conditionalSchemaPlugin`
 

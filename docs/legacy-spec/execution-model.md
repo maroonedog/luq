@@ -27,7 +27,7 @@
 - `abortEarly`（オブジェクトレベル）: `options?.abortEarly !== false`。最初にエラーが出たフィールドで `Result.error` を返して残りのフィールドを検証しない。
 - `abortEarlyOnEachField`（フィールドレベル）: `options?.abortEarlyOnEachField !== false`。1フィールド内の複数バリデータ（`.required().min(3).pattern(...)`）のうち最初の失敗で打ち切る。false なら同一フィールドの全違反を集める。
 
-`test/integration/abort-early-real-world.test.ts:75-90` が「`abortEarly:false, abortEarlyOnEachField:true` → フィールドごとに1件ずつ全フィールド分」というフォームUX向けの組み合わせを明示的にテストしている。これが引き継ぐべき中核仕様。
+`test/integration/abort-early-real-world.test.ts:75-90` が「`abortEarly:false, abortEarlyOnEachField:true` → フィールドごとに1ずつ全フィールド分」というフォームUX向けの組み合わせを明示的にテストしている。これが引き継ぐべき中核仕様。
 
 **例外**: 配列要素の検証だけは `effectiveAbortEarlyOnEachField = false` を**ハードコードで強制**している（`array-batch-optimizer.ts:235`、`nested-array-processor.ts:393`）。すなわち「配列要素内は必ず全フィールド検証する」。要素間は `abortEarly` に従う。
 
@@ -111,140 +111,140 @@
 - 配列バッチ経路（`nested-array-processor`）→ `items[0].name`（インデックス入り、正しい）
 - 非バッチ経路（`validator-factory.ts:validateArrayElementPath:2016`）→ `error.path || elementPath` で、validator が返す `error.path` はパターン文字列 `items[*].name` なのでそちらが勝つ → **`items[0].name` にならない**
 
-## 引き継ぐ契約 (25件)
+## Contracts to preserve (25)
 
 ### must-preserve (17)
 
 #### TransformAwareValidator<T, TTransformed>
-- 出典: `src/core/builder/plugins/plugin-types.ts:1133-1147`
-- 形: { validate(value: Partial<T> | unknown, options?: ValidationOptions): Result<T>; parse(value: Partial<T> | unknown, options?: ParseOptions): Result<TTransformed>; pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>> }
-- 意味: build() の戻り値。validate は入力をそのまま Result.ok に載せて返す（transform を適用しない）。parse は transform を適用した新しいオブジェクトを返す。pick は単一フィールド用のサブバリデータを返す。
+- Source: `src/core/builder/plugins/plugin-types.ts:1133-1147`
+- Shape: { validate(value: Partial<T> | unknown, options?: ValidationOptions): Result<T>; parse(value: Partial<T> | unknown, options?: ParseOptions): Result<TTransformed>; pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>> }
+- Meaning: build() の戻り値。validate は入力をそのまま Result.ok に載せて返す（transform を適用しない）。parse は transform を適用した新しいオブジェクトを返す。pick は単一フィールド用のサブバリデータを返す。
 
 #### ValidationOptions
-- 出典: `src/types/index.ts:41-53`
-- 形: { abortEarly?: boolean; abortEarlyOnEachField?: boolean; messageFactory?: MessageFactory; translate?: (key: string, params?: Record<string, unknown>) => string; context?: Record<string, unknown> }
-- 意味: abortEarly / abortEarlyOnEachField はいずれも既定 true。実装は `options?.abortEarly !== false` という判定なので、undefined と true が同じ意味になる。messageFactory / translate / context は型に存在するが execution-model 側では読まれていない（validator-factory は abortEarly 系しか参照しない）。
+- Source: `src/types/index.ts:41-53`
+- Shape: { abortEarly?: boolean; abortEarlyOnEachField?: boolean; messageFactory?: MessageFactory; translate?: (key: string, params?: Record<string, unknown>) => string; context?: Record<string, unknown> }
+- Meaning: abortEarly / abortEarlyOnEachField はいずれも既定 true。実装は `options?.abortEarly !== false` という判定なので、undefined と true が同じ意味になる。messageFactory / translate / context は型に存在するが execution-model 側では読まれていない（validator-factory は abortEarly 系しか参照しない）。
 
 #### abortEarly（オブジェクトレベル短絡）
-- 出典: `src/core/builder/validator-factory.ts:1060, 1102, 1176, 1291, 1316`
-- 形: abortEarly?: boolean  // default true
-- 意味: true のとき、最初にエラーを出したフィールドの時点で残りのフィールドを検証せず Result.error を返す。false のとき全フィールドを検証してエラーを蓄積する。
+- Source: `src/core/builder/validator-factory.ts:1060, 1102, 1176, 1291, 1316`
+- Shape: abortEarly?: boolean  // default true
+- Meaning: true のとき、最初にエラーを出したフィールドの時点で残りのフィールドを検証せず Result.error を返す。false のとき全フィールドを検証してエラーを蓄積する。
 
 #### abortEarlyOnEachField（フィールド内短絡）
-- 出典: `src/core/optimization/unified-validator.ts:118,141,571-591 / test/integration/abort-early-real-world.test.ts:75-90`
-- 形: abortEarlyOnEachField?: boolean  // default true
-- 意味: true のとき、1つのフィールドに連鎖した複数バリデータのうち最初の失敗で打ち切り、そのフィールドのエラーは1件になる。false のとき同一フィールドの全違反を集める。abortEarly と直交し、`{abortEarly:false, abortEarlyOnEachField:true}` は「全フィールドについて代表エラー1件ずつ」というフォーム UX 向けの組み合わせで、テストで固定されている。
+- Source: `src/core/optimization/unified-validator.ts:118,141,571-591 / test/integration/abort-early-real-world.test.ts:75-90`
+- Shape: abortEarlyOnEachField?: boolean  // default true
+- Meaning: true のとき、1つのフィールドに連鎖した複数バリデータのうち最初の失敗で打ち切り、そのフィールドのエラーは1になる。false のとき同一フィールドの全違反を集める。abortEarly と直交し、`{abortEarly:false, abortEarlyOnEachField:true}` は「全フィールドについて代表エラー1ずつ」というフォーム UX 向けの組み合わせで、テストで固定されている。
 
 #### Result<T>
-- 出典: `src/types/result.ts:86-158, 234-340`
-- 形: { isValid(): boolean; readonly valid: boolean; isError(): boolean; unwrap(): T; unwrapOr(d: T): T; unwrapOrElse(fn): T; map<U>(fn): Result<U>; flatMap<U>(fn): Result<U>; tap(fn): Result<T>; tapError(fn): Result<T>; data(): T | undefined; readonly errors: ValidationError[]; toPlainObject(): { valid: boolean; data?: T; errors: ValidationError[] } }
-- 意味: validate / parse の戻り値。成功時は errors が空配列、失敗時は data() が undefined。unwrap() は失敗時に LuqValidationException を投げる。Result.ok は prototype ベース（Object.create(successProto)）で成功パスのアロケーションを抑えている。`valid` は isValid() の後方互換 getter。
+- Source: `src/types/result.ts:86-158, 234-340`
+- Shape: { isValid(): boolean; readonly valid: boolean; isError(): boolean; unwrap(): T; unwrapOr(d: T): T; unwrapOrElse(fn): T; map<U>(fn): Result<U>; flatMap<U>(fn): Result<U>; tap(fn): Result<T>; tapError(fn): Result<T>; data(): T | undefined; readonly errors: ValidationError[]; toPlainObject(): { valid: boolean; data?: T; errors: ValidationError[] } }
+- Meaning: validate / parse の戻り値。成功時は errors が空配列、失敗時は data() が undefined。unwrap() は失敗時に LuqValidationException を投げる。Result.ok は prototype ベース（Object.create(successProto)）で成功パスのアロケーションを抑えている。`valid` は isValid() の後方互換 getter。
 
 #### ValidationError
-- 出典: `src/types/index.ts:25-30`
-- 形: { path: string; message: string; code: string; paths(): string[] }
-- 意味: 公開エラー形。`paths()` は関数（配列ではない）。code は validator の `code` → `pluginName` → "VALIDATION_ERROR" の順にフォールバック。path はフィールドパス、配列要素の場合はインデックス入り（items[0].name）が正。
+- Source: `src/types/index.ts:25-30`
+- Shape: { path: string; message: string; code: string; paths(): string[] }
+- Meaning: 公開エラー形。`paths()` は関数（配列ではない）。code は validator の `code` → `pluginName` → "VALIDATION_ERROR" の順にフォールバック。path はフィールドパス、配列要素の場合はインデックス入り（items[0].name）が正。
 
 #### REQUIRED（ルートレベル）
-- 出典: `src/core/builder/validator-factory.ts:1029-1038, 1336-1345`
-- 形: value == null → Result.error([{ path: "", code: "REQUIRED", message: "Value is required", paths: () => [""] }])
-- 意味: validate/parse に null / undefined を渡したときの固定応答。path は空文字列。
+- Source: `src/core/builder/validator-factory.ts:1029-1038, 1336-1345`
+- Shape: value == null → Result.error([{ path: "", code: "REQUIRED", message: "Value is required", paths: () => [""] }])
+- Meaning: validate/parse に null / undefined を渡したときの固定応答。path は空文字列。
 
 #### validate は transform を適用しない / parse のみ適用する
-- 出典: `src/constants.ts:10-12 / src/core/optimization/unified-validator.ts:594-603`
-- 形: VALIDATE_MODE = "validate" | PARSE_MODE = "parse"
-- 意味: validate は検証相だけを実行して transform 相をスキップし、入力オブジェクトをそのまま Result.ok に載せる。parse は検証成功後に transform を順に適用し、書き換えた新オブジェクトを返す。この分離が validate の速度を生んでいる中核。
+- Source: `src/constants.ts:10-12 / src/core/optimization/unified-validator.ts:594-603`
+- Shape: VALIDATE_MODE = "validate" | PARSE_MODE = "parse"
+- Meaning: validate は検証相だけを実行して transform 相をスキップし、入力オブジェクトをそのまま Result.ok に載せる。parse は検証成功後に transform を順に適用し、書き換えた新オブジェクトを返す。この分離が validate の速度を生んでいる中核。
 
 #### フィールド内の実行順序
-- 出典: `src/core/optimization/unified-validator.ts:107-110, 218-338, 514-655`
-- 形: validators を宣言順に実行 → (parse 時のみ) transforms を宣言順に実行
-- 意味: 既定は「全 validator → 全 transform」の2相（fast_separated）。skip 系プラグイン（shouldSkipAllValidation を持つもの）が含まれるフィールドだけ、validator と transform を宣言順で1本のパイプラインとして実行する（definition_order）。
+- Source: `src/core/optimization/unified-validator.ts:107-110, 218-338, 514-655`
+- Shape: validators を宣言順に実行 → (parse 時のみ) transforms を宣言順に実行
+- Meaning: 既定は「全 validator → 全 transform」の2相（fast_separated）。skip 系プラグイン（shouldSkipAllValidation を持つもの）が含まれるフィールドだけ、validator と transform を宣言順で1本のパイプラインとして実行する（definition_order）。
 
 #### skip セマンティクス（shouldSkipAllValidation）
-- 出典: `src/core/optimization/unified-validator.ts:260-268, 556-565 / src/core/plugin/skip.ts:80 / src/core/plugin/validateIf.ts:123`
-- 形: validator.shouldSkipAllValidation?(value, rootData): boolean
-- 意味: true を返した時点で、そのフィールドの以降の validator を全てスキップして成功扱いにする（break）。skipPlugin / validateIfPlugin が生成する。
+- Source: `src/core/optimization/unified-validator.ts:260-268, 556-565 / src/core/plugin/skip.ts:80 / src/core/plugin/validateIf.ts:123`
+- Shape: validator.shouldSkipAllValidation?(value, rootData): boolean
+- Meaning: true を返した時点で、そのフィールドの以降の validator を全てスキップして成功扱いにする（break）。skipPlugin / validateIfPlugin が生成する。
 
 #### skipForNull / skipForUndefined セマンティクス
-- 出典: `src/core/optimization/unified-validator.ts:232-252, 529-550, 1186-1197 / src/core/plugin/nullable.ts:74 / src/core/plugin/optional.ts:76`
-- 形: validator.skipForNull?: true / validator.skipForUndefined?: true
-- 意味: フィールドのどれか1つの validator がこのフラグを持ち、かつ値が null（/ undefined）のとき、そのフィールドは検証も transform も全てスキップして成功扱いになり、parse では元の値をそのまま返す（transform をかけない）。nullablePlugin が skipForNull、optionalPlugin / optionalIfPlugin が skipForUndefined を立てる。
+- Source: `src/core/optimization/unified-validator.ts:232-252, 529-550, 1186-1197 / src/core/plugin/nullable.ts:74 / src/core/plugin/optional.ts:76`
+- Shape: validator.skipForNull?: true / validator.skipForUndefined?: true
+- Meaning: フィールドのどれか1つの validator がこのフラグを持ち、かつ値が null（/ undefined）のとき、そのフィールドは検証も transform も全てスキップして成功扱いになり、parse では元の値をそのまま返す（transform をかけない）。nullablePlugin が skipForNull、optionalPlugin / optionalIfPlugin が skipForUndefined を立てる。
 
 #### 内部 validator レコード形
-- 出典: `src/core/builder/context/field-context.ts:395-450`
-- 形: { check: (value, rootData) => boolean; name: string; code: string; pluginName: string; getErrorMessage?: (value, path, rootData) => string; messageFactory: (issueContext) => string; inputType; outputType; metadata; shouldSkipAllValidation?; shouldSkipValidation?; shouldSkipFurtherValidation?; skipForNull?; skipForUndefined?; __isRecursive?; recursive?; params? }
-- 意味: プラグインと実行エンジンの間の唯一の契約。check は同期の boolean 述語で第2引数にルートデータを受ける（実際の呼び出しは2引数のみ。validation-engine が想定していた第3引数 arrayContext は実路では渡されていない）。エラーメッセージは getErrorMessage 優先、なければ messageFactory。両方が throw した場合は `Validation failed for ${path}` にフォールバックする。
+- Source: `src/core/builder/context/field-context.ts:395-450`
+- Shape: { check: (value, rootData) => boolean; name: string; code: string; pluginName: string; getErrorMessage?: (value, path, rootData) => string; messageFactory: (issueContext) => string; inputType; outputType; metadata; shouldSkipAllValidation?; shouldSkipValidation?; shouldSkipFurtherValidation?; skipForNull?; skipForUndefined?; __isRecursive?; recursive?; params? }
+- Meaning: プラグインと実行エンジンの間の唯一の契約。check は同期の boolean 述語で第2引数にルートデータを受ける（実際の呼び出しは2引数のみ。validation-engine が想定していた第3引数 arrayContext は実路では渡されていない）。エラーメッセージは getErrorMessage 優先、なければ messageFactory。両方が throw した場合は `Validation failed for ${path}` にフォールバックする。
 
 #### エラーメッセージの遅延計算
-- 出典: `src/core/optimization/unified-validator.ts:881-906`
-- 形: computeErrorMessage(validator, value, path, rootData): string
-- 意味: メッセージは検証が失敗したときにのみ生成する。成功パスでは一切呼ばない。getErrorMessage / messageFactory が例外を投げた場合も検証は落とさず既定文言にフォールバックする。
+- Source: `src/core/optimization/unified-validator.ts:881-906`
+- Shape: computeErrorMessage(validator, value, path, rootData): string
+- Meaning: メッセージは検証が失敗したときにのみ生成する。成功パスでは一切呼ばない。getErrorMessage / messageFactory が例外を投げた場合も検証は落とさず既定文言にフォールバックする。
 
 #### パスアクセサのビルド時コンパイル（CSP-safe）
-- 出典: `src/core/plugin/utils/field-accessor-optimized.ts:26-80`
-- 形: createAccessor(pathSegments: readonly string[]): (obj: unknown) => unknown
-- 意味: 深さ 0〜5 を専用クロージャ（obj?.[k1]?.[k2]...）に展開、6以上はループ。実行時に split(".") をしない。new Function / eval を使わずに達成している点が CSP-safe の実体。setter も同様。
+- Source: `src/core/plugin/utils/field-accessor-optimized.ts:26-80`
+- Shape: createAccessor(pathSegments: readonly string[]): (obj: unknown) => unknown
+- Meaning: 深さ 0〜5 を専用クロージャ（obj?.[k1]?.[k2]...）に展開、6以上はループ。実行時に split(".") をしない。new Function / eval を使わずに達成している点が CSP-safe の実体。setter も同様。
 
 #### 配列バッチ（ループ交換）最適化
-- 出典: `src/core/builder/array-batch-optimizer.ts:1-16, 270-360 / src/core/builder/nested-array-processor.ts:383-620`
-- 形: arrayPath ごとに { elementFields: string[], accessors: Map<field, accessor>, childArrays } を持ち、配列を1回だけ読んで各要素について全 elementFields を検証する
-- 意味: N 個の要素フィールドがあっても配列走査は1回。フィールドごとに配列を走査し直さない。これが complex スキーマ性能の中核的な意図。
+- Source: `src/core/builder/array-batch-optimizer.ts:1-16, 270-360 / src/core/builder/nested-array-processor.ts:383-620`
+- Shape: arrayPath ごとに { elementFields: string[], accessors: Map<field, accessor>, childArrays } を持ち、配列を1回だけ読んで各要素について全 elementFields を検証する
+- Meaning: N 個の要素フィールドがあっても配列走査は1回。フィールドごとに配列を走査し直さない。これが complex スキーマ性能の中核的な意図。
 
 #### 配列要素エラーパスのインデックス展開
-- 出典: `src/core/builder/nested-array-processor.ts:410-412, 552`
-- 形: パターン `items[*].name` → 実エラーパス `items[0].name`、多階層は `a[0].b[2].c`
-- 意味: エラーの path は宣言パターンではなく実インデックスに展開されていなければならない。任意深さの入れ子配列で親のインデックスを引き継いで組み立てる。
+- Source: `src/core/builder/nested-array-processor.ts:410-412, 552`
+- Shape: パターン `items[*].name` → 実エラーパス `items[0].name`、多階層は `a[0].b[2].c`
+- Meaning: エラーの path は宣言パターンではなく実インデックスに展開されていなければならない。任意深さの入れ子配列で親のインデックスを引き継いで組み立てる。
 
 #### 空配列の扱い
-- 出典: `src/core/builder/array-batch-optimizer.ts:262-266 / src/core/optimization/core/strategy-factory.ts:254-257`
-- 形: arrayData.length === 0 → 要素検証をスキップし、配列自身の validator（minLength 等）だけを走らせる
-- 意味: 空配列に対して要素レベルの required 等を発火させない。配列本体レベルの検証は別途走る。
+- Source: `src/core/builder/array-batch-optimizer.ts:262-266 / src/core/optimization/core/strategy-factory.ts:254-257`
+- Shape: arrayData.length === 0 → 要素検証をスキップし、配列自身の validator（minLength 等）だけを走らせる
+- Meaning: 空配列に対して要素レベルの required 等を発火させない。配列本体レベルの検証は別途走る。
 
 ### should-preserve (7)
 
 #### ParseOptions
-- 出典: `src/types/index.ts:58-71`
-- 形: ValidationOptions & { transforms?: Record<string, (value: unknown) => unknown> }
-- 意味: parse 用。`transforms` フィールドは型に存在するが execution-model のどこからも読まれていない（デッド）。
+- Source: `src/types/index.ts:58-71`
+- Shape: ValidationOptions & { transforms?: Record<string, (value: unknown) => unknown> }
+- Meaning: parse 用。`transforms` フィールドは型に存在するが execution-model のどこからも読まれていない（デッド）。
 
 #### 配列要素内は abortEarlyOnEachField を常に false に強制
-- 出典: `src/core/builder/array-batch-optimizer.ts:235 / src/core/builder/nested-array-processor.ts:393`
-- 形: effectiveAbortEarlyOnEachField = false
-- 意味: 配列要素の検証では、呼び出し側の abortEarlyOnEachField によらず要素内の全フィールドを検証する。要素間の打ち切りは abortEarly に従う。
+- Source: `src/core/builder/array-batch-optimizer.ts:235 / src/core/builder/nested-array-processor.ts:393`
+- Shape: effectiveAbortEarlyOnEachField = false
+- Meaning: 配列要素の検証では、呼び出し側の abortEarlyOnEachField によらず要素内の全フィールドを検証する。要素間の打ち切りは abortEarly に従う。
 
 #### 成功結果のゼロアロケーション
-- 出典: `src/core/optimization/unified-validator.ts:869-876`
-- 形: const ULTRA_FAST_VALID_RESULT = Object.freeze({ valid: true, errors: [] })
-- 意味: フィールド検証が成功したときに凍結済みシングルトンを返し、オブジェクト生成を避ける。1.2M ops/sec を支える中核テクニック。凍結しているので呼び出し側が書き換えられない点も重要。
+- Source: `src/core/optimization/unified-validator.ts:869-876`
+- Shape: const ULTRA_FAST_VALID_RESULT = Object.freeze({ valid: true, errors: [] })
+- Meaning: フィールド検証が成功したときに凍結済みシングルトンを返し、オブジェクト生成を避ける。1.2M ops/sec を支える中核テクニック。凍結しているので呼び出し側が書き換えられない点も重要。
 
 #### 配列本体の検証失敗時は要素検証をスキップ
-- 出典: `src/core/builder/validator-factory.ts:1091-1108`
-- 形: 配列パス自身の validator が失敗 → continue（要素ループに入らない）
-- 意味: `items` が配列でない／required 違反のとき、`items[*].name` のエラーを重ねて出さない。
+- Source: `src/core/builder/validator-factory.ts:1091-1108`
+- Shape: 配列パス自身の validator が失敗 → continue（要素ループに入らない）
+- Meaning: `items` が配列でない／required 違反のとき、`items[*].name` のエラーを重ねて出さない。
 
 #### default 値の適用タイミング
-- 出典: `src/core/builder/validator-factory.ts:509-521, 1044-1057, 1352-1362`
-- 形: applyDefault(currentValue, fieldOptions, { allValues }) を検証前に適用
-- 意味: validate / parse のどちらでも、検証を始める前に fieldOptions の default を適用した（浅くコピーした）オブジェクトに対して検証を行う。validate では default 適用後のオブジェクトを検証しつつ Result.ok には元の value を返す（＝ validate は default を結果に反映しない）。parse は反映する。
+- Source: `src/core/builder/validator-factory.ts:509-521, 1044-1057, 1352-1362`
+- Shape: applyDefault(currentValue, fieldOptions, { allValues }) を検証前に適用
+- Meaning: validate / parse のどちらでも、検証を始める前に fieldOptions の default を適用した（浅くコピーした）オブジェクトに対して検証を行う。validate では default 適用後のオブジェクトを検証しつつ Result.ok には元の value を返す（＝ validate は default を結果に反映しない）。parse は反映する。
 
 #### pick(key)
-- 出典: `src/core/builder/validator-factory.ts:2641-2760`
-- 形: pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>  // { validate(value, allValues?, options?), parse(value, allValues?, options?) } を返す
-- 意味: 単一フィールド（および `key[*]...` / `key.*...` / `key....` に前方一致する派生パス群）だけを検証するサブバリデータを返す。定義が見つからないキーに対しては常に成功するバリデータを返す。返り値は Result ではなく `{ valid, value, errors }` のプレーン形である点に注意（validate/parse とは別の形）。
+- Source: `src/core/builder/validator-factory.ts:2641-2760`
+- Shape: pick<K extends NestedKeyOf<T>>(key: K): FieldValidator<T, TypeOfPath<T, K>>  // { validate(value, allValues?, options?), parse(value, allValues?, options?) } を返す
+- Meaning: 単一フィールド（および `key[*]...` / `key.*...` / `key....` に前方一致する派生パス群）だけを検証するサブバリデータを返す。定義が見つからないキーに対しては常に成功するバリデータを返す。返り値は Result ではなく `{ valid, value, errors }` のプレーン形である点に注意（validate/parse とは別の形）。
 
 #### objectRecursively の再帰実行モデル
-- 出典: `src/core/builder/validator-factory.ts:328-331, 2061-2115 / src/core/plugin/objectRecursively.ts:115`
-- 形: validator.__isRecursive === true, validator.recursive = { targetFieldPath: string | "__Self" | "__Element", maxDepth?: number }  // maxDepth 既定 10
-- 意味: 深さが maxDepth を超えたら成功として打ち切る。WeakSet で訪問済みオブジェクトを追跡し循環参照を成功扱いで打ち切る。`__Self` は「ルートの全フィールドバリデータを入れ子オブジェクトに再適用」、`__Element` は配列要素に対する同様の適用を意味する。再帰中はフィールド間で abort early しない。
+- Source: `src/core/builder/validator-factory.ts:328-331, 2061-2115 / src/core/plugin/objectRecursively.ts:115`
+- Shape: validator.__isRecursive === true, validator.recursive = { targetFieldPath: string | "__Self" | "__Element", maxDepth?: number }  // maxDepth 既定 10
+- Meaning: 深さが maxDepth を超えたら成功として打ち切る。WeakSet で訪問済みオブジェクトを追跡し循環参照を成功扱いで打ち切る。`__Self` は「ルートの全フィールドバリデータを入れ子オブジェクトに再適用」、`__Element` は配列要素に対する同様の適用を意味する。再帰中はフィールド間で abort early しない。
 
 ### optional (1)
 
 #### 空スキーマの挙動
-- 出典: `src/core/builder/validator-factory.ts:263-281`
-- 形: fieldDefinitions.length === 0 → validate: () => Result.ok({}), parse: (v) => Result.ok(v)
-- 意味: フィールドを1つも宣言しないビルダーは常に成功する。validate は入力を無視して空オブジェクトを返す（parse は入力をそのまま返す）という非対称がある。
+- Source: `src/core/builder/validator-factory.ts:263-281`
+- Shape: fieldDefinitions.length === 0 → validate: () => Result.ok({}), parse: (v) => Result.ok(v)
+- Meaning: フィールドを1つも宣言しないビルダーは常に成功する。validate は入力を無視して空オブジェクトを返す（parse は入力をそのまま返す）という非対称がある。
 
-## 振る舞い規則
+## Behavioural rules
 
 - build() は純粋な事前計算フェーズであること。実行時に構築してよいオブジェクトはエラー配列と（parse の）出力オブジェクトだけ。旧実装が createArrayBatchValidator を validate() のループ内で毎回呼んでいたような「実行時構築」は禁止。
 - build() 中に各フィールドのビルダー関数を実行するのは 1 回だけにすること。旧実装は最低 6 回実行していた。ビルダー関数の副作用に依存してはならないが、多重実行を前提にもしないこと。
@@ -263,7 +263,7 @@
 - 実行エンジンのバリアントは 1 つに統一すること。旧実装の unified / raw / ultra-fast の 3 バリアントは、片方が死んでおり、もう片方は意味論が非等価だった。
 - 環境変数やグローバル変数で実行モードを切り替えないこと（LUQ_ULTRA_FAST）。挙動が実行環境で変わり、意味論も非等価だった。
 
-## 引き継がないもの
+## Not carried forward
 
 - **src/core/builder/ultra-fast-validator.ts（258行）全体** — createUltraFastSingleFieldValidator / createUltraFastMultiFieldValidator は validator-factory.ts:48-50 で import されているだけで、リポジトリ全体で一度も呼び出されていない（grep で確認）。加えてモジュールスコープの SUCCESS_RESULT / ERROR_RESULT を使い回すため再入不可。完全な死骸。
 - **src/core/optimization/array-batch-validator.ts（214行）全体** — src/ 全体を grep してもこのファイルを import しているモジュールが 1 つも存在しない。
@@ -284,7 +284,7 @@
 - **コード中の「V8 optimization:」コメント（unified-validator.ts と validator-factory.ts に数十箇所）** — 大半が根拠のない儀式（「for...of より for が速い」「ローカル変数に取ると速い」）で、いくつかは実際には最適化になっていない（凍結オブジェクトを返してから .errors を map するなど）。コメントが実装の正しさを保証しているかのように見せているが、測定の裏付けがない。新実装ではベンチマークで示せない最適化コメントを書かないこと。
 - **build() が def.builderFunction(context) を 1 回実行して結果を FieldDefinition.rules に詰める処理（field-builder.ts:202-222）** — rules フィールドは validator-factory 側で一切読まれない。ビルダー関数の実行 1 回分を丸ごと捨てている。
 
-## 公開シンボル (49)
+## Published symbols (49)
 
 `Builder`, `.use()`, `.for<T>()`, `.v(path, builderFn)`, `.field()`, `.useField()`, `.strict()`, `.build()`, `TransformAwareValidator`, `validate(value, options?)`, `parse(value, options?)`, `pick(key)`, `ValidationOptions`, `ParseOptions`, `abortEarly`, `abortEarlyOnEachField`, `messageFactory`, `translate`, `context`, `transforms`, `Result`, `Result.ok`, `Result.error`, `Result<T>.isValid()`, `Result<T>.isError()`, `Result<T>.valid`, `Result<T>.errors`, `Result<T>.unwrap()`, `Result<T>.unwrapOr()`, `Result<T>.unwrapOrElse()`, `Result<T>.map()`, `Result<T>.flatMap()`, `Result<T>.tap()`, `Result<T>.tapError()`, `Result<T>.data()`, `Result<T>.toPlainObject()`, `ValidationError`, `ValidationError.path`, `ValidationError.code`, `ValidationError.message`, `ValidationError.paths()`, `LuqValidationException`, `REQUIRED`, `VALIDATION_ERROR`, `PARSE_ERROR`, `FieldValidator`, `NestedKeyOf`, `TypeOfPath`, `ApplyFieldTransforms`
 
