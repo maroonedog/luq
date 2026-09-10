@@ -1,5 +1,8 @@
 # Standard Schema
 
+> Rendered at [luq.dev/standard-schema](https://luq.dev/standard-schema). This
+> file is the copy that ships with the release you have installed.
+
 Luq implements [Standard Schema v1](https://standardschema.dev). Anything that
 accepts a Standard Schema — tRPC, TanStack Form, Hono, t3-env, react-hook-form —
 accepts a Luq validator wherever it accepts a zod schema.

@@ -107,6 +107,7 @@ Zero runtime dependencies. TypeScript 5.0 or later.
 | [Core concepts](https://luq.dev/docs/core-concepts) | field paths, slots, presence, transforms |
 | [Plugins](https://luq.dev/plugins) | every subpath, symbol, chain method and slot |
 | [JSON Schema](https://luq.dev/json-schema) | reading a document in, writing one back out, measured Draft-07 conformance |
+| [Standard Schema](https://luq.dev/standard-schema) | tRPC, TanStack Form, Hono, react-hook-form — and what does not cross that boundary |
 | [Benchmarks](https://luq.dev/benchmarks) | bundle size and throughput, with the method |
 | [Luq or zod?](https://luq.dev/luq-or-zod) | when schema-first is the better answer |
 
