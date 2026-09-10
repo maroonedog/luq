@@ -134,12 +134,23 @@ Its own one-time npm setup is the same five steps as above, against the
 `@maroonedog/luq-codegen` package and the workflow filename
 `publish-codegen.yml`.
 
-**The first publish of a package npm has never seen may not be able to use
-trusted publishing**, because the settings page a publisher is registered on
-belongs to a package that does not exist yet. If npm refuses, publish `0.1.0`
-once by hand — `cd luq-codegen && npm publish`, which runs `prepublishOnly` and
-therefore the same verify — then register the publisher and let the workflow
-have every release after it.
+**The first publish of a package npm has never seen cannot use trusted
+publishing**, because the settings page a publisher is registered on belongs to
+a package that does not exist yet. It has to be bootstrapped by hand once:
+
+```bash
+cd luq-codegen && npm publish --no-provenance
+```
+
+`--no-provenance` is required, and is not optional politeness. `publishConfig`
+asks for provenance, provenance is generated from a CI provider's OIDC
+identity, and a laptop is not one — without the flag npm refuses the publish
+outright with `Automatic provenance generation not supported for provider:
+null`. That one release therefore ships without provenance. Every release after
+it goes through the workflow and carries it.
+
+Then register the trusted publisher against the package that now exists, and
+the workflow has every release after this one.
 
 ## What CI covers
 
