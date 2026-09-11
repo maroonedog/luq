@@ -81,7 +81,26 @@ describe("arrayContains", () => {
     ).toEqual(["1/2"]);
   });
 
+  // The tuple slot brings no type guard of its own, so whatever this plugin
+  // answers for a non-array is the entire answer the caller gets.
+  it("holds a non-array against nobody when no slot guards it", () => {
+    const unguarded = Builder()
+      .use(arrayContainsPlugin)
+      .use(probeAtLeastPlugin)
+      .for<Bag>()
+      .v("scores", (b) => b.tuple.contains((eb) => eb.number.atLeast(60)))
+      .build();
+    const result = unguarded.validate({ scores: "nope" });
+    expect(result.issues).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   it("throws at BUILD time when max is below min", () => {
     expect(() => builderWith({ min: 3, max: 1 })).toThrow(PluginArgumentError);
+  });
+
+  it("throws at BUILD time on a min that is not a count", () => {
+    expect(() => builderWith({ min: -1 })).toThrow(PluginArgumentError);
+    expect(() => builderWith({ min: Number.NaN })).toThrow(PluginArgumentError);
   });
 });

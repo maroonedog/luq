@@ -92,4 +92,17 @@ describe("arrayUnique", () => {
       validator.validate({ rows: "abc" }).issues.map((issue) => issue.code)
     ).toEqual(["arrayType"]);
   });
+
+  // The tuple slot brings no type guard of its own, so whatever this plugin
+  // answers for a non-array is the entire answer the caller gets.
+  it("holds a non-array against nobody when no slot guards it", () => {
+    const unguarded = Builder()
+      .use(arrayUniquePlugin)
+      .for<Bag>()
+      .v("rows", (b) => b.tuple.unique())
+      .build();
+    const result = unguarded.validate({ rows: "aab" });
+    expect(result.issues).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
 });

@@ -20,7 +20,10 @@ function entryOf(
 
 const requiredRule = (): Rule =>
   presence({
-    code: "REQUIRED",
+    // A code this fixture invents, deliberately not the library's own: the
+    // two were the same string, which is how a stale assertion on the root
+    // code went on looking right.
+    code: "fixtureRequired",
     severity: "error",
     allowUndefined: false,
     allowNull: false,
@@ -32,8 +35,13 @@ const requiredRule = (): Rule =>
 const upperCaseRule = (): Rule =>
   transform((value) => String(value).toUpperCase());
 
-const validatorOf = (entries: readonly FieldEntry[]) =>
-  createPlanBackedValidator(compileDeclarations(entries, undefined).plan);
+const validatorOf = (entries: readonly FieldEntry[]) => {
+  // The config comes back from the same call that produced the plan: the root
+  // short-circuit reports wording that is settled at build time, so the two
+  // travel together rather than the validator resolving a second copy.
+  const compiled = compileDeclarations(entries, undefined);
+  return createPlanBackedValidator(compiled.plan, compiled.config);
+};
 
 describe("createPlanBackedValidator", () => {
   it("returns a frozen object with the four documented members", () => {
@@ -52,7 +60,10 @@ describe("createPlanBackedValidator", () => {
     for (const subject of [null, undefined]) {
       const outcome = validator.validate(subject);
       expect(outcome.valid).toBe(false);
-      expect(outcome.issues.map((issue) => issue.code)).toEqual(["REQUIRED"]);
+      // `required`, the spelling a missing FIELD reports. It was "REQUIRED"
+      // here, carried over from 1.x, so the same condition had two spellings
+      // depending on how much of the value was absent.
+      expect(outcome.issues.map((issue) => issue.code)).toEqual(["required"]);
       expect(outcome.issues.map((issue) => issue.path)).toEqual([""]);
     }
   });

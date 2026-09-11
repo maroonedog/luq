@@ -83,6 +83,16 @@ describe("numberMin", () => {
     expect(belowZero.validate({ value: -6 }).valid).toBe(false);
   });
 
+  it("fails a minimum that is not a number at all at build time", () => {
+    expect(() =>
+      Builder()
+        .use(numberMinPlugin)
+        .for<Score>()
+        .v("value", (b) => b.number.min("10" as unknown as number))
+        .build()
+    ).toThrow(PluginArgumentError);
+  });
+
   it("fails a NaN minimum at build time, with PluginArgumentError", () => {
     expect(() =>
       Builder()

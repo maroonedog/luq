@@ -97,6 +97,52 @@ describe("custom", () => {
     expect(result.issues[0]?.message).toBe("boom");
   });
 
+  it("falls back to the default message when the answer carries none", () => {
+    const validator = Builder()
+      .use(customPlugin)
+      .for<Item>()
+      .v("sku", (b) => b.string.custom((value) => ({ valid: value === "ok" })))
+      .build();
+    const result = validator.validate({ sku: "no", qty: 1 });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.issues[0]?.message).toBe("sku custom validation failed");
+  });
+
+  it("reports what a predicate threw when it was not an Error", () => {
+    const validator = Builder()
+      .use(customPlugin)
+      .for<Item>()
+      .v("sku", (b) =>
+        b.string.custom(() => {
+          throw "the pricing table is offline";
+        })
+      )
+      .build();
+    const result = validator.validate({ sku: "a", qty: 1 });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.issues[0]?.message).toBe("the pricing table is offline");
+  });
+
+  // Stringifying an object gives "[object Object]", which tells a reader less
+  // than the field's own default does.
+  it("falls back to the default message when a predicate throws an object", () => {
+    const validator = Builder()
+      .use(customPlugin)
+      .for<Item>()
+      .v("sku", (b) =>
+        b.string.custom(() => {
+          throw { status: 503 };
+        })
+      )
+      .build();
+    const result = validator.validate({ sku: "a", qty: 1 });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.issues[0]?.message).toBe("sku custom validation failed");
+  });
+
   it("honours options.code and options.messageFactory", () => {
     const validator = Builder()
       .use(customPlugin)

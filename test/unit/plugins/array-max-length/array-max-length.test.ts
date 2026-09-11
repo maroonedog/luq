@@ -35,12 +35,14 @@ describe("arrayMaxLength", () => {
   });
 
   it("throws at BUILD time on a bound that is not a count", () => {
-    expect(() =>
+    const build = (max: number): unknown =>
       Builder()
         .use(arrayMaxLengthPlugin)
         .for<Bag>()
-        .v("tags", (b) => b.array.maxLength(Number.POSITIVE_INFINITY))
-        .build()
-    ).toThrow(PluginArgumentError);
+        .v("tags", (b) => b.array.maxLength(max))
+        .build();
+    expect(() => build(Number.POSITIVE_INFINITY)).toThrow(PluginArgumentError);
+    expect(() => build(-1)).toThrow(PluginArgumentError);
+    expect(() => build(Number.NaN)).toThrow(PluginArgumentError);
   });
 });

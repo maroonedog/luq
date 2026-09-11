@@ -31,6 +31,17 @@ export interface GlobalConfig {
   readonly customTransforms?: Readonly<Record<string, ValueTransform>>;
   /** Severity a rule emits when neither the rule nor the call names one. */
   readonly defaultSeverity?: IssueSeverity;
+  /**
+   * What `validate(null)` and `validate(undefined)` say.
+   *
+   * A subject that is absent fails before the plan runs, so there is no rule
+   * to carry a messageFactory and no call site to name one. This is where it
+   * is said instead. The severity is NOT settable with it: a warning here
+   * would let `validate(null)` report success for a schema that declares
+   * nothing required, which is the outcome the short-circuit exists to
+   * prevent.
+   */
+  readonly rootMissingMessage?: string;
 }
 
 /** Every member present: this is what a plugin reads. */
@@ -43,6 +54,7 @@ export interface ResolvedGlobalConfig {
   readonly caseSensitive: boolean;
   readonly customTransforms: Readonly<Record<string, ValueTransform>>;
   readonly defaultSeverity: IssueSeverity;
+  readonly rootMissingMessage: string;
 }
 
 export const DEFAULT_GLOBAL_CONFIG: ResolvedGlobalConfig = Object.freeze({
@@ -57,6 +69,7 @@ export const DEFAULT_GLOBAL_CONFIG: ResolvedGlobalConfig = Object.freeze({
   caseSensitive: true,
   customTransforms: Object.freeze({}),
   defaultSeverity: "error",
+  rootMissingMessage: "Value is required",
 });
 
 export function resolveGlobalConfig(
@@ -81,5 +94,6 @@ export function resolveGlobalConfig(
     caseSensitive: overrides.caseSensitive ?? base.caseSensitive,
     customTransforms: overrides.customTransforms ?? base.customTransforms,
     defaultSeverity: overrides.defaultSeverity ?? base.defaultSeverity,
+    rootMissingMessage: overrides.rootMissingMessage ?? base.rootMissingMessage,
   });
 }

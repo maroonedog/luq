@@ -74,6 +74,12 @@ describe("stringContentMediaType", () => {
     expect(() => typedAs("image/png")).toThrow(/invalid argument "mediaType"/);
   });
 
+  it("refuses a media type that is not a string at build time", () => {
+    expect(() => typedAs(42 as unknown as string)).toThrow(
+      /invalid argument "mediaType"/
+    );
+  });
+
   it("has an overridable code, which 1.x's CONTENT_MEDIA_TYPE was not", () => {
     expect(firstIssue(json, "nope").code).toBe("stringContentMediaType");
     expect(firstIssue(json, "nope").message).toBe(

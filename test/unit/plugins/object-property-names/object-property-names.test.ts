@@ -1,6 +1,12 @@
 import { Builder } from "../../../../src/index";
+import type { BranchRunner } from "../../../../src/plugin-kit/compiled-rule";
 import { objectPropertyNamesPlugin } from "../../../../src/plugins/object-property-names";
 import { probeMinCharsPlugin } from "../../../support/probe-plugins";
+import {
+  NOT_A_PLAIN_OBJECT,
+  RULE_CONTEXT,
+  createRuleBuildContext,
+} from "../../../support/rule-build-context";
 
 type Bag = { readonly metrics: Record<string, number> };
 
@@ -42,5 +48,32 @@ describe("objectPropertyNames", () => {
     expect(
       validator.validate({ metrics: 3 }).issues.map((issue) => issue.code)
     ).toEqual(["objectType"]);
+  });
+});
+
+const keyRule = objectPropertyNamesPlugin.build(
+  createRuleBuildContext({
+    pluginName: "objectPropertyNames",
+    messageFactory: (context) => context.invalidPropertyNames.join("|"),
+  }),
+  []
+);
+const REFUSING_RUNNER: BranchRunner = Object.freeze({
+  label: "propertyName",
+  run: () => ({ ok: false as const, detail: {} }),
+});
+
+describe("objectPropertyNames: the rule itself", () => {
+  it("answers PASS for anything that is not a plain object", () => {
+    if (keyRule.kind !== "composite") throw new Error("expected a composite");
+    const execute = keyRule.combine([REFUSING_RUNNER]);
+    for (const value of NOT_A_PLAIN_OBJECT) {
+      expect(execute(value, RULE_CONTEXT).ok).toBe(true);
+    }
+  });
+
+  it("reports nothing when the sub-chain produced no runner to apply", () => {
+    if (keyRule.kind !== "composite") throw new Error("expected a composite");
+    expect(keyRule.combine([])({ a: 1 }, RULE_CONTEXT).ok).toBe(true);
   });
 });

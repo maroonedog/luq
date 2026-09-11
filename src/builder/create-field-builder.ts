@@ -39,7 +39,7 @@ function buildValidator(
   configOverride: GlobalConfig | undefined
 ): PlanBackedValidator {
   const compiled = compileDeclarations(entries, configOverride);
-  const validator = createPlanBackedValidator(compiled.plan);
+  const validator = createPlanBackedValidator(compiled.plan, compiled.config);
   rememberDeclaredCalls(validator, compiled.declaredCalls);
   return validator;
 }

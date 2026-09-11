@@ -1,6 +1,12 @@
 import { Builder } from "../../../../src/index";
+import type { BranchRunner } from "../../../../src/plugin-kit/compiled-rule";
 import { objectDependentSchemasPlugin } from "../../../../src/plugins/object-dependent-schemas";
 import { objectMinPropertiesPlugin } from "../../../../src/plugins/object-min-properties";
+import {
+  NOT_A_PLAIN_OBJECT,
+  RULE_CONTEXT,
+  createRuleBuildContext,
+} from "../../../support/rule-build-context";
 
 type Bag = { readonly payment: Record<string, unknown> };
 
@@ -47,5 +53,29 @@ describe("objectDependentSchemas", () => {
     expect(
       validator.validate({ payment: [1] }).issues.map((issue) => issue.code)
     ).toEqual(["objectType"]);
+  });
+});
+
+const triggeredRule = objectDependentSchemasPlugin.build(
+  createRuleBuildContext({
+    pluginName: "objectDependentSchemas",
+    messageFactory: (context) => `[${context.trigger}]`,
+  }),
+  { card: [] }
+);
+const REFUSING_RUNNER: BranchRunner = Object.freeze({
+  label: "card",
+  run: () => ({ ok: false as const, detail: {} }),
+});
+
+describe("objectDependentSchemas: the rule itself", () => {
+  it("answers PASS for anything that is not a plain object", () => {
+    if (triggeredRule.kind !== "composite") {
+      throw new Error("expected a composite");
+    }
+    const execute = triggeredRule.combine([REFUSING_RUNNER]);
+    for (const value of NOT_A_PLAIN_OBJECT) {
+      expect(execute(value, RULE_CONTEXT).ok).toBe(true);
+    }
   });
 });

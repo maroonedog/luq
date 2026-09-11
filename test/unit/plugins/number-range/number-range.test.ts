@@ -74,6 +74,23 @@ describe("numberRange", () => {
     ).toThrow(PluginArgumentError);
   });
 
+  it("fails a boundary that is not a number at all at build time", () => {
+    expect(() =>
+      Builder()
+        .use(numberRangePlugin)
+        .for<Score>()
+        .v("value", (b) => b.number.range("1" as unknown as number, 10))
+        .build()
+    ).toThrow(PluginArgumentError);
+    expect(() =>
+      Builder()
+        .use(numberRangePlugin)
+        .for<Score>()
+        .v("value", (b) => b.number.range(1, "10" as unknown as number))
+        .build()
+    ).toThrow(PluginArgumentError);
+  });
+
   it("accepts a single-point range where min equals max", () => {
     const exact = Builder()
       .use(numberRangePlugin)

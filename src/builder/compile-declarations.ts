@@ -23,7 +23,10 @@ import type {
 } from "../compile/validation-plan.types";
 import { createBranchExecutor } from "../runtime/run-branch";
 import { resolveGlobalConfig } from "../types/global-config";
-import type { GlobalConfig } from "../types/global-config";
+import type {
+  GlobalConfig,
+  ResolvedGlobalConfig,
+} from "../types/global-config";
 import type { FieldEntry } from "./field-entry.types";
 import type { FieldDeclaredCalls } from "./field-declared-calls.types";
 import { getGlobalConfig } from "./global-config-store";
@@ -32,6 +35,12 @@ import { getGlobalConfig } from "./global-config-store";
 export interface CompiledDeclarations {
   readonly plan: ValidationPlan;
   readonly declaredCalls: readonly FieldDeclaredCalls[];
+  /**
+   * Resolved once here, and carried out because the root short-circuit needs
+   * it too. That rejection happens before any rule, so it cannot read the
+   * config the way a plugin does — through RuleBuildContext.
+   */
+  readonly config: ResolvedGlobalConfig;
 }
 
 export function compileDeclarations(
@@ -62,5 +71,6 @@ export function compileDeclarations(
   return {
     plan: compileSchema(declarations, createBranchExecutor()),
     declaredCalls,
+    config,
   };
 }

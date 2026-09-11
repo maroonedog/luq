@@ -62,6 +62,19 @@ describe("arrayIncludes", () => {
     ).toEqual(["arrayType"]);
   });
 
+  // The tuple slot brings no type guard of its own, so whatever this plugin
+  // answers for a non-array is the entire answer the caller gets.
+  it("holds a non-array against nobody when no slot guards it", () => {
+    const unguarded = Builder()
+      .use(arrayIncludesPlugin)
+      .for<Bag>()
+      .v("tags", (b) => b.tuple.includes("urgent"))
+      .build();
+    const result = unguarded.validate({ tags: "not a list" });
+    expect(result.issues).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   it("honours options.code and the {element} message context", () => {
     const custom = Builder()
       .use(arrayIncludesPlugin)

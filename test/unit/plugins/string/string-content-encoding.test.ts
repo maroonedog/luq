@@ -95,6 +95,12 @@ describe("stringContentEncoding", () => {
     ).toThrow(/invalid argument "encoding"/);
   });
 
+  it("refuses an encoding name that is not a string at build time", () => {
+    expect(() => encodedAs(42 as unknown as ContentEncodingName)).toThrow(
+      /invalid argument "encoding"/
+    );
+  });
+
   it("has an overridable code, which 1.x's CONTENT_ENCODING was not", () => {
     expect(firstIssue(base64, "aGVsbG8").code).toBe("stringContentEncoding");
     expect(firstIssue(base64, "aGVsbG8").message).toBe(

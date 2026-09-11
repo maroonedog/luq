@@ -8,7 +8,10 @@ import { PASS, fail, isString } from "../../../src/types";
 
 const requiredRule = (): Rule =>
   presence({
-    code: "REQUIRED",
+    // A code this fixture invents, deliberately not the library's own: the
+    // two were the same string, which is how a stale assertion on the root
+    // code went on looking right.
+    code: "fixtureRequired",
     severity: "error",
     allowUndefined: false,
     allowNull: false,

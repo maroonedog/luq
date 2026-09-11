@@ -59,6 +59,16 @@ describe("numberMax", () => {
     expect(custom.validate({ value: 9 }).issues[0]?.message).toBe("5/9/false");
   });
 
+  it("fails a maximum that is not a number at all at build time", () => {
+    expect(() =>
+      Builder()
+        .use(numberMaxPlugin)
+        .for<Score>()
+        .v("value", (b) => b.number.max("100" as unknown as number))
+        .build()
+    ).toThrow(PluginArgumentError);
+  });
+
   it("fails a NaN maximum at build time, with PluginArgumentError", () => {
     expect(() =>
       Builder()
