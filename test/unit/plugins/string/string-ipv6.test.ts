@@ -87,6 +87,15 @@ describe("stringIpv6", () => {
     });
   });
 
+  it("rejects a trailing dotted quad that is not four octets", () => {
+    // "999.0.2.1" only ever failed on an octet RANGE, so the quad SHAPE went
+    // unchecked. Three parts or five are not an IPv4 address, and the tail
+    // is worth two groups only when it is one.
+    expect(isAccepted(ipv6, "::ffff:192.0.2")).toBe(false);
+    expect(isAccepted(ipv6, "::ffff:192.0.2.1.5")).toBe(false);
+    expect(isAccepted(ipv6, "1:2:3:4:5:6:1.2.3")).toBe(false);
+  });
+
   it("rejects an empty group rather than reading past it", () => {
     // A single ':' leaves an empty part. Counting it as a group would make
     // "1:::2" and ":2" arithmetic that happens to land on eight.
