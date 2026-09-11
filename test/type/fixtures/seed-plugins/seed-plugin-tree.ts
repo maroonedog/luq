@@ -50,7 +50,8 @@ const STRING_MIN_BODY = [
   "",
   "export const stringMinPlugin = {",
   '  name: "stringMin",',
-  "  slots: [] as TypeName[],",
+  '  method: "min",',
+  '  slots: ["string"] as TypeName[],',
   "  path: null as FieldPath | null,",
   "  describe: describeStringMin,",
   "  build: definePlugin,",
@@ -62,7 +63,13 @@ const JSON_SCHEMA_ENTRY = [
   'import { KEYWORD_MAP } from "../../keyword-map";',
   'import { uuidPlugin } from "../../../plugins/uuid";',
   "",
-  "export const jsonSchemaPlugin = { map: KEYWORD_MAP, uses: [uuidPlugin] };",
+  "export const jsonSchemaPlugin = {",
+  '  name: "jsonSchema",',
+  '  method: "jsonSchema",',
+  '  slots: ["any"],',
+  "  map: KEYWORD_MAP,",
+  "  uses: [uuidPlugin],",
+  "};",
   "",
 ].join("\n");
 
@@ -75,12 +82,13 @@ export const SEED_PLUGIN_TREE: SeedFileTree = {
   "src/plugins/string-min/string-min.ts": STRING_MIN_BODY,
   "src/plugins/string-min/describe-string-min.ts":
     "export const describeStringMin = () => null;\n",
-  "src/plugins/uuid/index.ts": "export const uuidPlugin = { name: 1 };\n",
+  "src/plugins/uuid/index.ts":
+    'export const uuidPlugin = { name: "uuid", method: "uuid", slots: ["string"] };\n',
   "src/plugins/read-only/index.ts":
-    "export const readOnlyPlugin = { name: 2 };\n",
+    'export const readOnlyPlugin = { name: "readOnly", method: "readOnly", slots: ["any"] };\n',
   "src/json-schema/extensions/json-schema/index.ts": JSON_SCHEMA_ENTRY,
   "src/json-schema/extensions/json-schema-full-feature/index.ts":
-    "export const jsonSchemaFullFeaturePlugin = { name: 4 };\n",
+    'export const jsonSchemaFullFeaturePlugin = { name: "jsonSchemaFullFeature", method: "jsonSchemaFullFeature", slots: ["any"] };\n',
 };
 
 /** No plugins at all: the evidence that every artefact still holds when empty. */

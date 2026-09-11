@@ -22,3 +22,18 @@ export type {
   Draft07Schema,
   Draft07SchemaObject,
 } from "../json-schema";
+
+/**
+ * Which plugin offers which chain method, on which slot, and the specifier to
+ * import it from.
+ *
+ * A generator emitting `.min(3)` has to emit the import that makes `.min`
+ * exist, and nothing else in the package answers that: the barrel names the
+ * symbols but not the methods they add. Data only — no plugin is loaded by
+ * reading it.
+ */
+export { PLUGIN_MANIFEST } from "../plugins/manifest.generated";
+export type {
+  PluginManifestEntry,
+  PluginSurface,
+} from "../plugins/manifest.generated";

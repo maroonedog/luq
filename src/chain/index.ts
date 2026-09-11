@@ -43,6 +43,8 @@ export type {
   UnionGuardCoverageError,
 } from "./chain-state.types";
 export type { ChainMethod } from "./chain-method.types";
+export type { PluginNotImported } from "./plugin-not-imported.types";
+export type { SlotCatalog } from "./slot-catalog.generated";
 export type {
   AnyChain,
   ChainMarks,
