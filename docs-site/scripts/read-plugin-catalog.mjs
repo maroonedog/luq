@@ -33,8 +33,12 @@ export const EVERY_SLOT = [
 const REFERENCE_ROW =
   /^\| `\.\/plugins\/(\w+)` \| `(\w+)` \| `\.(\w+)\(\)` \| (.+?) \| (isolated|extension) \|$/;
 
+// Only the four fields this file reads, and nothing about what follows them.
+// It used to require the entry to END at `exportedSymbols`, so adding a field
+// to the manifest matched zero entries and the site build stopped. What it
+// needs is the prefix; the rest of the entry is not its business.
 const MANIFEST_ENTRY =
-  /\{ directoryName: "([^"]+)", subpathName: "([^"]+)", tier: "([^"]+)", entryFile: "([^"]+)", exportedSymbols: \[([^\]]+)\] \}/g;
+  /\{ directoryName: "([^"]+)", subpathName: "([^"]+)", tier: "([^"]+)", entryFile: "([^"]+)",/g;
 
 function readReferenceRows(repositoryRoot) {
   const source = readFileSync(
@@ -80,7 +84,7 @@ function readLockedSubpaths(repositoryRoot) {
   };
 }
 
-function readManifestDirectories(repositoryRoot) {
+function readManifestDirectories(repositoryRoot, expectedCount) {
   const source = readFileSync(
     join(repositoryRoot, "src/plugins/manifest.generated.ts"),
     "utf8"
@@ -89,8 +93,14 @@ function readManifestDirectories(repositoryRoot) {
   for (const matched of source.matchAll(MANIFEST_ENTRY)) {
     directories.set(matched[2], matched[4].replace(/\/index\.ts$/, ""));
   }
-  if (directories.size === 0) {
-    throw new Error("manifest.generated.ts: no entries matched");
+  // Against the lock, not against zero. A pattern that stopped matching
+  // altogether was caught; one that matched three entries of seventy-seven
+  // would have gone on to build a site missing most of its plugin pages.
+  if (directories.size !== expectedCount) {
+    throw new Error(
+      `manifest.generated.ts: matched ${directories.size} entries, ` +
+        `plugin-catalog.lock.json has ${expectedCount}`
+    );
   }
   return directories;
 }
@@ -164,7 +174,7 @@ function readDirectorySource(repositoryRoot, directory) {
 export function readPluginCatalog(repositoryRoot) {
   const rows = readReferenceRows(repositoryRoot);
   const locked = readLockedSubpaths(repositoryRoot);
-  const directories = readManifestDirectories(repositoryRoot);
+  const directories = readManifestDirectories(repositoryRoot, locked.pluginCount);
 
   const referenced = new Set(rows.map((row) => row.name));
   const missing = locked.names.filter((name) => !referenced.has(name));
