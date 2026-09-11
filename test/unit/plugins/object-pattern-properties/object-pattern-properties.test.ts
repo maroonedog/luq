@@ -1,6 +1,12 @@
 import { Builder } from "../../../../src/index";
+import type { BranchRunner } from "../../../../src/plugin-kit/compiled-rule";
 import { objectPatternPropertiesPlugin } from "../../../../src/plugins/object-pattern-properties";
 import { probeMinCharsPlugin } from "../../../support/probe-plugins";
+import {
+  NOT_A_PLAIN_OBJECT,
+  RULE_CONTEXT,
+  createRuleBuildContext,
+} from "../../../support/rule-build-context";
 
 type Bag = { readonly labels: Record<string, string> };
 
@@ -51,5 +57,30 @@ describe("objectPatternProperties", () => {
     expect(
       validator.validate({ labels: "envA" }).issues.map((issue) => issue.code)
     ).toEqual(["objectType"]);
+  });
+});
+
+const matchingRule = objectPatternPropertiesPlugin.build(
+  createRuleBuildContext({
+    pluginName: "objectPatternProperties",
+    messageFactory: (context) => context.violatingProperties.join("|"),
+  }),
+  { "^env": [] }
+);
+const REFUSING_RUNNER: BranchRunner = Object.freeze({
+  label: "^env",
+  run: () => ({ ok: false as const, detail: {} }),
+});
+
+describe("objectPatternProperties: the rule itself", () => {
+  it("answers PASS for anything that is not a plain object", () => {
+    if (matchingRule.kind !== "composite") {
+      throw new Error("expected a composite");
+    }
+    const execute = matchingRule.combine([REFUSING_RUNNER]);
+    expect(execute({ envA: "d" }, RULE_CONTEXT).ok).toBe(false);
+    for (const value of NOT_A_PLAIN_OBJECT) {
+      expect(execute(value, RULE_CONTEXT).ok).toBe(true);
+    }
   });
 });

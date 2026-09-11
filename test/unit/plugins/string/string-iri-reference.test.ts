@@ -42,6 +42,12 @@ describe("stringIriReference", () => {
     expect(isAccepted(iriReference, "/pa th?a")).toBe(false);
   });
 
+  it("counts DEL as a control character, the same as the C0 range", () => {
+    expect(isAccepted(iriReference, "/pa\u0007th")).toBe(false);
+    expect(isAccepted(iriReference, "/pa\u007fth")).toBe(false);
+    expect(isAccepted(iriReference, "/path?a\u007f")).toBe(true);
+  });
+
   it("refuses a bare path whose first segment looks like a scheme", () => {
     expect(isAccepted(iriReference, "weird:segment/rest")).toBe(true);
     expect(isAccepted(iriReference, "1bad:segment")).toBe(false);

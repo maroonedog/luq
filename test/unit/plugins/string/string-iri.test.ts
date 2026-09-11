@@ -37,6 +37,14 @@ describe("stringIri", () => {
     expect(isAccepted(iri, "https://example.com/\u007f")).toBe(false);
   });
 
+  // The platform parser refuses "https://" and "https:" alike: a special
+  // scheme demands a host. The structural fallback is what decides them, and
+  // it asks only for a scheme followed by something.
+  it("falls back to scheme plus a non-empty remainder when URL refuses", () => {
+    expect(isAccepted(iri, "https://")).toBe(true);
+    expect(isAccepted(iri, "https:")).toBe(false);
+  });
+
   it.each(NON_STRINGS)("passes a wrong-typed value through: %p", (value) => {
     expect(passesThrough(iri, value)).toBe(true);
   });

@@ -72,5 +72,6 @@ describe("arrayMinLength", () => {
         .build();
     expect(() => build(-1)).toThrow(PluginArgumentError);
     expect(() => build(Number.NaN)).toThrow(PluginArgumentError);
+    expect(() => build(Number.POSITIVE_INFINITY)).toThrow(PluginArgumentError);
   });
 });

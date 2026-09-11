@@ -70,13 +70,17 @@ describe("stringMax", () => {
     expect(issue.message).toBe("max=3");
   });
 
-  it("throws at BUILD time on a negative bound", () => {
-    expect(() =>
+  it("throws at BUILD time on a bound that is not a length", () => {
+    const build = (max: number): unknown =>
       Builder()
         .use(stringMaxPlugin)
         .for<StringModel>()
-        .v("text", (b) => b.string.max(-1))
-        .build()
-    ).toThrow(/invalid argument "max"/);
+        .v("text", (b) => b.string.max(max))
+        .build();
+    expect(() => build(-1)).toThrow(/invalid argument "max"/);
+    expect(() => build(Number.NaN)).toThrow(/invalid argument "max"/);
+    expect(() => build(Number.POSITIVE_INFINITY)).toThrow(
+      /invalid argument "max"/
+    );
   });
 });

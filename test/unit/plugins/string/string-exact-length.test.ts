@@ -60,13 +60,17 @@ describe("stringExactLength", () => {
     expect(issue.message).toBe("2/4");
   });
 
-  it("throws at BUILD time on a negative length", () => {
-    expect(() =>
+  it("throws at BUILD time on a length that is not a length", () => {
+    const build = (expected: number): unknown =>
       Builder()
         .use(stringExactLengthPlugin)
         .for<StringModel>()
-        .v("text", (b) => b.string.exactLength(-2))
-        .build()
-    ).toThrow(/invalid argument "expected"/);
+        .v("text", (b) => b.string.exactLength(expected))
+        .build();
+    expect(() => build(-2)).toThrow(/invalid argument "expected"/);
+    expect(() => build(Number.NaN)).toThrow(/invalid argument "expected"/);
+    expect(() => build(Number.POSITIVE_INFINITY)).toThrow(
+      /invalid argument "expected"/
+    );
   });
 });
