@@ -26,6 +26,10 @@ import type {
   ArrayNode,
   ValidationPlan,
 } from "../compile/validation-plan.types";
+import {
+  DEFAULT_GLOBAL_CONFIG,
+  type ResolvedGlobalConfig,
+} from "../types/global-config";
 import { IndexStack } from "./index-stack";
 import { IssueSink, resolveAbortPolicy } from "./issue-sink";
 import { NO_WRITE_TARGETS, createPlanWriteTargets } from "./output-writer";
@@ -43,9 +47,16 @@ export interface PlanValidator {
   parse(value: unknown, options?: ValidateOptions): ValidationResult<unknown>;
 }
 
-/** The legacy root short-circuit, wording included (validator-factory.ts:498). */
-export const ROOT_MISSING_CODE = "REQUIRED";
-export const ROOT_MISSING_MESSAGE = "Value is required";
+/**
+ * The code an absent SUBJECT reports.
+ *
+ * The same spelling a missing FIELD reports, deliberately. It was "REQUIRED"
+ * — 1.x's SCREAMING_SNAKE, carried over with the wording — which meant a
+ * caller switching on issue.code handled `required` for a missing field and
+ * missed the root, where the only difference is how much of the value was
+ * absent.
+ */
+export const ROOT_MISSING_CODE = "required";
 
 /**
  * A null or undefined subject fails before the plan runs. Without it every
@@ -53,14 +64,19 @@ export const ROOT_MISSING_MESSAGE = "Value is required";
  * and `validate(null)` would report success for a schema that declares nothing
  * required.
  */
-function rejectMissingRoot(): ValidationResult<unknown> {
+function rejectMissingRoot(
+  config: ResolvedGlobalConfig
+): ValidationResult<unknown> {
   return {
     valid: false,
     issues: Object.freeze([
       Object.freeze({
         path: "",
         code: ROOT_MISSING_CODE,
-        message: ROOT_MISSING_MESSAGE,
+        message: config.rootMissingMessage,
+        // Not config.defaultSeverity. A warning here would let validate(null)
+        // report success for a schema that declares nothing required, which is
+        // the outcome this rejection exists to prevent.
         severity: "error" as const,
       }),
     ]),
@@ -113,13 +129,14 @@ function nodeCanRecurse(node: ArrayNode): boolean {
 
 function runRoot(
   plan: ValidationPlan,
+  config: ResolvedGlobalConfig,
   value: unknown,
   options: ValidateOptions | undefined,
   targets: readonly ArrayWriteTarget[],
   shouldApplyTransforms: boolean,
   canRecurse: boolean
 ): ValidationResult<unknown> {
-  if (value === null || value === undefined) return rejectMissingRoot();
+  if (value === null || value === undefined) return rejectMissingRoot(config);
   const sink = new IssueSink(resolveAbortPolicy(options));
   const output = runPlan(
     plan,
@@ -145,16 +162,28 @@ function runRoot(
   return { valid: true, data: output, issues };
 }
 
-export function createValidator(plan: ValidationPlan): PlanValidator {
+export function createValidator(
+  plan: ValidationPlan,
+  config: ResolvedGlobalConfig = DEFAULT_GLOBAL_CONFIG
+): PlanValidator {
   const parseTargets = createPlanWriteTargets(plan);
   const shouldWriteOutput = parseTargets !== null;
   const canRecurse = planCanRecurse(plan);
   return {
     validate: (value, options) =>
-      runRoot(plan, value, options, NO_WRITE_TARGETS, false, canRecurse),
+      runRoot(
+        plan,
+        config,
+        value,
+        options,
+        NO_WRITE_TARGETS,
+        false,
+        canRecurse
+      ),
     parse: (value, options) =>
       runRoot(
         plan,
+        config,
         value,
         options,
         parseTargets ?? NO_WRITE_TARGETS,

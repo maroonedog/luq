@@ -7,9 +7,9 @@ import { PASS, fail } from "../../../src/types";
 import type { MessageContext } from "../../../src/types";
 import {
   ROOT_MISSING_CODE,
-  ROOT_MISSING_MESSAGE,
   createValidator,
 } from "../../../src/runtime/create-validator";
+import { DEFAULT_GLOBAL_CONFIG } from "../../../src/types/global-config";
 import type { FieldDeclaration } from "../../../src/compile/validation-plan.types";
 import {
   makeGate,
@@ -98,7 +98,7 @@ describe("valid, issues and data", () => {
         {
           path: "",
           code: ROOT_MISSING_CODE,
-          message: ROOT_MISSING_MESSAGE,
+          message: DEFAULT_GLOBAL_CONFIG.rootMissingMessage,
           severity: "error",
         },
       ]);
