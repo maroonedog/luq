@@ -3,12 +3,25 @@ import type { PluginBag, SlotPlugins } from "./plugin-bag.types";
 import type { ChainState } from "./chain-state.types";
 import type { ChainMethod } from "./chain-method.types";
 import type { RefineMethods } from "./refine-methods.types";
+import type { SlotCatalog } from "./slot-catalog.generated";
 
 /** The phantom is REQUIRED, not optional. */
 export interface ChainMarks<TValue, TState extends ChainState> {
   readonly value: TValue;
   readonly state: TState;
 }
+
+/**
+ * Every method this slot offers that this builder did not import.
+ *
+ * An `Omit`, so a method the bag DOES carry keeps its real signature: the key
+ * is removed from this half before the intersection, and the two halves can
+ * never describe the same method.
+ */
+type NotImported<B extends PluginBag, S extends TypeName> = Omit<
+  SlotCatalog[S],
+  keyof SlotPlugins<B, S>
+>;
 
 export type FieldChain<
   B extends PluginBag,
@@ -25,7 +38,8 @@ export type FieldChain<
     TValue,
     TState
   >;
-} & RefineMethods<B, TRoot, TValue, TState> & {
+} & NotImported<B, S> &
+  RefineMethods<B, TRoot, TValue, TState> & {
     readonly __chain: ChainMarks<TValue, TState>;
   };
 

@@ -14,6 +14,13 @@ function parsePackageJson(repositoryRoot: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
+/** The `files` list, i.e. what npm puts in the tarball besides its own three. */
+export function readPublishedFiles(repositoryRoot: string): readonly string[] {
+  const files = parsePackageJson(repositoryRoot)["files"];
+  if (!Array.isArray(files)) return [];
+  return files.filter((entry): entry is string => typeof entry === "string");
+}
+
 export function readPackageName(repositoryRoot: string): string {
   const name = parsePackageJson(repositoryRoot)["name"];
   if (typeof name !== "string" || name.length === 0) {

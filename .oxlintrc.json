@@ -27,6 +27,14 @@
   },
   "overrides": [
     {
+      // A generated file's length is the plugin count, not a judgement anyone
+      // made, and the generator is held to the 200-line limit like every other
+      // source file. Capping the OUTPUT would only push it into emitting
+      // denser lines, which is the opposite of what the limit is for.
+      "files": ["**/*.generated.ts"],
+      "rules": { "max-lines": "off" }
+    },
+    {
       "files": ["**/*.test.ts", "test/**/*.ts"],
       "rules": {
         "max-lines": "off",
