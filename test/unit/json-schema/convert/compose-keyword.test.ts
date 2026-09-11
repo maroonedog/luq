@@ -119,6 +119,44 @@ describe("if / then / else", () => {
   });
 });
 
+describe("compose-keyword: an applicator with no arms at all", () => {
+  // Draft-07 §6.7 gives allOf / anyOf / oneOf a NON-EMPTY array, so an empty one
+  // is a document nobody should write — but the converter still has to answer
+  // for it, and "no arms" means "no constraint". Building a composite anyway
+  // would answer the opposite for two of the three: with zero branches there is
+  // no arm that accepts, so `anyOf: []` would refuse every value, and no arm
+  // that is THE one, so `oneOf: []` would refuse every value too.
+  it("constrains nothing, whichever of the three keywords it is", () => {
+    expect(validateA({ allOf: [] }, "anything")).toBe(true);
+    expect(validateA({ anyOf: [] }, "anything")).toBe(true);
+    expect(validateA({ oneOf: [] }, "anything")).toBe(true);
+    expect(validateA({ anyOf: [] }, 0)).toBe(true);
+    expect(validateA({ oneOf: [] }, { nested: true })).toBe(true);
+  });
+
+  it("reports no issue under the keyword's own code", () => {
+    // Both aborts are switched off because each of them ends a field at its
+    // first issue: the failing `minLength` would otherwise mask anything the
+    // empty applicators added after it, and what they add is the whole point.
+    // The sibling is there so the field fails for a reason we can name, which
+    // is what makes the reported code list an assertion and not an empty set.
+    const outcome = fromJsonSchema(jsonSchemaBagFixture, {
+      properties: { a: { allOf: [], anyOf: [], oneOf: [], minLength: 3 } },
+    }).validate(
+      { a: "ab" },
+      { abortEarly: false, abortEarlyOnEachField: false }
+    );
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    expect(outcome.issues.map((issue) => issue.code)).toEqual(["stringMin"]);
+  });
+
+  it("leaves the sibling keywords of the same schema alone", () => {
+    expect(validateA({ anyOf: [], minLength: 3 }, "abc")).toBe(true);
+    expect(validateA({ anyOf: [], minLength: 3 }, "ab")).toBe(false);
+  });
+});
+
 describe("applicators nest", () => {
   it("survives anyOf inside allOf inside not", () => {
     const schema = {

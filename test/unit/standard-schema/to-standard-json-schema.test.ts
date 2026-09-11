@@ -16,6 +16,7 @@ import { jsonSchemaBagFixture } from "../json-schema/convert/json-schema-bag-fix
 import {
   DeclarationsUnavailableError,
   toStandardJsonSchema,
+  toStandardSchema,
   UnrepresentableRuleError,
   UnsupportedJsonSchemaTargetError,
 } from "../../../src/standard-schema";
@@ -126,6 +127,44 @@ describe("what the emitted schema says", () => {
     expect(properties["note"]).toEqual({
       type: ["string", "null"],
       minLength: 1,
+    });
+  });
+
+  it("makes an array out of the element path alone", () => {
+    // Nothing declares `tags` itself, so that node arrives with no schema of
+    // its own. Descending through `[*]` is the only evidence it is an array,
+    // and without writing `type: "array"` here the emitted schema would say
+    // `items` on a node of no stated type.
+    const elementOnly = Builder()
+      .use(requiredPlugin)
+      .use(stringMinPlugin)
+      .for<{ readonly tags: readonly { readonly label: string }[] }>()
+      .v("tags[*].label", (b) => b.string.required().min(1))
+      .build();
+    const schema = toStandardJsonSchema(elementOnly)[
+      "~standard"
+    ].jsonSchema.input({ target: "draft-07" });
+    expect((schema["properties"] as Record<string, unknown>)["tags"]).toEqual({
+      type: "array",
+      items: {
+        type: "object",
+        properties: { label: { type: "string", minLength: 1 } },
+        required: ["label"],
+      },
+    });
+  });
+
+  it("still says object when not one field was declared", () => {
+    // The builder only accepts an object type, so the root is an object even
+    // with nothing under it. An empty schema would instead read as "anything".
+    const nothingDeclared = Builder().for<Model>().build();
+    expect(
+      toStandardJsonSchema(nothingDeclared)["~standard"].jsonSchema.input({
+        target: "draft-07",
+      })
+    ).toEqual({
+      $schema: "http://json-schema.org/draft-07/schema#",
+      type: "object",
     });
   });
 
@@ -286,6 +325,56 @@ describe("declarations JSON Schema cannot express", () => {
         libraryOptions: { unrepresentable: "omit" },
       })
     ).toThrow(DeclarationsUnavailableError);
+  });
+});
+
+describe("toStandardJsonSchema given a validator it has no record for", () => {
+  // The record of what was declared is kept against the exact object build()
+  // returned, and never on the validator itself. toStandardSchema answers with
+  // a NEW object carrying copies of the validator's members, so that answer is
+  // not the object the record was kept for — asking it for a schema finds
+  // nothing, and nothing is not the same as "no constraints".
+  const copied = toStandardSchema(built);
+
+  it("refuses rather than emitting a schema that permits everything", () => {
+    expect(() =>
+      toStandardJsonSchema(copied)["~standard"].jsonSchema.input({
+        target: "draft-07",
+      })
+    ).toThrow(DeclarationsUnavailableError);
+  });
+
+  it("names no field, there being no field it could name", () => {
+    // The wording has to hold this apart from the per-field refusal below; a
+    // message naming a field that was never identified sends the reader
+    // looking for a problem in the wrong place.
+    expect(() =>
+      toStandardJsonSchema(copied)["~standard"].jsonSchema.input({
+        target: "draft-07",
+      })
+    ).toThrow(/^This validator carries no declarations, so no JSON Schema/);
+  });
+
+  it("names the field when the refusal came from one field", () => {
+    // A validator assembled from a document does have a field list; what it
+    // lacks is a record for each field. That refusal can and does say which.
+    const fromSchema = fromJsonSchema(jsonSchemaBagFixture, {
+      type: "object",
+      properties: { a: { type: "string", minLength: 2 } },
+    });
+    expect(() =>
+      toStandardJsonSchema(fromSchema)["~standard"].jsonSchema.input({
+        target: "draft-07",
+      })
+    ).toThrow(/^"a" carries no declarations, so no JSON Schema/);
+  });
+
+  it("checks the target first, so a wrong target is not reported as this", () => {
+    expect(() =>
+      toStandardJsonSchema(copied)["~standard"].jsonSchema.input({
+        target: "draft-4",
+      })
+    ).toThrow(UnsupportedJsonSchemaTargetError);
   });
 });
 

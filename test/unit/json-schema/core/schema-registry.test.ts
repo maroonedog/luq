@@ -121,4 +121,79 @@ describe("createSchemaRegistry", () => {
     expect(registry.findIdentified("http://x/not.json")?.schema).toBe(inNot);
     expect(registry.findIdentified("http://x/item.json")?.schema).toBe(inItems);
   });
+
+  // `items` is the one keyword written either way, so the index tries it as
+  // both. The single-schema spelling therefore reaches the list walker with an
+  // object, and the list walker has to leave it alone rather than iterate it.
+  it("indexes items in its single-schema spelling", () => {
+    const inItems: Draft07SchemaObject = {
+      $id: "http://x/item.json",
+      type: "number",
+    };
+    const registry = createSchemaRegistry({ items: inItems });
+    expect(registry.findIdentified("http://x/item.json")?.schema).toBe(inItems);
+  });
+});
+
+// A schema is JSON somebody else wrote, so a keyword can hold a shape the
+// draft does not allow. Indexing must survive it: losing every `$id` in the
+// document because one member is the wrong type would turn a typo into a
+// validator that silently checks less.
+describe("schema-registry survives a keyword of the wrong shape", () => {
+  it("keeps indexing when a map-valued keyword is not a map", () => {
+    const document = JSON.parse(
+      String.raw`{"$id": "http://x/a.json", "definitions": null,
+        "not": {"$id": "http://x/n.json", "type": "string"}}`
+    ) as Draft07SchemaObject;
+    const registry = createSchemaRegistry(document);
+    expect(registry.findIdentified("http://x/a.json")?.schema).toBe(document);
+    expect(registry.findIdentified("http://x/n.json")?.baseUri).toBe(
+      "http://x/n.json"
+    );
+  });
+
+  it("keeps indexing when a list-valued keyword is not a list", () => {
+    const document = JSON.parse(
+      String.raw`{"$id": "http://x/a.json", "allOf": 7,
+        "not": {"$id": "http://x/n.json", "type": "string"}}`
+    ) as Draft07SchemaObject;
+    const registry = createSchemaRegistry(document);
+    expect(registry.findIdentified("http://x/n.json")?.schema).toEqual({
+      $id: "http://x/n.json",
+      type: "string",
+    });
+  });
+});
+
+describe("schema-registry indexes only what the caller supplied", () => {
+  it("skips a supplied entry that is not a schema and keeps the rest", () => {
+    // The unusable entry is FIRST: a registry that stopped at it would leave
+    // the good document unreachable, and a `$ref` to it would then be refused.
+    const usable: Draft07SchemaObject = { type: "integer" };
+    const registry = createSchemaRegistry(
+      {},
+      {
+        "http://host/broken.json": "<!doctype html>",
+        "http://host/int.json": usable,
+      }
+    );
+    expect(registry.findIdentified("http://host/broken.json")).toBeUndefined();
+    expect(registry.findIdentified("http://host/int.json")?.schema).toBe(
+      usable
+    );
+  });
+
+  it("indexes a nested $id inside a supplied document", () => {
+    const nested: Draft07SchemaObject = { $id: "inner.json", type: "boolean" };
+    const registry = createSchemaRegistry(
+      {},
+      {
+        "http://host/broken.json": "<!doctype html>",
+        "http://host/outer.json": { definitions: { nested } },
+      }
+    );
+    expect(registry.findIdentified("http://host/inner.json")?.schema).toBe(
+      nested
+    );
+  });
 });

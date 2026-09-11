@@ -11,11 +11,13 @@
 //     Legacy truncated at maxDepth as a SUCCESS, which meant a structure deeper
 //     than the limit silently skipped every rule below it.
 //
-// The nested plan runs into its OWN sink and its OWN index stack, and its
-// issues are re-based onto the entering field's path afterwards. That is what
-// makes `node.child.name` come out right: the plan's fields are declared
-// relative to the plan's subject and know nothing about where they were
-// re-entered from.
+// The nested plan runs into its OWN sink, and its OWN index stack STARTED AT
+// the entering field's path. That is what makes `node.child.name` come out
+// right: the plan's fields are declared relative to the plan's subject and know
+// nothing about where they were re-entered from, so the stack is what carries
+// the descent. Giving it the path up front rather than rewriting the issues
+// afterwards is also what makes a message agree with the path beside it — a
+// message is rendered once, from that path, at the moment the issue is built.
 //
 // A re-entry never writes. RecursionRunner returns void by contract, so there
 // is nowhere for a transformed subtree to go; recursion is validation, and
@@ -28,7 +30,7 @@ import { createIssue } from "./create-issue";
 import { IndexStack } from "./index-stack";
 import { IssueSink } from "./issue-sink";
 import type { AbortPolicy } from "./issue-sink";
-import { prefixIssuePaths, runPlan } from "./run-plan";
+import { runPlan } from "./run-plan";
 import type { RecursionRunner } from "./run-field";
 
 /**
@@ -122,12 +124,12 @@ function bindRecursionRunner(
     runPlan(policy.plan.resolve(), value, {
       root: host.root,
       sink: nested,
-      indices: new IndexStack(),
+      indices: new IndexStack(path),
       shouldApplyTransforms: false,
       runRecursion: bindRecursionRunner({ ...host, sink: nested }, progress),
       external: host.external,
     });
-    for (const issue of prefixIssuePaths(path, nested.issues)) {
+    for (const issue of nested.issues) {
       host.sink.add(issue);
     }
   }

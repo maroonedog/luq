@@ -3,7 +3,7 @@
 // run which produces no output hands back the very object it was given.
 // ===========================================================================
 import { PASS, fail } from "../../../src/types";
-import { prefixIssuePaths, runPlan } from "../../../src/runtime/run-plan";
+import { runPlan } from "../../../src/runtime/run-plan";
 import {
   NO_WRITE_TARGETS,
   createArrayWriteTargets,
@@ -181,39 +181,6 @@ describe("what a run gives back", () => {
     expect(runPlan(harness.plan, root, harness.context, NO_WRITE_TARGETS)).toBe(
       root
     );
-  });
-});
-
-describe("prefixIssuePaths", () => {
-  it("returns the very same list for the root prefix", () => {
-    const issues = Object.freeze([
-      { path: "name", code: "c", message: "m", severity: "error" as const },
-    ]);
-    expect(prefixIssuePaths("", issues)).toBe(issues);
-  });
-
-  it("joins with a dot and keeps an index attached", () => {
-    const issues = [
-      { path: "name", code: "c", message: "m", severity: "error" as const },
-      { path: "tags[2]", code: "d", message: "m", severity: "error" as const },
-      { path: "", code: "e", message: "m", severity: "error" as const },
-    ];
-    expect(prefixIssuePaths("user", issues).map((i) => i.path)).toEqual([
-      "user.name",
-      "user.tags[2]",
-      "user",
-    ]);
-  });
-
-  it("does not mutate the issues it was given", () => {
-    const issue = {
-      path: "name",
-      code: "c",
-      message: "m",
-      severity: "error" as const,
-    };
-    prefixIssuePaths("user", [issue]);
-    expect(issue.path).toBe("name");
   });
 });
 

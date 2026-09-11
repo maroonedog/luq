@@ -24,6 +24,14 @@
 // stack lives for one validate() call, and 10k elements must not allocate 10k
 // index arrays. It is also why FieldRuleContext remembers the path it built —
 // this stack has moved on by the time a retained context could read it.
+//
+// A NESTED run starts from a BASE PATH rather than from the root. A branch plan
+// and a recursive re-entry each declare their fields against their own subject,
+// so a field renders `name` where the consumer must read `user.name`. The base
+// is handed to the stack, so the path is right the first time it is built — and
+// the message, which is rendered from that same path, names the field the issue
+// reports. Rewriting the path afterwards cannot do that: by then the message has
+// already been rendered against the short one.
 // ===========================================================================
 
 export class IndexStack {
@@ -38,6 +46,12 @@ export class IndexStack {
    * raises no issue never renders its own prefix at all.
    */
   private currentPrefix: string | null = null;
+
+  /**
+   * Where this run sits inside the whole value: `""` for the run the caller
+   * started, and the entering rule's path for a branch or a recursive re-entry.
+   */
+  constructor(private readonly basePath: string = "") {}
 
   /** How many array levels are currently open. */
   get depth(): number {
@@ -62,7 +76,7 @@ export class IndexStack {
   private readTop(): string {
     const already = this.currentPrefix;
     if (already !== null) return already;
-    let built = "";
+    let built = this.basePath;
     for (let i = 0; i < this.nodePaths.length; i += 1) {
       const nodePath = this.nodePaths[i];
       const index = this.openIndices[i];
@@ -73,7 +87,10 @@ export class IndexStack {
     return built;
   }
 
-  /** `""` at the root, `items[0]` inside the first element of `items`. */
+  /**
+   * `""` at the root of the run the caller started, `items[0]` inside the first
+   * element of `items`, and the base path when a nested run has no array open.
+   */
   get prefix(): string {
     return this.readTop();
   }

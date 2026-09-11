@@ -25,7 +25,7 @@ import { IndexStack } from "./index-stack";
 import { IssueSink } from "./issue-sink";
 import type { AbortPolicy } from "./issue-sink";
 import { createRecursionRunner } from "./run-recursion";
-import { prefixIssuePaths, runPlan } from "./run-plan";
+import { runPlan } from "./run-plan";
 
 /**
  * A branch is a decision, not a report: the first failure already answers it,
@@ -49,7 +49,13 @@ export function createBranchExecutor(): BranchExecutor {
       runPlan(plan, value, {
         root: ruleContext.root,
         sink,
-        indices: new IndexStack(),
+        // The branch plan's fields are declared against the branch's own
+        // subject, so a field of it renders `name` while the consumer must read
+        // `user.name`. Starting the stack at the composite's path is what makes
+        // the cause's message agree with the cause's path: both come from here,
+        // and a message rendered against the short path could not be corrected
+        // afterwards.
+        indices: new IndexStack(ruleContext.path),
         shouldApplyTransforms: false,
         runRecursion: createRecursionRunner({
           root: ruleContext.root,
@@ -60,8 +66,7 @@ export function createBranchExecutor(): BranchExecutor {
         external: ruleContext.external,
       });
       if (sink.count === 0) return PASS;
-      const causes = prefixIssuePaths(ruleContext.path, sink.issues);
-      return fail({ causes: Object.freeze(causes) });
+      return fail({ causes: Object.freeze(sink.issues) });
     },
   };
 }

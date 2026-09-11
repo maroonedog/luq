@@ -25,6 +25,7 @@ import {
   readChildExpansion,
   readRuleExpansion,
 } from "../../../../src/json-schema/structural-expansion.types";
+import { UnsupportedKeywordError } from "../../../../src/json-schema/unsupported-keyword-error";
 import { fromJsonSchema } from "../../../../src/json-schema/build-from-schema";
 import { jsonSchemaBagFixture } from "./json-schema-bag-fixture";
 
@@ -183,6 +184,54 @@ describe("every structural keyword changes a verdict", () => {
       expect(validator.validate(declared.value).valid).toBe(false);
     }
   );
+});
+
+describe("schema-to-declarations: the definition containers", () => {
+  // `$defs` is listed among the names from other drafts that are refused BY
+  // NAME, and it is the one entry in that list which still has to work: a
+  // 2019-09 document's pointers dangle without it. So the keyword has two
+  // answers on the same document — refused as a foreign name, accepted as a
+  // container of schemas — and only the container test decides between them.
+  const withDefs = {
+    $defs: { small: { maxLength: 2 } },
+    properties: { a: { $ref: "#/$defs/small" } },
+    minProperties: 1,
+  };
+
+  it("passes `$defs` over as an annotation instead of refusing it", () => {
+    expect(() => fromJsonSchema(jsonSchemaBagFixture, withDefs)).not.toThrow();
+  });
+
+  it("keeps the rest of the document working around it", () => {
+    const validator = fromJsonSchema(jsonSchemaBagFixture, withDefs);
+    expect(validator.validate({ a: "ab" }).valid).toBe(true);
+    // The CODE is asserted, not only the verdict: a pointer into `$defs` that
+    // resolved to nothing would leave the field with no rules at all, and a
+    // document that refused `a` for some unrelated reason would answer false
+    // just the same. Only `stringMax` says the `maxLength` behind the `$ref`
+    // is what ran.
+    const tooLong = validator.validate({ a: "abc" });
+    expect(tooLong.valid).toBe(false);
+    if (tooLong.valid) return;
+    expect(tooLong.issues.map((issue) => issue.code)).toEqual(["stringMax"]);
+    expect(validator.validate({}).valid).toBe(false);
+  });
+
+  it("still refuses the 2019-09 names that are NOT containers", () => {
+    // The message is asserted as well as the class, because the same class is
+    // what every other refusal in the conversion throws: without the name in
+    // it, a refusal aimed at `type` would satisfy this just as well.
+    expect(() =>
+      fromJsonSchema(jsonSchemaBagFixture, {
+        properties: { a: { $anchor: "small", type: "string" } },
+      })
+    ).toThrow(UnsupportedKeywordError);
+    expect(() =>
+      fromJsonSchema(jsonSchemaBagFixture, {
+        properties: { a: { $anchor: "small", type: "string" } },
+      })
+    ).toThrow(/\$anchor/);
+  });
 });
 
 describe("readChildSchemas", () => {
