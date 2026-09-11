@@ -107,6 +107,63 @@ If trusted publishing is ever unavailable, the fallback is an automation token
 worse: it is a long-lived credential that publishes as you, stored in a place
 that is not npm.
 
+## The second package: @maroonedog/luq-codegen
+
+`luq-codegen/` publishes separately, on its own version and its own tag.
+
+| | Library | Generator |
+|---|---|---|
+| Package | `@maroonedog/luq` | `@maroonedog/luq-codegen` |
+| Tag | `v2.4.0` | `codegen-v0.1.0` |
+| Workflow | `publish.yml` | `publish-codegen.yml` |
+
+Two tag patterns, because the two version independently: a single `v*` pattern
+would mean both, and pushing one tag would publish a generator whose version
+nobody chose. Two workflow files, because npm registers a trusted publisher per
+package **and per workflow filename**, so one file cannot be registered for
+both.
+
+**Order is not optional.** The generator's `peerDependencies` names
+`@maroonedog/luq` at or above the release that carries `./schema-tooling`.
+Until that version is on npm, installing the generator fails with `ETARGET` for
+anyone. Nothing local catches it: every install in this repository resolves the
+library over a `file:` link, and npm does not enforce a peer range across one.
+So the library goes first, always.
+
+Its own one-time npm setup is the same five steps as above, against the
+`@maroonedog/luq-codegen` package and the workflow filename
+`publish-codegen.yml`.
+
+**The first publish of a package npm has never seen cannot use trusted
+publishing**, because the settings page a publisher is registered on belongs to
+a package that does not exist yet. It has to be bootstrapped by hand once:
+
+```bash
+cd luq-codegen && npm publish
+```
+
+That works because the generator asks for provenance in the **workflow**
+(`npm publish --provenance`) rather than in `publishConfig`, which is where the
+library asks for it. The difference is deliberate and was learned the hard way:
+provenance is generated from a CI provider's OIDC identity, so `publishConfig`
+provenance makes `npm publish` refuse to run anywhere else at all —
+
+```
+npm ERR! code EUSAGE
+npm ERR! Automatic provenance generation not supported for provider: null
+```
+
+— and `--no-provenance` does not get past it, because `publishConfig` wins over
+the flag. A package that must be bootstrapped by hand once therefore cannot
+carry provenance in `publishConfig`, or the bootstrap requires editing
+package.json to get through it.
+
+The bootstrap release ships without provenance. Every release after it goes
+through the workflow and carries it.
+
+Then register the trusted publisher against the package that now exists, and
+the workflow has every release after this one.
+
 ## What CI covers
 
 Four workflows, each watching what it can actually be affected by. `push` is

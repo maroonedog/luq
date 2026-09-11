@@ -1,0 +1,126 @@
+# ===========================================================================
+# .github/workflows/publish-codegen.yml — publishing @maroonedog/luq-codegen.
+#
+# **What it watches**: `codegen-v*` tags. Two packages ship from this
+# repository and they version independently, so they cannot share a tag
+# pattern: `v2.4.0` would otherwise mean both, and pushing one tag would
+# publish a generator whose version nobody chose.
+#
+# It is a separate file from publish.yml rather than a job inside it for the
+# same reason. npm's trusted publisher is configured per package AND per
+# workflow filename, so one file publishing two packages cannot be registered
+# for both.
+#
+# Everything else is publish.yml's shape, and deliberately so: same OIDC, same
+# refusal to run when the tag and the version disagree, same refusal when the
+# version is already on npm. A release failure here should look like the one
+# there.
+# ===========================================================================
+name: publish-codegen
+
+on:
+  push:
+    tags: ["codegen-v*"]
+  # The way back in when a publish fails partway. It accepts **an existing
+  # tag** and publishes only what that tag points at.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish, e.g. codegen-v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  # Needed to obtain the OIDC identity. Without it neither trusted publishing
+  # nor provenance works.
+  id-token: write
+  contents: read
+
+concurrency:
+  group: publish-codegen-${{ github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@maroonedog/luq-codegen
+    steps:
+      # The generator's suite reads the library's schema layer, and the library
+      # needs its submodule to build.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          submodules: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # The npm bundled with this runner's Node predates OIDC. Pinned to a
+      # major, not @latest: written as @latest this failed a real release,
+      # because the newest npm required a Node newer than the runner's.
+      - name: Use an npm that knows about trusted publishing
+        run: |
+          npm install -g npm@11
+          npm --version
+
+      # Publishing with the tag and package.json out of step puts one version
+      # on npm under another version's name. The tag carries a prefix so the
+      # two packages' tags cannot be confused for each other, and it is
+      # stripped before the comparison.
+      - name: Tag must match the version in package.json
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          PKG="codegen-v$(node -p "require('./luq-codegen/package.json').version")"
+          echo "tag=$TAG  package.json=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag $TAG does not match $PKG in luq-codegen/package.json"
+            exit 1
+          fi
+
+      # A published version cannot be overwritten. npm refuses it too, but only
+      # after the whole verify has run to reach it.
+      - name: Version must not already be on npm
+        run: |
+          VERSION="$(node -p "require('./luq-codegen/package.json').version")"
+          NAME="$(node -p "require('./luq-codegen/package.json').name")"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::$NAME@$VERSION is already published; npm versions are immutable"
+            exit 1
+          fi
+          echo "$NAME@$VERSION is not on npm yet"
+
+      # The generator names the library by package specifier and resolves it
+      # through its dist, so the library is built first and installed into the
+      # sub-package from this checkout.
+      - run: npm ci
+      - run: npm run build
+
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: luq-codegen
+
+      # `npm publish` runs prepublishOnly, which is where the generator's
+      # verify happens — typecheck, build, dist gates, tests.
+      #
+      # --provenance is a flag here rather than publishConfig, unlike the
+      # library. Provenance is generated from a CI provider's OIDC identity, so
+      # asking for it in package.json makes `npm publish` REFUSE to run
+      # anywhere else — including the one hand publish that has to bootstrap a
+      # package npm has never seen, since a trusted publisher cannot be
+      # registered against a package that does not exist. Requesting it where
+      # it can actually be produced keeps that bootstrap possible without
+      # anyone editing package.json to get through it.
+      - name: Publish
+        run: npm publish --provenance
+        working-directory: luq-codegen
+
+      - name: Confirm what npm now serves
+        run: |
+          NAME="$(node -p "require('./luq-codegen/package.json').name")"
+          sleep 5
+          npm view "$NAME" version
+          npm view "$NAME" dist-tags
