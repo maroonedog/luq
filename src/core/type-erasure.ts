@@ -69,3 +69,26 @@ export function eraseBuilderSurface<T extends object>(assembled: object): T {
 export function eraseSchemaValidator<T>(planBacked: object): T {
   return planBacked as unknown as T;
 }
+
+/**
+ * Why: useField runs a rule's callback against the BUILDER's slots, and the
+ * two are typed on different bags — the rule's, and the builder's. The
+ * signature proves the relation between them (`keyof BRule extends keyof B`,
+ * i.e. the builder carries at least what the rule was minted from), but that
+ * is a statement about two type parameters and there is no way to write the
+ * value side so the compiler carries it through.
+ *
+ * It used to need no erasure because both sides named one bag `B` and a richer
+ * slot object was simply assignable to a leaner one. That stopped holding when
+ * a slot began carrying a member for every method it does NOT have: where the
+ * rule's bag reports PluginNotImported the builder's may have the real method,
+ * and those two are not assignable in either direction.
+ *
+ * Soundness depends on the subset relation the signature states. The callback
+ * can only call methods its own bag declares, every one of those keys is in
+ * the builder's bag, and a key in the builder's bag is a real method rather
+ * than the not-imported marker.
+ */
+export function eraseRuleDefineToBuilderSlots<T>(define: (slots: never) => T) {
+  return define as unknown as (slots: unknown) => T;
+}

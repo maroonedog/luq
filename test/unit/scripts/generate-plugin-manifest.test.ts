@@ -21,7 +21,7 @@ function readManifest(root: string): string {
 
 describe("renderPluginManifest", () => {
   it("emits valid TypeScript for no plugins at all", () => {
-    const rendered = renderPluginManifest({ entries: [] });
+    const rendered = renderPluginManifest({ entries: [] }, () => []);
     expect(rendered).toContain(
       "export const PLUGIN_MANIFEST: readonly PluginManifestEntry[] = [];"
     );
@@ -42,9 +42,20 @@ describe("renderPluginManifest", () => {
           exportedSymbols: [`plugin${index}Plugin`],
         })),
       };
-      expect(renderPluginManifest(inflated).split("\n").length).toBeLessThan(
-        200
-      );
+      // One surface per entry, which is what a real plugin has: the manifest
+      // carries the method and slots inline, so the line count has to be
+      // measured with them present rather than on a bare entry.
+      const surfacesOf = () => [
+        {
+          name: "plugin",
+          symbol: "pluginPlugin",
+          method: "check",
+          slots: ["string"],
+        },
+      ];
+      expect(
+        renderPluginManifest(inflated, surfacesOf).split("\n").length
+      ).toBeLessThan(200);
     });
   });
 });
@@ -94,7 +105,11 @@ describe("generatePluginManifest", () => {
       writeSeedFile(
         root,
         "src/plugins/required/index.ts",
-        "export const requiredPlugin = {};\n"
+        // Shaped like a plugin, because the manifest now records the method
+        // and slots read off the object. A stub without them is refused rather
+        // than recorded with an empty method, which would send a reader to an
+        // import that adds nothing.
+        'export const requiredPlugin = { name: "required", method: "required", slots: ["any"] };\n'
       );
       expect(generatePluginManifest(root)).toBe(true);
       expect(readManifest(root)).toContain('subpathName: "required"');

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/img/library_image.png" alt="Luq Logo" width="300" />
+  <img src="https://raw.githubusercontent.com/maroonedog/luq/master/public/img/library_image.png" alt="Luq Logo" width="300" />
 
   # Luq
 
@@ -97,6 +97,157 @@ npm install @maroonedog/luq
 
 Zero runtime dependencies. TypeScript 5.0 or later.
 
+## The whole API
+
+Four calls, in this order. There is no registry, no global setup and no config
+file; a builder is built where it is used and carries its own settings.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+
+// The type is yours, already written, wherever it already lives.
+interface Order {
+  readonly reference: string;
+  readonly quantity: number;
+  readonly note?: string;
+}
+
+const orderValidator = Builder()
+  .use(requiredPlugin) //   every rule you can call is a plugin you imported
+  .use(stringMinPlugin)
+  .use(numberMinPlugin)
+  .for<Order>() //          bind to the type; field paths are checked against it
+  .v("reference", (b) => b.string.required().min(3))
+  .v("quantity", (b) => b.number.required().min(1))
+  .build(); //              returns Validator<Order>
+
+const result = orderValidator.validate({ reference: "ab", quantity: 0 });
+if (!result.valid) {
+  for (const issue of result.issues) {
+    // issue.path  "reference"   — where, with array indices filled in
+    // issue.code  "stringMin"   — which rule, stable across messages
+    // issue.message             — the text, overridable per call
+    // issue.severity "error"    — only "error" makes the value invalid
+  }
+}
+```
+
+`.v(path, chain)` declares rules for one field. A path you do not declare is
+not validated, not required and not read, so covering a type partly is a normal
+state rather than a half-finished one.
+
+### What a built validator gives you
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { transformPlugin } from "@maroonedog/luq/plugins/transform";
+
+interface Account {
+  readonly email: string;
+}
+
+const accounts = Builder()
+  .use(requiredPlugin)
+  .use(transformPlugin)
+  .for<Account>()
+  .v("email", (b) => b.string.required().transform((v) => v.toLowerCase()))
+  .build();
+
+accounts.validate({ email: "A@B.COM" }); // judges; never applies a transform
+accounts.parse({ email: "A@B.COM" }); //    judges, then applies transforms
+accounts.pick("email"); //                  one field, pre-resolved to its path
+accounts.pickAll(["email"]); //             several fields, same plan
+```
+
+`validate` and `parse` return the same discriminated union: `{ valid: true,
+data, issues }` or `{ valid: false, issues }`. `validate` hands back the object
+you passed, by identity, when nothing was written.
+
+### Slots
+
+`b` offers one slot per kind: `b.string`, `b.number`, `b.boolean`, `b.date`,
+`b.array`, `b.tuple`, `b.object`, `b.union`, `b.any`. The slot must match the
+field's declared type, and `[*]` descends into array elements:
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { arrayMinLengthPlugin } from "@maroonedog/luq/plugins/arrayMinLength";
+
+interface Basket {
+  readonly items: readonly { readonly sku: string }[];
+}
+
+const baskets = Builder()
+  .use(requiredPlugin)
+  .use(arrayMinLengthPlugin)
+  .for<Basket>()
+  .v("items", (b) => b.array.required().minLength(1))
+  .v("items[*].sku", (b) => b.string.required())
+  .build();
+```
+
+### Settings
+
+`.withConfig({ ... })` before `.use()`, resolved once at `build()`. Two
+validators built under different settings keep their own.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+interface Payload {
+  readonly id: string;
+}
+
+const strict = Builder()
+  .withConfig({ rootMissingMessage: "Request body is missing" })
+  .use(requiredPlugin)
+  .for<Payload>()
+  .v("id", (b) => b.string.required())
+  .build();
+
+strict.validate(null).valid; // false, with that message at the root path
+```
+
+## Finding the plugin for a rule
+
+Every rule is a named import, so the bundle contains what you used and nothing
+else. Two ways to get from a method to its import, both inside this package:
+
+**The compiler tells you.** Calling a method whose plugin is not in the bag is
+an error that names the symbol and the subpath:
+
+> `This expression is not callable. Type 'PluginNotImported<"min",
+> "stringMinPlugin", "@maroonedog/luq/plugins/stringMin">' has no call
+> signatures.`
+
+A misspelled method is a different error — `Property 'mim' does not exist` —
+so the two mistakes stay apart.
+
+**The manifest lists them all.** `PLUGIN_MANIFEST` ships with the package and
+maps every plugin to the method it adds, the slots it adds it to, and the
+specifier to import:
+
+```ts
+import { PLUGIN_MANIFEST } from "@maroonedog/luq/schema-tooling";
+
+const forStringMin = PLUGIN_MANIFEST.filter((entry) =>
+  entry.surfaces.some(
+    (surface) => surface.method === "min" && surface.slots.includes("string")
+  )
+);
+// [{ subpathName: "stringMin",
+//    entryPoint: "@maroonedog/luq/plugins/stringMin",
+//    exportedSymbols: ["stringMinPlugin"],
+//    surfaces: [{ symbol: "stringMinPlugin", method: "min", slots: ["string"] }],
+//    ... }]
+```
+
 ## Documentation
 
 ### **[luq.dev](https://luq.dev)**
@@ -111,8 +262,9 @@ Zero runtime dependencies. TypeScript 5.0 or later.
 | [Benchmarks](https://luq.dev/benchmarks) | bundle size and throughput, with the method |
 | [Luq or zod?](https://luq.dev/luq-or-zod) | when schema-first is the better answer |
 
-The same documentation ships in `docs/` inside this repository, so the copy at
-any tag describes that release.
+The guide is versioned with the code: `docs/` in the repository at any tag
+describes that release. It is not part of the npm tarball — what ships is this
+file, the compiled `dist/`, and `PLUGIN_MANIFEST` above.
 
 ## Status, and how this gets changed
 
@@ -121,11 +273,11 @@ Breaking changes happen in a major and nowhere else, an API being removed is
 deprecated one major ahead, and each major ships with the codemod needed to
 cross it.
 
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — `npm run verify` is the whole
+- **[CONTRIBUTING.md](https://github.com/maroonedog/luq/blob/master/CONTRIBUTING.md)** — `npm run verify` is the whole
   contract; the gates and what each one refuses
-- **[SECURITY.md](SECURITY.md)** — reporting, zero runtime dependencies, the
+- **[SECURITY.md](https://github.com/maroonedog/luq/blob/master/SECURITY.md)** — reporting, zero runtime dependencies, the
   prototype-pollution and SSRF positions, and what is *not* protected against
-- **[docs/RELEASING.md](docs/RELEASING.md)** — the release steps, the versioning
+- **[docs/RELEASING.md](https://github.com/maroonedog/luq/blob/master/docs/RELEASING.md)** — the release steps, the versioning
   policy, what each CI workflow watches, and what is still decided by hand
 
 ## About the "universal platform" goal

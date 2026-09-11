@@ -76,11 +76,17 @@ describe("the type-erasure boundary", () => {
     expect(eraseSchemaValidator<{ alpha: number }>(assembled)).toBe(assembled);
   });
 
-  it("names every escape hatch that exists, so a fifth cannot slip in", () => {
+  it("names every escape hatch that exists, so a sixth cannot slip in", () => {
     // fromJsonSchema<T> used to put its declared type back on through an
     // OVERLOAD PAIR, which TypeScript accepts on lenient compatibility rules
     // and which no reviewer of this file would ever have seen. It is a call to
     // eraseSchemaValidator now; this list is what keeps the audit complete.
+    //
+    // eraseRuleDefineToBuilderSlots is the fifth, and it is listed here because
+    // adding one is meant to be a decision rather than a side effect: useField
+    // runs a rule's callback against the builder's slots, and the relation that
+    // makes this safe — the builder carrying at least the rule's plugins — is
+    // stated between two type parameters, where the value side cannot carry it.
     const source = fs.readFileSync(
       path.join(SOURCE_ROOT, "core", "type-erasure.ts"),
       "utf8"
@@ -93,6 +99,7 @@ describe("the type-erasure boundary", () => {
       "eraseChainSurface",
       "eraseBuilderSurface",
       "eraseSchemaValidator",
+      "eraseRuleDefineToBuilderSlots",
     ]);
   });
 });
