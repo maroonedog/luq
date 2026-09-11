@@ -144,3 +144,83 @@ describe("a malformed path", () => {
     expect(() => pick("a..b")).toThrow(PathSyntaxError);
   });
 });
+
+// ===========================================================================
+// createFieldValidator: a wildcard path AND siblings, together.
+//
+// The two features meet in one place. A wildcard path cannot be written into
+// the siblings object — there is no `employees[*].name` slot in an arbitrary
+// object — so the value is wrapped into the minimal structure the pattern
+// describes and that wrapper is then MERGED onto the siblings. Each feature
+// alone is asserted above; only together do they reach the merge, and a
+// cross-field rule declared on a wildcard path can read nothing without it.
+// ===========================================================================
+describe("createFieldValidator merges a wildcard wrapper onto the siblings", () => {
+  it("lets an element rule read a sibling the caller supplied", () => {
+    const seen: unknown[] = [];
+    const declarations: readonly FieldDeclaration[] = [
+      {
+        path: "employees[*].name",
+        rules: [
+          makeCheck("seesSiblings", (_value, ctx) => {
+            seen.push(ctx.root);
+            const root = ctx.root as { company?: unknown };
+            return root.company === "acme" ? { ok: true } : fail({});
+          }),
+        ],
+      },
+    ];
+    const outcome = createFieldValidator(
+      planOf(declarations),
+      "employees[*].name"
+    ).validate("ada", { company: "acme" });
+    expect(outcome.valid).toBe(true);
+    expect(seen[0]).toEqual({ company: "acme", employees: [{ name: "ada" }] });
+  });
+
+  it("lets the wrapper win on the key the pattern names", () => {
+    const seen: unknown[] = [];
+    const declarations: readonly FieldDeclaration[] = [
+      {
+        path: "employees[*].name",
+        rules: [
+          makeCheck("recordsSubject", (_value, ctx) => {
+            seen.push(ctx.root);
+            return { ok: true };
+          }),
+          tooShort("stringMin"),
+        ],
+      },
+    ];
+    const outcome = createFieldValidator(
+      planOf(declarations),
+      "employees[*].name"
+    ).validate("ada", { employees: [{ name: "no" }, { name: "also no" }] });
+    // The caller's own `employees` is REPLACED, not appended to. Recording the
+    // subject the rule actually ran against — exactly ONE element, holding the
+    // picked value — is what separates "the wrapper won" from "the element
+    // rules never ran at all"; both would report no issue.
+    expect(seen).toEqual([{ employees: [{ name: "ada" }] }]);
+    expect(outcome.valid).toBe(true);
+    expect(outcome.issues).toEqual([]);
+  });
+
+  it("reports the picked element even when a sibling is present", () => {
+    const outcome = pick("employees[*].name").validate("ad", {
+      company: "acme",
+    });
+    expect(outcome.valid).toBe(false);
+    expect(outcome.issues.map((issue) => issue.path)).toEqual([
+      "employees[0].name",
+    ]);
+    // The code pins WHICH rule spoke: an issue raised at the same path by some
+    // other rule would otherwise satisfy the path assertion above.
+    expect(outcome.issues.map((issue) => issue.code)).toEqual(["stringMin"]);
+  });
+
+  it("does not destroy the siblings a wildcard pick was handed", () => {
+    const siblings = { company: "acme" };
+    pick("employees[*].name").validate("ada", siblings);
+    expect(siblings).toEqual({ company: "acme" });
+  });
+});

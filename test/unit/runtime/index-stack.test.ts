@@ -116,3 +116,53 @@ describe("joinIssuePath keeps the root path free of a separator", () => {
     expect(joinIssuePath(prefix, own)).toBe(expected);
   });
 });
+
+// ===========================================================================
+// A nested run starts somewhere other than the root.
+//
+// A branch plan and a recursive re-entry both declare their fields against
+// their own subject, so a field of one renders `name` while the consumer must
+// read `user.name`. The base path is what carries the difference, and it has to
+// be carried HERE rather than by correcting the issue afterwards: the message
+// is rendered from this path at the moment the issue is built, so a path fixed
+// later leaves the message naming the short one.
+// ===========================================================================
+describe("IndexStack starting from a base path", () => {
+  it("renders a field of the nested plan under the base", () => {
+    const stack = new IndexStack("user");
+    expect(stack.renderFieldPath(NAME)).toBe("user.name");
+  });
+
+  it("is the base before anything is pushed, not the root", () => {
+    const stack = new IndexStack("user");
+    expect(stack.depth).toBe(0);
+    expect(stack.prefix).toBe("user");
+  });
+
+  it("keeps the base underneath every array level it then opens", () => {
+    const stack = new IndexStack("user");
+    stack.push("tags", 2);
+    expect(stack.renderFieldPath(NAME)).toBe("user.tags[2].name");
+    stack.push("parts", 0);
+    expect(stack.renderFieldPath(ELEMENT_ITSELF)).toBe("user.tags[2].parts[0]");
+  });
+
+  it("comes back to the base when those levels close, not to the root", () => {
+    const stack = new IndexStack("user");
+    stack.push("tags", 2);
+    stack.pop();
+    expect(stack.prefix).toBe("user");
+    expect(stack.renderFieldPath(NAME)).toBe("user.name");
+  });
+
+  it("carries a base that is itself indexed", () => {
+    // The entering rule can sit inside an array of the OUTER plan, so the base
+    // it hands down already reads `rows[3]`.
+    const stack = new IndexStack("rows[3].child");
+    expect(stack.renderFieldPath(NAME)).toBe("rows[3].child.name");
+  });
+
+  it("is the plain root when no base is given", () => {
+    expect(new IndexStack().renderFieldPath(NAME)).toBe(NAME);
+  });
+});

@@ -43,6 +43,33 @@ describe("toStandardSchema", () => {
     }
   });
 
+  it("parses through the original validator, options and all", () => {
+    // Having the member is not the same as it working. This one is reached
+    // only by calling it: a copy that forwarded to the wrong validator, or
+    // dropped the options, would still answer `typeof === "function"`.
+    const schema = buildAccountSchema();
+    const accepted = schema.parse({ name: "John", age: 25 });
+    expect(accepted.valid).toBe(true);
+    expect(accepted.valid && accepted.data).toEqual({ name: "John", age: 25 });
+    const refused = schema.parse({ name: "Jo", age: 3 }, { abortEarly: false });
+    expect(refused.valid).toBe(false);
+    expect(refused.issues.map((issue) => issue.path)).toEqual(["name", "age"]);
+  });
+
+  it("picks a subset through the original validator", () => {
+    // pickAll pre-resolves the paths it was handed, so the subset it answers
+    // with has to be the one the underlying validator made, not a new shape.
+    const subset = buildAccountSchema().pickAll(["age"]);
+    expect(subset.paths).toEqual(["age"]);
+    // A short name is outside the subset, so it is not what is judged here.
+    expect(subset.validate({ name: "Jo", age: 25 }).valid).toBe(true);
+    // A refusal has to be the age bound and nothing else: "not valid" on its
+    // own would also be the answer if the subset had judged the whole object.
+    const refused = subset.validate({ name: "John", age: 3 });
+    expect(refused.valid).toBe(false);
+    expect(refused.issues.map((issue) => issue.path)).toEqual(["age"]);
+  });
+
   it("answers { value } for a valid value", () => {
     const outcome = buildAccountSchema()["~standard"].validate({
       name: "John",

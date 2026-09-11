@@ -17,9 +17,7 @@
 // copy-on-write means a run that writes cannot report through its argument, and
 // a run that writes nothing returns the very object it was handed.
 // ===========================================================================
-import type { ValidationIssue } from "../types";
 import type { ValidationPlan } from "../compile/validation-plan.types";
-import { joinIssuePath } from "./index-stack";
 import { runArrayNodes } from "./run-array-node";
 import { runField } from "./run-field";
 import type { FieldRunContext } from "./run-field";
@@ -61,27 +59,9 @@ export function runPlan(
 }
 
 /**
- * Re-bases the issues of a NESTED plan onto the path of the rule that entered
- * it. A branch's fields and a recursive re-entry's fields are both declared
- * relative to their own subject, so their issues come back as `name`; the
- * enclosing rule knows the subject sits at `user`, and the consumer must read
- * `user.name`.
- *
- * It lives here because both callers already depend on this module and neither
- * may depend on the other — run-branch creates a recursion runner, so
- * run-recursion could not own it without a cycle.
+ * A nested plan does NOT come back to have its issue paths corrected. A branch
+ * and a recursive re-entry each start their IndexStack at the entering rule's
+ * path, so every issue is built at its full path and its message is rendered
+ * from that same path. Rewriting the path afterwards used to leave the message
+ * naming the field's short name, so one issue reported two different fields.
  */
-export function prefixIssuePaths(
-  prefix: string,
-  issues: readonly ValidationIssue[]
-): readonly ValidationIssue[] {
-  if (prefix === "") return issues;
-  return issues.map((issue) =>
-    Object.freeze({
-      path: joinIssuePath(prefix, issue.path),
-      code: issue.code,
-      message: issue.message,
-      severity: issue.severity,
-    })
-  );
-}

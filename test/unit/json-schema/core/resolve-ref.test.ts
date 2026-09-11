@@ -11,7 +11,9 @@ import { RefResolutionError } from "../../../../src/json-schema/ref-resolution-e
 import {
   isResolvableRef,
   resolveRef,
+  resolveRefInScope,
 } from "../../../../src/json-schema/resolve-ref";
+import { createDocumentScope } from "../../../../src/json-schema/ref-scope";
 import type { Draft07Schema } from "../../../../src/json-schema/draft07.types";
 
 const withDefinitions: Draft07Schema = {
@@ -263,4 +265,149 @@ describe("isResolvableRef answers without throwing", () => {
     expect(isResolvableRef("https://example.com/s.json", cycle)).toBe(false);
     expect(isResolvableRef("#/definitions/nope", withDefinitions)).toBe(false);
   });
+
+  // "false" is a statement about the REFERENCE. A failure that is not about
+  // the reference must not be dressed up as one, or a document that blows the
+  // stack while being indexed reads as a merely dangling `$ref`.
+  it("rethrows a failure that is not a ref failure", () => {
+    let deep: Draft07Schema = { type: "string" };
+    for (let level = 0; level < 30000; level += 1) {
+      deep = { definitions: { inner: deep } };
+    }
+    let thrown: unknown;
+    try {
+      isResolvableRef("#/definitions/inner", deep);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(RangeError);
+    expect(thrown).not.toBeInstanceOf(RefResolutionError);
+  });
+});
+
+// `#name` is a NAME, not a location: it is answered by the registry's index of
+// `$id` anchors, never by walking a pointer.
+describe("resolve-ref resolves a plain-name fragment through the registry", () => {
+  const anchored: Draft07Schema = {
+    $id: "http://host/a.json",
+    definitions: {
+      named: { $id: "#positive", type: "integer", minimum: 1 },
+    },
+  };
+
+  it("finds the node an anchor $id names", () => {
+    expect(resolveRef("#positive", anchored)).toEqual({
+      $id: "#positive",
+      type: "integer",
+      minimum: 1,
+    });
+  });
+
+  it("names the absolute URI it looked for when no anchor matches", () => {
+    expect(() => resolveRef("#missing", anchored)).toThrow(RefResolutionError);
+    expect(() => resolveRef("#missing", anchored)).toThrow(
+      /no schema is named "http:\/\/host\/a\.json#missing"/
+    );
+  });
+});
+
+describe("resolve-ref resolves against the documents the caller supplied", () => {
+  const positiveInt: Draft07Schema = { type: "integer", minimum: 0 };
+
+  it("reads a pointer into a document from externalDocuments", () => {
+    const remote: Draft07Schema = { definitions: { positiveInt } };
+    const root: Draft07Schema = { $id: "http://host/main.json" };
+    const scope = createDocumentScope(root, {
+      "http://host/int.json": remote,
+    });
+    expect(
+      resolveRefInScope("int.json#/definitions/positiveInt", scope).schema
+    ).toEqual({ type: "integer", minimum: 0 });
+  });
+
+  it("reports the missing segment for a pointer the supplied document lacks", () => {
+    const remote: Draft07Schema = { definitions: { positiveInt } };
+    const scope = createDocumentScope({}, { "http://host/int.json": remote });
+    expect(() =>
+      resolveRefInScope("http://host/int.json#/definitions/nope", scope)
+    ).toThrow(/no schema at segment "nope"/);
+  });
+
+  // The security property, stated as a test: supplying ONE document does not
+  // open a door to any other. A URI nobody passed in is refused, not fetched.
+  it("still refuses a URI that is not in the map, however many are", () => {
+    const scope = createDocumentScope(
+      {},
+      { "http://host/a.json": { type: "string" } }
+    );
+    expect(() => resolveRefInScope("http://host/b.json", scope)).toThrow(
+      /"http:\/\/host\/b\.json" was not supplied/
+    );
+    expect(() => resolveRefInScope("http://host/b.json", scope)).toThrow(
+      /never fetches/
+    );
+  });
+
+  it("throws on a cycle that runs through two supplied documents", () => {
+    const first: Draft07Schema = {
+      $id: "http://host/a.json",
+      definitions: { loop: { $ref: "b.json#/definitions/loop" } },
+    };
+    const second: Draft07Schema = {
+      $id: "http://host/b.json",
+      definitions: { loop: { $ref: "a.json#/definitions/loop" } },
+    };
+    const scope = createDocumentScope(first, {
+      "http://host/b.json": second,
+    });
+    expect(() => resolveRefInScope("#/definitions/loop", scope)).toThrow(
+      /circular reference/
+    );
+    let message = "";
+    try {
+      resolveRefInScope("#/definitions/loop", scope);
+    } catch (error) {
+      message = error instanceof Error ? error.message : "";
+    }
+    expect(message).toContain("http://host/a.json#/definitions/loop");
+    expect(message).toContain("http://host/b.json#/definitions/loop");
+  }, 2000);
+});
+
+// The hop bound sits BEHIND the cycle detector: every link here is distinct,
+// so nothing is circular and only the bound can stop it. A chain this long is
+// not a document anybody writes by hand, which is exactly why the bound exists
+// rather than trusting the chain to end.
+describe("resolve-ref stops a chain that is long without being circular", () => {
+  it("refuses more than 1000 hops", () => {
+    const definitions: Record<string, Draft07Schema> = {};
+    const links = 1100;
+    for (let index = 0; index < links; index += 1) {
+      definitions[`d${String(index)}`] = {
+        $ref: `#/definitions/d${String(index + 1)}`,
+      };
+    }
+    definitions[`d${String(links)}`] = { type: "string" };
+    const root: Draft07Schema = { definitions };
+    expect(() => resolveRef("#/definitions/d0", root)).toThrow(
+      RefResolutionError
+    );
+    expect(() => resolveRef("#/definitions/d0", root)).toThrow(
+      /more than 1000 \$ref hops/
+    );
+  }, 5000);
+
+  it("follows a chain that stays under the bound", () => {
+    const definitions: Record<string, Draft07Schema> = {};
+    const links = 900;
+    for (let index = 0; index < links; index += 1) {
+      definitions[`d${String(index)}`] = {
+        $ref: `#/definitions/d${String(index + 1)}`,
+      };
+    }
+    definitions[`d${String(links)}`] = { type: "string" };
+    expect(resolveRef("#/definitions/d0", { definitions })).toEqual({
+      type: "string",
+    });
+  }, 5000);
 });
