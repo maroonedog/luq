@@ -190,6 +190,7 @@ dist/validators/
 # ========================================
 src/plugins/manifest.generated.ts
 src/plugins/index.generated.ts
+src/chain/slot-catalog.generated.ts
 
 # ESM probe written temporarily by the dist tests
 .dist-esm-probe.mjs
