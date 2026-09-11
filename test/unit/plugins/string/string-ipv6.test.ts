@@ -69,4 +69,29 @@ describe("stringIpv6", () => {
       .build();
     expect(firstIssue(custom, "nope").code).toBe("FORMAT_IPV6");
   });
+
+  // The zone suffix was only ever asserted in its accepting form, so every way
+  // of writing it wrongly went unchecked. A zone is a link-local scope name; a
+  // parser that shrugs at a malformed one accepts an address that names no
+  // interface.
+  describe("the RFC 6874 zone suffix", () => {
+    it.each([
+      ["fe80::1%eth0", true, "a named interface"],
+      ["fe80::1%1", true, "a numeric scope id"],
+      ["fe80::1%", false, "a '%' with nothing after it"],
+      ["fe80::1%eth0%eth1", false, "two zones"],
+      ["%eth0", false, "a zone with no address before it"],
+      ["fe80::gggg%eth0", false, "a zone does not excuse the address"],
+    ])("%p is accepted: %p — %s", (value, expected) => {
+      expect(isAccepted(ipv6, value)).toBe(expected);
+    });
+  });
+
+  it("rejects an empty group rather than reading past it", () => {
+    // A single ':' leaves an empty part. Counting it as a group would make
+    // "1:::2" and ":2" arithmetic that happens to land on eight.
+    expect(isAccepted(ipv6, ":2")).toBe(false);
+    expect(isAccepted(ipv6, "1:")).toBe(false);
+    expect(isAccepted(ipv6, "1::2:")).toBe(false);
+  });
 });
