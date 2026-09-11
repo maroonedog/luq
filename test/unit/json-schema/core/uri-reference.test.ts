@@ -81,6 +81,35 @@ describe("resolveUriReference", () => {
       "http://x/b.json"
     );
   });
+
+  // A scheme may contain digits (RFC 3986 §3.1), so `s3:` is a scheme and a
+  // reference under it is absolute — it must be normalised like any other
+  // rather than passed through as if it were a relative path.
+  it("treats a scheme containing a digit as a scheme", () => {
+    expect(resolveUriReference("", "s3://bucket/schemas/../a.json")).toBe(
+      "s3://bucket/a.json"
+    );
+  });
+
+  // A filename may contain digits too, and everything after a character that
+  // cannot appear in a scheme settles it: this is a relative reference.
+  it("does not mistake a versioned filename for a scheme", () => {
+    expect(resolveUriReference("", "v2_user.json")).toBe("v2_user.json");
+    expect(resolveUriReference("http://x/schemas/", "v2_user.json")).toBe(
+      "http://x/schemas/v2_user.json"
+    );
+  });
+
+  // "_" is not one of the characters RFC 3986 §3.1 allows in a scheme, so
+  // `a_b:c` is not an absolute base at all and there is nothing to resolve
+  // against. Accepting it as one costs the reference its normalisation: the
+  // parser refuses the base, and the reference comes back exactly as written
+  // with its dot segments still in it.
+  it("does not accept a base whose scheme holds a character a scheme cannot", () => {
+    expect(resolveUriReference("a_b:c", "http://x/a/../b.json")).toBe(
+      "http://x/b.json"
+    );
+  });
 });
 
 describe("nextBaseUri", () => {
@@ -131,5 +160,28 @@ describe("normalizeUri", () => {
 
   it("normalises an absolute URI so two spellings become one key", () => {
     expect(normalizeUri("http://x/a/../b.json")).toBe("http://x/b.json");
+  });
+});
+
+// `"http://"` names a scheme, so it is taken for an absolute URI, and then
+// there is no authority for the parser to work with. A schema can say
+// `$id: "http://"`, and one that does must not take the conversion down: the
+// string is handed back and the document simply gets an unhelpful base.
+describe("uri-reference hands back a URI the parser cannot take", () => {
+  const unparseable = "http://";
+
+  it("returns the key unchanged when it cannot be normalised", () => {
+    expect(normalizeUri(unparseable)).toBe(unparseable);
+  });
+
+  it("is the base a document declaring that $id actually gets", () => {
+    expect(nextBaseUri("", unparseable)).toBe(unparseable);
+  });
+
+  it("returns the reference unchanged when the base cannot be parsed", () => {
+    expect(resolveUriReference(unparseable, "b.json")).toBe("b.json");
+    expect(resolveUriReference(unparseable, "#/definitions/x")).toBe(
+      "#/definitions/x"
+    );
   });
 });

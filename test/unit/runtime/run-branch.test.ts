@@ -171,3 +171,37 @@ describe("a composite reaches the engine through the executor", () => {
     expect(combined).toBe(1);
   });
 });
+
+// ===========================================================================
+// A cause's message and its path describe the same failure, so they must name
+// the same field.
+//
+// The branch plan runs against its own subject, so its fields are declared as
+// `name` and know nothing about the composite sitting at `user`. Re-basing the
+// issue afterwards fixes `path` — but the message was already rendered, and a
+// plugin that interpolates the context path had rendered `name`. The consumer
+// then read `path: "user.name"` beside `message: "... at name ..."`.
+// ===========================================================================
+describe("run-branch: what a cause says about where it happened", () => {
+  it("renders the message against the same path the cause reports", () => {
+    const named = makeDetailedCheck({
+      code: "named",
+      run: () => fail({}),
+      describe: (_detail, ctx) => `failed at ${ctx.path}`,
+    });
+    const plan = planOf([{ path: "name", rules: [named] }]);
+    const outcome = createBranchExecutor().runBranch(
+      plan,
+      { name: "ada" },
+      {
+        root: {},
+        path: "user",
+      }
+    );
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    const cause = outcome.detail.causes?.[0];
+    expect(cause?.path).toBe("user.name");
+    expect(cause?.message).toBe("failed at user.name");
+  });
+});

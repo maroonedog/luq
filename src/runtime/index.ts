@@ -30,7 +30,7 @@ export {
 } from "./output-writer";
 export type { ArrayWriteTarget } from "./output-writer";
 export { runArrayNodes } from "./run-array-node";
-export { prefixIssuePaths, runPlan } from "./run-plan";
+export { runPlan } from "./run-plan";
 export { RECURSION_ABORT_POLICY, createRecursionRunner } from "./run-recursion";
 export type { RecursionHost } from "./run-recursion";
 export { BRANCH_ABORT_POLICY, createBranchExecutor } from "./run-branch";

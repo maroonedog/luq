@@ -4,6 +4,7 @@
 // runner that failed to terminate would hang this suite rather than pass it.
 // ===========================================================================
 import { fail } from "../../../src/types";
+import { recursive } from "../../../src/plugin-kit/create-rule";
 import { runPlan } from "../../../src/runtime/run-plan";
 import { RECURSION_ABORT_POLICY } from "../../../src/runtime/run-recursion";
 import { makeRecursive, requiredRule } from "../compile/rule-fixtures";
@@ -186,6 +187,210 @@ describe("what a re-entry may not do", () => {
       "child.b",
       "a",
       "b",
+    ]);
+  });
+});
+
+/**
+ * A recursive rule that says what the runtime handed it. The catalogue plugin
+ * renders `detail.expected` only, so `actual` — the depth the descent had
+ * already spent when this rule's limit was reached — has no other way of
+ * being observed from outside the runtime.
+ */
+function budgetRule(code: string, maxDepth: number) {
+  return recursive({
+    code,
+    severity: "warning",
+    target: "self",
+    maxDepth,
+    describe: (detail) =>
+      `expected=${String(detail.expected)} actual=${String(detail.actual)}`,
+    buildMessageContext: () => ({}),
+  });
+}
+
+describe("run-recursion: the depth budget", () => {
+  it("hands the budget back as the descent unwinds, so each sibling gets it whole", () => {
+    const branch = () => ({ name: "b", children: [{ name: "leaf" }] });
+    const treeOfThree = () => ({
+      name: "a",
+      children: [branch(), branch(), branch()],
+    });
+    const declare = (maxDepth: number) => [
+      { path: "name", rules: [requiredRule()] },
+      {
+        path: "children",
+        rules: [makeRecursive("recursivelyEach", maxDepth, "element")],
+      },
+    ];
+
+    // Three branches, each exactly two levels deep, against a budget of two:
+    // the budget limits how FAR a descent goes, never how many nodes it sees,
+    // so every branch is walked to its leaf and nothing is reported.
+    const roomy = treeOfThree();
+    const roomyHarness = harnessFor(declare(2), roomy, { abortEarly: false });
+    runPlan(roomyHarness.plan, roomy, roomyHarness.context);
+    expect(roomyHarness.sink.issues).toHaveLength(0);
+
+    // The same three branches against a budget of one. This is what makes the
+    // silence above load-bearing: the descent really does reach the second
+    // level, and each branch is stopped there INDEPENDENTLY — one report per
+    // branch, none of them starved by a sibling that went first.
+    const tight = treeOfThree();
+    const tightHarness = harnessFor(declare(1), tight, { abortEarly: false });
+    runPlan(tightHarness.plan, tight, tightHarness.context);
+    expect(issuePathsOf(tightHarness.sink)).toEqual([
+      "children[0].children[0]",
+      "children[1].children[0]",
+      "children[2].children[0]",
+    ]);
+  });
+
+  it("exhausts the budget before the cycle guard ever sees the repeat", () => {
+    const cyclic: Record<string, unknown> = { name: "a" };
+    cyclic.child = cyclic;
+    const harness = harnessFor(
+      [
+        { path: "name", rules: [requiredRule()] },
+        { path: "child", rules: [makeRecursive("recursively", 1)] },
+      ],
+      cyclic,
+      { abortEarly: false }
+    );
+    runPlan(harness.plan, cyclic, harness.context);
+    // The same cycle that a roomier budget silences is REPORTED here: depth
+    // is tested first, and a budget of one is spent by the single hop that
+    // would have put the repeated node into the visited set.
+    expect(issueCodesOf(harness.sink)).toEqual(["recursively"]);
+    expect(issuePathsOf(harness.sink)).toEqual(["child.child"]);
+  });
+
+  it("reports a ring the budget runs out on, and silences the same ring when the budget outlasts it", () => {
+    const ring = (): Record<string, unknown> => {
+      const first: Record<string, unknown> = { name: "a" };
+      const second: Record<string, unknown> = { name: "b" };
+      const third: Record<string, unknown> = { name: "c" };
+      first.child = second;
+      second.child = third;
+      third.child = first;
+      return first;
+    };
+    const declare = (maxDepth: number) => [
+      { path: "name", rules: [requiredRule()] },
+      { path: "child", rules: [makeRecursive("recursively", maxDepth)] },
+    ];
+    const tight = ring();
+    const tightHarness = harnessFor(declare(2), tight, { abortEarly: false });
+    runPlan(tightHarness.plan, tight, tightHarness.context);
+    expect(issuePathsOf(tightHarness.sink)).toEqual(["child.child.child"]);
+
+    const roomy = ring();
+    const roomyHarness = harnessFor(declare(10), roomy, { abortEarly: false });
+    runPlan(roomyHarness.plan, roomy, roomyHarness.context);
+    expect(roomyHarness.sink.issues).toHaveLength(0);
+  });
+
+  it("reports the depth already spent, which a second budget can push past its own limit", () => {
+    const root = {
+      name: "a",
+      deep: { name: "b", deep: { name: "c", shallow: { name: "d" } } },
+    };
+    const harness = harnessFor(
+      [
+        { path: "name", rules: [requiredRule()] },
+        { path: "deep", rules: [budgetRule("deep", 5)] },
+        { path: "shallow", rules: [budgetRule("shallow", 1)] },
+      ],
+      root,
+      { abortEarly: false }
+    );
+    runPlan(harness.plan, root, harness.context);
+    // Two recursive fields, two limits, ONE counter: the descent spent two
+    // levels under the roomy budget before meeting the tight one, so the
+    // depth reached is larger than the limit that reported it.
+    expect(harness.sink.issues).toEqual([
+      {
+        path: "deep.deep.shallow",
+        code: "shallow",
+        message: "expected=1 actual=2",
+        severity: "warning",
+      },
+    ]);
+  });
+});
+
+describe("run-recursion: a value the cycle guard cannot hold", () => {
+  it("descends into a value that is not an object at all", () => {
+    // A string reaches the descent whenever the field's checks failed without
+    // aborting. Nothing about it can be remembered — a WeakSet refuses a
+    // primitive — and the plan simply runs against it, reading every field as
+    // absent.
+    const root = { name: "a", child: "not an object" };
+    const harness = harnessFor(SELF_RECURSIVE, root, { abortEarly: false });
+    runPlan(harness.plan, root, harness.context);
+    expect(issuePathsOf(harness.sink)).toEqual(["child.name"]);
+    expect(issueCodesOf(harness.sink)).toEqual(["required"]);
+  });
+});
+
+// ===========================================================================
+// An issue's message and its path describe the same failure, so they must name
+// the same field.
+//
+// The plan is declared relative to its own subject: its field is `name`, and it
+// knows nothing about having been re-entered from `child`. Re-basing the issue
+// after the descent fixes `path` — but the message was rendered while the
+// descent was still inside, against `name`. A plugin whose messageFactory
+// interpolates the context path therefore named one field while the issue
+// beside it reported another, for every level below the first.
+// ===========================================================================
+describe("run-recursion: what an issue says about where it happened", () => {
+  const naming = makeDetailedCheck({
+    code: "naming",
+    run: () => fail({}),
+    describe: (_detail, ctx) => `failed at ${ctx.path}`,
+  });
+  const NAMED_RECURSIVE = [
+    { path: "name", rules: [naming] },
+    { path: "child", rules: [makeRecursive("recursively", 10)] },
+  ];
+
+  it("renders the message against the full path, one level down", () => {
+    const root = { name: "a", child: { name: "b" } };
+    const harness = harnessFor(NAMED_RECURSIVE, root, { abortEarly: false });
+    runPlan(harness.plan, root, harness.context);
+    expect(issuePathsOf(harness.sink)).toEqual(["name", "child.name"]);
+    expect(harness.sink.issues.map((issue) => issue.message)).toEqual([
+      "failed at name",
+      "failed at child.name",
+    ]);
+  });
+
+  it("keeps doing it as the descent deepens", () => {
+    const root = { name: "a", child: { name: "b", child: { name: "c" } } };
+    const harness = harnessFor(NAMED_RECURSIVE, root, { abortEarly: false });
+    runPlan(harness.plan, root, harness.context);
+    expect(harness.sink.issues.map((issue) => issue.message)).toEqual([
+      "failed at name",
+      "failed at child.name",
+      "failed at child.child.name",
+    ]);
+  });
+
+  it("renders the depth-limit message against the full path too", () => {
+    const cyclic: Record<string, unknown> = { name: "a" };
+    cyclic.child = { name: "b", child: cyclic };
+    const limited = [
+      { path: "child", rules: [makeRecursive("recursively", 2)] },
+    ];
+    const harness = harnessFor(limited, cyclic, { abortEarly: false });
+    runPlan(harness.plan, cyclic, harness.context);
+    expect(issuePathsOf(harness.sink)).toEqual(["child.child.child"]);
+    // `makeRecursive` describes without reading the context, so the wording
+    // itself proves nothing here; the path is what this pins. The message is
+    // asserted in the two tests above, where the factory names the path.
+    expect(harness.sink.issues.map((issue) => issue.code)).toEqual([
+      "recursively",
     ]);
   });
 });
