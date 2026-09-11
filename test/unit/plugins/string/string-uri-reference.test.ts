@@ -61,6 +61,23 @@ describe("stringUriReference", () => {
     expect(isAccepted(uriReference, "a%41b")).toBe(true);
   });
 
+  it("checks the QUERY, not only the part before it", () => {
+    expect(isAccepted(uriReference, "/path?a=b&c=d")).toBe(true);
+    expect(isAccepted(uriReference, "/path?a|b")).toBe(false);
+    expect(isAccepted(uriReference, "/path?a b")).toBe(false);
+  });
+
+  it("checks the FRAGMENT, which may carry a ? but not a pipe", () => {
+    expect(isAccepted(uriReference, "/path#section?1")).toBe(true);
+    expect(isAccepted(uriReference, "/path#a|b")).toBe(false);
+  });
+
+  it("checks an authority that is followed by no path at all", () => {
+    expect(isAccepted(uriReference, "//example.com")).toBe(true);
+    expect(isAccepted(uriReference, "http://[2001:db8::1]")).toBe(true);
+    expect(isAccepted(uriReference, "//exa|mple.com")).toBe(false);
+  });
+
   it("is STRICTLY NARROWER than iri-reference, which is why it exists", () => {
     // Every one of these is a legal IRI-reference and an illegal
     // URI-reference: RFC 3986 is ASCII-only and requires percent-encoding.

@@ -1,6 +1,11 @@
 import { Builder } from "../../../../src/index";
 import { PluginArgumentError } from "../../../../src/plugin-kit/plugin-definition";
 import { objectMinPropertiesPlugin } from "../../../../src/plugins/object-min-properties";
+import {
+  NOT_A_PLAIN_OBJECT,
+  RULE_CONTEXT,
+  createRuleBuildContext,
+} from "../../../support/rule-build-context";
 
 type Bag = { readonly config: Record<string, unknown> };
 
@@ -51,5 +56,22 @@ describe("objectMinProperties", () => {
         .v("config", (b) => b.object.minProperties(Number.NaN))
         .build()
     ).toThrow(PluginArgumentError);
+  });
+});
+
+const boundedRule = objectMinPropertiesPlugin.build(
+  createRuleBuildContext({
+    pluginName: "objectMinProperties",
+    messageFactory: (context) => `${context.min}/${context.actual}`,
+  }),
+  2
+);
+
+describe("objectMinProperties: the rule itself", () => {
+  it("answers PASS for anything that is not a plain object", () => {
+    if (boundedRule.kind !== "check") throw new Error("expected a check");
+    for (const value of NOT_A_PLAIN_OBJECT) {
+      expect(boundedRule.run(value, RULE_CONTEXT).ok).toBe(true);
+    }
   });
 });

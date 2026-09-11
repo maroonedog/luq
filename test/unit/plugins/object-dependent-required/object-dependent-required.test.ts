@@ -1,5 +1,10 @@
 import { Builder } from "../../../../src/index";
 import { objectDependentRequiredPlugin } from "../../../../src/plugins/object-dependent-required";
+import {
+  NOT_A_PLAIN_OBJECT,
+  RULE_CONTEXT,
+  createRuleBuildContext,
+} from "../../../support/rule-build-context";
 
 type Bag = { readonly payment: Record<string, unknown> };
 
@@ -88,5 +93,24 @@ describe("objectDependentRequired", () => {
       "CARD_INCOMPLETE",
     ]);
     expect(result.issues.map((issue) => issue.message)).toEqual(["cvc"]);
+  });
+});
+
+const demandingRule = objectDependentRequiredPlugin.build(
+  createRuleBuildContext({ pluginName: "objectDependentRequired" }),
+  { card: ["cvc"] }
+);
+
+describe("objectDependentRequired: the rule itself", () => {
+  it("answers PASS for anything that is not a plain object", () => {
+    if (demandingRule.kind !== "check") throw new Error("expected a check");
+    for (const value of NOT_A_PLAIN_OBJECT) {
+      expect(demandingRule.run(value, RULE_CONTEXT).ok).toBe(true);
+    }
+  });
+
+  it("still demands the dependants of a trigger it does see", () => {
+    if (demandingRule.kind !== "check") throw new Error("expected a check");
+    expect(demandingRule.run({ card: "4242" }, RULE_CONTEXT).ok).toBe(false);
   });
 });
