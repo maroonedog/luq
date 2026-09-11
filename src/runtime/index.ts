@@ -36,7 +36,6 @@ export type { RecursionHost } from "./run-recursion";
 export { BRANCH_ABORT_POLICY, createBranchExecutor } from "./run-branch";
 export {
   ROOT_MISSING_CODE,
-  ROOT_MISSING_MESSAGE,
   createValidator,
   hasRejectingIssue,
 } from "./create-validator";

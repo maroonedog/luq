@@ -12,15 +12,17 @@
 // argument is only known then, and each pre-resolves everything it can.
 // ===========================================================================
 import type { ValidationPlan } from "../compile/validation-plan.types";
+import type { ResolvedGlobalConfig } from "../types/global-config";
 import { createFieldValidator } from "../runtime/create-field-validator";
 import { createValidator } from "../runtime/create-validator";
 import type { PlanBackedValidator } from "./builder-surface.types";
 import { createSubsetValidator } from "./create-subset-validator";
 
 export function createPlanBackedValidator(
-  plan: ValidationPlan
+  plan: ValidationPlan,
+  config: ResolvedGlobalConfig
 ): PlanBackedValidator {
-  const validator = createValidator(plan);
+  const validator = createValidator(plan, config);
   return Object.freeze({
     validate: validator.validate,
     parse: validator.parse,
