@@ -145,6 +145,28 @@ export const modelValidator = Builder()
   .v('when', b => b.date.required())
   .build();`;
 
+const splitWideTypeExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+
+type Wide = { a: string; b: string; c: string };
+
+// One builder per group of fields, each bound to the same type. A path a
+// builder does not declare is not validated by it, so splitting the
+// declarations across several builders is the ordinary arrangement rather
+// than a workaround for anything.
+export const identity = Builder()
+  .use(requiredPlugin)
+  .for<Wide>()
+  .v('a', b => b.string.required())
+  .build();
+
+export const contact = Builder()
+  .use(requiredPlugin)
+  .for<Wide>()
+  .v('b', b => b.string.required())
+  .v('c', b => b.string.required())
+  .build();`;
+
 // luq-example: must-fail — proves required() has no allowNull option, so this must not compile
 const allowNullExample = `// Does not compile: required() takes no options beyond the uniform RuleOptions.
 import { Builder } from '@maroonedog/luq';
@@ -553,6 +575,56 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 model yields a finite path union instead of a "type instantiation is
                 excessively deep" error. Reach deeper with the{' '}
                 <code>objectRecursively</code> plugin.
+              </p>
+            </div>
+          </details>
+
+          <details id="tsc-stack" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >tsc exits with <code>RangeError: Maximum call stack size exceeded</code></span
+              >
+            </summary>
+            <div class="mt-4 space-y-4">
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Cause.</strong> One builder carrying several hundred{' '}
+                <code>.v()</code> calls in a single expression. Each call returns a type
+                carrying every path declared before it, so the chain's type grows with the
+                chain, and past a few hundred links the compiler runs out of stack
+                descending it.
+              </p>
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>What it looks like.</strong> Not a diagnostic — tsc does not report
+                an error and exit non-zero the way it does for an ordinary type problem. It
+                throws, prints a JavaScript stack from inside{' '}
+                <code>typescript/lib/_tsc.js</code>, and dies. An editor's language server
+                usually just stops answering for the file.
+              </p>
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Where the edge is.</strong> Measured against the published
+                declaration files on TypeScript 5.8.3: <strong>530</strong> chained{' '}
+                <code>.v()</code> calls compile and <strong>531</strong> crash. Treat that
+                as an order of magnitude rather than a constant — it moves with the
+                TypeScript version, with the rules on each field, and with how much else the
+                file asks the compiler to do. Compiling against the sources rather than the
+                declarations survives further, so a figure taken inside this repository is
+                not the one you will hit.
+              </p>
+              <p class="md-body-medium text-on-surface-variant">
+                <strong>Fix.</strong> Split the declarations across several builders over the
+                same type. 1,200 fields in four builders of 300 compile with room to spare.
+                Each <code>build()</code> returns its own validator, so run the ones a given
+                call site needs.
+              </p>
+              <CodeBlock code={splitWideTypeExample} language="typescript" />
+              <p class="md-body-medium text-on-surface-variant">
+                A type this wide is worth a second look on its own terms — several hundred
+                fields on one object is usually several objects. But the compiler failing
+                without a diagnostic is a bad way to find that out, which is why the number
+                is written down here.
               </p>
             </div>
           </details>
