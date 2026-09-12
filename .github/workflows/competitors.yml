@@ -50,6 +50,12 @@ concurrency:
   group: competitors-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# The re-record step opens a pull request; nothing here writes to a branch
+# directly. Read access is all the measurement itself needs.
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   competitors:
     runs-on: ubuntu-latest
@@ -70,6 +76,44 @@ jobs:
       - run: npm run bench:competitors:check -- --write
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: competitor-baseline-${{ github.run_id }}
           path: config/competitor-baseline.json
+
+      # The runner is the recorder.
+      #
+      # Until now this step did not exist: CI measured on every push, wrote the
+      # file, uploaded it as an artifact, and nothing brought it back. So the
+      # committed figures were whatever a person last ran on their own machine,
+      # and the version they were measured against could sit still for as long
+      # as nobody re-ran it. zod's did, for fourteen months.
+      #
+      # Opening a pull request rather than pushing to master: the numbers move
+      # with the runner, so a human should see how much before they become the
+      # published comparison. The dependency bump and the re-measurement then
+      # arrive as one reviewable change.
+      - name: Open a pull request when the record has moved
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: develop
+          branch: bench/re-record-competitors
+          add-paths: config/competitor-baseline.json
+          commit-message: |
+            bench: re-record the competitor baseline on the runner
+
+            Measured by .github/workflows/competitors.yml on ubuntu-latest, which
+            is the only machine whose figures are comparable with the ones this
+            file already holds.
+          title: "bench: re-record the competitor baseline"
+          body: |
+            The competitor comparison was re-measured on the runner and differs
+            from the committed record.
+
+            Read the accepted and rejected columns separately before judging a
+            change. A pool that is half refusals measures error construction as
+            much as validation, which is how the published zod ratio came to be
+            13x higher than the same comparison against a current zod.
+          labels: competitor-baseline
+          delete-branch: true

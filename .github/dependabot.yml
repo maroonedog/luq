@@ -1,0 +1,42 @@
+# ===========================================================================
+# .github/dependabot.yml
+#
+# The competitor benchmark exists to say how Luq compares. It can only say that
+# about the versions in package-lock.json, and nothing in this repository ever
+# moved them.
+#
+# What that cost: the published "19.28x faster than zod" was measured against
+# zod 4.0.14 while 4.6.2 was current. Most of that gap was zod's old error
+# construction path, not validation — on the same pool, 4.6.2 is 23x faster
+# than 4.0.14, and on accepted input alone it is faster than Luq. The number
+# stayed up because nothing was watching the lockfile it depended on.
+#
+# competitors.yml already says package-lock.json is watched "for exactly that
+# reason — it is where their versions move". It was true of the workflow and
+# false of the repository: the trigger was armed and nothing ever pulled it.
+# This is what pulls it.
+#
+# Scoped to the four benchmark subjects on purpose. Everything else in
+# devDependencies is a build tool whose version is a deliberate choice; these
+# four are claims about the outside world, and a claim about the outside world
+# goes stale on its own.
+# ===========================================================================
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 4
+    commit-message:
+      prefix: "bench"
+    labels:
+      - competitor-baseline
+    allow:
+      - dependency-name: zod
+      - dependency-name: valibot
+      - dependency-name: ajv
+      - dependency-name: yup
+    # One PR per library. A grouped bump would make it ambiguous which
+    # library's change moved a ratio, and the ratio is the whole output.
+    groups: {}

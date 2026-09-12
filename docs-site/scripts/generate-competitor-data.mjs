@@ -50,6 +50,12 @@ function run() {
     luqIsFaster: entry.ratio >= 1,
     comparedValues: entry.comparedValues,
     disagreedValues: entry.disagreedValues,
+    // The pool is half values that pass and half that fail, so one ratio over
+    // it measures error construction as much as validation — and a library can
+    // be quick to accept and slow to refuse. Carrying the split is what stops
+    // the mixed figure being read as a validation result.
+    acceptedRatio: entry.accepted ? toRatio(entry.accepted.ratio) : null,
+    rejectedRatio: entry.rejected ? toRatio(entry.rejected.ratio) : null,
   }));
 
   const disagreements = baseline.agreement

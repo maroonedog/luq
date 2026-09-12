@@ -22,6 +22,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { COMPETITORS } from "./index";
 import { measureAllAgreement } from "./measure-agreement";
+import { checkRecordedVersions } from "./check-recorded-versions";
+import type { RecordedCompetitor } from "./check-recorded-versions";
 import {
   measureAllRatios,
   summariseAgreement,
@@ -51,6 +53,7 @@ interface RecordedRatio {
 }
 
 interface Baseline {
+  readonly competitors: readonly RecordedCompetitor[];
   readonly agreement: readonly RecordedAgreement[];
   readonly measured: readonly RecordedRatio[];
 }
@@ -115,6 +118,20 @@ function run(): void {
   const measuredAgreement = measureAllAgreement(COMPETITORS);
   const measuredRatios: readonly MeasuredRatio[] = measureAllRatios();
 
+  const staleVersions = checkRecordedVersions(
+    baseline.competitors,
+    COMPETITORS
+  );
+  process.stdout.write("Recorded competitor versions:\n");
+  if (staleVersions.length === 0) {
+    process.stdout.write(
+      "  every record was measured against the installed version\n"
+    );
+  } else {
+    for (const line of staleVersions) process.stdout.write(`  ${line}\n`);
+  }
+  process.stdout.write("\n");
+
   const problems = checkAgreement(baseline, measuredAgreement);
   const disagreementsOnly = problems.every((line) => line.startsWith("  "));
 
@@ -140,7 +157,7 @@ function run(): void {
 
   // Fails only when agreement differs from the record. A disagreement that is
   // already recorded is normal, so that line alone passes.
-  if (problems.length > 0 && !disagreementsOnly) {
+  if ((problems.length > 0 && !disagreementsOnly) || staleVersions.length > 0) {
     process.exitCode = 1;
   }
 
