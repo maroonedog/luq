@@ -105,6 +105,29 @@ function findLegacyApiInCodeBlocks(file, html) {
   return problems;
 }
 
+/**
+ * The app bar's menu button and the drawer it opens must ship together.
+ *
+ * Header renders the button on every page below the md breakpoint, but the
+ * drawer used to be rendered per page and nine of sixteen never did it — every
+ * docs page and the plugin catalogue. The button was visible and inert: no
+ * listener, aria-expanded stuck at false, and a phone reader arriving from the
+ * README's own links had no primary navigation and no way to ask for one.
+ *
+ * Nothing about that was visible in a desktop browser, which is why it lasted.
+ * Pairing the two ids is what makes it visible to the build.
+ */
+function findUnpairedMobileMenu(file, html) {
+  const button = html.includes('id="mobile-menu-toggle"');
+  const drawer = html.includes('id="mobile-menu"');
+  if (button === drawer) return [];
+  return [
+    button
+      ? `${file}: renders the menu button but no #mobile-menu drawer, so the button does nothing`
+      : `${file}: renders a #mobile-menu drawer with no button to open it`,
+  ];
+}
+
 function findDeadInternalLinks(file, html, anchorsByRoute) {
   const problems = [];
   HREF.lastIndex = 0;
@@ -155,7 +178,8 @@ function run() {
     problems.push(
       ...findEmptyCodeTags(name, html),
       ...findLegacyApiInCodeBlocks(name, html),
-      ...findDeadInternalLinks(name, html, anchorsByRoute)
+      ...findDeadInternalLinks(name, html, anchorsByRoute),
+      ...findUnpairedMobileMenu(name, html)
     );
   }
 
@@ -166,7 +190,7 @@ function run() {
     return;
   }
   console.log(
-    `${String(files.length)} built pages: no foster-parented code tags, no 1.x API inside a code block, no dead internal links.`
+    `${String(files.length)} built pages: no foster-parented code tags, no 1.x API inside a code block, no dead internal links, menu button and drawer paired.`
   );
 }
 

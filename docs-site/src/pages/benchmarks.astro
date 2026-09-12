@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 
 /**
@@ -158,7 +157,6 @@ npm run check:no-dynamic-code`;
   description="Measured bundle size and throughput for Luq, taken from config/perf-baseline.json and config/size-budget.json — including the shapes where this release is slower than 1.x."
 >
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->

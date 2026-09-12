@@ -1,12 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Hero from '../components/Hero.astro';
 import SimplifiedFeatures from '../components/SimplifiedFeatures.astro';
 import CodeExample from '../components/CodeExample.astro';
 import PracticalExamples from '../components/PracticalExamples.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 
 const description =
   'Luq is a TypeScript validation library that validates the types you already have. Declare rules against your own type’s field paths; every rule is a plugin you imported by name.';
@@ -17,7 +16,6 @@ const description =
   description={description}
 >
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main>
     <Hero />

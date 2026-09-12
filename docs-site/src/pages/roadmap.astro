@@ -1,9 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { bundleSize } from '../data/bundle-size';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import { conformance } from '../data/conformance';
 import { legacySpeedups } from '../data/legacy-speedups';
 
@@ -166,7 +165,6 @@ const knownWeaknesses = [
   description="What has shipped in 2.0, what is measured as missing and named in the source, and why the 1.x universal-platform roadmap has been withdrawn."
 >
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->

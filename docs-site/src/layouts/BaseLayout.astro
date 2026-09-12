@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import { navItems } from '../components/Header.astro';
+import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 
 export interface Props {
   title: string;
@@ -98,6 +100,17 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body>
     <slot />
+
+    {/*
+      The drawer the app bar's menu button opens, rendered here rather than per
+      page. Header always emits that button below md, but nine of sixteen pages
+      never rendered the overlay — every docs page and the plugin catalogue —
+      so the button had no listener and a phone reader arriving from the README
+      had no primary navigation at all and no way to ask for it. Rendering it
+      from the layout is what makes "the button exists" and "the drawer exists"
+      the same fact. check-built-pages.mjs holds the pair.
+    */}
+    <MobileMenuOverlay navItems={navItems} />
 
     <script>
       // Prism highlights the code blocks CodeBlock.astro emits. Colours come

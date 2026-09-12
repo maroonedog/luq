@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 
 /**
@@ -110,7 +109,6 @@ router.input(toStandardSchema(validateUser));`;
 
 <BaseLayout title="Luq or zod?" description={description}>
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main class="px-4 py-16 sm:px-6 lg:px-8">
     <div class="container mx-auto max-w-3xl">

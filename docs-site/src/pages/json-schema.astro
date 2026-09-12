@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 import { bundleSize } from '../data/bundle-size';
 import { conformance as measured } from '../data/conformance';
@@ -589,7 +588,6 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
   description={`Measured Draft-07 conformance (${measured.headline}), the two front doors into Luq from a schema, the full keyword mapping, and every keyword that is not supported.`}
 >
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
