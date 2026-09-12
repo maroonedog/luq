@@ -9,7 +9,6 @@ The tables between `generated:` markers are written by
 `config/size-budget.json`, and `npm run check:perf-figures` fails the build when
 they drift. The prose around them is written by a person.
 
-
 ## Bundle size
 
 esbuild 0.25.5, `bundle + minify + esm + es2020 + platform:neutral + treeShaking`,
@@ -19,7 +18,8 @@ so the two columns are comparable. Recorded in
 `npm run check:size` on every build.
 
 | Entry | gzip | 1.x, same method |
-|---|---:|---:|
+| ----- | ---: | ---------------: |
+
 <!-- generated:bundle-size -->
 | `Builder` only, zero plugins | **8,508 B** | 17,423 B |
 | + 6 plugins (1.x's "simple" set) | **9,381 B** | 19,562 B |
@@ -61,7 +61,8 @@ spread quoted alongside is the full range over that figure, and on these ten it
 is <!-- generated:perf-spread -->1.2–12.3%<!-- /generated:perf-spread -->.
 
 | Shape | `validate` ops/sec | `parse` ops/sec |
-|---|---:|---:|
+| ----- | -----------------: | --------------: |
+
 <!-- generated:perf-throughput -->
 | 1 field, 1 check | 5,581,199 | 5,593,550 |
 | 3 fields, 6 plugins | 2,444,308 | 1,933,180 |
@@ -75,7 +76,8 @@ side, in one process on one machine, 1.x source against this source, sample by
 sample interleaved so a drift in the machine hits both halves of every ratio:
 
 | Shape | 1.x | this | ratio |
-|---|---:|---:|---:|
+| ----- | --: | ---: | ----: |
+
 <!-- generated:perf-legacy -->
 | 1 field | 26,568,111 | 5,463,953 | **×0.21** |
 | 3 fields | 3,082,290 | 2,434,509 | **×0.79** |
@@ -128,68 +130,78 @@ figures recorded here span 0.01–0.86.
 
 ## Many validators alive at once
 
-**Not measured yet. There is no figure here, and there is not one on the site
-either.**
+**Measured, and not published. Not on the site and not here.** The run that
+exists could not resolve the thing it was built to resolve.
 
-A figure of **11% degradation across 40 validators** is quoted for this library
-as a favourable fact about it at scale. It did not come from here. No such
-measurement exists in this repository and none ever did: until this harness,
-nothing in `bench/` drove more than one validator. Treat it as unsourced — and
-this repository has already published one number it could not stand behind.
+### Why the question was asked
 
-The harness now exists — [bench/megamorphism/](../bench/megamorphism/) — and what
-it fills is
-[config/megamorphism-baseline.json](../config/megamorphism-baseline.json), whose
-`lanes` array is empty for exactly as long as nothing has been recorded. The docs
-site reads that array and says "not measured yet" while it is empty, so the
-statement cannot go stale on its own.
+A figure of **11% degradation across 40 validators** was quoted for this library
+as a favourable fact about it at scale. It did not come from here: until
+`bench/megamorphism/` existed, nothing in `bench/` drove more than one
+validator. Treat it as unsourced.
 
-The question is megamorphism. `src/runtime/run-field.ts` is ONE piece of code
-shared by every validator in the process, and its `field.read(subject)` and
-`check.run(...)` call sites see a different closure for every declared field of
-every live validator. Past a handful of targets V8 stops inlining them. So the
-harness compares a rate taken with one validator alive against rates taken with
-2, 5, 10, 20 and 40 alive, each a different validator, called in turn.
+### What the harness does
 
-Four things about it are worth stating before any number arrives.
+`src/runtime/run-field.ts` is ONE piece of code shared by every validator, so
+its call sites see a different closure per declared field per live validator.
+Past a handful of targets V8 stops inlining. The harness measures whether that
+is visible.
 
-- **Every window is measured in its own child process.** V8's inline caches are
-  process-wide. A one-validator figure taken after a forty-validator run in the
-  same process is measured against caches the forty already spoiled, so an
-  in-process comparison can only ever understate the effect — it would report
-  "no degradation" whether or not there is any.
-- **There are two lanes, and they meet at one validator.** `liveValidators` runs
-  N validators over 4 values each; `liveValues` runs ONE validator over 4N
-  values. Both touch the same number of distinct objects, so whatever
-  `liveValues` shows is the price of the working set alone, and only the
-  difference between the lanes is left for megamorphism to explain.
-- **Accepted and rejected inputs are timed separately**, for the reason
-  `inputIsAccepted` exists on every row of `config/perf-baseline.json`: under
-  `abortEarly` a rejection is a different program, and a blended pool measures
-  error construction as much as validation.
-- **The run states its own error floor, from inside itself.** The two lanes start
-  from the identical window — one validator over four values — so their first two
-  figures are one request measured twice, and nothing about the code can make
-  them differ. Their gap is recorded as `resolution`, and a degradation smaller
-  than it is not evidence. On a developer machine that gap has come out as large
-  as the effect being looked for — no figure is quoted for it here, because those
-  were scratch runs and nothing in this repository records them. That is why
-  nothing is published from a developer machine: not caution, a measured
-  inability to resolve it.
+Two lanes, meeting at one validator:
 
-What it will not answer: every family member does the same amount of work, by
-construction, because a rate taken over a mix of big and small validators is a
-fact about the mix. So it measures the cost of validator IDENTITY, not of
-validator SIZE, and it says nothing about `build()` cost or memory.
+- `liveValidators` — N different validators, four values each.
+- `liveValues` — one validator over 4N values.
+
+Both hold the number of distinct objects equal at every window, so the control
+lane prices the working set and only the difference is left for megamorphism to
+explain. Accepted and rejected pools are timed separately. Every window runs in
+its own child process, because V8's inline caches are process-wide and do not
+de-megamorphize: a one-validator figure taken after a forty-validator run in the
+same process is measured against caches the forty already spoiled.
+
+### What the first CI run came back with, and why it is not a figure
+
+Recorded on the runner, every window reporting quiet. The `liveValidators`
+accepted lane rose 0 → 14 → 29 → 33 → 37 → 34 per cent across windows of 1, 2,
+5, 10, 20 and 40, saturating by five — which is the shape an inline cache going
+megamorphic would produce, and the control lane stayed inside ±3 per cent on the
+same pool.
+
+That is a consistent direction across six points and it is probably real. It is
+still not publishable, for a reason visible in the same record: **the
+one-validator baseline every other point is divided by had a 33 per cent spread
+across its seven runs** — the same size as the effect. The file's own
+`resolution` field reads 2.4 per cent, but that is the gap between two point
+estimates each carrying that spread, so it understates the uncertainty rather
+than bounding it. On the rejected pool the control lane is noisier still, between
+−0.2 and +13 per cent, so the working set is not ruled out there at all.
+
+Publishing "about a third" from this run would repeat, with a different number,
+exactly the mistake that made the 11 per cent worth withdrawing.
+
+### What it would take, and why the site says nothing meanwhile
+
+More repeats, until the baseline's spread is small against the effect.
+`repeatCount` is 7.
+
+The benchmarks page carries no such section. A reader has no second library to
+compare against — no comparable project publishes this — and a number that needs
+three paragraphs before it means anything is worse than an honest silence. What
+the page does say is the part a reader can act on: every figure on it was taken
+with one validator alive, so it is the one-validator case rather than a per-call
+cost in an application.
 
 Who may record it: `bench/megamorphism/report-megamorphism.ts` refuses to write
 the baseline outside CI without `--local`, the same rule
-`bench/competitors/report-competitors.ts` carries. What it records is a ratio
-between two figures taken on one machine, and how V8 behaves once a shared call
-site has many targets depends on the CPU, the core count and the Node version.
-`.github/workflows/megamorphism.yml` is the recorder, and it proposes the result
-as a pull request rather than committing it, because moving from "not measured
-yet" to a table is a judgement and not a rewrite of a number.
+`bench/competitors/report-competitors.ts` carries. What it records depends on
+the CPU, the core count and the Node version.
+`.github/workflows/megamorphism.yml` is the recorder and proposes its result as
+a pull request rather than committing it.
+
+One limit on the run that exists, recorded in the file: the subject was `src/`
+transpiled by ts-node, not the bundled `dist`. `config/size-budget.json` keeps
+the lesson for a reason — measuring a different artefact than the one
+distributed has cost this repository a 302 B error before.
 
 ## CSP-safe
 
@@ -218,4 +230,3 @@ the 86 keys** against the published declarations under **both** `node16` and
 1.x's `createPluginRegistry` / `useField` / `createFieldRule` are published at
 `@maroonedog/luq/field-rule`; `useField` is a free function now. See
 [docs/migration/breaking-changes.md](migration/breaking-changes.md#15-createpluginregistry-usefield-and-createfieldrule-moved-to-maroonedogluqfield-rule).
-
