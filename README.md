@@ -50,10 +50,16 @@ an array wildcard gets a red squiggle, not a validator that passes everything.
 
 Two consequences worth knowing before you read further:
 
-- **Adoption is a patch, not a migration.** A path you did not declare is not
+- **Adoption is a patch, and so is removal.** A path you did not declare is not
   validated, not required, and not read, so a partly-covered type is a normal
   state rather than a half-finished one. There is nothing global to migrate: no
-  registry, no plugin installation, no shared configuration object.
+  registry, no plugin installation, no shared configuration object. Leaving is
+  the same size of change in the other direction — your types were never
+  authored here, so there is no generated file to delete and no inferred type to
+  replace by hand, and a consumer that takes a [Standard
+  Schema](https://luq.dev/standard-schema) does not change when you hand it a
+  different value. The rules themselves you would rewrite; that part is real,
+  and it is the same work whichever way you go.
 - **Every rule you can call is a plugin you imported by name**, so the bundle
   contains what you used and nothing else — an unimported plugin's method does
   not even typecheck. What each configuration costs is measured on every build:
