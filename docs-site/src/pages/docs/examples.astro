@@ -731,6 +731,13 @@ export const registrationValidator = Builder()
 </BaseLayout>
 
 <style>
+  /*
+   * A scoped style block is compiled on its own, so Tailwind 4 has to be told
+   * where the theme lives before `@apply` can resolve a utility. @reference
+   * loads it for name resolution only and emits nothing.
+   */
+  @reference '../../styles/global.css';
+
   .prose h2 {
     @apply mb-6 mt-12;
   }

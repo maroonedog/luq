@@ -20,9 +20,15 @@
 @import './md3-tokens.css';
 @import './md3-components.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+ * Tailwind 4 takes one import in place of the three layer directives, and it
+ * reads its configuration from CSS rather than from a JS file it discovers. The
+ * MD3 token layer in tailwind.config.mjs is 309 lines of generated palette,
+ * colour roles and type scale, so it is kept and pointed at rather than
+ * transcribed; @config is Tailwind 4's supported way to do that.
+ */
+@import 'tailwindcss';
+@config '../../tailwind.config.mjs';
 
 @layer base {
   :root {
