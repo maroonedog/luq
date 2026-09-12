@@ -98,36 +98,38 @@ if (result.valid) {
       </div>
     </section>
 
-    <section class="mx-auto max-w-screen-xl px-4 py-10 sm:px-6 lg:px-8">
-      <h2 class="md-headline-small text-on-surface">How a plugin is used</h2>
-      <div class="mt-4 max-w-3xl">
-        <CodeBlock code={quickStart} language="typescript" fileName="draft-validator.ts" />
-      </div>
-      <p class="md-body-medium mt-4 max-w-3xl text-on-surface-variant">
-        <code class="font-mono">build()</code> returns an object, not a function, and a result
-        is a discriminated union on <code class="font-mono">valid</code>: the success branch
-        carries <code class="font-mono">data</code>, both branches carry
-        <code class="font-mono">issues</code>, and each issue is
-        <code class="font-mono">{'{ path, code, message, severity }'}</code>.
-      </p>
-    </section>
-
-    <section class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
-      <div
-        class="flex flex-wrap items-end justify-between gap-4 border-b border-outline-variant pb-4"
-      >
+    <section class="mx-auto max-w-screen-xl px-4 pt-10 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-end justify-between gap-4 pb-4">
         <div>
           <h2 class="md-headline-small text-on-surface">Browse and pick</h2>
           <p class="md-body-medium mt-1 text-on-surface-variant">
             Tick the plugins you need; the builder skeleton writes itself.
           </p>
         </div>
-        <p class="md-label-large text-on-surface-variant">
+        <!--
+          The live region is the <p>, not the <span> inside it: a screen reader
+          reads the whole region, so announcing the parent says "42 shown"
+          rather than a bare "42". aria-atomic keeps the word attached.
+        -->
+        <p
+          class="md-label-large text-on-surface-variant"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           <span id="visible-count">{pluginObjectCount}</span> shown
         </p>
       </div>
 
-      <div class="mt-6 space-y-5">
+      <!--
+        Sticky over the grid: 78 cards scroll past, and the search is the only
+        thing that finds one. top-16 = 4rem = the 64dp app bar in
+        `.md-top-app-bar`, which is itself sticky at z-40 — so this row parks
+        directly beneath it and never covers it. bg-surface matches `main`, so
+        cards disappear under it instead of showing through.
+      -->
+      <div
+        class="sticky top-16 z-10 space-y-4 border-b border-outline-variant bg-surface py-4"
+      >
         <div class="relative max-w-xl">
           <span
             class="md-icon md-icon-sm pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"
@@ -144,10 +146,19 @@ if (result.valid) {
 
         <div>
           <p class="md-label-large mb-2 text-on-surface-variant">Filter by slot</p>
-          <div class="flex flex-wrap gap-2" role="group" aria-label="Filter by slot">
+          <!--
+            Ten chips wrap to three rows on a phone, which would make the sticky
+            row a quarter of the viewport. Below sm they scroll sideways in one
+            row instead; from sm they wrap as before.
+          -->
+          <div
+            class="-mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 py-0.5 sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0"
+            role="group"
+            aria-label="Filter by slot"
+          >
             <button
               type="button"
-              class="md-chip md-state-layer slot-filter is-selected"
+              class="md-chip md-state-layer slot-filter is-selected shrink-0"
               data-slot="all"
               aria-pressed="true">All {pluginObjectCount}</button
             >
@@ -155,7 +166,7 @@ if (result.valid) {
               slotFilters.map(({ slot, count }) => (
                 <button
                   type="button"
-                  class="md-chip md-state-layer slot-filter"
+                  class="md-chip md-state-layer slot-filter shrink-0"
                   data-slot={slot}
                   aria-pressed="false"
                 >
@@ -167,10 +178,7 @@ if (result.valid) {
         </div>
       </div>
 
-      <div
-        id="plugin-grid"
-        class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
-      >
+      <div id="plugin-grid" class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {
           plugins.map((plugin) => (
             <div class="min-w-0" data-plugin-cell={plugin.symbol}>
@@ -180,8 +188,35 @@ if (result.valid) {
         }
       </div>
 
-      <p id="empty-state" class="md-body-large py-16 text-center text-on-surface-variant" hidden>
+      <p
+        id="empty-state"
+        class="md-body-large py-16 text-center text-on-surface-variant"
+        role="status"
+        hidden
+      >
         No plugin matches that search.
+      </p>
+    </section>
+
+    <!--
+      Below the grid, not above it. A reader arrives here to find a plugin, and
+      this section is reference for after they have one; keeping it is cheaper
+      than cutting it, because the block is compiled by check:docs and states
+      the result shape that nothing else on this page states.
+    -->
+    <section
+      class="mx-auto mt-16 max-w-screen-xl border-t border-outline-variant px-4 pt-10 sm:px-6 lg:px-8"
+    >
+      <h2 class="md-headline-small text-on-surface">How a plugin is used</h2>
+      <div class="mt-4 max-w-3xl">
+        <CodeBlock code={quickStart} language="typescript" fileName="draft-validator.ts" />
+      </div>
+      <p class="md-body-medium mt-4 max-w-3xl text-on-surface-variant">
+        <code class="font-mono">build()</code> returns an object, not a function, and a result
+        is a discriminated union on <code class="font-mono">valid</code>: the success branch
+        carries <code class="font-mono">data</code>, both branches carry{' '}
+        <code class="font-mono">issues</code>, and each issue is{' '}
+        <code class="font-mono">{'{ path, code, message, severity }'}</code>.
       </p>
     </section>
 
@@ -191,8 +226,8 @@ if (result.valid) {
       id="open-builder"
       class="md-state-layer md-focus-ring md-elevation-3 fixed bottom-6 right-6 z-40 inline-flex h-14 items-center gap-3 rounded-shape-lg bg-primary-container px-5 text-label-large text-on-primary-container"
     >
-      <span class="md-icon" aria-hidden="true">code</span>
-      Your builder
+      <span class="md-icon" aria-hidden="true">code</span>{' '}
+      Your builder{' '}
       <span
         id="selected-count"
         class="inline-flex h-6 min-w-6 items-center justify-center rounded-shape-full bg-primary px-2 text-label-medium text-on-primary"

@@ -15,10 +15,9 @@
  * Authoring guidance lives in DESIGN.md at the site root.
  */
 
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/jetbrains-mono';
-@import './md3-tokens.css';
-@import './md3-components.css';
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+@import "./md3-tokens.css";
 
 /*
  * Tailwind 4 takes one import in place of the three layer directives, and it
@@ -26,9 +25,30 @@
  * MD3 token layer in tailwind.config.mjs is 309 lines of generated palette,
  * colour roles and type scale, so it is kept and pointed at rather than
  * transcribed; @config is Tailwind 4's supported way to do that.
+ *
+ * It comes FIRST because it declares the layer order — theme, base, components,
+ * utilities — and the component sheet below has to land inside that order.
  */
-@import 'tailwindcss';
+@import "tailwindcss";
 @config '../../tailwind.config.mjs';
+
+/*
+ * The component sheet goes INTO the components layer, and that is load-bearing
+ * rather than tidy.
+ *
+ * Tailwind 3's `@tailwind components` / `@tailwind utilities` were not real
+ * cascade layers, so plain source order decided a tie and the utility, emitted
+ * later, won. Tailwind 4 emits real `@layer` blocks — and unlayered CSS beats
+ * layered CSS outright, whatever its specificity or position. Importing this
+ * sheet outside a layer therefore inverted the whole relationship: every
+ * `.md-*` component rule began winning against every utility written to
+ * override it.
+ *
+ * What that looked like: the app bar's menu button carries `md:hidden`, and
+ * `.md-icon-button { display: inline-flex }` beat it, so the hamburger showed
+ * on desktop next to the full navigation and opened a drawer meant for phones.
+ */
+@import "./md3-components.css" layer(components);
 
 @layer base {
   :root {
@@ -42,10 +62,12 @@
      * code spans that make up most of this site. Roboto stays in the stack as a
      * fallback. Code keeps JetBrains Mono.
      */
-    --md-sys-typescale-font-family: 'Inter Variable', 'Inter', 'Roboto',
-      system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --md-sys-typescale-code-font-family: 'JetBrains Mono Variable',
-      'JetBrains Mono', ui-monospace, 'Consolas', 'Monaco', monospace;
+    --md-sys-typescale-font-family:
+      "Inter Variable", "Inter", "Roboto", system-ui, -apple-system, "Segoe UI",
+      sans-serif;
+    --md-sys-typescale-code-font-family:
+      "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Consolas",
+      "Monaco", monospace;
   }
 
   html {
@@ -62,7 +84,8 @@
     line-height: var(--md-sys-typescale-body-large-line-height);
     letter-spacing: var(--md-sys-typescale-body-large-tracking);
     -webkit-font-smoothing: antialiased;
-    transition: background-color var(--md-sys-motion-duration-medium-1)
+    transition:
+      background-color var(--md-sys-motion-duration-medium-1)
         var(--md-sys-motion-easing-standard),
       color var(--md-sys-motion-duration-medium-1)
         var(--md-sys-motion-easing-standard);
@@ -113,6 +136,52 @@
    */
   main {
     min-width: 0;
+  }
+
+  /*
+   * Inline `<code>`. The site's densest piece of vocabulary: over six hundred
+   * elements across the API, troubleshooting and reference pages, which until
+   * now rendered as body-size monospace with no ground of its own on thirteen
+   * of sixteen pages — wider than the prose around it and marked as nothing.
+   * Three pages carried a local @apply copy of exactly this rule, so the same
+   * token rendered two ways depending on which page you were reading.
+   *
+   * The values are DESIGN.md's own pairing for "a code chip or inline token":
+   * shape-xs on surface-container-highest, with its on-surface partner. The
+   * size is 0.875em rather than a token so it tracks whatever the surrounding
+   * type role is — an inline token inside body-small must not grow.
+   *
+   * `:not(pre) > code` deliberately excludes the code block's own child, whose
+   * ground is the dark `--md-code-*` surface and whose syntax colours are
+   * measured against it.
+   */
+  :not(pre) > code {
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background-color: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+    padding: 2px 6px;
+    font-family: var(--md-sys-typescale-code-font-family);
+    font-size: 0.875em;
+  }
+
+  /*
+   * Two places where a token already sits on a tinted ground of its own and a
+   * second one would read as a box inside a box: a table's header row and the
+   * code block's toolbar.
+   */
+  th > code,
+  .md-code-toolbar code {
+    background: transparent;
+    padding: 0;
+  }
+
+  /*
+   * A token that is itself the link keeps the link's colour. Without this the
+   * `color` above wins over the anchor's and the only thing left saying the
+   * word is clickable is the underline.
+   */
+  a > code {
+    color: inherit;
   }
 
   ::selection {

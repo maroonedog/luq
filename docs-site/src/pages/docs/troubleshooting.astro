@@ -5,17 +5,40 @@ import { legacySpeedups } from '../../data/legacy-speedups';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
+import { packageInfo } from '../../data/package-info';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 
+// Every symptom on this page is an entry, not only the eight category
+// headings: a reader arrives knowing their error message, and the list of
+// messages is the index. The level-3 ids are the <details> elements below, so
+// one entry is also a link a colleague can be sent.
 const tableOfContents = [
   { id: 'imports', title: 'Import errors', level: 2 },
+  { id: 'not-exported', title: 'Specifier is not exported', level: 3 },
+  { id: 'root-plugin-undefined', title: 'Root import is undefined', level: 3 },
   { id: 'compile-errors', title: 'Compile errors', level: 2 },
+  { id: 'method-missing', title: 'A chain method is missing', level: 3 },
+  { id: 'wrong-slot', title: 'Slot does not match the type', level: 3 },
+  { id: 'bad-path', title: 'Field path is not accepted', level: 3 },
+  { id: 'allow-null', title: 'allowNull is rejected', level: 3 },
+  { id: 'not-callable', title: 'Validator is not callable', level: 3 },
   { id: 'unexpected-results', title: 'Unexpected results', level: 2 },
+  { id: 'abort-early', title: 'Only one issue comes back', level: 3 },
+  { id: 'missing-field-passes', title: 'A missing field passes', level: 3 },
+  { id: 'transform-did-not-run', title: 'A transform did not run', level: 3 },
+  { id: 'gate-order', title: 'A gate ran too late', level: 3 },
+  { id: 'strict-extra-property', title: 'strict() kept an extra property', level: 3 },
   { id: 'messages', title: 'Messages and codes', level: 2 },
+  { id: 'error-codes', title: 'The error code changed', level: 3 },
+  { id: 'message-option', title: 'A message option is rejected', level: 3 },
   { id: 'async', title: 'Async checks', level: 2 },
+  { id: 'async-lookup', title: 'Checking against a database', level: 3 },
+  { id: 'async-failure', title: 'A lookup failed or timed out', level: 3 },
   { id: 'bundle-size', title: 'Bundle size', level: 2 },
+  { id: 'bundle-larger', title: 'More Luq than expected', level: 3 },
   { id: 'performance', title: 'Performance', level: 2 },
+  { id: 'slow-validation', title: 'Slower than expected', level: 3 },
   { id: 'getting-help', title: 'Getting help', level: 2 },
 ];
 
@@ -352,7 +375,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
   <Header />
 
   <div class="flex min-h-screen">
-    <DocsSidebar currentPath="/docs/troubleshooting" />
+    <DocsSidebar currentPath="/docs/troubleshooting" tableOfContents={tableOfContents} />
 
     <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
       <article class="mx-auto max-w-4xl">
@@ -366,19 +389,24 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
         <div class="prose max-w-none">
           <h2 id="imports">Import errors</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >ERR_PACKAGE_PATH_NOT_EXPORTED, or "cannot find module"</summary
-            >
+          <details id="not-exported" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >ERR_PACKAGE_PATH_NOT_EXPORTED, or "cannot find module"</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> A 1.x specifier. The package publishes 84 export keys:
+                <strong>Cause.</strong> A 1.x specifier. The package publishes {packageInfo.exportKeyCount} export keys:
                 seven fixed ones and 77 under <code>./plugins/</code>. Nothing else resolves,
                 and the ones below never did — 1.x's own README named specifiers that were not
                 in its exports map.
               </p>
 
-              <CodeBlock code={badImportsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={badImportsExample} language="typescript" invalid />
               <CodeBlock code={goodImportsExample} language="typescript" />
 
               <div class="overflow-x-auto">
@@ -408,14 +436,14 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                     <tr class="border-b border-outline-variant">
                       <td class="py-2 pr-4"><code>…/result</code></td>
                       <td class="py-2">
-                        <code>unwrap</code>, <code>isOk</code>, <code>ok</code>,
+                        <code>unwrap</code>, <code>isOk</code>, <code>ok</code>,{' '}
                         <code>reject</code>, <code>ValidationFailure</code>.
                       </td>
                     </tr>
                     <tr class="border-b border-outline-variant">
                       <td class="py-2 pr-4"><code>…/field-rule</code></td>
                       <td class="py-2">
-                        <code>createPluginRegistry</code>, <code>createFieldRule</code>,
+                        <code>createPluginRegistry</code>, <code>createFieldRule</code>,{' '}
                         <code>useField</code>.
                       </td>
                     </tr>
@@ -437,10 +465,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A plugin imported from the package root is <code>undefined</code></summary
-            >
+          <details id="root-plugin-undefined" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >A plugin imported from the package root is <code>undefined</code></span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> 1.x's <code>dist/index.d.ts</code> declared 57 plugin
@@ -449,107 +482,135 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 plugins at all — a barrel naming all 77 would make every one statically
                 reachable and end per-plugin tree-shaking.
               </p>
-              <CodeBlock code={rootPluginsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={rootPluginsExample} language="typescript" invalid />
             </div>
           </details>
 
           <h2 id="compile-errors">Compile errors</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >"Property '.email' does not exist" — a chain method is missing</summary
-            >
+          <details id="method-missing" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >"Property '.email' does not exist" — a chain method is missing</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> The plugin contributing that method is not in the bag.
                 The bag is a type, so an unimported plugin's method does not typecheck —
                 that is the design, not a gap.
               </p>
-              <CodeBlock code={missingPluginExample} language="typescript" showCopy={false} />
+              <CodeBlock code={missingPluginExample} language="typescript" invalid />
               <CodeBlock code={missingPluginFixExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
-                Also check the method's <strong>name</strong>: it is often not the plugin's.
-                <code>stringMinPlugin</code> gives <code>.min()</code>,
-                <code>unionGuardPlugin</code> gives <code>.guard()</code>,
-                <code>tupleBuilderPlugin</code> gives <code>.builder()</code>. The
+                Also check the method's <strong>name</strong>: it is often not the plugin's.{' '}
+                <code>stringMinPlugin</code> gives <code>.min()</code>,{' '}
+                <code>unionGuardPlugin</code> gives <code>.guard()</code>,{' '}
+                <code>tupleBuilderPlugin</code> gives <code>.builder()</code>. The{' '}
                 <a href="/plugins">plugin catalogue</a> lists every method.
               </p>
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >The slot does not match the field's type</summary
-            >
+          <details id="wrong-slot" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >The slot does not match the field's type</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> Choosing a slot the field's type cannot be is now a
                 compile error. 1.x let it through in silence. Use <code>b.any</code> when you
                 genuinely mean "whatever this is".
               </p>
-              <CodeBlock code={wrongSlotExample} language="typescript" showCopy={false} />
+              <CodeBlock code={wrongSlotExample} language="typescript" invalid />
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >The field path is not accepted</summary
-            >
+          <details id="bad-path" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">The field path is not accepted</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> One rule, not four special cases: array members are
                 never enumerated, and built-in objects are opaque.
               </p>
-              <CodeBlock code={badPathsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={badPathsExample} language="typescript" invalid />
               <CodeBlock code={goodPathsExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
                 Path generation also counts down a depth budget of 6, so a self-referential
                 model yields a finite path union instead of a "type instantiation is
-                excessively deep" error. Reach deeper with the
+                excessively deep" error. Reach deeper with the{' '}
                 <code>objectRecursively</code> plugin.
               </p>
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              ><code>required(&#123; allowNull: true &#125;)</code> is rejected</summary
-            >
+          <details id="allow-null" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                ><code>required(&#123; allowNull: true &#125;)</code> is rejected</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> <code>.required()</code> now narrows out
+                <strong>Cause.</strong> <code>.required()</code> now narrows out{' '}
                 <code>null</code> as well as <code>undefined</code>, and it takes no options
                 beyond the uniform <code>RuleOptions</code>. Nullability is its own rule.
               </p>
-              <CodeBlock code={allowNullExample} language="typescript" showCopy={false} />
+              <CodeBlock code={allowNullExample} language="typescript" invalid />
               <CodeBlock code={nullableFixExample} language="typescript" />
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >"This expression is not callable" on the built validator</summary
-            >
+          <details id="not-callable" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >"This expression is not callable" on the built validator</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> <code>build()</code> returns an object with
-                <code>validate</code>, <code>parse</code>, <code>pick</code> and
+                <strong>Cause.</strong> <code>build()</code> returns an object with{' '}
+                <code>validate</code>, <code>parse</code>, <code>pick</code> and{' '}
                 <code>pickAll</code>. 1.x's README showed it being called; no implementation
                 ever returned something callable.
               </p>
-              <CodeBlock code={buildCallableExample} language="typescript" showCopy={false} />
+              <CodeBlock code={buildCallableExample} language="typescript" invalid />
             </div>
           </details>
 
           <h2 id="unexpected-results">Unexpected results</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >Only one issue comes back, but several fields are wrong</summary
-            >
+          <details id="abort-early" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >Only one issue comes back, but several fields are wrong</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> <code>abortEarly</code> defaults to
+                <strong>Cause.</strong> <code>abortEarly</code> defaults to{' '}
                 <strong>true</strong>. 1.x's documentation said <code>false</code>; its
                 implementation tested <code>options?.abortEarly !== false</code>, which makes
                 the default <code>true</code>. Nothing changed in behaviour — the
@@ -563,10 +624,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A missing field passes validation</summary
-            >
+          <details id="missing-field-passes" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">A missing field passes validation</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> There is no implicit <code>required</code>. A field
@@ -579,14 +643,17 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A transform did not run</summary
-            >
+          <details id="transform-did-not-run" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">A transform did not run</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> Transforms run only in <code>parse()</code>, and they
-                always run <strong>last</strong>. There is one order —
+                always run <strong>last</strong>. There is one order —{' '}
                 <code>default &rarr; presence &rarr; gates &rarr; checks &rarr; transforms
                 &rarr; recursion</code> — and chain position does not change it, so a check
                 written after a transform still sees the original value. 1.x had a second
@@ -595,22 +662,27 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A gate ran too late, or a conditional produced the wrong issue</summary
-            >
+          <details id="gate-order" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >A gate ran too late, or a conditional produced the wrong issue</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <ul class="md-body-medium space-y-2 text-on-surface-variant">
                 <li>
                   <strong><code>validateIf</code> / <code>skip</code>.</strong> Every gate on
-                  a field is asked before any check runs. In 1.x
+                  a field is asked before any check runs. In 1.x{' '}
                   <code>.min(3).validateIf(c)</code> still ran <code>min(3)</code>; now the
                   two orderings are the same declaration.
                 </li>
                 <li>
                   <strong><code>requiredIf</code> / <code>optionalIf</code>.</strong> These
                   are presence rules, not checks. When the condition makes a field required
-                  and the value is missing you get one issue under
+                  and the value is missing you get one issue under{' '}
                   <code>requiredIf</code> — not one per remaining rule, because the rest of
                   the chain does not run.
                 </li>
@@ -619,16 +691,21 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              ><code>strict()</code> did not reject an extra property</summary
-            >
+          <details id="strict-extra-property" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                ><code>strict()</code> did not reject an extra property</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> <code>strict()</code> is a compile-time obligation
                 that every leaf path of your type is declared. It has no runtime effect at
-                all. Rejecting unknown properties is a rule: use
-                <code>objectAdditionalProperties</code>, documented on the
+                all. Rejecting unknown properties is a rule: use{' '}
+                <code>objectAdditionalProperties</code>, documented on the{' '}
                 <a href="/docs/api/builder#extra-properties">Builder page</a>.
               </p>
             </div>
@@ -636,15 +713,18 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="messages">Messages and codes</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >The error code I match on has changed</summary
-            >
+          <details id="error-codes" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">The error code I match on has changed</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> The default code is now the <strong>plugin's
                 name</strong>, uniformly, with <code>options.code</code> overriding it. 1.x
-                emitted constants such as <code>REQUIRED</code> and
+                emitted constants such as <code>REQUIRED</code> and{' '}
                 <code>VALIDATION_ERROR</code>.
               </p>
               <div class="overflow-x-auto">
@@ -683,19 +763,24 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              ><code>&#123; message: "…" &#125;</code> is not accepted on a rule</summary
-            >
+          <details id="message-option" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                ><code>&#123; message: "…" &#125;</code> is not accepted on a rule</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> There is one message channel:
-                <code>messageFactory</code>. <code>RuleOptions</code> is
+                <strong>Cause.</strong> There is one message channel:{' '}
+                <code>messageFactory</code>. <code>RuleOptions</code> is{' '}
                 <code>&#123; code?, messageFactory?, severity? &#125;</code> and nothing else, so
-                there is no second precedence rule to remember. It is always the
+                there is no second precedence rule to remember. It is always the{' '}
                 <strong>last</strong> argument of a chain method, after the plugin's own.
               </p>
-              <CodeBlock code={messageOptionExample} language="typescript" showCopy={false} />
+              <CodeBlock code={messageOptionExample} language="typescript" invalid />
               <CodeBlock code={messageFactoryExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
                 A call-level <code>messageFactory</code> and <code>translate</code> option
@@ -707,17 +792,22 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="async">Async checks</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >Checking a value against a database or an API</summary
-            >
+          <details id="async-lookup" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >Checking a value against a database or an API</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                The whole <code>@maroonedog/luq/async</code> subpath is one
+                The whole <code>@maroonedog/luq/async</code> subpath is one{' '}
                 <code>await</code> followed by the ordinary synchronous engine. It contains no
                 rule, no plan and no loop over fields — deliberately, because a second
                 execution path is exactly how 1.x's async story died: its real context-based
-                branch existed but no call site reached it, so
+                branch existed but no call site reached it, so{' '}
                 <code>required: true</code> on <code>fromContext</code> could never see a
                 context and always failed.
               </p>
@@ -727,13 +817,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 <p class="md-label-large mb-2">Three names, and what each one is</p>
                 <ul class="md-body-medium space-y-2 text-on-surface-variant">
                   <li>
-                    <code>createAsyncContext()</code> — an immutable builder;
-                    <code>.set(key, promise)</code> returns a new one, and
-                    <code>.build()</code> resolves everything with
+                    <code>createAsyncContext()</code> — an immutable builder;{' '}
+                    <code>.set(key, promise)</code> returns a new one, and{' '}
+                    <code>.build()</code> resolves everything with{' '}
                     <code>Promise.allSettled</code>, so entries run in parallel.
                   </li>
                   <li>
-                    <code>addAsyncSupport(validator)</code> — adds
+                    <code>addAsyncSupport(validator)</code> — adds{' '}
                     <code>withAsyncContext</code> without putting a fifth method on the core
                     validator.
                   </li>
@@ -748,16 +838,19 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >One async lookup failed or timed out</summary
-            >
+          <details id="async-failure" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">One async lookup failed or timed out</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <CodeBlock code={asyncFailureExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
-                With <code>continueOnError</code> left off, a failed entry makes
+                With <code>continueOnError</code> left off, a failed entry makes{' '}
                 <code>isReady</code> false and the bound validator rejects immediately with
-                one issue per failure, path = the entry's key and code
+                one issue per failure, path = the entry's key and code{' '}
                 <code>asyncContextUnavailable</code>. No field rule runs.
               </p>
             </div>
@@ -765,17 +858,20 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="bundle-size">Bundle size</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >More Luq in the bundle than expected</summary
-            >
+          <details id="bundle-larger" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">More Luq in the bundle than expected</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 First, check what "expected" was. Every entry is measured and re-measured by
-                CI on every build:
+                CI on every build:{' '}
                 <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
                   >the bundle size table</a
-                >. The floor is {bundleSize.coreOnly.gzip} for
+                >. The floor is {bundleSize.coreOnly.gzip} for{' '}
                 <code>Builder</code> with no plugins.
               </p>
               <p class="md-body-medium text-on-surface-variant">
@@ -793,7 +889,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                   <code>jsonSchemaFullFeature</code> bundles the plugins a whole document
                   needs, which is why one import covers it. The <code>jsonSchema</code> route
                   is billed as the tree-shakeable half and measured it is not — use it for the
-                  chain method, not to save bytes. Both are in
+                  chain method, not to save bytes. Both are in{' '}
                   <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
                     >the bundle size table</a
                   >.
@@ -808,10 +904,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="performance">Performance</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >Validation is slower than expected</summary
-            >
+          <details id="slow-validation" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">Validation is slower than expected</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>First check: are you building inside the hot path?</strong>
@@ -849,17 +948,29 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <ol class="md-body-medium space-y-3 text-on-surface-variant">
               <li>
-                <strong>1. Check the breaking-change list.</strong> If you are coming from
-                1.x, most surprises are on it — build()'s return value, the loss of the
-                <code>Result</code> class, and the <code>abortEarly</code> default in
-                particular.
+                <strong>1. Check the 1.x mapping.</strong> If you are coming from 1.x, most
+                surprises are on it. The{' '}
+                <a href="/docs/api/validator#porting" class="text-primary underline"
+                  >result</a
+                >, the{' '}
+                <a href="/docs/api/builder#removed" class="text-primary underline">builder</a>{' '}
+                and the{' '}
+                <a href="/docs/api/plugin-registry#removed" class="text-primary underline"
+                  >plugin registry</a
+                > each carry their own table; the import specifiers are{' '}
+                <a href="/docs/troubleshooting#imports" class="text-primary underline"
+                  >at the top of this page</a
+                > and the <code>abortEarly</code> default is{' '}
+                <a href="/docs/troubleshooting#abort-early" class="text-primary underline"
+                  >under Unexpected results</a
+                >.
               </li>
               <li>
                 <strong>2. Reduce it to one file.</strong> Every example on this site is a
                 complete file that compiles; start from the nearest one and add your case.
               </li>
               <li>
-                <strong>3. Search the issues</strong> at
+                <strong>3. Search the issues</strong> at{' '}
                 <a
                   href="https://github.com/maroonedog/luq/issues"
                   class="text-primary underline">github.com/maroonedog/luq/issues</a
@@ -919,18 +1030,16 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
     display: none;
   }
 
-  details > summary::before {
-    content: 'expand_more';
-    font-family: 'Material Symbols Outlined', sans-serif;
-    font-size: 20px;
-    line-height: 1;
-    vertical-align: -0.2em;
-    margin-right: 0.5rem;
-    display: inline-block;
+  /*
+   * The disclosure arrow is a real element, not generated content: an icon
+   * drawn through ::before cannot carry aria-hidden, so every summary here was
+   * announced prefixed with "expand more".
+   */
+  .summary-marker {
     transition: transform var(--md-sys-motion-duration-short-4) var(--md-sys-motion-easing-standard);
   }
 
-  details[open] > summary::before {
+  details[open] > summary > .summary-marker {
     transform: rotate(180deg);
   }
 </style>

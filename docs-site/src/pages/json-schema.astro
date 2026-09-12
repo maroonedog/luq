@@ -1,11 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import OnThisPage from '../components/OnThisPage.astro';
 import { bundleSize } from '../data/bundle-size';
 import { conformance as measured } from '../data/conformance';
+import { packageInfo } from '../data/package-info';
 
 /**
  * Sources for every figure and every name on this page:
@@ -290,13 +291,13 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
         keyword: 'minLength',
         handling: 'bind',
         target: 'stringMin — .min(n)',
-        note: 'Counts UTF-16 code units, not code points. Two suite cases fail on that.',
+        note: 'Counts code points, by iterating the string rather than reading .length, so one astral character is one character.',
       },
       {
         keyword: 'maxLength',
         handling: 'bind',
         target: 'stringMax — .max(n)',
-        note: 'Same counting caveat.',
+        note: 'Same counting.',
       },
       {
         keyword: 'pattern',
@@ -366,7 +367,7 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
         keyword: 'additionalItems',
         handling: 'structural',
         target: 'tupleBuilder — .builder()',
-        note: 'The rest sub-chain; meaningful only beside a tuple items. Six suite cases still fail on this pairing.',
+        note: 'The rest sub-chain; meaningful only beside a tuple items.',
       },
       {
         keyword: 'minItems',
@@ -577,6 +578,20 @@ const handlingStyles: Record<KeywordRow['handling'], string> = {
   annotation: 'bg-surface-container-highest text-on-surface-variant',
 };
 
+// One entry per <section id> below, in page order. OnThisPage is hidden under
+// xl, so this changes nothing on a narrower viewport.
+const tableOfContents = [
+  { id: 'conformance', title: 'Conformance, measured', level: 2 },
+  { id: 'two-doors', title: 'Two front doors', level: 2 },
+  { id: 'which-door', title: 'Which one to use', level: 2 },
+  { id: 'emit', title: 'The other direction', level: 2 },
+  { id: 'keywords', title: 'Every Draft-07 keyword', level: 2 },
+  { id: 'formats', title: 'All twenty format names', level: 2 },
+  { id: 'what-used-to-fail', title: 'What used to fail', level: 2 },
+  { id: 'not-supported', title: 'Limits today', level: 2 },
+  { id: 'reproduce', title: 'Reproduce it', level: 2 },
+];
+
 const handlingLabels: Record<KeywordRow['handling'], string> = {
   bind: 'bind',
   structural: 'structural',
@@ -589,13 +604,13 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
   description={`Measured Draft-07 conformance (${measured.headline}), the two front doors into Luq from a schema, the full keyword mapping, and every keyword that is not supported.`}
 >
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
-  <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+  <div class="flex min-h-screen">
+    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
     <header class="mb-12">
       <p class="mb-2 text-label-large text-primary">Draft-07</p>
-      <h1 class="mb-4 text-display-small text-on-surface">JSON Schema</h1>
+      <h1 class="mb-4 text-on-surface">JSON Schema</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
         Luq validates a Draft-07 document by <strong class="text-on-surface">converting</strong> it
         into the same field declarations you would have written by hand. There is no second engine:
@@ -617,14 +632,14 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       <div class="grid gap-4 sm:grid-cols-3">
         <div class="md-card md-card-filled p-6">
           <p class="text-label-medium text-on-surface-variant">This release</p>
-          <p class="mt-1 text-display-small text-primary">{conformance.percent}%</p>
+          <p class="mt-1 text-headline-small text-primary">{conformance.percent}%</p>
           <p class="mt-1 text-body-small text-on-surface-variant">
             {conformance.passed} of {conformance.total} cases
           </p>
         </div>
         <div class="md-card md-card-outlined p-6">
           <p class="text-label-medium text-on-surface-variant">A validator that always says yes</p>
-          <p class="mt-1 text-display-small text-on-surface-variant">
+          <p class="mt-1 text-headline-small text-on-surface-variant">
             {conformance.trivialPercent}%
           </p>
           <p class="mt-1 text-body-small text-on-surface-variant">
@@ -634,7 +649,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         </div>
         <div class="md-card md-card-outlined p-6">
           <p class="text-label-medium text-on-surface-variant">Luq 1.x, same corpus</p>
-          <p class="mt-1 text-display-small text-on-surface-variant">
+          <p class="mt-1 text-headline-small text-on-surface-variant">
             {conformance.legacyPercent}%
           </p>
           <p class="mt-1 text-body-small text-on-surface-variant">
@@ -709,8 +724,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           </h3>
           <p class="text-body-medium text-on-surface-variant">
             57 of these cases have the suite serve a schema over HTTP and expect the validator to
-            fetch it. Luq does not fetch, and does not need to: it takes a
-            <strong class="text-on-surface">map</strong> of documents you already have —
+            fetch it. Luq does not fetch, and does not need to: it takes a{' '}
+            <strong class="text-on-surface">map</strong> of documents you already have —{' '}
             <code>{'{ externalDocuments }'}</code> — so a URI written in a schema can never make
             the process open a socket, conversion stays synchronous, and nothing is evaluated.
             The caller decides what is reachable, and it is written in their code.
@@ -722,8 +737,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
             The corpus was run through the <strong class="text-on-surface">chain method</strong>,
             because its schemas put constraints on the document root and only that route can treat
             the root as the field itself. On the 289 cases whose instance is a plain object, the two
-            doors score 238 (82.35%) for <code>.jsonSchemaFullFeature()</code> and 229 (79.24%) for
-            <code>fromJsonSchema</code>, which is a <code>Validator&lt;T extends object&gt;</code>
+            doors score 238 (82.35%) for <code>.jsonSchemaFullFeature()</code> and 229 (79.24%) for{' '}
+            <code>fromJsonSchema</code>, which is a <code>Validator&lt;T extends object&gt;</code>{' '}
             and so only validates objects.
           </p>
         </div>
@@ -771,8 +786,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       <h2 class="mb-2 text-headline-medium text-on-surface">Two front doors</h2>
       <p class="mb-8 max-w-3xl text-body-medium text-on-surface-variant">
         There is no <code>.fromJsonSchema()</code> builder method — the rewrite has no
-        builder-extension mechanism at all. What exists is a <strong class="text-on-surface">function</strong>
-        that converts a whole document, and a <strong class="text-on-surface">chain method</strong>
+        builder-extension mechanism at all. What exists is a <strong class="text-on-surface">function</strong>{' '}
+        that converts a whole document, and a <strong class="text-on-surface">chain method</strong>{' '}
         that constrains one declared field by a document.
       </p>
 
@@ -784,7 +799,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           </span>
         </div>
         <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
-          One import. Returns the same <code>Validator&lt;T&gt;</code> the builder returns:
+          One import. Returns the same <code>Validator&lt;T&gt;</code> the builder returns:{' '}
           <code>validate</code>, <code>parse</code>, <code>pick</code>, <code>pickAll</code>,
           results shaped the same way, issue paths in the same <code>lines[0].sku</code> grammar.
         </p>
@@ -797,11 +812,11 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         </h3>
         <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
           <code>@maroonedog/luq/plugins/jsonSchema</code> adds a chain method, and it takes the
-          plugin bag explicitly. This method also reaches keywords the document
-          <strong class="text-on-surface"> root</strong> cannot otherwise use: root-level
-          <code>additionalProperties</code>, <code>anyOf</code>, <code>not</code>,
-          <code>if</code>/<code>then</code>/<code>else</code>, <code>minProperties</code> and
-          <code>propertyNames</code> are reachable this way and no other, because
+          plugin bag explicitly. This method also reaches keywords the document{' '}
+          <strong class="text-on-surface"> root</strong> cannot otherwise use: root-level{' '}
+          <code>additionalProperties</code>, <code>anyOf</code>, <code>not</code>,{' '}
+          <code>if</code>/<code>then</code>/<code>else</code>, <code>minProperties</code> and{' '}
+          <code>propertyNames</code> are reachable this way and no other, because{' '}
           <code>fromJsonSchema</code> declares rules per field and the empty path is not a field.
         </p>
         <CodeBlock code={chainMethodExample} fileName="envelope-validator.ts" />
@@ -813,7 +828,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         </h3>
         <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
           <code>jsonSchemaFullFeaturePlugin</code> is the same implementation with the 49-plugin bag
-          already inside it, so its chain method takes no bag — and it is called
+          already inside it, so its chain method takes no bag — and it is called{' '}
           <code>.jsonSchemaFullFeature()</code>, not <code>.jsonSchema()</code>. Two plugins may not
           claim one method on one slot; 1.x let both bundles claim <code>.fromJsonSchema</code> and
           picked a winner by registration order.
@@ -825,8 +840,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         <h3 class="mb-3 text-title-large text-on-surface">A document you only know at run time</h3>
         <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
           This works under a Content-Security-Policy that forbids <code>unsafe-eval</code>: the
-          conversion builds closures, never source text. There is no <code>eval</code> and no
-          <code>new Function</code> anywhere in the 762 emitted modules, and that is checked
+          conversion builds closures, never source text. There is no <code>eval</code> and no{' '}
+          <code>new Function</code> anywhere in the {packageInfo.moduleCount} emitted modules, and that is checked
           mechanically rather than asserted.
         </p>
         <CodeBlock code={runtimeSchemaExample} fileName="load-validator.ts" />
@@ -841,16 +856,16 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         is not: it gzips to {bundleSize.jsonSchemaPlugin.gzip} against{' '}
         {bundleSize.jsonSchemaFullFeature.gzip} for the bundle — and that first figure is the
         plugin <em>alone</em>, which cannot validate a document without a bag of plugins behind
-        it. Both entries, with their ceilings, are on
+        it. Both entries, with their ceilings, are on{' '}
         <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
           >the bundle size table</a
         >.
       </p>
 
       <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
-        The first row is not a usable configuration: <code>.jsonSchema()</code> needs a bag. So use
+        The first row is not a usable configuration: <code>.jsonSchema()</code> needs a bag. So use{' '}
         <code>jsonSchemaFullFeature</code>, and reach for <code>./plugins/jsonSchema</code> when you
-        want the per-field chain method — not to save bytes.
+        want the per-field chain method — not to save bytes.{' '}
         <a class="text-primary underline underline-offset-2" href="/benchmarks#json-schema-size">
           The method behind these figures is on the benchmarks page.
         </a>
@@ -862,8 +877,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       <h2 class="mb-2 text-headline-medium text-on-surface">The other direction</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         Everything above reads a document in. <code>toStandardJsonSchema</code> writes one out:
-        it takes a built validator and returns it with a
-        <code>~standard.jsonSchema</code> converter attached. What comes back is still a
+        it takes a built validator and returns it with a{' '}
+        <code>~standard.jsonSchema</code> converter attached. What comes back is still a{' '}
         <code>StandardSchemaV1</code>, so the same value goes on working anywhere that takes one.
       </p>
 
@@ -883,7 +898,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         <div class="md-card md-card-filled p-5">
           <p class="mb-1 text-title-small text-on-surface">Two targets, no guessing</p>
           <p class="text-body-medium text-on-surface-variant">
-            <code>draft-2020-12</code> and <code>draft-07</code>. Anything else throws
+            <code>draft-2020-12</code> and <code>draft-07</code>. Anything else throws{' '}
             <code>UnsupportedJsonSchemaTargetError</code> — <code>openapi-3.0</code> descends from
             draft-04 and is a different lineage, so it is not admitted on a guess. Writing
             draft-07 silently when 2020-12 was asked for hands you a document you will read
@@ -912,17 +927,17 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         <div class="md-card md-card-filled p-5">
           <p class="mb-1 text-title-small text-on-surface">Import before you build</p>
           <p class="text-body-medium text-on-surface-variant">
-            The record of declared calls is made as the chain is walked, and importing
+            The record of declared calls is made as the chain is walked, and importing{' '}
             <code>@maroonedog/luq/standard-schema</code> is what asks for it — the chain does not
-            keep one on its own. A <code>build()</code> evaluated first produces no record, and
+            keep one on its own. A <code>build()</code> evaluated first produces no record, and{' '}
             <code>DeclarationsUnavailableError</code> says so, naming both causes.
           </p>
         </div>
       </div>
 
       <p class="max-w-3xl text-body-medium text-on-surface-variant">
-        The cost of that record is one null check per chain step when nothing is imported: no
-        <code>DeclaredCall</code> is built and no array is copied. The
+        The cost of that record is one null check per chain step when nothing is imported: no{' '}
+        <code>DeclaredCall</code> is built and no array is copied. The{' '}
         <a class="text-primary underline underline-offset-2" href="/benchmarks#bundle-size"
           >bundle size table</a
         > carries the figure.
@@ -1061,14 +1076,14 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
         A format name that is <em>not</em> in this table is an annotation and passes, which is what
         Draft-07 §7.2 requires. It is not an error. Adding the last four names
-        (<code>idn-email</code>, <code>idn-hostname</code>, <code>uri-reference</code>,
+        (<code>idn-email</code>, <code>idn-hostname</code>, <code>uri-reference</code>,{' '}
         <code>regex</code>) took the score from 86.54% to 89.13% on their own: before them, a
         schema naming one threw at build time and produced no validator at all.
       </p>
     </section>
 
-    <!-- ================= Not supported ================= -->
-    <section id="not-supported" class="mb-16 scroll-mt-24">
+    <!-- ================= What used to fail ================= -->
+    <section id="what-used-to-fail" class="mb-16 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">What used to fail</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         Nothing fails now, so this is the record of what did. Each row was an entry in a typed skip
@@ -1145,39 +1160,46 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           </h3>
           <p class="mb-3 text-body-medium text-on-surface-variant">
             <code>null</code> at a field the document forbids it on. Absence is settled before any
-            rule runs, so nullability is a presence policy rather than a rule. The converter writes
+            rule runs, so nullability is a presence policy rather than a rule. The converter writes{' '}
             <code>.optional()</code> for every non-required property, and a hand-written chain says
             it the same way.
           </p>
           <CodeBlock code={nullPresenceExample} showCopy={false} />
         </div>
       </div>
+    </section>
 
-      <div class="mt-6 md-card md-card-filled p-6">
-        <h3 class="mb-3 text-title-medium text-on-surface">Limits worth knowing before you start</h3>
-        <ul class="space-y-2 text-body-medium text-on-surface-variant">
-          <li>
-            <strong class="text-on-surface">No external or remote <code>$ref</code>.</strong>
-            A loader that touches the network is not a default feature of a validation library.
-          </li>
-          <li>
-            <strong class="text-on-surface"><code>__proto__</code> is refused as a path segment.</strong>
-            A deliberate decision, recorded as one, so that prototype pollution is unreachable.
-          </li>
-          <li>
-            <strong class="text-on-surface"><code>additionalProperties</code> does not consult
-            <code>patternProperties</code>.</strong> It over-rejects in that combination.
-          </li>
-          <li>
-            <strong class="text-on-surface">A recursive <code>$ref</code> stops after the first
-            iteration.</strong> No required suite case covers this, but a depth like
-            <code>tree.child.name</code> is not validated.
-          </li>
-          <li>
-            <strong class="text-on-surface"><code>minLength</code> / <code>maxLength</code> count
-            code units.</strong> A string of astral characters counts double.
-          </li>
-        </ul>
+    <!-- ================= Limits today ================= -->
+    <section id="not-supported" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Limits today</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        One, and it is a bound rather than a gap. Everything else this section used to
+        list — external <code>$ref</code>, <code>__proto__</code> as a declared path
+        segment, <code>additionalProperties</code> beside <code>patternProperties</code>,
+        code-unit string lengths — is closed, and the table above is the record of how.
+      </p>
+
+      <div class="md-card md-card-filled p-6">
+        <h3 class="mb-3 text-title-medium text-on-surface">
+          A recursive <code>$ref</code> is unrolled three times, and then stops
+        </h3>
+        <p class="text-body-medium text-on-surface-variant">
+          A recursive definition has infinitely many declared paths and Luq declares finite
+          ones, so the expansion is bounded: one <code>$ref</code> may be entered{' '}
+          <strong class="text-on-surface">three times</strong> on a branch. Three is what
+          the Draft-07 corpus needs — its mutually recursive tree puts the invalid value
+          three levels down — and unrolling further is exponential in the number of
+          definitions in the cycle, which the constant's own comment measures.
+        </p>
+        <p class="mt-3 text-body-medium text-on-surface-variant">
+          Past that depth the document is{' '}
+          <strong class="text-on-surface">not checked</strong>: the conversion stops adding
+          rules rather than throwing, so a value nested deeper than three turns of the
+          cycle is accepted without being looked at. The cost of the unrolling is paid once,
+          when the validator is built, not on every <code>validate()</code>. A whole
+          conversion also carries a total expansion budget, far above anything a real
+          document reaches, so a pathological schema cannot run away.
+        </p>
       </div>
     </section>
 
@@ -1202,7 +1224,10 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         Benchmarks
       </a>
     </nav>
-  </main>
+    </main>
+
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
 
   <Footer />
 </BaseLayout>

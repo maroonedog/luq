@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 
 /**
@@ -106,14 +105,13 @@ npx tsc --noEmit`;
 
 <BaseLayout title="Rules on generated types" description={description}>
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main class="px-4 py-16 sm:px-6 lg:px-8">
     <div class="container mx-auto max-w-3xl">
       <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
         Integration
       </p>
-      <h1 class="mb-6 text-display-small text-on-surface">
+      <h1 class="mb-6 text-on-surface">
         Rules on generated types
       </h1>
       <p class="mb-12 text-body-large text-on-surface-variant">
@@ -137,7 +135,7 @@ npx tsc --noEmit`;
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
         No second definition of the shape. The paths are checked against the
-        generated type, so a typo in <code class="font-mono">"customer.emial"</code>
+        generated type, so a typo in <code class="font-mono">"customer.emial"</code>{' '}
         is a compile error rather than a rule that never fires.
       </p>
       <CodeBlock code={rulesSample} language="typescript" fileName="validate-order.ts" />
@@ -146,17 +144,17 @@ npx tsc --noEmit`;
         3. What happens when the spec changes
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
-        This is the part that pays for the direction. Someone upstream renames
+        This is the part that pays for the direction. Someone upstream renames{' '}
         <code class="font-mono">customer</code> to <code class="font-mono">buyer</code>.
-        You regenerate. The rule that referenced the old field
+        You regenerate. The rule that referenced the old field{' '}
         <strong class="text-on-surface">stops compiling</strong>:
       </p>
-      <CodeBlock code={driftSample} language="typescript" fileName="after-the-spec-changed.ts" />
+      <CodeBlock code={driftSample} language="typescript" fileName="after-the-spec-changed.ts" invalid />
 
       <div class="md-card md-card-filled my-8 p-6">
         <p class="mb-3 text-body-large text-on-surface-variant">
           The example above is marked <code class="font-mono">must-fail</code> in
-          this page's source. <code class="font-mono">npm run check:doc-examples</code>
+          this page's source. <code class="font-mono">npm run check:doc-examples</code>{' '}
           compiles it on every build and fails if it ever succeeds.
         </p>
         <p class="text-body-medium text-on-surface-variant">
@@ -201,10 +199,10 @@ npx tsc --noEmit`;
       <ul class="mb-12 space-y-3 text-body-medium text-on-surface-variant">
         <li>
           Luq reads the generated type, not the OpenAPI document. Constraints the
-          spec carries — <code class="font-mono">maxLength</code>,
+          spec carries — <code class="font-mono">maxLength</code>,{' '}
           <code class="font-mono">pattern</code>, <code class="font-mono">format</code>
           — do not survive into TypeScript, so you write those rules yourself.
-          If you want the document itself to drive validation, that is the
+          If you want the document itself to drive validation, that is the{' '}
           <a class="text-primary underline underline-offset-2" href="/json-schema">
             JSON Schema entry point</a
           >, and it is a different trade.

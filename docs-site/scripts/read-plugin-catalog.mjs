@@ -174,7 +174,10 @@ function readDirectorySource(repositoryRoot, directory) {
 export function readPluginCatalog(repositoryRoot) {
   const rows = readReferenceRows(repositoryRoot);
   const locked = readLockedSubpaths(repositoryRoot);
-  const directories = readManifestDirectories(repositoryRoot, locked.pluginCount);
+  const directories = readManifestDirectories(
+    repositoryRoot,
+    locked.pluginCount
+  );
 
   const referenced = new Set(rows.map((row) => row.name));
   const missing = locked.names.filter((name) => !referenced.has(name));

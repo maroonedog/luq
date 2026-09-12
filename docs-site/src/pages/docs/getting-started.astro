@@ -7,9 +7,71 @@ import DocsSidebar from '../../components/DocsSidebar.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 import { packageInfo } from '../../data/package-info';
+import { pluginSubpathCount } from '../../data/plugins';
+import perfBaseline from '../../../../config/perf-baseline.json';
+import sizeBudget from '../../../../config/size-budget.json';
 
 // Every TypeScript block on this page was typechecked against the built
 // package (dist/*.d.ts through package.json#exports) before it was pasted in.
+
+/**
+ * No performance figure on this page is typed. Each one is derived below from
+ * config/perf-baseline.json — the file `npm run bench:record` writes and CI
+ * re-reads — exactly as benchmarks.astro does it.
+ *
+ * Two rules this page learned the hard way:
+ *
+ *   A figure cannot live inside a code block. A template literal containing a
+ *   real ${…} is auto-skipped by check:doc-examples, so interpolating into an
+ *   example would take that example out of the compile gate. Derived figures
+ *   go in the prose beside the block, never in a comment inside it.
+ *
+ *   A sentence that characterises a shape has to say WHICH shapes. The
+ *   baseline is one machine on one date; "sub-microsecond" is true of three of
+ *   the five measured shapes and 11× wrong on a fourth, so the split is
+ *   computed rather than asserted.
+ */
+const buildMicroseconds = perfBaseline.buildCost.map((entry) => entry.microsecondsPerBuild);
+const buildCostRange = {
+  fastest: Math.min(...buildMicroseconds),
+  slowest: Math.max(...buildMicroseconds),
+};
+
+const shapeLabels: Record<string, string> = {
+  singleField: 'one field',
+  multiField: 'three fields',
+  nested: 'a nested object',
+  array: 'a 50-element array',
+  jsonSchema: 'a Draft-07 document',
+};
+
+const validateCost = perfBaseline.throughput
+  .filter((entry) => entry.operation === 'validate')
+  .map((entry) => ({
+    label: shapeLabels[entry.shape] ?? entry.shape,
+    microseconds: 1_000_000 / entry.opsPerSecond,
+  }));
+
+const subMicrosecondShapes = validateCost.filter((entry) => entry.microseconds < 1);
+const slowerShapes = validateCost
+  .filter((entry) => entry.microseconds >= 1)
+  .sort((left, right) => left.microseconds - right.microseconds);
+
+const formatMicroseconds = (value: number) => value.toFixed(1);
+
+/** "3.2 µs on a Draft-07 document and 11.0 µs on a 50-element array" */
+const joinClauses = (clauses: readonly string[]) =>
+  clauses.length <= 1
+    ? (clauses[0] ?? '')
+    : `${clauses.slice(0, -1).join(', ')} and ${clauses[clauses.length - 1]}`;
+
+const slowerShapesSentence = joinClauses(
+  slowerShapes.map((entry) => `${formatMicroseconds(entry.microseconds)} µs on ${entry.label}`)
+);
+
+/** What the first plugin added to the bare builder actually cost, gzipped. */
+const onePluginCostBytes = bundleSize.onePlugin.bytes - bundleSize.coreOnly.bytes;
+const barrelDivergencePercent = sizeBudget.barrelEquivalence.maxDivergencePercent;
 
 const tsconfigExample = `{
   "compilerOptions": {
@@ -243,9 +305,8 @@ const importsExample = `// The supported route: one subpath per plugin.
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
 
-// The barrel also resolves, and is measurably free when a bundler can
-// tree-shake: three plugins gzip to 7,986 B through it against 7,987 B
-// through three subpaths — a difference of 1 byte, 0.01%.
+// The barrel also resolves, and costs the same when a bundler can tree-shake.
+// The measured figures are in the prose below this block.
 import { stringEmailPlugin } from '@maroonedog/luq/plugins';`;
 
 const standardSchemaExample = `import { Builder } from '@maroonedog/luq';
@@ -300,11 +361,12 @@ const signupValidator = Builder()
   })
   .build();
 
-// true — the rules saw "ada@example.com" and 30
-signupValidator.validate({ email: "  Ada@Example.com  ", age: "30" } as never).valid;
+// true — the rules saw "ada@example.com" and 30.
+// validate() and parse() both take unknown, so the untidied shape needs no cast.
+signupValidator.validate({ email: "  Ada@Example.com  ", age: "30" }).valid;
 
 // parse() writes the tidied values back; validate() leaves your object alone.
-signupValidator.parse({ email: "  Ada@Example.com  ", age: "30" } as never);`;
+signupValidator.parse({ email: "  Ada@Example.com  ", age: "30" });`;
 
 const tableOfContents = [
   { id: 'installation', title: 'Installation', level: 2 },
@@ -357,7 +419,7 @@ const tableOfContents = [
           <div class="md-card md-card-filled p-4">
             <h2 class="text-title-medium">One result shape</h2>
             <p class="mt-1 text-body-medium text-on-surface-variant">
-              A discriminated union on <code>valid</code>. No result class, no
+              A discriminated union on <code>valid</code>. No result class, no{' '}
               <code>unwrap()</code> on the value.
             </p>
           </div>
@@ -418,8 +480,12 @@ const tableOfContents = [
         </h3>
 
         <p class="mt-3 text-body-large">
-          <code>strict</code> is required: without it, the path and slot checks stop being
-          compile errors. <code>node16</code> and <code>bundler</code> resolution both work.
+          <code>strict</code> is not required. Every check below is a compile error either
+          way — a slot that does not match the field, a missing <code>[*]</code>, a path the
+          type does not declare, a method whose plugin you did not import. Luq is checked
+          under <code>strict</code> too, so turning it on costs you nothing here and catches
+          the rest of your code. <code>node16</code> and <code>bundler</code> resolution both
+          work.
         </p>
 
         <CodeBlock code={tsconfigExample} language="json" fileName="tsconfig.json" />
@@ -427,7 +493,7 @@ const tableOfContents = [
         <h2 id="the-five-calls" class="mt-12 text-headline-small">The five calls</h2>
 
         <p class="mt-3 text-body-large">
-          Every validator is the same five steps. <code>.use()</code> comes before
+          Every validator is the same five steps. <code>.use()</code> comes before{' '}
           <code>.for()</code>; nothing else has an order that matters.
         </p>
 
@@ -436,8 +502,15 @@ const tableOfContents = [
         <div class="md-card md-card-outlined mt-6 p-5">
           <h3 class="text-title-medium">Build once, keep the validator</h3>
           <p class="mt-2 text-body-medium text-on-surface-variant">
-            <code>build()</code> costs 14–662&nbsp;µs; <code>validate()</code> is
-            sub-microsecond. Build at module scope, not per request.
+            <code>build()</code> costs {formatMicroseconds(buildCostRange.fastest)}–{
+              formatMicroseconds(buildCostRange.slowest)
+            }&nbsp;µs depending on the shape. <code>validate()</code> is sub-microsecond on{' '}
+            {subMicrosecondShapes.length} of the {validateCost.length} measured shapes, and
+            costs {slowerShapesSentence}. Build at module scope, not per request — the{' '}
+            <a class="text-primary underline underline-offset-2" href="/benchmarks">
+              measured figures
+            </a>{' '}
+            are per shape, on one named machine.
           </p>
         </div>
 
@@ -491,7 +564,7 @@ const tableOfContents = [
         <h2 id="reading-the-result" class="mt-12 text-headline-small">Reading the result</h2>
 
         <p class="mt-3 text-body-large">
-          A discriminated union on <code>valid</code> — every member is documented on
+          A discriminated union on <code>valid</code> — every member is documented on{' '}
           <a class="text-primary underline underline-offset-2" href="/docs/api/validator#validation-result"
             >the validator API</a>.
         </p>
@@ -499,15 +572,15 @@ const tableOfContents = [
         <CodeBlock code={resultExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          <code>data</code> exists only on the success branch, so narrowing on
+          <code>data</code> exists only on the success branch, so narrowing on{' '}
           <code>valid</code> replaces every cast. The default <code>code</code> is the
           plugin's own name — <code>required</code>, <code>stringMin</code>.
         </p>
 
         <p class="mt-4 text-body-large">
-          Prefer exceptions? <code>@maroonedog/luq/result</code> gives you
-          <code>unwrap()</code> and a <code>ValidationFailure</code> that carries
-          <code>.issues</code> — see
+          Prefer exceptions? <code>@maroonedog/luq/result</code> gives you{' '}
+          <code>unwrap()</code> and a <code>ValidationFailure</code> that carries{' '}
+          <code>.issues</code> — see{' '}
           <a class="text-primary underline underline-offset-2" href="/docs/api/validator#result-subpath"
             >the validator API</a>.
         </p>
@@ -517,9 +590,9 @@ const tableOfContents = [
         </h2>
 
         <p class="mt-3 text-body-large">
-          <code>validate()</code> never changes your value; <code>parse()</code> applies
+          <code>validate()</code> never changes your value; <code>parse()</code> applies{' '}
           <code>.transform()</code> rules. Why transforms run last, and what that does to
-          the chain's type:
+          the chain's type:{' '}
           <a class="text-primary underline underline-offset-2" href="/docs/core-concepts#validate-vs-parse"
             >core concepts</a
           >.
@@ -531,7 +604,7 @@ const tableOfContents = [
 
         <p class="mt-3 text-body-large">
           <code>abortEarly</code>, <code>abortEarlyOnEachField</code>, <code>external</code> —
-          in full on
+          in full on{' '}
           <a class="text-primary underline underline-offset-2" href="/docs/api/validator#options"
             >the validator API</a>.
         </p>
@@ -543,14 +616,14 @@ const tableOfContents = [
             <code>abortEarly</code> defaults to <code>true</code>
           </h3>
           <p class="mt-2 text-body-medium text-on-surface-variant">
-            Both flags default to <code>true</code>. Pass
+            Both flags default to <code>true</code>. Pass{' '}
             <code>{'{ abortEarly: false }'}</code> to collect every issue.
           </p>
         </div>
 
         <p class="mt-6 text-body-large">
-          <code>external</code> is a pre-resolved bag that
-          <code>@maroonedog/luq/plugins/fromContext</code> reads.
+          <code>external</code> is a pre-resolved bag that{' '}
+          <code>@maroonedog/luq/plugins/fromContext</code> reads.{' '}
           <code>@maroonedog/luq/async</code> resolves promises and passes them in on it.
         </p>
 
@@ -567,9 +640,9 @@ const tableOfContents = [
         </h2>
 
         <p class="mt-3 text-body-large">
-          A form gives you a string in a number field and spaces around a name.
+          A form gives you a string in a number field and spaces around a name.{' '}
           <code>normalize</code> sits beside <code>default</code> in the same options object
-          and tidies the value <em>before</em> anything judges it, so
+          and tidies the value <em>before</em> anything judges it, so{' '}
           <code>validate()</code> and <code>parse()</code> never disagree about what they
           looked at.
         </p>
@@ -578,15 +651,15 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           It takes and returns <code>unknown</code> on purpose: the value has not been
-          validated yet, and <code>"42"</code>&nbsp;→&nbsp;<code>42</code> is the point.
+          validated yet, and <code>"42"</code>&nbsp;→&nbsp;<code>42</code> is the point.{' '}
           <strong>It is never called with <code>undefined</code> or <code>null</code></strong>
           — so <code>(v) =&gt; String(v).trim()</code> cannot turn a missing field into the
-          string <code>"undefined"</code> and sneak it past <code>required</code>. Absence is
+          string <code>"undefined"</code> and sneak it past <code>required</code>. Absence is{' '}
           <code>default</code>'s job; <code>normalize</code> only sees a value that is there.
         </p>
 
         <p class="mt-4 text-body-large">
-          The order is what makes the common case work:
+          The order is what makes the common case work:{' '}
           <code>"&nbsp;&nbsp;"</code>&nbsp;→ trim →
           <code>""</code>&nbsp;→ presence reads an empty string as missing →
           <code>required</code> fires.
@@ -597,8 +670,8 @@ const tableOfContents = [
         </h2>
 
         <p class="mt-3 text-body-large">
-          Dots for nested fields, <code>[*]</code> for array elements; you declare
-          <code>[*]</code> and the issue comes back with the real index. Every form:
+          Dots for nested fields, <code>[*]</code> for array elements; you declare{' '}
+          <code>[*]</code> and the issue comes back with the real index. Every form:{' '}
           <a class="text-primary underline underline-offset-2" href="/docs/core-concepts#field-paths"
             >the path grammar</a
           >.
@@ -611,9 +684,9 @@ const tableOfContents = [
         </h2>
 
         <p class="mt-3 text-body-large">
-          Every plugin method takes the same trailing options object:
-          <code>{'{ code?, messageFactory?, severity? }'}</code>. There is no
-          <code>message: string</code> option anywhere — a constant message is
+          Every plugin method takes the same trailing options object:{' '}
+          <code>{'{ code?, messageFactory?, severity? }'}</code>. There is no{' '}
+          <code>message: string</code> option anywhere — a constant message is{' '}
           <code>{'{ messageFactory: () => "..." }'}</code>.
         </p>
 
@@ -626,12 +699,25 @@ const tableOfContents = [
 
         <h2 id="importing-plugins" class="mt-12 text-headline-small">Importing plugins</h2>
 
+        <p class="mt-3 text-body-large">
+          Every method the chain offers is a plugin you imported by name — there is no
+          built-in rule and no method you get for free. The{' '}
+          <a class="text-primary underline underline-offset-2" href="/plugins">
+            plugin catalogue
+          </a>{' '}
+          lists all {pluginSubpathCount} of them with their subpath, chain method and the
+          slots each one may be used on.
+        </p>
+
         <CodeBlock code={importsExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
           The root <code>@maroonedog/luq</code> entry exports no plugins at all, which is why
-          the bare builder gzips to {bundleSize.coreOnly.gzip} and a plugin costs
-          129–224&nbsp;B to add.
+          the bare builder gzips to {bundleSize.coreOnly.gzip} and adding the first one costs{' '}
+          {onePluginCostBytes}&nbsp;B on top of it. Going through the barrel instead of the
+          subpaths is not a tax on that: <code>check:barrel-equivalence</code> fails the build
+          if the same three plugins gzip more than {barrelDivergencePercent}% apart the two
+          ways, and through the subpaths they are {bundleSize.threePlugin.gzip}.
         </p>
 
         <h2 id="standard-schema" class="mt-12 text-headline-small">Standard Schema</h2>
@@ -639,22 +725,25 @@ const tableOfContents = [
         <p class="mt-3 text-body-large">
           Luq implements <a
             class="text-primary underline underline-offset-2"
-            href="https://standardschema.dev">Standard Schema v1</a>, on the
-          <code>@maroonedog/luq/standard-schema</code> subpath.
+            href="https://standardschema.dev">Standard Schema v1</a> on the{' '}
+          <code>@maroonedog/luq/standard-schema</code> subpath — a separate specifier, so a
+          validator that never reaches a form or an RPC boundary does not pay for it. It
+          collects every issue and runs <code>parse()</code>, so transforms apply.
         </p>
 
         <CodeBlock code={standardSchemaExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          It collects every issue, runs <code>parse()</code> so transforms apply, and
-          <code>InferInput</code> is the type you wrote in <code>.for&lt;T&gt;()</code>.
-          It is a subpath so the 312&nbsp;B is not charged to validators that never
-          reach a form or an RPC boundary.
+          <a class="text-primary underline underline-offset-2" href="/standard-schema">
+            Standard Schema
+          </a>{' '}
+          has the rest: the three decisions the spec leaves open, and the call sites it plugs
+          into.
         </p>
 
         <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <a
             href="/docs/core-concepts"
             class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
@@ -663,6 +752,17 @@ const tableOfContents = [
             <h3 class="mt-2 text-title-medium">Core concepts</h3>
             <p class="mt-1 text-body-medium text-on-surface-variant">
               Slots, presence, field paths, and the order rules run in
+            </p>
+          </a>
+
+          <a
+            href="/docs/examples"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">lightbulb</span>
+            <h3 class="mt-2 text-title-medium">Examples &amp; patterns</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              Cross-field rules, form errors, and two whole validators
             </p>
           </a>
 
@@ -695,7 +795,7 @@ const tableOfContents = [
             <span class="md-icon text-primary" aria-hidden="true">checklist</span>
             <h3 class="mt-2 text-title-medium">Validator API</h3>
             <p class="mt-1 text-body-medium text-on-surface-variant">
-              The four members of <code>build()</code>, and the 1.x
+              The four members of <code>build()</code>, and the 1.x{' '}
               <code>Result</code> mapping
             </p>
           </a>
@@ -716,11 +816,6 @@ const tableOfContents = [
    * loads it for name resolution only and emits nothing.
    */
   @reference '../../styles/global.css';
-
-  /* Inline code, on the MD3 container tone the design system reserves for it. */
-  article :not(pre) > code {
-    @apply rounded-shape-xs bg-surface-container-highest px-1.5 py-0.5 font-mono text-[0.875em] text-on-surface;
-  }
 
   .tab-button {
     @apply relative rounded-t-shape-sm px-4 py-2 text-label-large text-on-surface-variant;

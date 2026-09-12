@@ -1,11 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { bundleSize } from '../data/bundle-size';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import OnThisPage from '../components/OnThisPage.astro';
 import { conformance } from '../data/conformance';
 import { legacySpeedups } from '../data/legacy-speedups';
+import { packageInfo } from '../data/package-info';
+import { pluginObjectCount, pluginSubpathCount } from '../data/plugins';
 
 /**
  * This page replaces the 1.x roadmap, which advertised a `.luq` universal-platform
@@ -25,7 +27,7 @@ import { legacySpeedups } from '../data/legacy-speedups';
 const shipped = [
   {
     icon: 'inventory_2',
-    headline: '77 plugins across 76 subpaths',
+    headline: `${pluginObjectCount} plugins across ${pluginSubpathCount} subpaths`,
     detail:
       'Every rule you can call is a plugin you imported by name. An unimported plugin is not merely absent at run time — its method does not typecheck.',
     href: '/plugins',
@@ -51,15 +53,15 @@ const shipped = [
     icon: 'lock',
     headline: 'CSP-safe, and checked',
     detail:
-      'Zero occurrences of eval and new Function across all 762 emitted modules, verified by a script and by the public-API smoke test. 1.x claimed this in its README while shipping a live new Function.',
+      `Zero occurrences of eval and new Function across all ${packageInfo.moduleCount} emitted modules, verified by a script and by the public-API smoke test. 1.x claimed this in its README while shipping a live new Function.`,
     href: '/benchmarks',
     linkLabel: 'How it is checked',
   },
   {
     icon: 'package_2',
-    headline: '84 export keys, every one resolving',
+    headline: `${packageInfo.exportKeyCount} export keys, every one resolving`,
     detail:
-      'A scratch consumer typechecks all 84 against the published declarations under both node16 and bundler resolution, and proves an unpublished subpath fails.',
+      `A scratch consumer typechecks all ${packageInfo.exportKeyCount} against the published declarations under both node16 and bundler resolution, and proves an unpublished subpath fails.`,
     href: '/docs/getting-started',
     linkLabel: 'Get started',
   },
@@ -159,27 +161,37 @@ const knownWeaknesses = [
     href: '/benchmarks#the-gate',
   },
 ];
+
+// One entry per <section id> below, in page order. The ids already existed —
+// this page's own hero links to #withdrawn — so none is renamed here.
+// OnThisPage is hidden under xl.
+const tableOfContents = [
+  { id: 'shipped', title: 'What is in the box', level: 2 },
+  { id: 'open-work', title: 'What used to be missing', level: 2 },
+  { id: 'weaknesses', title: 'Where this release is weak', level: 2 },
+  { id: 'withdrawn', title: 'The withdrawn goal', level: 2 },
+];
 ---
 
 <BaseLayout
-  title="Roadmap"
-  description="What has shipped in 2.0, what is measured as missing and named in the source, and why the 1.x universal-platform roadmap has been withdrawn."
+  title="Project status"
+  description="Where 2.0 stands: what has shipped and is measured, where the release is measurably weak, and why the 1.x universal-platform roadmap has been withdrawn."
 >
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
-  <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+  <div class="flex min-h-screen">
+    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
     <header class="mb-12">
       <p class="mb-2 text-label-large text-primary">2.0</p>
-      <h1 class="mb-4 text-display-small text-on-surface">Roadmap</h1>
+      <h1 class="mb-4 text-on-surface">Project status</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
-        This page carries no dates. Everything below is either measured and shipped, or measured as
-        missing and named in the source — the version of this page that promised a
-        <code>.luq</code> language by a quarter is gone, and
+        Where 2.0 stands: what has shipped and is measured, what has closed since this page listed
+        it as missing, where the release is still measurably weak — speed first — and why the 1.x{' '}
+        <code>.luq</code> roadmap was{' '}
         <a class="text-primary underline underline-offset-2" href="#withdrawn">
-          what happened to it is at the bottom
-        </a>.
+          withdrawn rather than rescheduled
+        </a>. Nothing here carries a date, and nothing here is unmeasured.
       </p>
     </header>
 
@@ -217,8 +229,8 @@ const knownWeaknesses = [
     <section id="open-work" class="mb-16 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">What this page used to list as missing</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        Nine rows, and all nine are closed — the Draft-07 corpus now passes
-        <strong class="text-on-surface">929 of 929</strong>. They are kept here rather than deleted,
+        Nine rows, and all nine are closed — the Draft-07 corpus now passes{' '}
+        <strong class="text-on-surface">{conformance.passingCases} of {conformance.caseCount}</strong>. They are kept here rather than deleted,
         because a roadmap that only ever shows what is left tells you nothing about whether the
         things on it actually get done. The real remaining weaknesses are further down, and the
         first of them is speed.
@@ -262,11 +274,11 @@ const knownWeaknesses = [
         <p class="text-body-medium text-on-surface-variant">
           This page used to record <code>__proto__</code> in a declared path as decided against —
           refused on purpose, so prototype pollution stayed unreachable, and 14 suite cases lost on
-          purpose with it. That was the wrong reading of the problem. Only ASSIGNMENT reaches
-          <code>Object.prototype</code>'s setter; writing the key with
+          purpose with it. That was the wrong reading of the problem. Only ASSIGNMENT reaches{' '}
+          <code>Object.prototype</code>'s setter; writing the key with{' '}
           <code>Object.defineProperty</code> creates an own property and touches nothing. The
-          refusal is gone, the 14 cases pass, and
-          <code>test/unit/path/prototype-pollution.test.ts</code> proves both halves — that
+          refusal is gone, the 14 cases pass, and{' '}
+          <code>test/unit/path/prototype-pollution.test.ts</code> proves both halves — that{' '}
           <code>__proto__</code> is declarable, and that <code>Object.prototype</code> is still
           clean afterwards. Reverting the write back to an assignment makes it fail.
         </p>
@@ -308,7 +320,7 @@ const knownWeaknesses = [
       <div class="md-card md-card-outlined p-6">
         <p class="mb-4 text-body-medium text-on-surface-variant">
           1.x advertised a <code>.luq</code> DSL that would generate validators for other
-          languages: database and cache adapters, endpoint definitions, a
+          languages: database and cache adapters, endpoint definitions, a{' '}
           <code>luq generate --lang=java</code> command, OpenAPI emission. This page carried it with
           dated milestones. Those dates have since passed, and none of it shipped.
         </p>
@@ -341,7 +353,10 @@ const knownWeaknesses = [
         Follow on GitHub
       </a>
     </nav>
-  </main>
+    </main>
+
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
 
   <Footer />
 </BaseLayout>

@@ -1,12 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Hero from '../components/Hero.astro';
 import SimplifiedFeatures from '../components/SimplifiedFeatures.astro';
 import CodeExample from '../components/CodeExample.astro';
 import PracticalExamples from '../components/PracticalExamples.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 
 const description =
   'Luq is a TypeScript validation library that validates the types you already have. Declare rules against your own type’s field paths; every rule is a plugin you imported by name.';
@@ -17,19 +16,18 @@ const description =
   description={description}
 >
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main>
     <Hero />
 
-    <section class="bg-surface-container-low px-4 py-20 sm:px-6 lg:px-8">
+    <section class="border-t border-outline-variant bg-surface-container px-4 py-14 sm:px-6 lg:px-8">
       <div class="container mx-auto max-w-6xl">
-        <div class="mb-12 text-center">
-          <h2 class="mb-3 text-headline-medium text-on-surface">The whole thing, on one screen</h2>
+        <div class="mb-8 text-center">
+          <h2 class="mb-3 text-headline-medium text-on-surface">The whole API</h2>
           <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
-            A builder that takes your type, and a result you narrow with
-            <code class="font-mono">valid</code>. There is no <code class="font-mono">Result</code>
-            class, no <code class="font-mono">unwrap()</code>, and
+            A builder that takes your type, and a result you narrow with{' '}
+            <code class="font-mono">valid</code>. There is no <code class="font-mono">Result</code>{' '}
+            class, no <code class="font-mono">unwrap()</code>, and{' '}
             <code class="font-mono">build()</code> returns an object rather than a function.
           </p>
         </div>
@@ -41,19 +39,22 @@ const description =
 
     <SimplifiedFeatures />
 
-    <section class="bg-surface-container px-4 py-20 sm:px-6 lg:px-8">
+    <section class="border-t border-outline-variant bg-surface-container px-4 py-14 sm:px-6 lg:px-8">
       <div class="container mx-auto max-w-3xl text-center">
-        <h2 class="mb-4 text-headline-medium text-on-surface">Coming from 1.x?</h2>
-        <p class="mb-8 text-body-large text-on-surface-variant">
-          This release is a rewrite, and it breaks things on purpose.
-          <code class="font-mono">build()</code> returns an object,
-          <code class="font-mono">result.isValid()</code> and
-          <code class="font-mono">result.errors</code> are gone in favour of
-          <code class="font-mono">result.valid</code> and
-          <code class="font-mono">result.issues</code>, and
-          <code class="font-mono">abortEarly</code> still defaults to
-          <code class="font-mono">true</code>. It is also slower than 1.x on flat and
-          nested shapes; the benchmarks page says by how much rather than leaving it out.
+        <h2 class="mb-4 text-headline-medium text-on-surface">Where to start</h2>
+        <p class="mb-4 text-body-large text-on-surface-variant">
+          Install it, declare one rule against a type you already have, and read the
+          result — that is the whole first hour. It is slower than 1.x on flat and
+          nested shapes, and the benchmarks page says by how much rather than
+          leaving it out.
+        </p>
+        <p class="mb-8 text-body-medium text-on-surface-variant">
+          Coming from 1.x, the mapping from the old{' '}
+          <code class="font-mono">Result</code> to today's discriminated union is on
+          the{' '}
+          <a class="text-primary underline underline-offset-2" href="/docs/api/validator#porting"
+            >Validator page</a
+          >, beside the API it maps onto.
         </p>
         <div class="flex flex-col justify-center gap-3 sm:flex-row">
           <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
@@ -62,8 +63,8 @@ const description =
           <a href="/benchmarks" class="md-button md-button-tonal md-state-layer md-focus-ring">
             Read the measurements
           </a>
-          <a href="/plugins" class="md-button md-button-outlined md-state-layer md-focus-ring">
-            All 77 plugins
+          <a href="/luq-or-zod" class="md-button md-button-outlined md-state-layer md-focus-ring">
+            Luq or zod?
           </a>
         </div>
       </div>

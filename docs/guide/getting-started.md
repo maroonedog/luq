@@ -269,6 +269,18 @@ PASS for `"abc"` because the slot has already reported it. One invalid value
 produces one issue, not one per rule in the chain — which is the convention
 [writing-a-plugin.md](writing-a-plugin.md) asks your own plugins to keep.
 
+### `strict` is not required for any of this
+
+The COMPILE-time half — a slot that does not match the field, a missing `[*]`,
+a path the type does not declare, a method whose plugin you did not import —
+is an error whether or not your `tsconfig.json` turns `strict` on. It is
+checked both ways, so a codebase with `strict` and one without get the same
+answers, and adopting Luq does not ask you to change your compiler settings
+first.
+
+Turning `strict` on is still worth doing. It costs nothing here and it is what
+catches the rest of your code.
+
 ## `normalize`
 
 The other member of that third argument. A form hands over a string in a number

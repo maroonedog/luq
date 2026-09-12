@@ -7,23 +7,47 @@ import MobileMenuButton from './MobileMenuButton.astro';
  * MD3 small top app bar (64dp, `surface` at rest, lifting to
  * `surface-container` + elevation 2 once content scrolls under it).
  *
- * `navItems` is the single source of truth for the site's primary navigation —
- * MobileMenuOverlay renders the same list. Every entry must point at a page
- * that exists; there is no build-time link check.
+ * `navItems` is the single source of truth for the site's primary navigation.
+ * The bar carries five; `secondaryNavItems` carries the three destinations that
+ * are not peers of Docs — a use-case page, an interop reference and the project
+ * status page. MobileMenuOverlay renders both arrays, so the phone drawer
+ * reaches all eight; Footer.astro carries the second three as well, since the
+ * drawer is hidden from `md` up. Eight pills did not fit between 768px and
+ * ~1200px and DESIGN.md forbids resizing them.
+ *
+ * `section` is the subtree an entry owns. Docs points at a leaf
+ * (/docs/getting-started), so without it the bar showed no selection on eight
+ * of the nine docs pages. check-built-pages resolves every href and fragment
+ * emitted here, so a dead entry fails the build.
  */
-export const navItems = [
-  { href: '/docs/getting-started', label: 'Docs', icon: 'menu_book' },
+type NavItem = { href: string; label: string; icon: string; section?: string };
+
+export const navItems: NavItem[] = [
+  { href: '/docs/getting-started', label: 'Docs', icon: 'menu_book', section: '/docs' },
   { href: '/plugins', label: 'Plugins', icon: 'extension' },
-  { href: '/openapi', label: 'Generated types', icon: 'auto_awesome' },
-  { href: '/luq-or-zod', label: 'Luq or zod?', icon: 'help' },
   { href: '/json-schema', label: 'JSON Schema', icon: 'schema' },
-  { href: '/standard-schema', label: 'Standard Schema', icon: 'hub' },
   { href: '/benchmarks', label: 'Benchmarks', icon: 'speed' },
-  { href: '/roadmap', label: 'Roadmap', icon: 'flag' },
+  { href: '/luq-or-zod', label: 'Luq or zod?', icon: 'help' },
 ];
 
+export const secondaryNavItems: NavItem[] = [
+  { href: '/openapi', label: 'Rules on generated types', icon: 'auto_awesome' },
+  { href: '/standard-schema', label: 'Standard Schema', icon: 'hub' },
+  { href: '/roadmap', label: 'Project status', icon: 'flag' },
+];
+
+/**
+ * Shared by the app bar and the drawer, so selection cannot mean two things.
+ */
+export const isActive = (
+  currentPath: string,
+  item: { href: string; section?: string }
+): boolean => {
+  const root = item.section ?? item.href;
+  return currentPath === item.href || currentPath === root || currentPath.startsWith(`${root}/`);
+};
+
 const currentPath = Astro.url.pathname;
-const isActive = (href: string) => currentPath === href || currentPath.startsWith(`${href}/`);
 ---
 
 <header id="top-app-bar" class="md-top-app-bar">
@@ -45,10 +69,10 @@ const isActive = (href: string) => currentPath === href || currentPath.startsWit
         navItems.map((item) => (
           <a
             href={item.href}
-            aria-current={isActive(item.href) ? 'page' : undefined}
+            aria-current={isActive(currentPath, item) ? 'page' : undefined}
             class:list={[
               'md-state-layer md-focus-ring flex h-10 items-center rounded-shape-full px-4 text-label-large no-underline transition-colors duration-short-4 ease-standard',
-              isActive(item.href)
+              isActive(currentPath, item)
                 ? 'bg-secondary-container text-on-secondary-container'
                 : 'text-on-surface-variant hover:text-on-surface',
             ]}

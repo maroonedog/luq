@@ -58,7 +58,9 @@ function run() {
   }
 
   const legacy = budget.legacyBaseline ?? {};
-  lines.push(`  legacyCoreGzip: ${JSON.stringify(legacy.coreOnlyGzipBytes ?? 17423)},`);
+  lines.push(
+    `  legacyCoreGzip: ${JSON.stringify(legacy.coreOnlyGzipBytes ?? 17423)},`
+  );
   lines.push("} as const;");
   lines.push("");
 
