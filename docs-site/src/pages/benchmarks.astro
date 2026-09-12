@@ -216,7 +216,7 @@ npm run check:no-dynamic-code`;
           </li>
           <li>
             <strong class="text-on-surface">Neither speed figure 1.x published reproduces here.</strong>
-            Its README claimed 1.2M ops/sec simple and 43K complex. On this machine 1.x itself does
+            Its README claimed 1.2M ops/sec simple and 43K complex. On this machine 1.x itself does{' '}
             {ops(legacyRows[1].entry?.legacyOpsPerSecond ?? 0)} on the shape rebuilt from its own
             &ldquo;simple&rdquo; benchmark source, and &ldquo;complex&rdquo; has no reproducible
             definition left to measure. Both old claims are gone from this site rather than carried
@@ -225,7 +225,7 @@ npm run check:no-dynamic-code`;
           <li>
             <strong class="text-on-surface">Competitors are measured, and Luq loses some of
             them.</strong> zod, valibot, ajv and yup are run here, in this process, against the same
-            values — Luq is faster in {competitorBenchmark.luqWins} of
+            values — Luq is faster in {competitorBenchmark.luqWins} of{' '}
             {competitorBenchmark.total} pairings and slower in the rest. The table is below and the
             losses are in it.
           </li>
@@ -243,7 +243,7 @@ npm run check:no-dynamic-code`;
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         {sizeBudget.method.bundler}, <code>bundle + minify + esm + es2020 + platform:neutral +
         treeShaking</code>, then <code>zlib.gzipSync</code> — the same options 1.x's own
-        <code>bundle-size-comparison</code> used, so the two columns are comparable. Recorded
+        <code>bundle-size-comparison</code> used, so the two columns are comparable. Recorded{' '}
         {sizeBudget.recorded.date} on Node {sizeBudget.recorded.node}. The ceiling is the gate;
         the recorded figure is the evidence behind it.
       </p>
@@ -313,8 +313,8 @@ npm run check:no-dynamic-code`;
       </div>
 
       <p class="mt-6 max-w-3xl text-body-medium text-on-surface-variant">
-        One row is <strong class="text-on-surface">not</strong> a win: all 76 plugins at
-        {bytes(fullBytes)} is larger than the {bytes(sizeBudget.legacyBaseline.complexGzipBytes)}
+        One row is <strong class="text-on-surface">not</strong> a win: all 76 plugins at{' '}
+        {bytes(fullBytes)} is larger than the {bytes(sizeBudget.legacyBaseline.complexGzipBytes)}{' '}
         1.x published for its <code>complex</code> case. The two are not comparable — 1.x's figure
         was one schema's plugin set, not its whole catalogue — so it is not counted either way.
       </p>
@@ -492,8 +492,8 @@ npm run check:no-dynamic-code`;
       </h2>
       <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
         Measured here, in one process, interleaved sample by sample against the same value pools.
-        Luq is faster in <strong class="text-on-surface">{competitorBenchmark.luqWins} of
-        {competitorBenchmark.total}</strong> pairings. The other
+        Luq is faster in <strong class="text-on-surface">{competitorBenchmark.luqWins} of{' '}
+        {competitorBenchmark.total}</strong> pairings. The other{' '}
         {competitorBenchmark.total - competitorBenchmark.luqWins} are losses and they are in the
         same table.
       </p>
@@ -652,7 +652,7 @@ npm run check:no-dynamic-code`;
 
       <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
         The 50-element array breaks even after 2 calls only because <code>validate()</code> itself
-        costs about 33&nbsp;µs there. The JSON Schema document is the expensive build:
+        costs about 33&nbsp;µs there. The JSON Schema document is the expensive build:{' '}
         {buildCostRows[4].entry?.microsecondsPerBuild}&nbsp;µs, because converting a document is
         real work — done once.
       </p>
