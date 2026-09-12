@@ -4,11 +4,11 @@
 
 export const packageInfo = {
   name: "@maroonedog/luq",
-  version: "2.4.4",
-  tag: "v2.4.4",
+  version: "2.5.0",
+  tag: "v2.5.0",
   install: "npm install @maroonedog/luq",
   /** Emitted .js/.mjs modules under dist/, counted at generation time. */
-  moduleCount: 836,
+  moduleCount: 846,
   /** Keys of package.json#exports — every specifier a consumer can import. */
   exportKeyCount: 88,
 } as const;

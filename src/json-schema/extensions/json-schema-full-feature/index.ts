@@ -26,4 +26,9 @@ export {
 
 export type { JsonSchemaOptions } from "../json-schema";
 
-export type { JsonSchemaBag } from "../../index";
+export {
+  DRAFT07_DIALECT_URI,
+  UnsupportedDialectError,
+} from "../../unsupported-dialect-error";
+
+export type { DialectOptions, JsonSchemaBag } from "../../index";

@@ -21,16 +21,16 @@ so the two columns are comparable. Recorded in
 | Entry | gzip | 1.x, same method |
 |---|---:|---:|
 <!-- generated:bundle-size -->
-| `Builder` only, zero plugins | **8,447 B** | 17,423 B |
-| + 6 plugins (1.x's "simple" set) | **9,333 B** | 19,562 B |
-| core + `jsonSchema`, the plugin alone | **22,145 B** | — |
-| core + `jsonSchemaFullFeature` | **24,643 B** | — |
-| all 77 plugins | **27,326 B** | — |
+| `Builder` only, zero plugins | **8,508 B** | 17,423 B |
+| + 6 plugins (1.x's "simple" set) | **9,381 B** | 19,562 B |
+| core + `jsonSchema`, the plugin alone | **23,055 B** | — |
+| core + `jsonSchemaFullFeature` | **25,510 B** | — |
+| all 77 plugins | **28,250 B** | — |
 <!-- /generated:bundle-size -->
 
 1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
 core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
-figure. Here the core is <!-- generated:bundle-core-share -->30.9% of the all-plugins build (8,447 of 27,326 B)<!-- /generated:bundle-core-share -->,
+figure. Here the core is <!-- generated:bundle-core-share -->30.1% of the all-plugins build (8,508 of 28,250 B)<!-- /generated:bundle-core-share -->,
 and adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
 the difference is where the bytes sit, not which README is right.
 
@@ -125,6 +125,71 @@ value per known difference so reverting any of them fails the assertion.
 of an empty loop over the same pool, which is how the deleted-subject artefact
 is caught: when V8 removes the work the ratio sits at 1.00 or above, and the ten
 figures recorded here span 0.01–0.86.
+
+## Many validators alive at once
+
+**Not measured yet. There is no figure here, and there is not one on the site
+either.**
+
+A figure of **11% degradation across 40 validators** is quoted for this library
+as a favourable fact about it at scale. It did not come from here. No such
+measurement exists in this repository and none ever did: until this harness,
+nothing in `bench/` drove more than one validator. Treat it as unsourced — and
+this repository has already published one number it could not stand behind.
+
+The harness now exists — [bench/megamorphism/](../bench/megamorphism/) — and what
+it fills is
+[config/megamorphism-baseline.json](../config/megamorphism-baseline.json), whose
+`lanes` array is empty for exactly as long as nothing has been recorded. The docs
+site reads that array and says "not measured yet" while it is empty, so the
+statement cannot go stale on its own.
+
+The question is megamorphism. `src/runtime/run-field.ts` is ONE piece of code
+shared by every validator in the process, and its `field.read(subject)` and
+`check.run(...)` call sites see a different closure for every declared field of
+every live validator. Past a handful of targets V8 stops inlining them. So the
+harness compares a rate taken with one validator alive against rates taken with
+2, 5, 10, 20 and 40 alive, each a different validator, called in turn.
+
+Four things about it are worth stating before any number arrives.
+
+- **Every window is measured in its own child process.** V8's inline caches are
+  process-wide. A one-validator figure taken after a forty-validator run in the
+  same process is measured against caches the forty already spoiled, so an
+  in-process comparison can only ever understate the effect — it would report
+  "no degradation" whether or not there is any.
+- **There are two lanes, and they meet at one validator.** `liveValidators` runs
+  N validators over 4 values each; `liveValues` runs ONE validator over 4N
+  values. Both touch the same number of distinct objects, so whatever
+  `liveValues` shows is the price of the working set alone, and only the
+  difference between the lanes is left for megamorphism to explain.
+- **Accepted and rejected inputs are timed separately**, for the reason
+  `inputIsAccepted` exists on every row of `config/perf-baseline.json`: under
+  `abortEarly` a rejection is a different program, and a blended pool measures
+  error construction as much as validation.
+- **The run states its own error floor, from inside itself.** The two lanes start
+  from the identical window — one validator over four values — so their first two
+  figures are one request measured twice, and nothing about the code can make
+  them differ. Their gap is recorded as `resolution`, and a degradation smaller
+  than it is not evidence. On a developer machine that gap has come out as large
+  as the effect being looked for — no figure is quoted for it here, because those
+  were scratch runs and nothing in this repository records them. That is why
+  nothing is published from a developer machine: not caution, a measured
+  inability to resolve it.
+
+What it will not answer: every family member does the same amount of work, by
+construction, because a rate taken over a mix of big and small validators is a
+fact about the mix. So it measures the cost of validator IDENTITY, not of
+validator SIZE, and it says nothing about `build()` cost or memory.
+
+Who may record it: `bench/megamorphism/report-megamorphism.ts` refuses to write
+the baseline outside CI without `--local`, the same rule
+`bench/competitors/report-competitors.ts` carries. What it records is a ratio
+between two figures taken on one machine, and how V8 behaves once a shared call
+site has many targets depends on the CPU, the core count and the Node version.
+`.github/workflows/megamorphism.yml` is the recorder, and it proposes the result
+as a pull request rather than committing it, because moving from "not measured
+yet" to a table is a judgement and not a rewrite of a number.
 
 ## CSP-safe
 

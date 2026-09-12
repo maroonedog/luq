@@ -15,6 +15,7 @@ import {
 import { jsonSchemaBag } from "../../../../../src/json-schema/extensions/json-schema-full-feature";
 import {
   NotASchemaError,
+  UnsupportedDialectError,
   UnsupportedKeywordError,
   fromJsonSchema,
 } from "../../../../../src/json-schema";
@@ -268,5 +269,40 @@ describe("null is decided by the document", () => {
       .build();
     expect(validator.validate({ instance: null }).valid).toBe(false);
     expect(validator.validate({ instance: "x" }).valid).toBe(true);
+  });
+});
+
+// The chain method is the door the conformance harness uses, so the dialect
+// gate has to stand in front of it too. Both doors call the same assertion in
+// the same place — right after "is this a schema at all" and before any
+// keyword is read — so neither can be the one that lets a newer-dialect
+// document through.
+describe("the dialect gate stands in front of the method as well", () => {
+  const REF_SIBLING = {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: { name: { type: "string" } },
+    $ref: "#/$defs/name",
+    minLength: 5,
+  };
+
+  it("refuses a 2020-12 document handed to the method", () => {
+    expect(() => buildValidator(REF_SIBLING)).toThrow(UnsupportedDialectError);
+  });
+
+  it("builds it under the opt-out, with Draft-07's reading of `$ref`", () => {
+    const validator = Builder()
+      .use(jsonSchemaPlugin)
+      .for<{ instance: unknown }>()
+      .v("instance", (b) =>
+        b.any.jsonSchema(REF_SIBLING, jsonSchemaBag, { assumeDraft07: true })
+      )
+      .build();
+    // §8.3: the node was replaced, so `minLength` never became a rule.
+    expect(validator.validate({ instance: "ab" }).valid).toBe(true);
+  });
+
+  it("leaves a document with no `$schema` exactly as it was", () => {
+    expect(isValid({ type: "string", minLength: 5 }, "ab")).toBe(false);
+    expect(isValid({ type: "string", minLength: 5 }, "abcde")).toBe(true);
   });
 });

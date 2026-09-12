@@ -5,6 +5,9 @@
 // The merge is a UNION of what the rules permit: `.optional().nullable()` and
 // `.nullable().optional()` produce the identical policy, so the order a user
 // happened to type the two methods in cannot change whether null is accepted.
+// The identity the policy reports is chosen the same way — from the presence
+// flags alone, never from the codes — so renaming a published code moves no
+// behaviour. See outranksOnRestriction.
 //
 // A field that declared NO presence rule gets OPEN_PRESENCE, which forbids
 // nothing. That is the one uniform answer to the legacy "implicit REQUIRED":
@@ -62,12 +65,45 @@ function countRestrictions(rule: PresenceRule): number {
 }
 
 /**
- * The identity a failure is reported under: the rule that forbids the most,
- * ties broken by the lexicographically smaller code.
+ * Which of two equally restrictive rules is reported, decided on WHAT each one
+ * forbids: undefined first, then null, then the empty string.
  *
- * Tie-breaking on the CODE rather than on declaration order is what keeps the
- * whole policy — not merely its three flags — independent of the order the
- * rules arrived in. `.optional().nullable()` and `.nullable().optional()` are
+ * The order is declared here rather than falling out of something else. It
+ * runs from the broadest absence to the narrowest — a field that is not there
+ * at all, a field that is there holding null, a field holding "" — so the
+ * identity a caller sees names the largest thing that was missing.
+ *
+ * Nothing in this comparison reads a code. A code is a published name, pinned
+ * in config/issue-code.lock.json, and re-spelling one must not move which rule
+ * a failure is reported under; comparing the two codes made exactly that
+ * happen, silently, from a one-word rename.
+ *
+ * Two rules forbidding the identical three things are indistinguishable to
+ * every reader of the policy, so neither outranks the other and the one
+ * declared first stays. That is the only case where the order the methods were
+ * typed in is observable at all.
+ */
+function outranksOnRestriction(
+  rule: PresenceRule,
+  incumbent: PresenceRule
+): boolean {
+  if (rule.allowUndefined !== incumbent.allowUndefined) {
+    return !rule.allowUndefined;
+  }
+  if (rule.allowNull !== incumbent.allowNull) return !rule.allowNull;
+  if (rule.emptyStringIsMissing !== incumbent.emptyStringIsMissing) {
+    return rule.emptyStringIsMissing;
+  }
+  return false;
+}
+
+/**
+ * The identity a failure is reported under: the rule that forbids the most,
+ * ties broken by which absence it forbids.
+ *
+ * Both halves of the decision read only the three presence flags, so the whole
+ * policy — not merely its flags — is independent of the order the rules
+ * arrived in. `.optional().nullable()` and `.nullable().optional()` are
  * deep-equal, which is the property the tests assert.
  */
 function selectStrictestPresence(
@@ -80,7 +116,10 @@ function selectStrictestPresence(
       continue;
     }
     const difference = countRestrictions(rule) - countRestrictions(strictest);
-    if (difference > 0 || (difference === 0 && rule.code < strictest.code)) {
+    if (
+      difference > 0 ||
+      (difference === 0 && outranksOnRestriction(rule, strictest))
+    ) {
       strictest = rule;
     }
   }

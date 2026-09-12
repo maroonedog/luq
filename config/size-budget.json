@@ -93,6 +93,55 @@
           "Headroom per entry is unchanged (135 / 124 / 107 B), so adding a plugin still cannot fit inside",
           "the budget unnoticed."
         ]
+      },
+      {
+        "date": "2026-09-12",
+        "entries": [
+          "core-only",
+          "one-plugin",
+          "three-plugin",
+          "six-plugin",
+          "preset-presence",
+          "preset-everyday",
+          "jsonschema-plugin",
+          "jsonschema-full-feature",
+          "full-feature"
+        ],
+        "ceilingsRaised": [
+          "jsonschema-plugin",
+          "jsonschema-full-feature",
+          "full-feature"
+        ],
+        "grewByGzipBytes": "63 / 60 / 62 / 58 / 65 / 60 / 910 / 867 / 924",
+        "measuredBeforeGzipBytes": "8445 / 8576 / 8908 / 9323 / 8684 / 9869 / 22145 / 24643 / 27326",
+        "why": [
+          "Three changes, attributed separately by measuring four trees: the branch point, the branch",
+          "point plus each change in turn, and the integrated tree.",
+          "",
+          "The dialect guard is the whole of the movement on the three JSON Schema entries: +838 / +808 /",
+          "+871 B, and zero on the other six, which cannot reach it. A document that declares a $schema",
+          "Luq has no reading for is refused instead of being read as though it were Draft-07. The case",
+          "that forces this is silent and cannot be caught by keyword name: from 2019-09 onward $ref is an",
+          "ordinary applicator and its siblings apply, so a 2020-12 document's `{\"$ref\": ..., \"minLength\":",
+          "5}` lost the minLength with no error and no way to notice.",
+          "Of that, about 245 B is the table of written reasons — one sentence per dialect saying what it",
+          "does differently. Measured by replacing the sentences with bare names and re-running, and kept:",
+          "the sentence is what tells a reader holding a 2020-12 document why a constraint they wrote was",
+          "disappearing, and the error is the only place they will be looking.",
+          "",
+          "The slot type guard's six literal codes cost +17 to +22 B on every entry, and the presence",
+          "tie-break +36 to +52 B. Both are reachable from the core, which is why the six non-JSON-Schema",
+          "entries moved at all; each still fits its existing ceiling and none was raised.",
+          "",
+          "Every recorded figure is re-measured here, including the six that needed no ceiling change.",
+          "Those six had drifted 2-21 B above what they measured, for reasons older than this work — the",
+          "previous re-record deliberately left that drift alone so the cost of THAT feature stayed",
+          "readable. Carrying it a second time would make it permanent, so it is cleared now and stated",
+          "instead: of the ~60 B each of those entries moved, 2-21 B is the old drift and the remainder is",
+          "the two core changes above.",
+          "Headroom on the three raised entries is unchanged at 135 / 124 / 107 B, so adding a plugin",
+          "(200-950 B) still cannot fit inside the budget unnoticed."
+        ]
       }
     ]
   },
@@ -121,7 +170,7 @@
       "description": "Builder alone: the floor paid by someone who uses no plugin at all.",
       "plugins": [],
       "gzipCeilingBytes": 8579,
-      "recordedGzipBytes": 8447,
+      "recordedGzipBytes": 8508,
       "legacyGzipBytes": 17423
     },
     {
@@ -131,7 +180,7 @@
         "required"
       ],
       "gzipCeilingBytes": 8718,
-      "recordedGzipBytes": 8586
+      "recordedGzipBytes": 8636
     },
     {
       "id": "three-plugin",
@@ -142,7 +191,7 @@
         "numberMin"
       ],
       "gzipCeilingBytes": 9049,
-      "recordedGzipBytes": 8912
+      "recordedGzipBytes": 8970
     },
     {
       "id": "six-plugin",
@@ -156,7 +205,7 @@
         "numberMax"
       ],
       "gzipCeilingBytes": 9479,
-      "recordedGzipBytes": 9333,
+      "recordedGzipBytes": 9381,
       "legacyGzipBytes": 19562
     },
     {
@@ -168,7 +217,7 @@
         "nullable"
       ],
       "gzipCeilingBytes": 8842,
-      "recordedGzipBytes": 8705
+      "recordedGzipBytes": 8749
     },
     {
       "id": "preset-everyday",
@@ -189,7 +238,7 @@
         "arrayEach"
       ],
       "gzipCeilingBytes": 10010,
-      "recordedGzipBytes": 9874
+      "recordedGzipBytes": 9929
     },
     {
       "id": "jsonschema-plugin",
@@ -197,8 +246,8 @@
       "plugins": [
         "jsonSchema"
       ],
-      "gzipCeilingBytes": 22280,
-      "recordedGzipBytes": 22145
+      "gzipCeilingBytes": 23190,
+      "recordedGzipBytes": 23055
     },
     {
       "id": "jsonschema-full-feature",
@@ -206,15 +255,15 @@
       "plugins": [
         "jsonSchemaFullFeature"
       ],
-      "gzipCeilingBytes": 24767,
-      "recordedGzipBytes": 24643
+      "gzipCeilingBytes": 25634,
+      "recordedGzipBytes": 25510
     },
     {
       "id": "full-feature",
       "description": "Builder + every plugin in the catalog, JSON Schema extensions included: the everything ceiling.",
       "plugins": "all",
-      "gzipCeilingBytes": 27433,
-      "recordedGzipBytes": 27326
+      "gzipCeilingBytes": 28357,
+      "recordedGzipBytes": 28250
     }
   ],
   "treeShaking": {

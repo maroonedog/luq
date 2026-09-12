@@ -8,6 +8,14 @@ compiling again, so this document cannot quietly become wrong.
 Read [../guide/getting-started.md](../guide/getting-started.md) first if you
 want the new shape rather than the diff.
 
+**"1.x" here means the versions `0.1.0-alpha` through `0.1.2-alpha`.** No `1.x`
+was ever published. The npm history is `0.1.0-alpha`, `0.1.0`, `0.1.1-alpha`,
+`0.1.2-alpha`, then `2.0.0`, and there is no git tag for any of the first four.
+The name is used throughout this document and on luq.dev, so it is kept here
+rather than half-corrected; if you are working out which version you are
+actually on, match against `npm view @maroonedog/luq versions`. The real
+numbers, and what each one changed, are in [../../CHANGELOG.md](../../CHANGELOG.md).
+
 A note on provenance. Several entries below are marked **documentation, not
 behaviour**: 1.x's README and docs site described something its implementation
 never did. Those are listed because they will break *your reading*, even though

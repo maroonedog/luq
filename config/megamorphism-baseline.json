@@ -1,0 +1,25 @@
+{
+  "note": [
+    "PLACEHOLDER. No figure has been recorded yet, and `lanes` being empty is what says so.",
+    "The docs site reads this file and prints 'not measured yet' for exactly as long as `lanes` is empty,",
+    "so the statement on the site cannot go stale on its own once a recording lands here.",
+    "",
+    "The harness that fills it is bench/megamorphism/, and the only machine allowed to fill it is CI's",
+    "runner (.github/workflows/megamorphism.yml). bench/megamorphism/report-megamorphism.ts refuses to",
+    "write this file anywhere else without --local, because what it records is a ratio between two",
+    "figures taken on the same machine, and how V8 behaves once a shared call site has many targets",
+    "depends on the CPU, the core count and the Node version.",
+    "",
+    "Why the file is not simply absent: a figure of '11% degradation across 40 validators' is quoted",
+    "for this library as a favourable fact, and nothing in this repository measured behaviour with more",
+    "than one validator alive. An empty record that names the harness and the recorder is the honest",
+    "state, and it is a state the site can render."
+  ],
+  "status": "awaiting the first recording on CI's runner",
+  "harness": "bench/megamorphism/",
+  "recordedBy": ".github/workflows/megamorphism.yml",
+  "measuredAt": null,
+  "machine": null,
+  "conditions": null,
+  "lanes": []
+}
