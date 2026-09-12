@@ -37,7 +37,24 @@ than `latest`.
 
 ## [Unreleased]
 
-On `develop`, not on npm. `latest` is 2.5.0.
+Nothing yet.
+
+## [2.6.0] — 2026-09-13
+
+### Fixed
+
+- **Every error `fromJsonSchema` throws is catchable by class again.**
+  `@maroonedog/luq/plugins/jsonSchemaFullFeature` — the subpath that offers
+  `fromJsonSchema`, and the one the documentation points at — exported no error
+  class at all. 2.5.0 made twelve malformed keyword values throw and shipped
+  nothing to catch them with, so the only way to tell one failure from another
+  was to parse the message. `MalformedSchemaError`, `NotASchemaError`,
+  `RefResolutionError`, `UnsupportedKeywordError` and `UnsupportedDialectError`
+  are all exported from it now.
+
+  The sibling subpath `@maroonedog/luq/plugins/jsonSchema` had them the whole
+  time, which is why reading the source did not reveal it. The test that pins it
+  imports through the public subpath for the same reason.
 
 ### Changed
 
@@ -114,6 +131,16 @@ ceilings moved.
   `arrayType`, `objectType` — are spelled out in the source instead of being
   interpolated from the slot name, so they can be enumerated at all; the strings
   and the behaviour are unchanged.
+- **Where `tsc` runs out of stack is written down.** A builder carrying
+  several hundred `.v()` calls in one expression does not produce a diagnostic:
+  the compiler throws `RangeError: Maximum call stack size exceeded`, prints a
+  JavaScript stack from inside `typescript/lib/_tsc.js` and dies, and an
+  editor's language server simply stops answering. Measured against the
+  published declaration files on TypeScript 5.8.3, 530 chained calls compile and
+  531 crash — an order of magnitude rather than a constant. The troubleshooting
+  page carries the number and the fix, which is to split the declarations across
+  several builders over the same type; 1,200 fields in four builders of 300
+  compile with room to spare.
 - **How throughput moves with many validators alive is now measurable, and is
   still not measured.** `bench/megamorphism/` compares one validator against 2,
   5, 10, 20 and 40 different ones, each window in its own child process, with a
@@ -479,7 +506,8 @@ be reconstructed honestly, so nothing more is claimed.
 This is the line the rest of this repository's documentation calls "1.x". See
 [A note on version numbers](#a-note-on-version-numbers).
 
-[Unreleased]: https://github.com/maroonedog/luq/compare/v2.5.0...develop
+[Unreleased]: https://github.com/maroonedog/luq/compare/v2.6.0...develop
+[2.6.0]: https://github.com/maroonedog/luq/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/maroonedog/luq/compare/v2.4.4...v2.5.0
 [2.4.4]: https://github.com/maroonedog/luq/compare/v2.4.3...v2.4.4
 [2.4.3]: https://github.com/maroonedog/luq/compare/v2.4.2...v2.4.3
