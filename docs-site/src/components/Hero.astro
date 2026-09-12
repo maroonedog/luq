@@ -33,8 +33,16 @@ const measured = [
     source: 'config/json-schema-suite.json',
   },
   {
+    // The label names what the zero buys, not the zero. Sitting unexplained in
+    // a row of size and coverage figures it reads as a performance claim, and
+    // it is not one: the benchmarks page says plainly that ajv compiled ahead
+    // of time through its standalone build contains no eval either. The
+    // difference only appears when the schema arrives at run time — from a
+    // server, from a database, written by the user — because then there is
+    // nothing to compile ahead of, and a strict CSP is what makes that
+    // distinction matter rather than a preference.
     value: '0',
-    label: 'eval / new Function',
+    label: 'eval / new Function — a run-time schema under a strict CSP',
     source: 'npm run check:no-dynamic-code',
   },
 ];

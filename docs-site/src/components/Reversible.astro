@@ -1,0 +1,78 @@
+---
+/**
+ * What it costs to leave.
+ *
+ * This section exists because the rest of the landing page argues the case for
+ * adopting Luq and nothing on the site used to answer the question a reader
+ * actually asks first: what happens when this turns out to be the wrong choice.
+ *
+ * Every claim below is a consequence of an arrangement documented elsewhere on
+ * this site, not a promise made here:
+ *
+ *  - the type is `.for<T>()`'s argument, so nothing in the user's tree was
+ *    authored by Luq and there is nothing to un-generate (Hero, README);
+ *  - an undeclared path is not validated, not required and not read, so one
+ *    `.v()` is a complete unit of both adoption and removal (Getting started);
+ *  - the consumer's call site takes a Standard Schema, so the value in the slot
+ *    can change without the call site changing (/standard-schema).
+ *
+ * The third card states the part that does not come back. A page that lists
+ * only the cheap half of an exit is an advertisement, and the rest of this site
+ * is built on publishing the losses next to the wins.
+ */
+const facts = [
+  {
+    icon: 'call_split',
+    title: 'Enter one field at a time',
+    body: 'A path you do not declare is not validated, not required and not read. One .v() is the whole unit: cover a single field on a single type, ship it, and leave the rest of the shape alone for as long as you like. There is no registry to populate, no global setup and no config file, so a partly-covered type is a normal state rather than a half-finished migration.',
+  },
+  {
+    icon: 'undo',
+    title: 'Leave without touching your types',
+    body: 'Your types were never authored here — .for<Order>() takes the Order you already had — so removing Luq deletes rules and imports, and nothing else. There is no generated file to delete, no inferred type to replace with a hand-written one, and no shape that now lives in a schema object instead of where it started.',
+  },
+  {
+    icon: 'swap_horiz',
+    title: 'The call site does not move',
+    body: 'tRPC, react-hook-form, Hono and TanStack Form take a Standard Schema, and a Luq validator sits in the slot a zod schema would. Swapping the two changes the value passed in, not the code around it. What you would rewrite is the rules themselves — that part is real, and it is the same work in either direction.',
+    href: '/standard-schema',
+    hrefLabel: 'How the seam works',
+  },
+];
+---
+
+<section class="border-t border-outline-variant bg-surface px-4 py-14 sm:px-6 lg:px-8">
+  <div class="container mx-auto max-w-6xl">
+    <div class="mb-8 text-center">
+      <h2 class="mb-3 text-headline-medium text-on-surface">What it costs to leave</h2>
+      <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
+        Worth answering before the case for adopting it, because it is the cheaper
+        question: a choice you can undo in an afternoon does not need to be the
+        right one on the first try.
+      </p>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      {
+        facts.map((fact) => (
+          <div class="md-card md-card-filled flex min-w-0 flex-col p-6">
+            <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-shape-md bg-primary-container">
+              <span class="md-icon md-icon-sm text-on-primary-container" aria-hidden="true">
+                {fact.icon}
+              </span>
+            </div>
+            <p class="mb-2 text-title-medium text-on-surface">{fact.title}</p>
+            <p class="text-body-medium text-on-surface-variant">{fact.body}</p>
+            {fact.href && (
+              <p class="mt-3 text-body-medium">
+                <a class="text-primary underline underline-offset-2" href={fact.href}>
+                  {fact.hrefLabel}
+                </a>
+              </p>
+            )}
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
