@@ -25,6 +25,7 @@ import type { Unchanged } from "../../../plugin-kit/marker.types";
 import { jsonSchemaPlugin } from "../json-schema";
 import type { JsonSchemaOptions } from "../json-schema";
 import { fromJsonSchema as convertWithBag } from "../../index";
+import type { DialectOptions } from "../../index";
 import type { GlobalConfig } from "../../../types/global-config";
 import { jsonSchemaBag } from "./bundled-plugins";
 
@@ -65,13 +66,21 @@ export const jsonSchemaFullFeaturePlugin = /*#__PURE__*/ definePlugin<{
  * NO declared path is checked — see build-from-schema.ts, which owns that
  * escape hatch and its single overload.
  *
+ * THE INPUT LIMIT IS DRAFT-07. A document whose root `$schema` names 2019-09 or
+ * 2020-12 is refused with an `UnsupportedDialectError` rather than read as
+ * Draft-07, because the dialects disagree about what unchanged keywords mean;
+ * a document with no `$schema` is read as Draft-07 as before. Pass
+ * `{ assumeDraft07: true }` as the third argument to take the Draft-07 reading
+ * deliberately. build-from-schema.ts states the divergence in full.
+ *
  * The return type is INFERRED rather than written: naming `Validator<T>` would
  * mean importing src/builder, which tier `extension` forbids. The inferred type
  * is that same `Validator<T>` and the type test asserts it.
  */
 export function fromJsonSchema<T extends object = Record<string, unknown>>(
   schema: unknown,
-  config?: GlobalConfig
+  config?: GlobalConfig,
+  options?: DialectOptions
 ) {
-  return convertWithBag<T>(jsonSchemaBag, schema, config);
+  return convertWithBag<T>(jsonSchemaBag, schema, config, options);
 }

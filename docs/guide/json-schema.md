@@ -5,6 +5,83 @@ declarations you would have written by hand. There is no second engine: the
 plan a schema produces is the plan `.v()` produces, so everything on this page
 composes with everything in the rest of the guide.
 
+## The input limit: Draft-07
+
+Draft-07 is not only how much of the specification Luq covers. It is a limit on
+what you may hand it. A document whose root `$schema` names 2019-09, 2020-12, or
+any other dialect is **refused** with an `UnsupportedDialectError` at build time.
+A document with **no** `$schema` is read as Draft-07 and always has been; that is
+most real documents, and nothing about them changes.
+
+The refusal is not caution about keywords you might have used. The two dialect
+families disagree about what an **unchanged** keyword means, and the
+disagreement is invisible in the keyword list:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": { "name": { "type": "string" } },
+  "properties": { "nick": { "$ref": "#/$defs/name", "minLength": 5 } }
+}
+```
+
+Every keyword there is a Draft-07 keyword spelled the Draft-07 way. Under
+2020-12 the `minLength` applies, because `$ref` is an ordinary applicator and its
+siblings are applied. Under Draft-07 §8.3 the `$ref` **replaces** the node it
+sits in, so the `minLength` is gone and `{"nick": "ab"}` validates. Read as
+Draft-07 without being asked, that document builds a validator that accepts what
+it forbids — and nothing in the result says a constraint went missing. The same
+goes the other way for `format` and the two `content*` keywords, which assert in
+Draft-07 and are annotations by default from 2019-09 on, and for `items`, whose
+tuple form 2020-12 renamed to `prefixItems`.
+
+A validator that quietly enforces less than its document is the failure this
+library exists to prevent, so the document is refused instead. You have three
+ways forward, in order of preference:
+
+1. **Convert the document to Draft-07.** Rewrite `$defs` as `definitions`,
+   `prefixItems` as the array form of `items`, and split any `$ref` that carries
+   siblings into an `allOf`. Then say so in `$schema`.
+2. **Delete the `$schema` line** if the body is Draft-07 already and you only
+   ever copied the newest URI in. Luq reads a document that declares nothing as
+   Draft-07.
+3. **Take the Draft-07 reading deliberately**, when you know the body does not
+   rely on anything the newer draft changed:
+
+```ts
+import { fromJsonSchema } from "@maroonedog/luq/plugins/jsonSchemaFullFeature";
+
+const document = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  type: "object",
+  properties: { nick: { type: "string", minLength: 2 } },
+  required: ["nick"],
+};
+
+const validator = fromJsonSchema<{ nick: string }>(document, undefined, {
+  assumeDraft07: true,
+});
+
+validator.validate({ nick: "ada" });
+```
+
+`assumeDraft07` is on `JsonSchemaOptions` too, so the `.jsonSchema()` and
+`.jsonSchemaFullFeature()` chain methods take it beside `externalDocuments`. It
+buys you **Draft-07's reading, exactly** — `$ref` replaces the node, `format`
+asserts, an array under `items` is the tuple form — so a document that relies on
+the newer meaning will be enforced as less, or as something else, than it
+states. It is written at the call site rather than inferred so that the reading
+is a decision a reviewer can see.
+
+Two limits on the limit. Only the **root** `$schema` of the document you hand in
+is read: a document you supply through `externalDocuments` and reach by `$ref`
+is not checked, because the map is what you loaded rather than the document under
+conversion, and refusing at registration would refuse documents nothing ever
+follows. And a `$schema` that is not a string at all is a malformed value rather
+than an unnamed dialect, so it raises `MalformedSchemaError`, and it does so even
+under `assumeDraft07` — the opt-out names a dialect to read, and a number names
+none.
+
 ## Conformance, measured
 
 **929 / 929 = 100.00%** of the official
@@ -226,6 +303,10 @@ causes.
 
 ## What it does not do
 
+- **2019-09 and 2020-12 documents.** The root `$schema` is read and a dialect Luq
+  does not implement is refused rather than reinterpreted. See
+  [The input limit: Draft-07](#the-input-limit-draft-07) above for why, and for
+  the `assumeDraft07` escape hatch.
 - **`null` at a field the document forbids it on.** Absence is settled before
   any rule runs, so a converted `{"type":"string"}` cannot itself reject `null`.
   Nullability is the field's presence policy; the converter declares

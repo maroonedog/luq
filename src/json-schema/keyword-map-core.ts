@@ -33,7 +33,9 @@ export const constBinding = bindKeyword(
 
 export const coreKeywordMap: KeywordTable<Draft07CoreKeyword> = {
   $schema: unsupported(
-    "read and discarded: Luq targets Draft-07 and does not switch dialect"
+    "read at the document ROOT by assert-supported-dialect and then " +
+      "discarded: Luq implements Draft-07 and never switches dialect, so a " +
+      "root `$schema` naming another one is refused rather than ignored"
   ),
   $id: unsupported(
     "no base-URI resolution; resolve-ref accepts local $ref only"

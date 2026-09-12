@@ -392,7 +392,11 @@ type ValidationResult<T> =
                   <td class="py-2">
                     Defaults to the <strong>plugin's name</strong> — <code>required</code>,{' '}
                     <code>stringMin</code> — and is overridden per rule with{' '}
-                    <code>&#123; code &#125;</code>.
+                    <code>&#123; code &#125;</code>. The vocabulary is enumerated in{' '}
+                    <code>config/issue-code.lock.json</code>, derived from the source and gated
+                    by <code>npm run check:issue-code-lock</code>, so a code cannot be renamed
+                    without a reviewed diff. A code may have more than one reporter: a missing
+                    root and a missing field both report <code>required</code>.
                   </td>
                 </tr>
                 <tr class="border-b border-outline-variant">

@@ -47,14 +47,25 @@ rewrite is the one about the next one.
 1. `npm run verify`
 2. bump `version` in `package.json` — the docs site reads it from there, so
    nothing else needs editing
-3. `npm run generate` — regenerates the manifest, barrel, exports and lock
-4. commit, PR to `develop`, merge; PR `develop` → `master`, merge
+3. give the top entry in `CHANGELOG.md` its number and its date. The entry is
+   written as the work lands, under a heading that says **not yet released**;
+   this step is only the two edits that turn it into a released one. Nothing
+   checks that the heading and `package.json` agree, so it is easy to skip and
+   worth doing before the commit rather than after the tag. What an entry is
+   for is below.
+4. `npm run generate` — regenerates the manifest, barrel, exports and lock
+5. commit, PR to `develop`, merge; PR `develop` → `master`, merge
    (**check `baseRefName` before merging**; a PR was once merged to the wrong
    base because nobody looked)
-5. tag on `master`: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
-6. **that is the last manual step.** The tag starts `.github/workflows/publish.yml`,
+6. tag on `master`: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
+7. **that is the last manual step.** The tag starts `.github/workflows/publish.yml`,
    which publishes to npm. Nothing is typed, and there is no OTP.
-7. the push to `master` deploys the docs site; confirm the run went green
+8. the push to `master` deploys the docs site through `deploy-docs.yml`; confirm
+   the run went green
+9. paste the `CHANGELOG.md` entry into the GitHub release for the tag. The
+   entry is the source and the release page is a copy of it. It used to be the
+   other way round, which is how the version history came to exist only on
+   github.com.
 
 The publish workflow refuses to run before it has checked two things, because
 both are mistakes only the person who pushed the tag can undo:
@@ -72,6 +83,32 @@ competitors job used to carry.
 `access` and `provenance` live in `publishConfig` in `package.json` rather
 than as CLI flags, so a publish typed by hand gets the same treatment as one
 run by CI.
+
+## The changelog
+
+`CHANGELOG.md` is the version history. Before it existed, the only record of
+what a release contained was its GitHub release page — readable in exactly one
+place, not readable at a tag, and not diffable.
+
+An entry is written **when the work lands**, not at release time, under a
+heading that says *not yet released*. Writing them all at the tag turns the
+question into "what went into the last eleven merges", which is how a changelog
+becomes a list of commit subjects.
+
+What an entry says is what a **caller** sees change. Which file moved is in the
+commit. The shape is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) —
+Added / Changed / Deprecated / Removed / Fixed / Security — newest first.
+
+**It does not ship to npm, and that is deliberate.** `files` is `["dist"]`, and
+npm adds only `README.md`, `LICENSE` and `package.json` to that; `npm pack
+--dry-run` lists those three and nothing else at the root. So a *relative* link
+to it from `README.md` would be dead in `node_modules`, and
+`check:readme-links` refuses one — the link in the README is absolute for the
+same reason the CONTRIBUTING and SECURITY links are.
+
+**Nothing gates it.** No check compares the top heading to `package.json`, and
+none will notice a release that added no entry. It is a manual step, which is
+why it is numbered in the sequence above rather than described as a habit.
 
 ## One-time npm setup (trusted publishing)
 
@@ -166,7 +203,14 @@ the workflow has every release after this one.
 
 ## What CI covers
 
-Four workflows, each watching what it can actually be affected by. `push` is
+Eight workflow files. Four of them gate, and are the table below; `publish.yml`
+and `publish-codegen.yml` are the two above; `deploy-docs.yml` publishes the
+site from `master` and gates nothing; `megamorphism.yml` measures how throughput
+moves when many validators are alive, and gates on nothing because there is
+nothing deterministic there to gate on — it records a rate, uploads it, and on
+`master` proposes it as a pull request for a person to read.
+
+Each of the four watches what it can actually be affected by. `push` is
 subscribed on `master` and `develop` only; work in progress is seen through
 `pull_request`. Subscribing to both for every branch ran the whole set twice
 per commit.
@@ -187,9 +231,39 @@ the code" is not a safe assumption here, by design.
 version moves — if zod changes how strict its email check is, the agreement
 count changes and this is what notices.
 
-If required status checks are ever configured, make **`verify` the only one**.
-A required check that a path filter skips stays pending forever, and blocks
-every pull request that does not touch its paths.
+## The branch rules
+
+Both branches are governed by repository **rulesets**, not by the older branch
+protection API. `gh api repos/maroonedog/luq/branches/develop/protection`
+answers `404 Branch not protected`, which says nothing about whether rules
+exist; `gh api repos/maroonedog/luq/rulesets` is the one that answers.
+
+**`DevelopBranchRule`** — `refs/heads/develop`, enforcement active:
+
+- deletion blocked
+- non-fast-forward blocked, so no force-push
+- **`verify` is a required status check, and the only one.** A required check
+  that a path filter skips stays pending forever and blocks every pull request
+  that does not touch its paths, which is why the three filtered workflows are
+  not on this list.
+- `strict_required_status_checks_policy` is off, so a branch does not have to
+  be up to date with `develop` before it merges.
+
+**`ProtectedBranchRule`** — the default branch, `master`, enforcement active:
+
+- deletion and non-fast-forward blocked
+- a pull request is required, with **one approving review** and **code-owner
+  review** — `.github/CODEOWNERS` is `* @maroonedog`
+- stale reviews are dismissed on push, and the last push must itself be
+  approved
+- merge, squash and rebase are all allowed
+- no required status check of its own. `develop` is where `verify` is
+  mandatory, and `master` receives only what has already been through it.
+
+Both rulesets grant **bypass to the admin role, always**. That is not an
+oversight: it is what makes step 5 possible in a repository with one
+maintainer, who cannot obtain the approving review `ProtectedBranchRule` asks
+for. It also means neither ruleset constrains the person releasing.
 
 ## Known weaknesses in this process
 
@@ -198,8 +272,14 @@ changed, so "this was a breaking change and went out as a minor" is a mistake
 this process can still make. changesets would fix it and is not set up.
 
 **One person can release.** There is one maintainer, so the tag that starts a
-publish is pushed by one person and reviewed by nobody. The workflow's two
-checks catch a wrong version, not a wrong decision.
+publish is pushed by one person and reviewed by nobody. `ProtectedBranchRule`
+asks `master` for an approving review and a code-owner review, and the same
+person holds the admin bypass that satisfies both — so the rule records the
+intent rather than enforcing it. The workflow's two checks catch a wrong
+version, not a wrong decision.
+
+**Nothing keeps `CHANGELOG.md` honest.** Step 3 is manual and ungated: a
+release that forgot it is indistinguishable from one that had nothing to say.
 
 Listed rather than left implicit, because "how does this get released" is a
 question a person deciding whether to depend on a package is entitled to ask.

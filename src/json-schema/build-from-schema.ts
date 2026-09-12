@@ -29,6 +29,8 @@ import type { ChainBuildContext } from "../chain/create-chain-node";
 import { eraseSchemaValidator } from "../core/type-erasure";
 import type { Rule } from "../plugin-kit/compiled-rule";
 import type { GlobalConfig } from "../types/global-config";
+import type { DialectOptions } from "./assert-supported-dialect";
+import { assertSupportedDialect } from "./assert-supported-dialect";
 import { createStructuralContext } from "./create-structural-context";
 import { declarePresenceRules } from "./declare-presence";
 import { createLocalScope } from "./ref-scope";
@@ -78,9 +80,13 @@ function collectDeclaredRules(
 /** One pending `.v()` per declared path, with its callback still unrun. */
 export function buildFieldEntries(
   bag: JsonSchemaBag,
-  schema: unknown
+  schema: unknown,
+  options: DialectOptions = {}
 ): readonly FieldEntry[] {
   if (!isDraft07Schema(schema)) throw new NotASchemaError(schema);
+  // Before any keyword is read: what the document's keywords MEAN depends on
+  // the dialect it declares, and Luq reads every one of them as Draft-07.
+  assertSupportedDialect(schema, options);
   return flattenSchema(schema, readChildSchemas).map((declaration) => ({
     path: declaration.path,
     defaultOf: null,
@@ -100,12 +106,35 @@ export function buildFieldEntries(
 export function buildFromSchema(
   bag: JsonSchemaBag,
   schema: unknown,
-  config?: GlobalConfig
+  config?: GlobalConfig,
+  options?: DialectOptions
 ): FieldBuilderSurface {
-  return createFieldBuilderSurface(bag, config, buildFieldEntries(bag, schema));
+  return createFieldBuilderSurface(
+    bag,
+    config,
+    buildFieldEntries(bag, schema, options)
+  );
 }
 
 /**
+ * Converts a JSON Schema document into a validator.
+ *
+ * THE INPUT LIMIT IS DRAFT-07, and it is a limit on what may be handed in, not
+ * only a statement of how much of Draft-07 is covered. A document declaring
+ * 2019-09 or 2020-12 in its root `$schema` is REFUSED with an
+ * `UnsupportedDialectError` rather than read as Draft-07, because the two
+ * dialects disagree about what an unchanged keyword means: from 2019-09 on
+ * `$ref` is an ordinary applicator whose siblings are applied, while Draft-07
+ * §8.3 replaces the node, so `{"$ref": "#/$defs/name", "minLength": 5}` read as
+ * Draft-07 loses the `minLength` and accepts a value the document forbids. A
+ * document with NO `$schema` is read as Draft-07 and always has been. Pass
+ * `{ assumeDraft07: true }` as the fourth argument to read a newer-dialect
+ * document under Draft-07 rules deliberately, with that reading's consequences.
+ *
+ * `T` defaults to `Record<string, unknown>`, never `any`; under the default NO
+ * declared path is checked. See the header of this file, which owns that
+ * escape hatch.
+ *
  * The declared type is put back on by `eraseSchemaValidator`, the fourth
  * function in src/core/type-erasure.ts — the one file the code standard allows
  * to assert. Step 25 expressed this as an OVERLOAD PAIR instead, because
@@ -116,12 +145,14 @@ export function buildFromSchema(
 export function fromJsonSchema<T extends object = Record<string, unknown>>(
   bag: JsonSchemaBag,
   schema: unknown,
-  config?: GlobalConfig
+  config?: GlobalConfig,
+  options?: DialectOptions
 ): Validator<T> {
   const planBacked: PlanBackedValidator = buildFromSchema(
     bag,
     schema,
-    config
+    config,
+    options
   ).build();
   return eraseSchemaValidator<Validator<T>>(planBacked);
 }

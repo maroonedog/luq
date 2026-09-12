@@ -40,23 +40,38 @@ import {
 import type { Rule } from "../plugin-kit/compiled-rule";
 import { check } from "../plugin-kit/create-rule";
 
-/** What the slot claims, and the noun its message uses. */
+/** What the slot claims, the code it reports under, and the noun its message uses. */
 interface SlotType {
   readonly accepts: (value: unknown) => boolean;
+  readonly code: string;
   readonly noun: string;
 }
 
+/**
+ * Each code is SPELLED here rather than interpolated from the slot name.
+ *
+ * `${slot}Type` produced the same six strings, and produced them nowhere a
+ * reader could find them: config/issue-code.lock.json enumerates every code
+ * the library can report, and a code that only exists once a template has been
+ * evaluated cannot be enumerated, so these six were missing from the published
+ * vocabulary while being among the most commonly reported codes there are.
+ */
 const SLOT_TYPES: Readonly<Partial<Record<TypeName, SlotType>>> = Object.freeze(
   {
-    string: { accepts: isString, noun: "a string" },
-    number: { accepts: isNumber, noun: "a number" },
+    string: { accepts: isString, code: "stringType", noun: "a string" },
+    number: { accepts: isNumber, code: "numberType", noun: "a number" },
     boolean: {
       accepts: (value) => typeof value === "boolean",
+      code: "booleanType",
       noun: "a boolean",
     },
-    date: { accepts: (value) => value instanceof Date, noun: "a Date" },
-    array: { accepts: isArray, noun: "an array" },
-    object: { accepts: isPlainObject, noun: "an object" },
+    date: {
+      accepts: (value) => value instanceof Date,
+      code: "dateType",
+      noun: "a Date",
+    },
+    array: { accepts: isArray, code: "arrayType", noun: "an array" },
+    object: { accepts: isPlainObject, code: "objectType", noun: "an object" },
   }
 );
 
@@ -74,7 +89,7 @@ export function slotTypeGuard(
   const slotType = SLOT_TYPES[slot];
   if (slotType === undefined) return null;
   return check({
-    code: `${slot}Type`,
+    code: slotType.code,
     severity,
     run: (value) =>
       value === undefined || value === null || slotType.accepts(value)

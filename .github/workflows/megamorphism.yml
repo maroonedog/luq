@@ -1,0 +1,124 @@
+# ===========================================================================
+# .github/workflows/megamorphism.yml — how per-call throughput moves when many
+# DIFFERENT validators are alive.
+#
+# **The runner is the recorder, and it is the only recorder.** What
+# bench/megamorphism/ produces is a ratio between two figures taken on the same
+# machine, and how V8 behaves once a shared call site has many targets depends
+# on the CPU, the core count and the Node version. A laptop recording and a
+# runner recording are therefore not interchangeable, which is why
+# bench/megamorphism/report-megamorphism.ts refuses to write the baseline
+# outside CI without `--local` — the same rule bench/competitors/ already
+# carries, for the same reason.
+#
+# **Nothing here gates.** There is no deterministic property to gate on: the
+# measurement is a rate, and a rate moves with the runner. It is measured,
+# uploaded, and — on master — proposed as a pull request so a person decides
+# whether it becomes the published figure.
+#
+# The job is slow by construction. Every window is measured in its own child
+# process because V8's inline caches are process-wide: a one-validator figure
+# taken after a forty-validator run in the same process is measured against
+# caches the forty already spoiled, and could only ever report "no effect".
+# ===========================================================================
+name: megamorphism
+
+on:
+  # push watches the trunks only, for the reason the other bench workflows give:
+  # watching every branch as well as pull_request ran every job twice for one
+  # commit on a PR branch.
+  push:
+    branches: [master, develop]
+    paths:
+      - "src/**"
+      - "bench/megamorphism/**"
+      - "bench/sample-rate.ts"
+      - "bench/measure-throughput.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/megamorphism.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "bench/megamorphism/**"
+      - "bench/sample-rate.ts"
+      - "bench/measure-throughput.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/megamorphism.yml"
+  workflow_dispatch:
+
+concurrency:
+  # Grouped by PR number: a PR's push event and its pull_request event carry
+  # different refs and cannot cancel each other when grouped by ref.
+  group: megamorphism-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# The recording step opens a pull request; nothing here writes to a branch
+# directly.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  megamorphism:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # --write records because CI is a permitted recorder. The measurement
+      # that gets written is the one that was printed, not a second one.
+      - run: npm run bench:megamorphism -- --write
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: megamorphism-baseline-${{ github.run_id }}
+          path: config/megamorphism-baseline.json
+
+      # Opening a pull request rather than pushing to master: the figures move
+      # with the runner, so a person should see how much before they become the
+      # published measurement — and the site's wording changes with them, from
+      # "not measured yet" to a table, which is a judgement and not a rewrite of
+      # a number.
+      - name: Open a pull request when the record has moved
+        if: >-
+          !cancelled()
+          && github.event_name == 'push'
+          && github.ref == 'refs/heads/master'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: develop
+          branch: bench/re-record-megamorphism
+          add-paths: config/megamorphism-baseline.json
+          commit-message: |
+            bench: record how throughput moves with many validators alive
+
+            Measured by .github/workflows/megamorphism.yml on ubuntu-latest,
+            which is the only machine whose figures are comparable with the
+            ones this file already holds.
+          title: "bench: re-record the many-validators measurement"
+          body: |
+            bench/megamorphism/ was re-measured on the runner and differs from
+            the committed record.
+
+            Read the two lanes together before judging the number.
+            `liveValidators` grows the count of live validators; `liveValues`
+            grows the value pool of ONE validator to the same number of distinct
+            objects. Whatever `liveValues` shows is the price of the working set
+            alone, and only the difference between the lanes is left for
+            megamorphism to explain.
+
+            Read accepted and rejected separately too: under `abortEarly` the
+            rejection path is a different program, and a blended figure would
+            measure error construction as much as validation.
+          labels: megamorphism-baseline
+          delete-branch: true

@@ -292,8 +292,11 @@ describe("an unsupported keyword is refused, never dropped", () => {
     expect([...Object.keys(NON_DRAFT07_KEYWORDS)].sort()).toEqual([
       "$anchor",
       "$defs",
+      "$dynamicAnchor",
       "$dynamicRef",
+      "$recursiveAnchor",
       "$recursiveRef",
+      "$vocabulary",
       "contentSchema",
       "dependentRequired",
       "dependentSchemas",
@@ -314,6 +317,28 @@ describe("an unsupported keyword is refused, never dropped", () => {
       expect(() => assertKeywordSupported(keyword)).toThrow(note);
     }
   });
+
+  // The three names that fell through BOTH branches of
+  // assertKeywordIsConvertible: not in the Draft-07 table, and not written
+  // down as belonging to another dialect either, so the document carrying one
+  // built in silence. They are the identity-and-vocabulary half of 2019-09 and
+  // 2020-12 — the anchors the two dynamic reference forms aim at, and the
+  // vocabulary declaration that says which keyword sets are in force — and
+  // each of them changes what the document around it means.
+  it.each(["$vocabulary", "$dynamicAnchor", "$recursiveAnchor"])(
+    "refuses the document carrying %s rather than ignoring the name",
+    (keyword) => {
+      const document = {
+        properties: { a: { type: "string", [keyword]: true } },
+      };
+      expect(() => fromJsonSchema(jsonSchemaBagFixture, document)).toThrow(
+        UnsupportedKeywordError
+      );
+      expect(() => fromJsonSchema(jsonSchemaBagFixture, document)).toThrow(
+        keyword
+      );
+    }
+  );
 });
 
 describe("the 2019-09 bounds on `contains`", () => {

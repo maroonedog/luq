@@ -7,6 +7,7 @@ import OnThisPage from '../components/OnThisPage.astro';
 import { bundleSize } from '../data/bundle-size';
 import { conformance as measured } from '../data/conformance';
 import { packageInfo } from '../data/package-info';
+import perfBaseline from '../../../config/perf-baseline.json';
 
 /**
  * Sources for every figure and every name on this page:
@@ -43,6 +44,40 @@ const conformance = {
   legacyInvalidPercent: '6.35',
   measuredOn: '2026-09-08',
 };
+
+/**
+ * The build-once figures are derived from config/perf-baseline.json, never
+ * typed. Same treatment the examples and getting-started pages give them.
+ *
+ * This page needs them more than those do. Its readers are, by construction,
+ * holding a document that arrived at run time — from a server, a database, an
+ * OpenAPI fetch at boot — which is exactly the situation in which
+ * `fromJsonSchema` gets called inside a request handler. The jsonSchema shape
+ * is also the worst one in the baseline for it: the most expensive build and a
+ * cheap validate, so it takes the most calls of any measured shape to pay a
+ * build back.
+ *
+ * A figure typed here would go stale in silence. `check:perf-figures` compares
+ * only docs/measurements.md against the baseline, so nothing on this site is
+ * covered by it; reading the file at build time is what makes the number
+ * unable to disagree with the measurement.
+ *
+ * The figures stay OUT of the code blocks. A template literal containing a
+ * real ${…} is auto-skipped by check:doc-examples, so a number interpolated
+ * into an example would quietly take that example out of the compile gate.
+ */
+const jsonSchemaBuild = perfBaseline.buildCost.find((entry) => entry.shape === 'jsonSchema');
+const jsonSchemaValidate = perfBaseline.throughput.find(
+  (entry) => entry.shape === 'jsonSchema' && entry.operation === 'validate'
+);
+const buildCost = {
+  microseconds: jsonSchemaBuild ? jsonSchemaBuild.microsecondsPerBuild : 0,
+  callsToAmortise: jsonSchemaBuild ? jsonSchemaBuild.validateCallsPerBuild : 0,
+  validateMicroseconds: jsonSchemaValidate ? 1_000_000 / jsonSchemaValidate.opsPerSecond : 0,
+  machine: perfBaseline.machine.cpuModel,
+};
+const formatMicroseconds = (value: number) => value.toFixed(1);
+
 const corpus = {
   submodule: 'test/fixtures/json-schema-suite',
   commit: measured.suiteCommit,
@@ -255,7 +290,7 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
         keyword: '$schema',
         handling: 'annotation',
         target: '—',
-        note: 'Read and discarded: Luq targets Draft-07 and does not switch dialect.',
+        note: 'Read at the document root to check the dialect, then discarded. Luq implements Draft-07 and never switches dialect, so a root $schema naming another one is refused rather than ignored.',
       },
       {
         keyword: '$id',
@@ -617,6 +652,25 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         the plan a schema produces is the plan <code>.v()</code> produces, so a converted document
         composes with everything else in the library.
       </p>
+
+      <div class="mt-6 md-card md-card-outlined p-6">
+        <p class="mb-2 text-title-small text-on-surface">
+          Draft-07 is a limit on the input, not only a coverage figure
+        </p>
+        <p class="text-body-medium text-on-surface-variant">
+          A document whose root <code>$schema</code> names 2019-09, 2020-12 or any other dialect
+          is <strong class="text-on-surface">refused</strong> with an{' '}
+          <code>UnsupportedDialectError</code>, not reinterpreted. A document with no{' '}
+          <code>$schema</code> is read as Draft-07 and is unaffected. The reason is that the
+          dialects disagree about keywords that did not change spelling: from 2019-09 on,{' '}
+          <code>$ref</code> is an ordinary applicator and its siblings apply, while Draft-07 §8.3
+          replaces the node — so{' '}
+          <code>{'{ "$ref": "#/$defs/name", "minLength": 5 }'}</code> read as Draft-07 loses the{' '}
+          <code>minLength</code> and accepts what the document forbids. Convert the document, drop
+          the <code>$schema</code> line, or pass <code>{'{ assumeDraft07: true }'}</code> to take
+          the Draft-07 reading deliberately.
+        </p>
+      </div>
     </header>
 
     <!-- ================= Conformance ================= -->
@@ -804,6 +858,29 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           results shaped the same way, issue paths in the same <code>lines[0].sku</code> grammar.
         </p>
         <CodeBlock code={fullFeatureExample} fileName="account-validator.ts" />
+
+        <div class="mt-6 md-card md-card-filled p-6">
+          <h4 class="mb-2 text-title-medium text-on-surface">
+            Convert once, not per request
+          </h4>
+          <p class="text-body-medium text-on-surface-variant">
+            <code>fromJsonSchema</code> reads the whole document and compiles it. That costs{' '}
+            {formatMicroseconds(buildCost.microseconds)}&nbsp;µs against{' '}
+            {formatMicroseconds(buildCost.validateMicroseconds)}&nbsp;µs for one{' '}
+            <code>validate()</code> on the same shape — so one conversion pays for itself after{' '}
+            <strong class="text-on-surface">{buildCost.callsToAmortise}</strong>{' '}
+            <code>validate()</code> calls, more than any other measured shape. Convert at
+            startup and keep the <code>Validator</code>; converting inside a request handler
+            makes every request pay a cost meant to be paid once.
+          </p>
+          <p class="mt-3 text-body-medium text-on-surface-variant">
+            Measured on {buildCost.machine}, and read from{' '}
+            <code>config/perf-baseline.json</code> when this page is built —{' '}
+            <a class="text-primary underline underline-offset-2" href="/benchmarks">
+              the method is on the benchmarks page</a
+            >.
+          </p>
+        </div>
       </div>
 
       <div class="mb-8">
@@ -843,6 +920,14 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           conversion builds closures, never source text. There is no <code>eval</code> and no{' '}
           <code>new Function</code> anywhere in the {packageInfo.moduleCount} emitted modules, and that is checked
           mechanically rather than asserted.
+        </p>
+        <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
+          A document that arrives at run time still only has to be converted once. Do it where
+          the document arrives — at boot, or on the first request, cached by whatever identifies
+          the document — and not on every request that validates against it:{' '}
+          {formatMicroseconds(buildCost.microseconds)}&nbsp;µs of conversion against{' '}
+          {formatMicroseconds(buildCost.validateMicroseconds)}&nbsp;µs of validation is{' '}
+          {buildCost.callsToAmortise} calls before the conversion has paid for itself.
         </p>
         <CodeBlock code={runtimeSchemaExample} fileName="load-validator.ts" />
       </div>
@@ -1173,11 +1258,34 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
     <section id="not-supported" class="mb-16 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">Limits today</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        One, and it is a bound rather than a gap. Everything else this section used to
+        Two. One is a bound on what a conversion will expand; the other is a bound on
+        what may be handed in at all. Everything else this section used to
         list — external <code>$ref</code>, <code>__proto__</code> as a declared path
         segment, <code>additionalProperties</code> beside <code>patternProperties</code>,
         code-unit string lengths — is closed, and the table above is the record of how.
       </p>
+
+      <div class="mb-6 md-card md-card-filled p-6">
+        <h3 class="mb-3 text-title-medium text-on-surface">
+          A newer dialect is refused, not read under Draft-07's rules
+        </h3>
+        <p class="text-body-medium text-on-surface-variant">
+          The root <code>$schema</code> is read, and 2019-09, 2020-12, draft-06, draft-04,
+          draft-03, the unversioned alias and any unrecognised meta-schema URI are refused at
+          build time with an <code>UnsupportedDialectError</code>. The dialects disagree about
+          what unchanged keywords mean — <code>$ref</code> siblings, whether{' '}
+          <code>format</code> asserts, which spelling carries the tuple form of{' '}
+          <code>items</code> — so reading one as the other enforces less than the document
+          states, silently.
+        </p>
+        <p class="mt-3 text-body-medium text-on-surface-variant">
+          <code>{'{ assumeDraft07: true }'}</code> takes the Draft-07 reading deliberately, at
+          the call site where a reviewer reads it. Only the root of the document you hand in is
+          checked: a document supplied through <code>externalDocuments</code> and reached by{' '}
+          <code>$ref</code> is not, so a newer-dialect document in that map still loses a{' '}
+          <code>$ref</code> sibling without saying so.
+        </p>
+      </div>
 
       <div class="md-card md-card-filled p-6">
         <h3 class="mb-3 text-title-medium text-on-surface">
