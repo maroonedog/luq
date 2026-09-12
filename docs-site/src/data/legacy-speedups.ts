@@ -15,14 +15,14 @@
 // null and must decide what to render — never a stale figure standing in for a
 // measurement that did not happen.
 // ===========================================================================
-import perfBaseline from '../../../config/perf-baseline.json';
+import perfBaseline from "../../../config/perf-baseline.json";
 
 export type LegacyShape =
-  | 'singleField'
-  | 'multiField'
-  | 'nested'
-  | 'array'
-  | 'jsonSchema';
+  | "singleField"
+  | "multiField"
+  | "nested"
+  | "array"
+  | "jsonSchema";
 
 /** `×0.51`, or null when this shape has no usable comparison. */
 export function legacySpeedup(shape: LegacyShape): string | null {
@@ -35,9 +35,9 @@ export function legacySpeedup(shape: LegacyShape): string | null {
 
 /** Every shape at once, for prose that names several in one sentence. */
 export const legacySpeedups = {
-  singleField: legacySpeedup('singleField'),
-  multiField: legacySpeedup('multiField'),
-  nested: legacySpeedup('nested'),
-  array: legacySpeedup('array'),
-  jsonSchema: legacySpeedup('jsonSchema'),
+  singleField: legacySpeedup("singleField"),
+  multiField: legacySpeedup("multiField"),
+  nested: legacySpeedup("nested"),
+  array: legacySpeedup("array"),
+  jsonSchema: legacySpeedup("jsonSchema"),
 } as const;

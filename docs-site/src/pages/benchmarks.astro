@@ -202,7 +202,7 @@ npm run check:no-dynamic-code`;
     <section id="honesty" class="mb-16 scroll-mt-24">
       <div class="md-card md-card-outlined p-6">
         <h2 class="mb-3 flex items-center gap-2 text-title-large text-on-surface">
-          <span class="md-icon text-primary" aria-hidden="true">priority_high</span>
+          <span class="md-icon text-primary" aria-hidden="true">priority_high</span>{' '}
           Read this first
         </h2>
         <ul class="space-y-3 text-body-medium text-on-surface-variant">
@@ -211,11 +211,11 @@ npm run check:no-dynamic-code`;
             shapes.</strong> Measured side by side in one process:
             ×{legacyRows[0].entry?.speedup} on one field, ×{legacyRows[1].entry?.speedup} on three,
             ×{legacyRows[2].entry?.speedup} nested. The two wins are arrays
-            (×{legacyRows[3].entry?.speedup}) and JSON Schema (×{legacyRows[4].entry?.speedup}).
+            (×{legacyRows[3].entry?.speedup}) and JSON Schema (×{legacyRows[4].entry?.speedup}).{' '}
             <a class="text-primary underline underline-offset-2" href="#against-1x">The table is below.</a>
           </li>
           <li>
-            <strong class="text-on-surface">Neither speed figure 1.x published reproduces here.</strong>
+            <strong class="text-on-surface">Neither speed figure 1.x published reproduces here.</strong>{' '}
             Its README claimed 1.2M ops/sec simple and 43K complex. On this machine 1.x itself does{' '}
             {ops(legacyRows[1].entry?.legacyOpsPerSecond ?? 0)} on the shape rebuilt from its own
             &ldquo;simple&rdquo; benchmark source, and &ldquo;complex&rdquo; has no reproducible
@@ -230,7 +230,7 @@ npm run check:no-dynamic-code`;
             losses are in it.
           </li>
           <li>
-            <strong class="text-on-surface">The subject is <code>src/</code>, not the bundle.</strong>
+            <strong class="text-on-surface">The subject is <code>src/</code>, not the bundle.</strong>{' '}
             Speed is measured on {conditions.moduleUnderTest}.
           </li>
         </ul>
@@ -242,7 +242,7 @@ npm run check:no-dynamic-code`;
       <h2 class="mb-2 text-headline-medium text-on-surface">Bundle size</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         {sizeBudget.method.bundler}, <code>bundle + minify + esm + es2020 + platform:neutral +
-        treeShaking</code>, then <code>zlib.gzipSync</code> — the same options 1.x's own
+        treeShaking</code>, then <code>zlib.gzipSync</code> — the same options 1.x's own{' '}
         <code>bundle-size-comparison</code> used, so the two columns are comparable. Recorded{' '}
         {sizeBudget.recorded.date} on Node {sizeBudget.recorded.node}. The ceiling is the gate;
         the recorded figure is the evidence behind it.
@@ -306,7 +306,7 @@ npm run check:no-dynamic-code`;
             {bytes(sizeBudget.crossCheckAgainstDist.coreOnlyGzipBytes)}
           </p>
           <p class="mt-1 text-body-small text-on-surface-variant">
-            the same core measured from the built <code>dist/</code> instead of
+            the same core measured from the built <code>dist/</code> instead of{' '}
             <code>src/</code> — 8 B apart, which is why measuring the source is fair.
           </p>
         </div>
@@ -356,7 +356,7 @@ npm run check:no-dynamic-code`;
       </div>
 
       <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
-        Use <code>jsonSchemaFullFeature</code>. Reach for
+        Use <code>jsonSchemaFullFeature</code>. Reach for{' '}
         <code>./plugins/jsonSchema</code> when you want the per-field chain method — not to save
         bytes. <a class="text-primary underline underline-offset-2" href="/json-schema">Both doors
         are explained on the JSON Schema page.</a>
@@ -368,7 +368,7 @@ npm run check:no-dynamic-code`;
       <h2 class="mb-2 text-headline-medium text-on-surface">Throughput</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         Recorded {perfBaseline.recordedAt.slice(0, 10)}. Each figure is the median of the fastest
-        half of {conditions.sampleCount} samples;
+        half of {conditions.sampleCount} samples;{' '}
         <code>abortEarly: {String(conditions.abortEarly)}</code> with input the validator accepts,
         so no rule is skipped. The relative spread on every figure is in the last column — treat
         differences smaller than that as noise.
@@ -498,7 +498,7 @@ npm run check:no-dynamic-code`;
         same table.
       </p>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        <strong class="text-on-surface">Judgements are compared before anything is timed.</strong>
+        <strong class="text-on-surface">Judgements are compared before anything is timed.</strong>{' '}
         Only values every library answers the same way are timed, because a ratio against a library
         doing different work is not a slow number, it is a wrong one. Where they disagree, the value
         is listed below rather than dropped. That check earned its place immediately: the first run
@@ -613,7 +613,7 @@ npm run check:no-dynamic-code`;
       <h2 class="mb-2 text-headline-medium text-on-surface">What <code>build()</code> costs</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         <code>build()</code> compiles the plan once; <code>validate()</code> walks it. Build a
-        validator at module scope and reuse it — the last column is how many <code>validate()</code>
+        validator at module scope and reuse it — the last column is how many <code>validate()</code>{' '}
         calls it takes for one <code>build()</code> to have paid for itself.
       </p>
 
@@ -791,8 +791,8 @@ npm run check:no-dynamic-code`;
           <li><span class="text-on-surface">Bundler:</span> {sizeBudget.method.bundler}</li>
           <li>
             <span class="text-on-surface">Options:</span>
-            <code>bundle</code>, <code>minify</code>, <code>format: esm</code>,
-            <code>target: es2020</code>, <code>platform: neutral</code>,
+            <code>bundle</code>, <code>minify</code>, <code>format: esm</code>,{' '}
+            <code>target: es2020</code>, <code>platform: neutral</code>,{' '}
             <code>treeShaking</code>, no legal comments
           </li>
           <li>
@@ -800,7 +800,7 @@ npm run check:no-dynamic-code`;
             <code>gzipSync</code> at its default level
           </li>
           <li>
-            <span class="text-on-surface">Measured from:</span> the TypeScript in
+            <span class="text-on-surface">Measured from:</span> the TypeScript in{' '}
             <code>src/</code>, not <code>dist/</code> — the package ships unbundled ESM, so the
             tree a reader's bundler walks is the same tree esbuild walks here
           </li>
@@ -809,7 +809,7 @@ npm run check:no-dynamic-code`;
             only the named symbols, so only code reachable from those names survives
           </li>
           <li>
-            <span class="text-on-surface">Comparability:</span> these are the options 1.x's own
+            <span class="text-on-surface">Comparability:</span> these are the options 1.x's own{' '}
             <code>bundle-size-comparison</code> used. Without that, the 1.x column would not be a
             comparison at all
           </li>
@@ -826,7 +826,7 @@ npm run check:no-dynamic-code`;
     <section id="reproduce" class="mb-12 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">Reproduce it</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        Clone the repository and run these. <code>bench:record</code> overwrites
+        Clone the repository and run these. <code>bench:record</code> overwrites{' '}
         <code>config/perf-baseline.json</code>, which is the file this page reads — so the numbers
         above are exactly what the last recorded run produced, on the machine named above and not
         on yours.

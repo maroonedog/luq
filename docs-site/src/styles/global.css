@@ -15,10 +15,10 @@
  * Authoring guidance lives in DESIGN.md at the site root.
  */
 
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/jetbrains-mono';
-@import './md3-tokens.css';
-@import './md3-components.css';
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+@import "./md3-tokens.css";
+@import "./md3-components.css";
 
 /*
  * Tailwind 4 takes one import in place of the three layer directives, and it
@@ -27,7 +27,7 @@
  * colour roles and type scale, so it is kept and pointed at rather than
  * transcribed; @config is Tailwind 4's supported way to do that.
  */
-@import 'tailwindcss';
+@import "tailwindcss";
 @config '../../tailwind.config.mjs';
 
 @layer base {
@@ -42,10 +42,12 @@
      * code spans that make up most of this site. Roboto stays in the stack as a
      * fallback. Code keeps JetBrains Mono.
      */
-    --md-sys-typescale-font-family: 'Inter Variable', 'Inter', 'Roboto',
-      system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --md-sys-typescale-code-font-family: 'JetBrains Mono Variable',
-      'JetBrains Mono', ui-monospace, 'Consolas', 'Monaco', monospace;
+    --md-sys-typescale-font-family:
+      "Inter Variable", "Inter", "Roboto", system-ui, -apple-system, "Segoe UI",
+      sans-serif;
+    --md-sys-typescale-code-font-family:
+      "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Consolas",
+      "Monaco", monospace;
   }
 
   html {
@@ -62,7 +64,8 @@
     line-height: var(--md-sys-typescale-body-large-line-height);
     letter-spacing: var(--md-sys-typescale-body-large-tracking);
     -webkit-font-smoothing: antialiased;
-    transition: background-color var(--md-sys-motion-duration-medium-1)
+    transition:
+      background-color var(--md-sys-motion-duration-medium-1)
         var(--md-sys-motion-easing-standard),
       color var(--md-sys-motion-duration-medium-1)
         var(--md-sys-motion-easing-standard);

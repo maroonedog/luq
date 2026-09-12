@@ -150,7 +150,7 @@ router.input(toStandardSchema(validateUser));`;
       <p class="mb-12 text-body-medium text-on-surface-variant">
         In all four the shape is upstream and not yours to move, so a schema-first
         validator asks you to write it a second time and keep the copy in step by
-        hand. The compiler can be made to check the copy against the original —
+        hand. The compiler can be made to check the copy against the original —{' '}
         <code>satisfies z.ZodType&lt;Order&gt;</code> does exactly that — but the
         copy still has to be authored, updated, and remembered.
       </p>
@@ -173,7 +173,7 @@ router.input(toStandardSchema(validateUser));`;
         The part that is a real tension, not a talking point
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
-        A codebase should have one source of truth for a shape.
+        A codebase should have one source of truth for a shape.{' '}
         <strong class="text-on-surface"
           >If that source is a schema you author, schema-first is the coherent
           arrangement</strong
@@ -183,17 +183,17 @@ router.input(toStandardSchema(validateUser));`;
       </p>
       <p class="mb-4 text-body-large text-on-surface-variant">
         Luq's case is the one where the artefact already exists elsewhere and is
-        not yours to move. Then the schema-first arrangement asks you to author a
+        not yours to move. Then the schema-first arrangement asks you to author a{' '}
         <em>second</em> source of truth, and the question stops being which library
         is nicer and becomes which copy is right.
       </p>
       <p class="mb-4 text-body-medium text-on-surface-variant">
-        Two things follow that are easy to miss. First,
-        <strong class="text-on-surface">Luq contains both directions</strong>:
+        Two things follow that are easy to miss. First,{' '}
+        <strong class="text-on-surface">Luq contains both directions</strong>:{' '}
         <code>fromJsonSchema(document)</code> is schema-first, and the document
         decides. That is the same principle pointed at a different upstream, not a
         contradiction to argue away — what Luq declines to do is make you
-        hand-write the second copy. Second, the choice is
+        hand-write the second copy. Second, the choice is{' '}
         <strong class="text-on-surface">per boundary, not per project</strong>:
         Standard Schema means a zod schema and a Luq validator are interchangeable
         where they meet, so "the schema is the truth here, the type is the truth
@@ -209,9 +209,9 @@ router.input(toStandardSchema(validateUser));`;
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
         This is what being type-first buys you in an existing codebase, and it is
-        the main practical reason to reach for Luq:
-        <strong class="text-on-surface">your type definitions do not change.</strong>
-        Not re-authored as a schema, not replaced by an inferred one, not moved.
+        the main practical reason to reach for Luq:{' '}
+        <strong class="text-on-surface">your type definitions do not change.</strong>{' '}
+        Not re-authored as a schema, not replaced by an inferred one, not moved.{' '}
         <code>.for&lt;Order&gt;()</code> takes the <code>Order</code> that is
         already there, and every rule is declared against it.
       </p>
@@ -330,7 +330,7 @@ router.input(toStandardSchema(validateUser));`;
         }
       </ul>
       <p class="mb-12 text-body-small text-on-surface-variant">
-        Each is pinned by a <code class="font-mono">@ts-expect-error</code> in
+        Each is pinned by a <code class="font-mono">@ts-expect-error</code> in{' '}
         <code class="font-mono">test/type/</code>. TypeScript reports an unused
         directive, so a green typecheck is the proof that they still fail.
       </p>
@@ -349,7 +349,7 @@ router.input(toStandardSchema(validateUser));`;
               <td class="py-3 text-on-surface-variant">
                 2.0 is slower than Luq 1.x on flat and nested shapes — three to
                 nine times, measured head to head. Arrays and JSON Schema are
-                faster. The numbers are on
+                faster. The numbers are on{' '}
                 <a class="text-primary underline underline-offset-2" href="/benchmarks"
                   >the benchmarks page</a
                 >. No figure for any other library is published here, because

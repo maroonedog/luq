@@ -175,8 +175,8 @@ const knownWeaknesses = [
       <h1 class="mb-4 text-display-small text-on-surface">Roadmap</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
         This page carries no dates. Everything below is either measured and shipped, or measured as
-        missing and named in the source — the version of this page that promised a
-        <code>.luq</code> language by a quarter is gone, and
+        missing and named in the source — the version of this page that promised a{' '}
+        <code>.luq</code> language by a quarter is gone, and{' '}
         <a class="text-primary underline underline-offset-2" href="#withdrawn">
           what happened to it is at the bottom
         </a>.
@@ -217,7 +217,7 @@ const knownWeaknesses = [
     <section id="open-work" class="mb-16 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">What this page used to list as missing</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        Nine rows, and all nine are closed — the Draft-07 corpus now passes
+        Nine rows, and all nine are closed — the Draft-07 corpus now passes{' '}
         <strong class="text-on-surface">929 of 929</strong>. They are kept here rather than deleted,
         because a roadmap that only ever shows what is left tells you nothing about whether the
         things on it actually get done. The real remaining weaknesses are further down, and the
@@ -262,11 +262,11 @@ const knownWeaknesses = [
         <p class="text-body-medium text-on-surface-variant">
           This page used to record <code>__proto__</code> in a declared path as decided against —
           refused on purpose, so prototype pollution stayed unreachable, and 14 suite cases lost on
-          purpose with it. That was the wrong reading of the problem. Only ASSIGNMENT reaches
-          <code>Object.prototype</code>'s setter; writing the key with
+          purpose with it. That was the wrong reading of the problem. Only ASSIGNMENT reaches{' '}
+          <code>Object.prototype</code>'s setter; writing the key with{' '}
           <code>Object.defineProperty</code> creates an own property and touches nothing. The
-          refusal is gone, the 14 cases pass, and
-          <code>test/unit/path/prototype-pollution.test.ts</code> proves both halves — that
+          refusal is gone, the 14 cases pass, and{' '}
+          <code>test/unit/path/prototype-pollution.test.ts</code> proves both halves — that{' '}
           <code>__proto__</code> is declarable, and that <code>Object.prototype</code> is still
           clean afterwards. Reverting the write back to an assignment makes it fail.
         </p>
@@ -308,7 +308,7 @@ const knownWeaknesses = [
       <div class="md-card md-card-outlined p-6">
         <p class="mb-4 text-body-medium text-on-surface-variant">
           1.x advertised a <code>.luq</code> DSL that would generate validators for other
-          languages: database and cache adapters, endpoint definitions, a
+          languages: database and cache adapters, endpoint definitions, a{' '}
           <code>luq generate --lang=java</code> command, OpenAPI emission. This page carried it with
           dated milestones. Those dates have since passed, and none of it shipped.
         </p>

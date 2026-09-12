@@ -27,9 +27,9 @@ const description =
         <div class="mb-12 text-center">
           <h2 class="mb-3 text-headline-medium text-on-surface">The whole thing, on one screen</h2>
           <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
-            A builder that takes your type, and a result you narrow with
-            <code class="font-mono">valid</code>. There is no <code class="font-mono">Result</code>
-            class, no <code class="font-mono">unwrap()</code>, and
+            A builder that takes your type, and a result you narrow with{' '}
+            <code class="font-mono">valid</code>. There is no <code class="font-mono">Result</code>{' '}
+            class, no <code class="font-mono">unwrap()</code>, and{' '}
             <code class="font-mono">build()</code> returns an object rather than a function.
           </p>
         </div>
@@ -45,13 +45,13 @@ const description =
       <div class="container mx-auto max-w-3xl text-center">
         <h2 class="mb-4 text-headline-medium text-on-surface">Coming from 1.x?</h2>
         <p class="mb-8 text-body-large text-on-surface-variant">
-          This release is a rewrite, and it breaks things on purpose.
-          <code class="font-mono">build()</code> returns an object,
-          <code class="font-mono">result.isValid()</code> and
-          <code class="font-mono">result.errors</code> are gone in favour of
-          <code class="font-mono">result.valid</code> and
-          <code class="font-mono">result.issues</code>, and
-          <code class="font-mono">abortEarly</code> still defaults to
+          This release is a rewrite, and it breaks things on purpose.{' '}
+          <code class="font-mono">build()</code> returns an object,{' '}
+          <code class="font-mono">result.isValid()</code> and{' '}
+          <code class="font-mono">result.errors</code> are gone in favour of{' '}
+          <code class="font-mono">result.valid</code> and{' '}
+          <code class="font-mono">result.issues</code>, and{' '}
+          <code class="font-mono">abortEarly</code> still defaults to{' '}
           <code class="font-mono">true</code>. It is also slower than 1.x on flat and
           nested shapes; the benchmarks page says by how much rather than leaving it out.
         </p>

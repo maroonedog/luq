@@ -212,11 +212,11 @@ const tableOfContents = [
         <h2 id="slots" class="mt-12 text-headline-small">Slots</h2>
 
         <p class="mt-3 text-body-large">
-          Inside a <code>.v()</code> callback you first pick a <strong>slot</strong> —
-          <code>b.string</code>, <code>b.number</code>, <code>b.boolean</code>,
-          <code>b.date</code>, <code>b.array</code>, <code>b.tuple</code>,
+          Inside a <code>.v()</code> callback you first pick a <strong>slot</strong> —{' '}
+          <code>b.string</code>, <code>b.number</code>, <code>b.boolean</code>,{' '}
+          <code>b.date</code>, <code>b.array</code>, <code>b.tuple</code>,{' '}
           <code>b.object</code>, <code>b.union</code>, <code>b.any</code>. The slot is what
-          decides which methods the chain offers: <code>stringMin</code> puts
+          decides which methods the chain offers: <code>stringMin</code> puts{' '}
           <code>.min()</code> on <code>b.string</code> and <code>numberMin</code> puts a
           different <code>.min()</code> on <code>b.number</code>, and the two never collide
           because their slots do not overlap.
@@ -228,7 +228,7 @@ const tableOfContents = [
 
         <div class="mt-4 rounded-shape-md border border-error p-1">
           <p class="px-3 py-2 text-label-large text-error">
-            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>
+            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
             This does not compile
           </p>
           <CodeBlock code={slotExample} language="typescript" showCopy={false} />
@@ -254,7 +254,7 @@ const tableOfContents = [
 
         <div class="mt-4 rounded-shape-md border border-error p-1">
           <p class="px-3 py-2 text-label-large text-error">
-            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>
+            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
             This does not compile
           </p>
           <CodeBlock code={unimportedExample} language="typescript" showCopy={false} />
@@ -291,11 +291,11 @@ const tableOfContents = [
         <CodeBlock code={pathExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          The path you <em>declare</em> holds <code>[*]</code>; the path you <em>read back</em>
+          The path you <em>declare</em> holds <code>[*]</code>; the path you <em>read back</em>{' '}
           holds the index the failure happened at. A fixed index in a declaration
-          (<code>items[0].name</code>), a bare <code>items.name</code>, the legacy
+          (<code>items[0].name</code>), a bare <code>items.name</code>, the legacy{' '}
           <code>items.*.name</code>, and reaching into an array's own members
-          (<code>tags.length</code>) are all compile errors — as is reaching inside a
+          (<code>tags.length</code>) are all compile errors — as is reaching inside a{' '}
           <code>Date</code>, <code>RegExp</code>, <code>Map</code>, <code>Set</code> or any
           other built-in, which a path treats as opaque.
         </p>
@@ -304,7 +304,7 @@ const tableOfContents = [
 
         <p class="mt-3 text-body-large">
           Whether a value is <em>absent</em> is decided once, by the field's presence policy,
-          before any check sees it. A check therefore never re-decides whether
+          before any check sees it. A check therefore never re-decides whether{' '}
           <code>null</code> is acceptable — which is why <code>stringMin</code> lets a
           non-string through instead of failing it under the wrong code.
         </p>
@@ -344,7 +344,7 @@ const tableOfContents = [
             That is the last row, and it is one uniform answer replacing 1.x's split, where
             adding an array elsewhere in the schema switched implicit-required on for
             unrelated fields. <code>.required()</code> treating <code>""</code> as absent is
-            1.x behaviour kept deliberately — <code>0</code>, <code>false</code>,
+            1.x behaviour kept deliberately — <code>0</code>, <code>false</code>,{' '}
             <code>[]</code> and <code>{'{}'}</code> all count as present.
           </p>
         </div>
@@ -372,7 +372,7 @@ const tableOfContents = [
         />
 
         <p class="mt-4 text-body-large">
-          <code>build()</code> sorts the chain into those buckets, so
+          <code>build()</code> sorts the chain into those buckets, so{' '}
           <code>.min(3).validateIf(c)</code> and <code>.validateIf(c).min(3)</code> mean the
           same thing. In 1.x the answer depended on where in the chain the call sat. Three
           consequences worth stating: a closed gate silences the whole field rather than the
@@ -383,7 +383,7 @@ const tableOfContents = [
         <h2 id="results" class="mt-12 text-headline-small">Results</h2>
 
         <p class="mt-3 text-body-large">
-          <code>validate()</code> and <code>parse()</code> return a discriminated union on
+          <code>validate()</code> and <code>parse()</code> return a discriminated union on{' '}
           <code>valid</code>. There is no result class, no <code>unwrap()</code> on the value
           and no <code>errors</code> member — narrowing on <code>valid</code> is what gives
           you <code>data</code>.
@@ -393,7 +393,7 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           The full shape, <code>ValidationIssue</code>, and why a
-          non-<code>error</code> severity does not fail the result:
+          non-<code>error</code> severity does not fail the result:{' '}
           <a
             class="text-primary underline underline-offset-2"
             href="/docs/api/validator#validation-result">the validator API</a
@@ -408,8 +408,8 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           <code>.transform()</code> also changes the chain's <em>type</em>, so a transform to
-          another type is reflected in what <code>parse()</code> hands back. Use
-          <code>validate()</code> when you want to judge a value and keep it; use
+          another type is reflected in what <code>parse()</code> hands back. Use{' '}
+          <code>validate()</code> when you want to judge a value and keep it; use{' '}
           <code>parse()</code> when you want the value the rules produced.
         </p>
 
@@ -442,7 +442,7 @@ const tableOfContents = [
             <span class="md-icon text-primary" aria-hidden="true">swap_horiz</span>
             <h3 class="mt-2 text-title-medium">Porting from 1.x</h3>
             <p class="mt-1 text-body-medium text-on-surface-variant">
-              What <code>isValid()</code>, <code>errors</code> and the
+              What <code>isValid()</code>, <code>errors</code> and the{' '}
               <code>Result</code> monad became
             </p>
           </a>

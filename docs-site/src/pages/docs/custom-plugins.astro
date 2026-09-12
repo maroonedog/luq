@@ -381,8 +381,8 @@ const tableOfContents = [
           <h3 class="text-title-medium">Why <code>definePlugin&lt;Sig&gt;()(spec)</code> is two calls</h3>
           <p class="mt-2 text-body-medium text-on-surface-variant">
             The signature is written explicitly; the identity strings are inferred as
-            literals from the spec. That split is what lets <code>name</code>,
-            <code>method</code> and <code>slots</code> stay literal types while
+            literals from the spec. That split is what lets <code>name</code>,{' '}
+            <code>method</code> and <code>slots</code> stay literal types while{' '}
             <code>args</code>, <code>out</code> and <code>context</code> stay yours to declare.
             The <code>/*#__PURE__*/</code> annotation matters too: it lets a bundler that
             ignores <code>sideEffects: false</code> still drop a plugin nobody imported.
@@ -434,11 +434,11 @@ const tableOfContents = [
         </div>
 
         <p class="mt-4 text-body-large">
-          Note the asymmetry, because it is the point: the caller writes typed things and
+          Note the asymmetry, because it is the point: the caller writes typed things and{' '}
           <code>build()</code> receives erased things. A plugin cannot see the root type, so it
-          cannot depend on it, so one plugin works for every type. Markers also nest —
-          <code>readonly ElementChain[]</code> (a tuple's positions) and
-          <code>Readonly&lt;Record&lt;string, NarrowedChain&gt;&gt;</code> (a key set, as
+          cannot depend on it, so one plugin works for every type. Markers also nest —{' '}
+          <code>readonly ElementChain[]</code> (a tuple's positions) and{' '}
+          <code>Readonly&lt;Record&lt;string, NarrowedChain&gt;&gt;</code> (a key set, as{' '}
           <code>patternProperties</code> needs) both resolve, element by element and key by key.
         </p>
 
@@ -472,21 +472,21 @@ const tableOfContents = [
         </div>
 
         <p class="mt-4 text-body-large">
-          <code>K</code> is one of <code>"excludeMissing"</code> (what
-          <code>.required()</code> declares), <code>"excludeUndefined"</code>,
-          <code>"excludeNull"</code> (<code>.optional()</code>) or <code>"allowNull"</code>
+          <code>K</code> is one of <code>"excludeMissing"</code> (what{' '}
+          <code>.required()</code> declares), <code>"excludeUndefined"</code>,{' '}
+          <code>"excludeNull"</code> (<code>.optional()</code>) or <code>"allowNull"</code>{' '}
           (<code>.nullable()</code>).
         </p>
 
         <p class="mt-4 text-body-large">
-          <strong><code>out</code> constrains what <code>build()</code> may return.</strong>
+          <strong><code>out</code> constrains what <code>build()</code> may return.</strong>{' '}
           The type the chain carries afterwards and the runtime policy the field gets are
           therefore the same declaration; they cannot drift apart.
         </p>
 
         <div class="mt-4 rounded-shape-md border border-error p-1">
           <p class="px-3 py-2 text-label-large text-error">
-            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>
+            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
             This does not compile
           </p>
           <CodeBlock code={outMismatchExample} language="typescript" showCopy={false} />
@@ -496,10 +496,10 @@ const tableOfContents = [
 
         <p class="mt-2 text-body-large">
           <code>TransformOut</code> and <code>GuardOut</code> do not just constrain the return
-          type — they replace the chain method's signature outright.
-          <code>TransformOut</code> makes it
+          type — they replace the chain method's signature outright.{' '}
+          <code>TransformOut</code> makes it{' '}
           <code>&lt;R&gt;(map, options?)</code>, so the caller always supplies the mapping
-          function; <code>GuardOut</code> makes it
+          function; <code>GuardOut</code> makes it{' '}
           <code>(condition, define, options?)</code>.
         </p>
 
@@ -540,9 +540,9 @@ const tableOfContents = [
         </div>
 
         <p class="mt-4 text-body-large">
-          <code>check</code>'s <code>run</code> returns <code>PASS</code> or
-          <code>fail(detail)</code>. The detail is what <code>describe()</code> and
-          <code>buildMessageContext()</code> read, and it is the reason a predicate runs
+          <code>check</code>'s <code>run</code> returns <code>PASS</code> or{' '}
+          <code>fail(detail)</code>. The detail is what <code>describe()</code> and{' '}
+          <code>buildMessageContext()</code> read, and it is the reason a predicate runs{' '}
           <strong>once</strong>: the message travels with the outcome instead of being rebuilt
           by a second call.
         </p>
@@ -564,9 +564,9 @@ const tableOfContents = [
             </li>
             <li>
               <strong class="text-on-surface">
-                <code>ctx.code</code>, <code>ctx.messageFactory</code> and
+                <code>ctx.code</code>, <code>ctx.messageFactory</code> and{' '}
                 <code>ctx.severity</code> are already resolved
-              </strong>
+              </strong>{' '}
               from the caller's <code>RuleOptions</code>, falling back to the plugin name and
               the builder's config. Read them; never re-resolve them. Two resolution sites is
               how an override stops working.
@@ -606,7 +606,7 @@ const tableOfContents = [
         </div>
 
         <p class="mt-4 text-body-large">
-          There is no process-wide singleton read at validation time. A builder's
+          There is no process-wide singleton read at validation time. A builder's{' '}
           <code>.withConfig()</code> reaches a plugin through <code>ctx.config</code> and
           nowhere else.
         </p>
@@ -654,7 +654,7 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           On the implementation side, a plugin must declare <strong>which argument
-          positions</strong> carry a sub-chain, because a <code>NarrowedChain</code> and a
+          positions</strong> carry a sub-chain, because a <code>NarrowedChain</code> and a{' '}
           <code>RootPredicate</code> are both plain functions once the types are erased.
         </p>
 
@@ -665,7 +665,7 @@ const tableOfContents = [
         <div class="md-card md-card-outlined mt-4 p-5">
           <p class="text-body-medium text-on-surface-variant">
             The loop in <code>combine</code> above walks <strong>values</strong>, not rules.
-            That distinction is the rule: a plugin decides <em>which member of the subject</em>
+            That distinction is the rule: a plugin decides <em>which member of the subject</em>{' '}
             a compiled branch applies to, and the engine decides how a rule list executes.
             Execution exists in exactly one place. A plugin that iterates a rule list itself
             has forked the engine, and its rules will not honour <code>abortEarly</code>,
@@ -683,7 +683,7 @@ const tableOfContents = [
         </h2>
 
         <p class="mt-3 text-body-large">
-          Plugins inside this repository live in one of two tiers, enforced by
+          Plugins inside this repository live in one of two tiers, enforced by{' '}
           <code>npm run check:plugin-isolation</code>:
         </p>
 
@@ -695,9 +695,9 @@ const tableOfContents = [
             builder. 75 of the 77 are here.
           </li>
           <li>
-            <strong>extension</strong>
+            <strong>extension</strong>{' '}
             (<code>src/json-schema/extensions/&lt;kebab-name&gt;/</code>) — may additionally
-            import the JSON Schema layer and other plugins' entry files.
+            import the JSON Schema layer and other plugins' entry files.{' '}
             <code>jsonSchema</code> and <code>jsonSchemaFullFeature</code> are the two.
           </li>
         </ul>
@@ -705,7 +705,7 @@ const tableOfContents = [
         <p class="mt-4 text-body-large">
           That rule is why importing one plugin does not drag in the other 76, and it is
           measured: a plugin costs 129–224&nbsp;B of gzip to add, against a {bundleSize.coreOnly.gzip}{' '}
-          builder. A plugin published from your own package has the same shape and imports
+          builder. A plugin published from your own package has the same shape and imports{' '}
           <code>@maroonedog/luq/plugin-kit</code> instead of relative paths.
         </p>
 
@@ -714,7 +714,7 @@ const tableOfContents = [
           subpath is <code>camelCase</code>, derived from each other and round-trip asserted at
           build time; <code>index.ts</code> re-exports only; and one method name per slot across
           the whole catalogue — <code>npm run check:plugin-uniqueness</code> refuses a
-          collision. <code>stringMin</code> and <code>numberMin</code> may both be
+          collision. <code>stringMin</code> and <code>numberMin</code> may both be{' '}
           <code>.min()</code> because their slots do not overlap.
         </p>
 

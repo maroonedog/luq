@@ -11,7 +11,8 @@ export const conformance = {
   fraction: "929 / 929",
   headline: "929 / 929 = 100.00%",
   suiteCommit: "f6fd52a0a95472e079cbfc6ef7f089702b80e045",
-  suiteDigest: "sha256:323c37914b8c8a41176ccd343cfc110659039c740d380d50ca71f96a5b4860aa",
+  suiteDigest:
+    "sha256:323c37914b8c8a41176ccd343cfc110659039c740d380d50ca71f96a5b4860aa",
   fileCount: 37,
   groupCount: 258,
   validCases: 551,

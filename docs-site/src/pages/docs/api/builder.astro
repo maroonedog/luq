@@ -262,7 +262,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
         <p class="md-label-large mb-2 text-primary">API reference</p>
         <h1 class="md-headline-large mb-4">Builder</h1>
         <p class="md-body-large mb-10 text-on-surface-variant">
-          <code>Builder()</code> is the one entry point. It has exactly three members —
+          <code>Builder()</code> is the one entry point. It has exactly three members —{' '}
           <code>use</code>, <code>withConfig</code> and <code>for</code> — and everything
           the library can do is reached by walking that chain to <code>build()</code>.
         </p>
@@ -281,12 +281,12 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">info</span>
+              <span class="md-icon md-icon-sm" aria-hidden="true">info</span>{' '}
               build() returns an object
             </h3>
             <p class="md-body-medium text-on-surface-variant">
-              Not a function. Its four members are <code>validate</code>, <code>parse</code>,
-              <code>pick</code> and <code>pickAll</code>. 1.x's README showed
+              Not a function. Its four members are <code>validate</code>, <code>parse</code>,{' '}
+              <code>pick</code> and <code>pickAll</code>. 1.x's README showed{' '}
               <code>const validate = ...build(); validate(value)</code>; no released
               implementation ever returned something callable.
             </p>
@@ -303,7 +303,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <p>
             Adds <strong>one</strong> plugin to the bag and returns the same builder object,
-            typed with the plugin folded in. The signature is
+            typed with the plugin folded in. The signature is{' '}
             <code>use(plugin: AnyPlugin)</code> — there is no variadic form, so chain one
             call per plugin.
           </p>
@@ -317,7 +317,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">bolt</span>
+              <span class="md-icon md-icon-sm" aria-hidden="true">bolt</span>{' '}
               What use() does and does not do
             </h3>
             <ul class="md-body-medium space-y-2 text-on-surface-variant">
@@ -328,7 +328,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
               </li>
               <li>
                 <code>use()</code> mutates and returns the receiver, so two branches off one
-                builder share plugins. If you want an immutable base, use
+                builder share plugins. If you want an immutable base, use{' '}
                 <a href="/docs/api/plugin-registry">a plugin registry</a>.
               </li>
               <li>Every <code>use()</code> must come before <code>for()</code>.</li>
@@ -338,8 +338,8 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
           <h2 id="with-config">withConfig(config)</h2>
 
           <p>
-            A per-builder override of the process-wide defaults. It is merged once at
-            <code>build()</code> and reaches every plugin as
+            A per-builder override of the process-wide defaults. It is merged once at{' '}
+            <code>build()</code> and reaches every plugin as{' '}
             <code>RuleBuildContext.config</code>, so nothing reads a mutable global while
             validation runs and two builders configured differently keep their own settings
             forever.
@@ -430,7 +430,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <p>
             Dots for nested fields, <code>[*]</code> for array elements. Every form, with
-            what each one means:
+            what each one means:{' '}
             <a href="/docs/core-concepts#field-paths">the path grammar</a>.
           </p>
 
@@ -438,12 +438,12 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
             class="not-prose my-8 rounded-shape-md bg-error-container p-6 text-on-error-container"
           >
             <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">block</span>
+              <span class="md-icon md-icon-sm" aria-hidden="true">block</span>{' '}
               Four path forms 1.x accepted that no longer compile
             </h3>
             <ul class="md-body-medium space-y-2">
               <li>
-                <code>'items.name'</code> and <code>'items.*.name'</code> — write
+                <code>'items.name'</code> and <code>'items.*.name'</code> — write{' '}
                 <code>'items[*].name'</code>.
               </li>
               <li>
@@ -451,13 +451,13 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
                 unsupported; write <code>'items[*].name'</code>.
               </li>
               <li>
-                <code>'tags.length'</code> — that reached the array's own property. Use
-                <code>.minLength()</code> / <code>.maxLength()</code> on
+                <code>'tags.length'</code> — that reached the array's own property. Use{' '}
+                <code>.minLength()</code> / <code>.maxLength()</code> on{' '}
                 <code>'tags'</code>.
               </li>
               <li>
-                <code>'when.getTime'</code> — no path enters a <code>Date</code>,
-                <code>RegExp</code>, <code>Map</code>, <code>Set</code>,
+                <code>'when.getTime'</code> — no path enters a <code>Date</code>,{' '}
+                <code>RegExp</code>, <code>Map</code>, <code>Set</code>,{' '}
                 <code>Promise</code>, <code>Error</code>, buffer, function or class. Those
                 are opaque leaves.
               </li>
@@ -468,7 +468,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <p>
             Two keys, both about the value the field starts from. The default is substituted
-            before any rule looks at the value, so <code>validate()</code> and
+            before any rule looks at the value, so <code>validate()</code> and{' '}
             <code>parse()</code> judge the same thing — only <code>parse()</code> writes it
             back into the returned object.
           </p>
@@ -508,9 +508,9 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
           <h2 id="strict">strict()</h2>
 
           <p>
-            A type-level obligation with no runtime effect. If every leaf path of
+            A type-level obligation with no runtime effect. If every leaf path of{' '}
             <code>T</code> has been declared, <code>strict()</code> returns the builder and
-            the chain carries on. If any is missing it returns a
+            the chain carries on. If any is missing it returns a{' '}
             <code>MissingFieldsError</code> instead, which has no <code>build()</code>, so
             the file stops compiling and the error names the paths you forgot.
           </p>
@@ -527,7 +527,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <p>
             <code>strict()</code> says nothing about properties that are not in the type.
-            Rejecting those at run time is a rule, and it belongs to the
+            Rejecting those at run time is a rule, and it belongs to the{' '}
             <code>objectAdditionalProperties</code> plugin.
           </p>
 
@@ -536,9 +536,9 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
           <h2 id="build">build()</h2>
 
           <p>
-            Compiles the declarations into a plan once and returns a
+            Compiles the declarations into a plan once and returns a{' '}
             <code>Validator&lt;T&gt;</code>. Building is the expensive half — measured at
-            14–662&nbsp;µs depending on shape, against sub-microsecond
+            14–662&nbsp;µs depending on shape, against sub-microsecond{' '}
             <code>validate()</code> calls — so build once at module scope and reuse the
             object.
           </p>
@@ -557,14 +557,14 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
                 <tr class="border-b border-outline-variant">
                   <td class="py-2 pr-4"><code>validate(value, options?)</code></td>
                   <td class="py-2">
-                    <code>ValidationResult&lt;T&gt;</code> holding the <strong>original</strong>
+                    <code>ValidationResult&lt;T&gt;</code> holding the <strong>original</strong>{' '}
                     value.
                   </td>
                 </tr>
                 <tr class="border-b border-outline-variant">
                   <td class="py-2 pr-4"><code>parse(value, options?)</code></td>
                   <td class="py-2">
-                    <code>ValidationResult&lt;T&gt;</code> holding the value
+                    <code>ValidationResult&lt;T&gt;</code> holding the value{' '}
                     <strong>after transforms</strong>.
                   </td>
                 </tr>
@@ -590,7 +590,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
           <h2 id="reusable-rules">Reusing a field rule</h2>
 
           <p>
-            The same chain used on several fields — or several validators — is a
+            The same chain used on several fields — or several validators — is a{' '}
             <code>FieldRule</code>. It is minted from a plugin registry and spliced in with
             the free function <code>useField</code>, which is a caller of <code>v()</code>,
             so a rule cannot produce anything a hand-written <code>v()</code> could not.
@@ -673,7 +673,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
                 <tr class="border-b border-outline-variant">
                   <td class="py-2 pr-4"><code>builder.useField(path, rule)</code></td>
                   <td class="py-2">
-                    <code>useField(builder, path, rule)</code> from
+                    <code>useField(builder, path, rule)</code> from{' '}
                     <code>@maroonedog/luq/field-rule</code>.
                   </td>
                 </tr>
@@ -688,17 +688,17 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
                 <tr class="border-b border-outline-variant">
                   <td class="py-2 pr-4"><code>.v(path, define, 'en')</code></td>
                   <td class="py-2">
-                    The bare-value shorthand is gone. Write
+                    The bare-value shorthand is gone. Write{' '}
                     <code>&#123; default: 'en' &#125;</code>.
                   </td>
                 </tr>
                 <tr class="border-b border-outline-variant">
                   <td class="py-2 pr-4">
-                    <code>&#123; description &#125;</code>, <code>&#123; deprecated &#125;</code>,
+                    <code>&#123; description &#125;</code>, <code>&#123; deprecated &#125;</code>,{' '}
                     <code>&#123; metadata &#125;</code>
                   </td>
                   <td class="py-2">
-                    Removed from field options. Only <code>default</code> and
+                    Removed from field options. Only <code>default</code> and{' '}
                     <code>applyDefaultToNull</code> remain.
                   </td>
                 </tr>
@@ -711,7 +711,7 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
                 <tr>
                   <td class="py-2 pr-4"><code>Builder().fromJsonSchema(schema)</code></td>
                   <td class="py-2">
-                    <code>fromJsonSchema(schema)</code>, a free function. See
+                    <code>fromJsonSchema(schema)</code>, a free function. See{' '}
                     <a href="/json-schema">JSON Schema</a>.
                   </td>
                 </tr>

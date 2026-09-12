@@ -108,9 +108,9 @@ const decisions = [
       <CodeBlock code={standardExample} language="typescript" fileName="account.ts" />
 
       <p class="mb-4 mt-8 text-body-large text-on-surface-variant">
-        What comes back is <strong class="text-on-surface">still the validator</strong>:
-        <code class="font-mono">validate</code>, <code class="font-mono">parse</code>,
-        <code class="font-mono">pick</code> and <code class="font-mono">pickAll</code>
+        What comes back is <strong class="text-on-surface">still the validator</strong>:{' '}
+        <code class="font-mono">validate</code>, <code class="font-mono">parse</code>,{' '}
+        <code class="font-mono">pick</code> and <code class="font-mono">pickAll</code>{' '}
         are all still there for the rest of the application.
       </p>
       <CodeBlock code={stillAValidatorExample} language="typescript" fileName="both-faces.ts" />
@@ -140,11 +140,11 @@ const decisions = [
         What does not cross the boundary
       </h2>
       <p class="mb-12 text-body-large text-on-surface-variant">
-        A Standard Schema issue carries <code class="font-mono">message</code> and
-        <code class="font-mono">path</code>. Luq's own <code class="font-mono">code</code>
+        A Standard Schema issue carries <code class="font-mono">message</code> and{' '}
+        <code class="font-mono">path</code>. Luq's own <code class="font-mono">code</code>{' '}
         and <code class="font-mono">severity</code> have no field in the spec and do
-        not survive, so a consumer that switches on <code class="font-mono">issue.code</code>
-        needs the validator rather than this face — and the same value
+        not survive, so a consumer that switches on <code class="font-mono">issue.code</code>{' '}
+        needs the validator rather than this face — and the same value{' '}
         <em>is</em> the validator, so nothing has to be given up to get it.
       </p>
 
@@ -163,7 +163,7 @@ const decisions = [
           resolver reads the value Luq wrote back.
         </p>
         <p class="text-body-medium text-on-surface-variant">
-          A running form is in <code class="font-mono">examples/react-hook-form</code>
+          A running form is in <code class="font-mono">examples/react-hook-form</code>{' '}
           in the repository.
         </p>
       </div>
@@ -173,9 +173,9 @@ const decisions = [
       </h2>
       <p class="mb-12 text-body-large text-on-surface-variant">
         <code class="font-mono">toStandardJsonSchema</code> is the same idea one
-        step further: it attaches a <code class="font-mono">~standard.jsonSchema</code>
-        converter as well, so the value satisfies both
-        <code class="font-mono">StandardSchemaV1</code> and
+        step further: it attaches a <code class="font-mono">~standard.jsonSchema</code>{' '}
+        converter as well, so the value satisfies both{' '}
+        <code class="font-mono">StandardSchemaV1</code> and{' '}
         <code class="font-mono">StandardJSONSchemaV1</code>. The targets, what
         happens to a rule that cannot be expressed, and the ordering it needs are
         on <a class="text-primary underline underline-offset-2" href="/json-schema#emit"

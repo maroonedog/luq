@@ -135,7 +135,7 @@ console.log(result.issues.map((issue) => issue.path));
     <div class="mb-16 grid gap-6 lg:grid-cols-2">
       <div class="min-w-0">
         <h3 class="mb-3 flex items-center gap-2 text-title-medium text-on-surface-variant">
-          <span class="md-icon md-icon-sm" aria-hidden="true">history</span>
+          <span class="md-icon md-icon-sm" aria-hidden="true">history</span>{' '}
           What you have now
         </h3>
         <CodeBlock code={beforeCode} language="typescript" fileName="save-user.ts" showCopy={false} />
@@ -143,7 +143,7 @@ console.log(result.issues.map((issue) => issue.path));
 
       <div class="min-w-0">
         <h3 class="mb-3 flex items-center gap-2 text-title-medium text-primary">
-          <span class="md-icon md-icon-sm" aria-hidden="true">add_task</span>
+          <span class="md-icon md-icon-sm" aria-hidden="true">add_task</span>{' '}
           What you add
         </h3>
         <CodeBlock code={afterCode} language="typescript" fileName="save-user.ts" showCopy={true} />
