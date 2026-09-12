@@ -26,9 +26,25 @@ export {
 
 export type { JsonSchemaOptions } from "../json-schema";
 
+// Every error `fromJsonSchema` can throw, so a caller can tell them apart by
+// class rather than by reading the message.
+//
+// This subpath is the one-import route and the one the documentation points at,
+// which made it the worst place to be missing them: a document that is not
+// Draft-07 at all, one the meta-schema forbids, one carrying a keyword Luq
+// cannot honour and one that is not a schema are four different things to do
+// about it, and a caller who can only match on message text has to re-derive
+// that distinction from prose that is free to change.
 export {
   DRAFT07_DIALECT_URI,
   UnsupportedDialectError,
 } from "../../unsupported-dialect-error";
+
+export {
+  MalformedSchemaError,
+  NotASchemaError,
+  RefResolutionError,
+  UnsupportedKeywordError,
+} from "../../index";
 
 export type { DialectOptions, JsonSchemaBag } from "../../index";
