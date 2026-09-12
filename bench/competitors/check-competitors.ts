@@ -23,6 +23,7 @@ import * as path from "path";
 import { COMPETITORS } from "./index";
 import { measureAllAgreement } from "./measure-agreement";
 import { checkRecordedVersions } from "./check-recorded-versions";
+import { reportCheckOutcome } from "./report-check-outcome";
 import type { RecordedCompetitor } from "./check-recorded-versions";
 import {
   measureAllRatios,
@@ -157,9 +158,16 @@ function run(): void {
 
   // Fails only when agreement differs from the record. A disagreement that is
   // already recorded is normal, so that line alone passes.
-  if ((problems.length > 0 && !disagreementsOnly) || staleVersions.length > 0) {
+  const agreementFailed = problems.length > 0 && !disagreementsOnly;
+  const versionsStale = staleVersions.length > 0;
+  if (agreementFailed || versionsStale) {
     process.exitCode = 1;
   }
+
+  // Which of the two it was, for the workflow. A stale version is something CI
+  // can offer to fix by re-measuring; a moved verdict is not, and must not be
+  // written into the baseline as though it were expected.
+  reportCheckOutcome({ agreementFailed, versionsStale });
 
   // --write emits the very measurement that was judged. CI uploads it as an
   // artifact; measured separately, the artifact's figures would not
