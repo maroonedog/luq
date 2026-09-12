@@ -94,6 +94,25 @@ const buildCostRows = shapeOrder.map((shape) => {
 const gatedRows = perfBaseline.referenceRatio.filter((row) => row.inputIsAccepted);
 
 /**
+ * How the zod comparison reads once the pool is split, counted rather than
+ * asserted.
+ *
+ * The card above tells the reader to read Accepted instead of Ratio. Leaving it
+ * at that would be an instruction whose answer this page already holds: on the
+ * mixed pool Luq leads zod on most shapes, and on accepted input alone it does
+ * not. Saying which way round it comes out is the whole reason the column was
+ * split, and a reader who has to work it out from the table is being asked to
+ * discover the unflattering half on their own.
+ *
+ * Counted from the rows, so it cannot disagree with the table beneath it.
+ */
+const zodRows = competitorBenchmark.rows.filter(
+  (row) => row.competitor === 'zod' && row.acceptedRatio !== null
+);
+const zodAcceptedLosses = zodRows.filter((row) => Number(row.acceptedRatio) < 1).length;
+const zodMixedWins = zodRows.filter((row) => Number(row.ratio) > 1).length;
+
+/**
  * What one validate() costs on the 50-element array, derived rather than
  * stated: the break-even count IS buildCost / validateCost, so dividing the
  * recorded build cost by the recorded count recovers the second figure. It was
@@ -591,6 +610,17 @@ const tableOfContents = [
           <strong class="text-on-surface">Accepted</strong> is the column that resembles production
           traffic.
         </p>
+        {
+          zodRows.length > 0 && (
+            <p class="mt-3 text-body-medium text-on-surface-variant">
+              It changes the answer here. Against zod, Luq leads on the mixed pool in{' '}
+              {zodMixedWins} of {zodRows.length} shapes — and on accepted input alone it is the
+              slower of the two in {zodAcceptedLosses} of {zodRows.length}. The mixed figure is
+              mostly the rejected column pulling it up, which is a measurement of how cheaply each
+              library builds an error.
+            </p>
+          )
+        }
         <p class="mt-3 text-body-medium text-on-surface-variant">
           This is not hypothetical. The lockfile here held zod 4.0.14 for fourteen months while
           4.6.2 shipped, and most of the gap that produced was zod's old error path — a figure this
