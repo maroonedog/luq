@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { bundleSize } from '../data/bundle-size';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import OnThisPage from '../components/OnThisPage.astro';
 import { conformance } from '../data/conformance';
 import { legacySpeedups } from '../data/legacy-speedups';
 import { packageInfo } from '../data/package-info';
@@ -160,6 +161,16 @@ const knownWeaknesses = [
     href: '/benchmarks#the-gate',
   },
 ];
+
+// One entry per <section id> below, in page order. The ids already existed —
+// this page's own hero links to #withdrawn — so none is renamed here.
+// OnThisPage is hidden under xl.
+const tableOfContents = [
+  { id: 'shipped', title: 'What is in the box', level: 2 },
+  { id: 'open-work', title: 'What used to be missing', level: 2 },
+  { id: 'weaknesses', title: 'Where this release is weak', level: 2 },
+  { id: 'withdrawn', title: 'The withdrawn goal', level: 2 },
+];
 ---
 
 <BaseLayout
@@ -168,11 +179,12 @@ const knownWeaknesses = [
 >
   <Header />
 
-  <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+  <div class="flex min-h-screen">
+    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
     <header class="mb-12">
       <p class="mb-2 text-label-large text-primary">2.0</p>
-      <h1 class="mb-4 text-display-small text-on-surface">Project status</h1>
+      <h1 class="mb-4 text-on-surface">Project status</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
         Where 2.0 stands: what has shipped and is measured, what has closed since this page listed
         it as missing, where the release is still measurably weak — speed first — and why the 1.x{' '}
@@ -341,7 +353,10 @@ const knownWeaknesses = [
         Follow on GitHub
       </a>
     </nav>
-  </main>
+    </main>
+
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
 
   <Footer />
 </BaseLayout>

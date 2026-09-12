@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import OnThisPage from '../components/OnThisPage.astro';
 
 /**
  * Every figure on this page is imported from the recorded measurement files, so
@@ -163,6 +164,22 @@ npm run check:size
 # CSP — greps every emitted .js/.mjs for eval and new Function
 npm run check:no-dynamic-code`;
 
+// One entry per <section id> below, in page order. Every id here already
+// existed and none is renamed: four other pages link into five of them
+// (bundle-size, json-schema-size, against-1x, against-others, the-gate) and the
+// build resolves every #fragment. OnThisPage is hidden under xl.
+const tableOfContents = [
+  { id: 'honesty', title: 'Read this first', level: 2 },
+  { id: 'bundle-size', title: 'Bundle size', level: 2 },
+  { id: 'json-schema-size', title: 'JSON Schema entries', level: 2 },
+  { id: 'throughput', title: 'Throughput', level: 2 },
+  { id: 'against-1x', title: 'Against 1.x', level: 2 },
+  { id: 'against-others', title: 'Against other libraries', level: 2 },
+  { id: 'build-cost', title: 'What build() costs', level: 2 },
+  { id: 'the-gate', title: 'What CI gates on', level: 2 },
+  { id: 'method', title: 'Method', level: 2 },
+  { id: 'reproduce', title: 'Reproduce it', level: 2 },
+];
 ---
 
 <BaseLayout
@@ -171,7 +188,8 @@ npm run check:no-dynamic-code`;
 >
   <Header />
 
-  <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+  <div class="flex min-h-screen">
+    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
     <header class="mb-12">
       <p class="mb-2 text-label-large text-primary">Measured, not claimed</p>
@@ -585,7 +603,15 @@ npm run check:no-dynamic-code`;
                     {one.shape} / {one.competitor}
                   </code>{' '}
                   — Luq said {String(one.luqSaid)}, it said {String(!one.luqSaid)} for{' '}
-                  <code class="font-mono">{one.value}</code>
+                  {/*
+                    The sample is a JSON object with no spaces, so it is one
+                    unbreakable token — 427px of it, in a paragraph with nothing
+                    between it and <body> to clip it. It widened the whole page
+                    at 375px while every table on the page, which DESIGN.md
+                    already tells you to wrap, behaved. `break-all` lets the
+                    browser break inside it; there is no word boundary to use.
+                  */}
+                  <code class="font-mono break-all">{one.value}</code>
                 </li>
               ))}
             </ul>
@@ -862,7 +888,10 @@ npm run check:no-dynamic-code`;
         Browse plugins
       </a>
     </nav>
-  </main>
+    </main>
+
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
 
   <Footer />
 </BaseLayout>

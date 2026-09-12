@@ -73,9 +73,7 @@ function exists(path) {
 function resolvesInDist(route) {
   const clean = route.replace(/[?#].*$/, "").replace(/\/$/, "");
   if (clean === "") return exists(join(DIST, "index.html"));
-  return (
-    exists(join(DIST, `${clean}/index.html`)) || exists(join(DIST, clean))
-  );
+  return exists(join(DIST, `${clean}/index.html`)) || exists(join(DIST, clean));
 }
 
 function findEmptyCodeTags(file, html) {
@@ -135,19 +133,49 @@ function findDeadInternalLinks(file, html, anchorsByRoute) {
   while (href !== null) {
     const target = href[1] ?? "";
     href = HREF.exec(html);
+    // A bare `#section` link is checked against the page it sits on. It used to
+    // be skipped outright: `startsWith("/")` is false for it, so every
+    // in-page table of contents on the site was unguarded, and an id renamed
+    // out from under one would have shipped. Four such tables were added in one
+    // sitting on the strength of a build that was not looking.
+    if (target.startsWith("#")) {
+      const here = anchorsByRoute.get(routeOf(file));
+      if (here !== undefined && !here.has(target.slice(1))) {
+        problems.push(
+          `${file}: dead in-page link ${target} — this page has no id="${target.slice(1)}"`
+        );
+      }
+      continue;
+    }
     if (!target.startsWith("/") || target.startsWith("//")) continue;
     const [route, fragment] = target.split("#");
     if (route !== undefined && route !== "" && !resolvesInDist(route)) {
-      problems.push(`${file}: dead link ${target} — no page is built at ${route}`);
+      problems.push(
+        `${file}: dead link ${target} — no page is built at ${route}`
+      );
       continue;
     }
     if (fragment === undefined || fragment === "") continue;
     const anchors = anchorsByRoute.get(route === "" ? "/" : route);
     if (anchors !== undefined && !anchors.has(fragment)) {
-      problems.push(`${file}: dead link ${target} — that page has no id="${fragment}"`);
+      problems.push(
+        `${file}: dead link ${target} — that page has no id="${fragment}"`
+      );
     }
   }
   return problems;
+}
+
+/**
+ * The route a built file serves, from the name it is reported under.
+ *
+ * `findDeadInternalLinks` receives that name rather than the path, so an
+ * in-page `#fragment` has to be turned back into the route whose anchors were
+ * collected under it.
+ */
+function routeOf(file) {
+  const route = `/${file.split("\\").join("/")}`.replace(/\/index\.html$/, "");
+  return route === "" ? "/" : route;
 }
 
 function readAnchors(html) {

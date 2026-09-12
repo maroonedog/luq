@@ -610,7 +610,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
     <!-- ================= Hero ================= -->
     <header class="mb-12">
       <p class="mb-2 text-label-large text-primary">Draft-07</p>
-      <h1 class="mb-4 text-display-small text-on-surface">JSON Schema</h1>
+      <h1 class="mb-4 text-on-surface">JSON Schema</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
         Luq validates a Draft-07 document by <strong class="text-on-surface">converting</strong> it
         into the same field declarations you would have written by hand. There is no second engine:
@@ -632,14 +632,14 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       <div class="grid gap-4 sm:grid-cols-3">
         <div class="md-card md-card-filled p-6">
           <p class="text-label-medium text-on-surface-variant">This release</p>
-          <p class="mt-1 text-display-small text-primary">{conformance.percent}%</p>
+          <p class="mt-1 text-headline-small text-primary">{conformance.percent}%</p>
           <p class="mt-1 text-body-small text-on-surface-variant">
             {conformance.passed} of {conformance.total} cases
           </p>
         </div>
         <div class="md-card md-card-outlined p-6">
           <p class="text-label-medium text-on-surface-variant">A validator that always says yes</p>
-          <p class="mt-1 text-display-small text-on-surface-variant">
+          <p class="mt-1 text-headline-small text-on-surface-variant">
             {conformance.trivialPercent}%
           </p>
           <p class="mt-1 text-body-small text-on-surface-variant">
@@ -649,7 +649,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         </div>
         <div class="md-card md-card-outlined p-6">
           <p class="text-label-medium text-on-surface-variant">Luq 1.x, same corpus</p>
-          <p class="mt-1 text-display-small text-on-surface-variant">
+          <p class="mt-1 text-headline-small text-on-surface-variant">
             {conformance.legacyPercent}%
           </p>
           <p class="mt-1 text-body-small text-on-surface-variant">

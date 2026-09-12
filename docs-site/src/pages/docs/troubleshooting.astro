@@ -406,7 +406,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 in its exports map.
               </p>
 
-              <CodeBlock code={badImportsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={badImportsExample} language="typescript" invalid />
               <CodeBlock code={goodImportsExample} language="typescript" />
 
               <div class="overflow-x-auto">
@@ -482,7 +482,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 plugins at all — a barrel naming all 77 would make every one statically
                 reachable and end per-plugin tree-shaking.
               </p>
-              <CodeBlock code={rootPluginsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={rootPluginsExample} language="typescript" invalid />
             </div>
           </details>
 
@@ -503,7 +503,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 The bag is a type, so an unimported plugin's method does not typecheck —
                 that is the design, not a gap.
               </p>
-              <CodeBlock code={missingPluginExample} language="typescript" showCopy={false} />
+              <CodeBlock code={missingPluginExample} language="typescript" invalid />
               <CodeBlock code={missingPluginFixExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
                 Also check the method's <strong>name</strong>: it is often not the plugin's.{' '}
@@ -530,7 +530,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 compile error. 1.x let it through in silence. Use <code>b.any</code> when you
                 genuinely mean "whatever this is".
               </p>
-              <CodeBlock code={wrongSlotExample} language="typescript" showCopy={false} />
+              <CodeBlock code={wrongSlotExample} language="typescript" invalid />
             </div>
           </details>
 
@@ -546,7 +546,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 <strong>Cause.</strong> One rule, not four special cases: array members are
                 never enumerated, and built-in objects are opaque.
               </p>
-              <CodeBlock code={badPathsExample} language="typescript" showCopy={false} />
+              <CodeBlock code={badPathsExample} language="typescript" invalid />
               <CodeBlock code={goodPathsExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
                 Path generation also counts down a depth budget of 6, so a self-referential
@@ -572,7 +572,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 <code>null</code> as well as <code>undefined</code>, and it takes no options
                 beyond the uniform <code>RuleOptions</code>. Nullability is its own rule.
               </p>
-              <CodeBlock code={allowNullExample} language="typescript" showCopy={false} />
+              <CodeBlock code={allowNullExample} language="typescript" invalid />
               <CodeBlock code={nullableFixExample} language="typescript" />
             </div>
           </details>
@@ -593,7 +593,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 <code>pickAll</code>. 1.x's README showed it being called; no implementation
                 ever returned something callable.
               </p>
-              <CodeBlock code={buildCallableExample} language="typescript" showCopy={false} />
+              <CodeBlock code={buildCallableExample} language="typescript" invalid />
             </div>
           </details>
 
@@ -780,7 +780,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 there is no second precedence rule to remember. It is always the{' '}
                 <strong>last</strong> argument of a chain method, after the plugin's own.
               </p>
-              <CodeBlock code={messageOptionExample} language="typescript" showCopy={false} />
+              <CodeBlock code={messageOptionExample} language="typescript" invalid />
               <CodeBlock code={messageFactoryExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
                 A call-level <code>messageFactory</code> and <code>translate</code> option

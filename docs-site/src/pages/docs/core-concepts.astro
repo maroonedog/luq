@@ -10,10 +10,24 @@ import OnThisPage from '../../components/OnThisPage.astro';
 // package. The blocks marked "does not compile" were checked the other way:
 // they are required to be rejected, and they are.
 
-// luq-example: skip — a caret pointing at one line, not a statement on its own
-const slotExample = `.v('title', b => b.number.required().min(3))
-//              ^^^^^^^^
-// \`title\` is a string. Choosing b.number does not compile.`;
+// This used to be a caret pointing at one line, which CI had to skip because a
+// fragment is not a statement. The block carries a "Does not compile" label
+// now, and that label is only honest where the build proves it — so the
+// fragment became a whole file.
+// luq-example: must-fail — `title` is a string, so the number slot is refused; compiling would make the claim beside it false
+const slotExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
+
+type Draft = { title: string };
+
+const draftValidator = Builder()
+  .use(requiredPlugin)
+  .use(numberMinPlugin)
+  .for<Draft>()
+  // \`title\` is a string. Choosing the number slot is a compile error.
+  .v('title', b => b.number.required().min(3))
+  .build();`;
 
 const bagExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
@@ -199,13 +213,7 @@ const tableOfContents = [
           Choosing a slot the field's type cannot be is a <strong>compile</strong> error.
         </p>
 
-        <div class="mt-4 rounded-shape-md border border-error p-1">
-          <p class="px-3 py-2 text-label-large text-error">
-            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
-            This does not compile
-          </p>
-          <CodeBlock code={slotExample} language="typescript" showCopy={false} />
-        </div>
+        <CodeBlock code={slotExample} language="typescript" class="mt-4" invalid />
 
         <p class="mt-6 text-body-large">
           A slot also has a run-time half. Entering <code>b.&lt;slot&gt;</code> seeds the
@@ -292,13 +300,7 @@ const tableOfContents = [
           contains what you imported, and nothing you did not.
         </p>
 
-        <div class="mt-4 rounded-shape-md border border-error p-1">
-          <p class="px-3 py-2 text-label-large text-error">
-            <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
-            This does not compile
-          </p>
-          <CodeBlock code={unimportedExample} language="typescript" showCopy={false} />
-        </div>
+        <CodeBlock code={unimportedExample} language="typescript" class="mt-4" invalid />
 
         <h2 id="field-paths" class="mt-12 text-headline-small">Field paths</h2>
 

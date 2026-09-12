@@ -48,7 +48,8 @@ registerHooks({
   },
 });
 
-const { Hct, TonalPalette } = await import("@material/material-color-utilities");
+const { Hct, TonalPalette } =
+  await import("@material/material-color-utilities");
 
 const SITE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const LOGO_PATH = join(SITE_ROOT, "public", "img", "library_image_cropped.png");
@@ -95,7 +96,9 @@ function decodePng(filePath) {
   }
 
   if (bitDepth !== 8 || colorType !== 6) {
-    throw new Error(`expected 8-bit RGBA PNG, got bitDepth=${bitDepth} colorType=${colorType}`);
+    throw new Error(
+      `expected 8-bit RGBA PNG, got bitDepth=${bitDepth} colorType=${colorType}`
+    );
   }
 
   const inflated = inflateSync(Buffer.concat(chunks));
@@ -111,10 +114,15 @@ function decodePng(filePath) {
     read += stride;
     const rowStart = y * stride;
     for (let x = 0; x < stride; x += 1) {
-      const left = x >= bytesPerPixel ? pixels[rowStart + x - bytesPerPixel] : 0;
+      const left =
+        x >= bytesPerPixel ? pixels[rowStart + x - bytesPerPixel] : 0;
       const up = y > 0 ? pixels[rowStart - stride + x] : 0;
-      const upLeft = x >= bytesPerPixel && y > 0 ? pixels[rowStart - stride + x - bytesPerPixel] : 0;
-      pixels[rowStart + x] = (scanline[x] + unfilter(filterType, left, up, upLeft)) & 0xff;
+      const upLeft =
+        x >= bytesPerPixel && y > 0
+          ? pixels[rowStart - stride + x - bytesPerPixel]
+          : 0;
+      pixels[rowStart + x] =
+        (scanline[x] + unfilter(filterType, left, up, upLeft)) & 0xff;
     }
   }
 
@@ -154,7 +162,8 @@ const toLinear = (channel) => {
 };
 
 const toSrgb = (linear) => {
-  const v = linear <= 0.0031308 ? linear * 12.92 : 1.055 * linear ** (1 / 2.4) - 0.055;
+  const v =
+    linear <= 0.0031308 ? linear * 12.92 : 1.055 * linear ** (1 / 2.4) - 0.055;
   return Math.max(0, Math.min(255, Math.round(v * 255)));
 };
 
@@ -236,7 +245,8 @@ function measureLogoBrandColors() {
   }
 
   const centroid = (family) => {
-    if (family.count === 0) throw new Error("no pixels matched a brand hue window");
+    if (family.count === 0)
+      throw new Error("no pixels matched a brand hue window");
     return {
       hex: hexOf(
         toSrgb(family.r / family.count),
@@ -272,7 +282,10 @@ function buildPalettes(primaryHex, tertiaryHex) {
     },
     // MD3 CorePalette rules: the key colour drives primary, and secondary /
     // neutral / neutral-variant are the same hue held at fixed lower chromas.
-    primary: TonalPalette.fromHueAndChroma(hue, Math.max(48, primaryHct.chroma)),
+    primary: TonalPalette.fromHueAndChroma(
+      hue,
+      Math.max(48, primaryHct.chroma)
+    ),
     secondary: TonalPalette.fromHueAndChroma(hue, 16),
     // Default MD3 would put tertiary at hue+60/chroma 24. Luq's logo already
     // owns a second brand hue (the teal ears), so tertiary is seeded from that
@@ -384,10 +397,21 @@ function auditContrast(scheme, schemeName) {
   let failures = 0;
   const check = (pairs, minimum, kind) => {
     for (const [foreground, background] of pairs) {
-      const ratio = contrastRatio(scheme.get(foreground), scheme.get(background));
+      const ratio = contrastRatio(
+        scheme.get(foreground),
+        scheme.get(background)
+      );
       const passed = ratio >= minimum;
       if (!passed) failures += 1;
-      rows.push({ schemeName, foreground, background, ratio, minimum, kind, passed });
+      rows.push({
+        schemeName,
+        foreground,
+        background,
+        ratio,
+        minimum,
+        kind,
+        passed,
+      });
     }
   };
   check(CONTRAST_PAIRS, 4.5, "text");
@@ -430,11 +454,31 @@ const SHAPE = [
 /** MD3 elevation: a two-part shadow plus a surface-tint opacity, per level. */
 const ELEVATION = [
   [0, "none", 0],
-  [1, "0px 1px 2px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 1px 3px 1px rgb(var(--md-sys-color-shadow-rgb) / 0.15)", 5],
-  [2, "0px 1px 2px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 2px 6px 2px rgb(var(--md-sys-color-shadow-rgb) / 0.15)", 8],
-  [3, "0px 1px 3px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 4px 8px 3px rgb(var(--md-sys-color-shadow-rgb) / 0.15)", 11],
-  [4, "0px 2px 3px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 6px 10px 4px rgb(var(--md-sys-color-shadow-rgb) / 0.15)", 12],
-  [5, "0px 4px 4px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 8px 12px 6px rgb(var(--md-sys-color-shadow-rgb) / 0.15)", 14],
+  [
+    1,
+    "0px 1px 2px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 1px 3px 1px rgb(var(--md-sys-color-shadow-rgb) / 0.15)",
+    5,
+  ],
+  [
+    2,
+    "0px 1px 2px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 2px 6px 2px rgb(var(--md-sys-color-shadow-rgb) / 0.15)",
+    8,
+  ],
+  [
+    3,
+    "0px 1px 3px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 4px 8px 3px rgb(var(--md-sys-color-shadow-rgb) / 0.15)",
+    11,
+  ],
+  [
+    4,
+    "0px 2px 3px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 6px 10px 4px rgb(var(--md-sys-color-shadow-rgb) / 0.15)",
+    12,
+  ],
+  [
+    5,
+    "0px 4px 4px 0px rgb(var(--md-sys-color-shadow-rgb) / 0.30), 0px 8px 12px 6px rgb(var(--md-sys-color-shadow-rgb) / 0.15)",
+    14,
+  ],
 ];
 
 const EASING = [
@@ -448,10 +492,22 @@ const EASING = [
 ];
 
 const DURATION = [
-  ["short-1", 50], ["short-2", 100], ["short-3", 150], ["short-4", 200],
-  ["medium-1", 250], ["medium-2", 300], ["medium-3", 350], ["medium-4", 400],
-  ["long-1", 450], ["long-2", 500], ["long-3", 550], ["long-4", 600],
-  ["extra-long-1", 700], ["extra-long-2", 800], ["extra-long-3", 900], ["extra-long-4", 1000],
+  ["short-1", 50],
+  ["short-2", 100],
+  ["short-3", 150],
+  ["short-4", 200],
+  ["medium-1", 250],
+  ["medium-2", 300],
+  ["medium-3", 350],
+  ["medium-4", 400],
+  ["long-1", 450],
+  ["long-2", 500],
+  ["long-3", 550],
+  ["long-4", 600],
+  ["extra-long-1", 700],
+  ["extra-long-2", 800],
+  ["extra-long-3", 900],
+  ["extra-long-4", 1000],
 ];
 
 const STATE_LAYER = [
@@ -484,7 +540,8 @@ const CODE_TOKENS = [
   ["regex", 25, 40, 80],
 ];
 
-const rgbTriplet = (argb) => `${(argb >> 16) & 0xff} ${(argb >> 8) & 0xff} ${argb & 0xff}`;
+const rgbTriplet = (argb) =>
+  `${(argb >> 16) & 0xff} ${(argb >> 8) & 0xff} ${argb & 0xff}`;
 
 function emitSchemeBlock(scheme, indent) {
   return ROLES.map(([role]) => {
@@ -494,13 +551,21 @@ function emitSchemeBlock(scheme, indent) {
 }
 
 function emitPaletteBlock(palettes, indent) {
-  const names = ["primary", "secondary", "tertiary", "neutral", "neutralVariant", "error"];
+  const names = [
+    "primary",
+    "secondary",
+    "tertiary",
+    "neutral",
+    "neutralVariant",
+    "error",
+  ];
   const cssName = { neutralVariant: "neutral-variant" };
   return names
     .map((name) => {
       const label = cssName[name] ?? name;
       return PALETTE_TONES.map(
-        (tone) => `${indent}--md-ref-palette-${label}-${tone}: ${hexFromArgb(palettes[name].tone(tone))};`
+        (tone) =>
+          `${indent}--md-ref-palette-${label}-${tone}: ${hexFromArgb(palettes[name].tone(tone))};`
       ).join("\n");
     })
     .join("\n");
@@ -521,7 +586,8 @@ function generate() {
     return { name, argb, ratio: contrastRatio(argb, codeBackground) };
   });
   const codeFailures = codeTokens.filter((token) => token.ratio < 4.5);
-  const failures = lightAudit.failures + darkAudit.failures + codeFailures.length;
+  const failures =
+    lightAudit.failures + darkAudit.failures + codeFailures.length;
 
   const header = `/*
  * Material Design 3 design tokens for the Luq documentation site.
@@ -604,7 +670,10 @@ ${TYPESCALE.map(
   --md-code-on-surface: ${hexFromArgb(palettes.neutral.tone(90))};
   --md-code-on-surface-variant: ${hexFromArgb(palettes.neutralVariant.tone(80))};
 ${codeTokens
-  .map((token) => `  --md-code-${token.name}: ${hexFromArgb(token.argb)}; /* ${token.ratio.toFixed(2)}:1 */`)
+  .map(
+    (token) =>
+      `  --md-code-${token.name}: ${hexFromArgb(token.argb)}; /* ${token.ratio.toFixed(2)}:1 */`
+  )
   .join("\n")}
 }
 `;
@@ -629,12 +698,19 @@ ${codeTokens
       Object.entries(paletteNames).map(([key, label]) => [
         label,
         Object.fromEntries(
-          PALETTE_TONES.map((tone) => [tone, hexFromArgb(palettes[key].tone(tone))])
+          PALETTE_TONES.map((tone) => [
+            tone,
+            hexFromArgb(palettes[key].tone(tone)),
+          ])
         ),
       ])
     ),
   };
-  writeFileSync(PALETTE_JSON_PATH, `${JSON.stringify(paletteJson, null, 2)}\n`, "utf8");
+  writeFileSync(
+    PALETTE_JSON_PATH,
+    `${JSON.stringify(paletteJson, null, 2)}\n`,
+    "utf8"
+  );
 
   for (const row of [...lightAudit.rows, ...darkAudit.rows]) {
     if (!row.passed) {
@@ -643,8 +719,12 @@ ${codeTokens
       );
     }
   }
-  console.log(`primary seed  ${measured.purple.hex} (${measured.purple.pixels} px)`);
-  console.log(`tertiary seed ${measured.teal.hex} (${measured.teal.pixels} px)`);
+  console.log(
+    `primary seed  ${measured.purple.hex} (${measured.purple.pixels} px)`
+  );
+  console.log(
+    `tertiary seed ${measured.teal.hex} (${measured.teal.pixels} px)`
+  );
   console.log(
     `light: min text ${Math.min(...lightAudit.rows.filter((r) => r.kind === "text").map((r) => r.ratio)).toFixed(2)}:1`
   );
@@ -652,7 +732,9 @@ ${codeTokens
     `dark:  min text ${Math.min(...darkAudit.rows.filter((r) => r.kind === "text").map((r) => r.ratio)).toFixed(2)}:1`
   );
   for (const token of codeTokens) {
-    console.log(`code   ${token.name.padEnd(9)} ${hexFromArgb(token.argb)} ${token.ratio.toFixed(2)}:1`);
+    console.log(
+      `code   ${token.name.padEnd(9)} ${hexFromArgb(token.argb)} ${token.ratio.toFixed(2)}:1`
+    );
   }
   console.log(`wrote ${OUTPUT_PATH} (${failures} contrast failures)`);
   if (failures > 0) process.exitCode = 1;
