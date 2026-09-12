@@ -95,7 +95,9 @@ somewhere.
 npm install @maroonedog/luq
 ```
 
-Zero runtime dependencies. TypeScript 5.0 or later.
+Zero runtime dependencies. TypeScript 5.0 or later. Your `tsconfig.json` does
+not need `strict` for any of the compile errors above, and they are checked with
+it on as well.
 
 ## The whole API
 
@@ -138,6 +140,36 @@ if (!result.valid) {
 `.v(path, chain)` declares rules for one field. A path you do not declare is
 not validated, not required and not read, so covering a type partly is a normal
 state rather than a half-finished one.
+
+### `.strict()` — when you want the whole type covered
+
+Partial cover is the default, so nothing tells you a field was forgotten. Add
+`.strict()` before `.build()` and the compiler does: it asserts every leaf path
+of your type has been declared, and if one is missing the returned object has
+no `build()` and names what is missing.
+
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+interface Pair {
+  readonly left: string;
+  readonly right: string;
+}
+
+export const pairs = Builder()
+  .use(requiredPlugin)
+  .for<Pair>()
+  .v("left", (b) => b.string.required())
+  .v("right", (b) => b.string.required())
+  .strict() //  drop either .v() above and this line stops compiling
+  .build();
+```
+
+It has no runtime effect and rejects no extra property at run time — it is a
+statement about your declarations, not about the data. For refusing unknown
+keys in the value, see
+[objectAdditionalProperties](https://luq.dev/plugins).
 
 ### What a built validator gives you
 

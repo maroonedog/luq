@@ -8,6 +8,12 @@
  *
  * `showWindowControls` now means "show the toolbar" — the 1.x traffic-light
  * dots imitated a macOS window and carried no information.
+ *
+ * `invalid` marks a block the compiler refuses. It forces the toolbar on, puts
+ * "Does not compile" where the Copy button would be, and removes Copy. The code
+ * surface and its syntax colours are untouched: those tones are measured
+ * against that exact background, so tinting it would invalidate every ratio
+ * recorded in md3-tokens.css. Only the label carries the error role.
  */
 export interface Props {
   code: string;
@@ -17,6 +23,7 @@ export interface Props {
   showWindowControls?: boolean;
   fileName?: string;
   id?: string;
+  invalid?: boolean;
 }
 
 const {
@@ -27,9 +34,12 @@ const {
   showWindowControls = false,
   fileName = '',
   id = '',
+  invalid = false,
 } = Astro.props;
 
-const showToolbar = showWindowControls || fileName !== '' || showCopy;
+// A refused block is never copyable, whatever the caller asked for.
+const showCopyButton = showCopy && !invalid;
+const showToolbar = showWindowControls || fileName !== '' || showCopyButton || invalid;
 const blockId = id || `code-${Math.random().toString(36).slice(2, 10)}`;
 ---
 
@@ -38,7 +48,22 @@ const blockId = id || `code-${Math.random().toString(36).slice(2, 10)}`;
     showToolbar && (
       <div class="md-code-toolbar">
         <span class="md-label-medium truncate">{fileName || language}</span>
-        {showCopy && (
+        {invalid && (
+          /*
+           * `dark` is not decoration: the toolbar keeps the code surface's dark
+           * background in both schemes, so the light-scheme `error` tone would
+           * land on it at 2.55:1. Resolving the role against the dark scheme —
+           * the scheme this island actually is — puts the label at 9.70:1,
+           * clear of the 7.19:1 floor DESIGN.md records for dark text pairs.
+           */
+          <span class="dark inline-flex h-8 shrink-0 items-center gap-1.5 px-3 text-label-large text-error">
+            <span class="md-icon md-icon-sm" aria-hidden="true">
+              cancel
+            </span>
+            Does not compile
+          </span>
+        )}
+        {showCopyButton && (
           <button
             type="button"
             class="copy-button md-state-layer md-focus-ring inline-flex h-8 items-center gap-1.5 rounded-shape-full px-3 text-label-medium"

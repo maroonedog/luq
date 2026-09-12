@@ -165,7 +165,7 @@ const typeArgumentExample = `// Naming the value type is what registry.createFie
   <Header />
 
   <div class="flex min-h-screen">
-    <DocsSidebar currentPath="/docs/api/plugin-registry" />
+    <DocsSidebar currentPath="/docs/api/plugin-registry" tableOfContents={tableOfContents} />
 
     <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
       <article class="mx-auto max-w-4xl">
@@ -184,7 +184,7 @@ const typeArgumentExample = `// Naming the value type is what registry.createFie
             A <code>FieldRule</code> is a <code>v()</code> callback that has been given a name
             and a plugin bag, and nothing else. It is deliberately <em>not</em> a validator of
             its own: everything it can do, it does by handing that callback to the ordinary
-            builder. That is why a rule cannot produce anything a hand-written
+            builder. That is why a rule cannot produce anything a hand-written{' '}
             <code>v()</code> could not, and why it runs the same compiler, the same plan and
             the same runtime as every other field.
           </p>
@@ -221,15 +221,15 @@ import type {
             class="not-prose my-8 rounded-shape-md bg-error-container p-6 text-on-error-container"
           >
             <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">block</span>
+              <span class="md-icon md-icon-sm" aria-hidden="true">block</span>{' '}
               Import specifiers that do not resolve
             </h3>
             <p class="md-body-medium">
-              <code>@maroonedog/luq/core/registry</code>,
+              <code>@maroonedog/luq/core/registry</code>,{' '}
               <code>@maroonedog/luq/core</code> and <code>@maroonedog/luq/plugin</code> are
-              not export keys and never were. The package has 84 keys:
-              <code>.</code>, <code>./package.json</code>, <code>./result</code>,
-              <code>./plugin-kit</code>, <code>./field-rule</code>, <code>./async</code>,
+              not export keys and never were. The package has 84 keys:{' '}
+              <code>.</code>, <code>./package.json</code>, <code>./result</code>,{' '}
+              <code>./plugin-kit</code>, <code>./field-rule</code>, <code>./async</code>,{' '}
               <code>./plugins</code>, and 77 under <code>./plugins/</code>.
             </p>
           </div>
@@ -237,7 +237,7 @@ import type {
           <h2 id="create-plugin-registry">createPluginRegistry()</h2>
 
           <p>
-            Returns an empty registry. Fill it with <code>use()</code>, mint rules with
+            Returns an empty registry. Fill it with <code>use()</code>, mint rules with{' '}
             <code>createFieldRule()</code>, and get a fresh builder carrying the same plugins
             with <code>toBuilder()</code>.
           </p>
@@ -296,7 +296,7 @@ import type {
 
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">memory</span>
+              <span class="md-icon md-icon-sm" aria-hidden="true">memory</span>{' '}
               What it costs
             </h3>
             <p class="md-body-medium text-on-surface-variant">
@@ -356,12 +356,12 @@ import type {
           <h3 id="standalone">Running a rule on its own</h3>
 
           <p>
-            A standalone rule is exactly
+            A standalone rule is exactly{' '}
             <code
               >Builder().use(...).for&lt;&#123; value: TValue &#125;&gt;().v('value', define).build()</code
             >, built once at <code>createFieldRule()</code> time through the public entry
             point. So <code>validate</code> and <code>parse</code> mean the same thing they do
-            on a full validator — and issues come back under the path
+            on a full validator — and issues come back under the path{' '}
             <code>'value'</code>, because the rule is not attached to a place yet.
           </p>
 
@@ -369,11 +369,11 @@ import type {
 
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">history</span>
+              <span class="md-icon md-icon-sm" aria-hidden="true">history</span>{' '}
               1.x had a third execution semantics here
             </h3>
             <p class="md-body-medium text-on-surface-variant">
-              Its <code>FieldRule.validate</code> called the validator's <code>check()</code>
+              Its <code>FieldRule.validate</code> called the validator's <code>check()</code>{' '}
               directly: it ignored <code>getErrorMessage</code>, ignored the null and
               undefined skips, used the plugin's name in place of its code, and re-executed
               your definition on every single call. None of that survives — there is one
@@ -388,9 +388,9 @@ import type {
           <h2 id="use-field">useField(builder, path, rule)</h2>
 
           <p>
-            A <strong>free function</strong>, and the builder is its first argument.
+            A <strong>free function</strong>, and the builder is its first argument.{' '}
             <code>builder.useField(path, rule)</code> is gone: a second way to declare a field
-            on the one entry point is how the registry grew into a parallel world in 1.x.
+            on the one entry point is how the registry grew into a parallel world in 1.x.{' '}
             <code>useField</code> is a caller of <code>.v()</code>, so there is still exactly
             one declaration mechanism.
           </p>
@@ -399,7 +399,7 @@ import type {
 
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">shield</span>
+              <span class="md-icon md-icon-sm" aria-hidden="true">shield</span>{' '}
               The bag gate, and which implementation wins
             </h3>
             <ul class="md-body-medium space-y-2 text-on-surface-variant">
@@ -415,8 +415,8 @@ import type {
                 neighbours.
               </li>
               <li>
-                A rule cannot name a sibling field. Its root type is <code>unknown</code>, so
-                <code>FieldPath&lt;unknown&gt;</code> is <code>never</code> and a
+                A rule cannot name a sibling field. Its root type is <code>unknown</code>, so{' '}
+                <code>FieldPath&lt;unknown&gt;</code> is <code>never</code> and a{' '}
                 <code>compareField</code> inside a reusable rule cannot compile against one
                 root and be spliced into another.
               </li>
@@ -562,7 +562,7 @@ interface FieldRule<TValue, B> {
             >
               <h3 class="md-title-medium mb-2">Builder</h3>
               <p class="md-body-medium text-on-surface-variant">
-                <code>use</code>, <code>for</code>, <code>v</code>, <code>strict</code>,
+                <code>use</code>, <code>for</code>, <code>v</code>, <code>strict</code>,{' '}
                 <code>build</code>.
               </p>
             </a>

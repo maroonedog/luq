@@ -1,20 +1,109 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header, { navItems } from '../components/Header.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 
 /**
  * Positioning, not a comparison table.
  *
- * Deliberately absent: any benchmark or bundle figure for another library.
- * This repository measures itself and 1.x, and nothing else — republishing
- * third-party numbers it never re-ran is what the 1.x site did, and those
- * tables were deleted rather than updated. Everything below is either a fact
- * about Luq (with its source named) or a statement about direction that a
- * reader can check against zod's own documentation.
+ * Competitor figures appear in exactly one place here — the Speed row — and
+ * they were measured in this repository, in one process, against the same
+ * values. What is still absent is a third-party number this repository did not
+ * re-run: republishing figures from another project's README is what the 1.x
+ * site did, and those tables were deleted rather than updated.
+ *
+ * That row is written by the two functions below rather than around them. The
+ * shape names, the win and loss counts, the ratio ranges and the direction of
+ * every clause are all read from competitorBenchmark and perf-baseline.json, so
+ * a re-measurement that flips a pairing rewrites the sentence instead of
+ * leaving a true frame around a stale number. Do not restate any of it in
+ * prose — see src/data/legacy-speedups.ts for what that has already cost.
+ *
+ * Everything else below is either a fact about Luq (with its source named) or a
+ * statement about direction that a reader can check against zod's own
+ * documentation.
  */
+import { competitorBenchmark } from '../data/competitors';
+import perfBaseline from '../../../config/perf-baseline.json';
+
+/** Shape identifiers named for prose. No measured figure lives in this map. */
+const shapeNames: Record<string, string> = {
+  singleField: 'a single field',
+  multiField: 'a multi-field object',
+  nested: 'a nested object',
+  array: 'an array',
+  jsonSchema: 'a JSON Schema document',
+};
+
+const nameShape = (shape: string): string => shapeNames[shape] ?? shape;
+
+const joinPhrases = (parts: string[]): string =>
+  parts.length < 2
+    ? (parts[0] ?? '')
+    : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+
+const asFactor = (factor: number): string =>
+  factor >= 10 ? `×${Math.round(factor)}` : `×${factor.toFixed(1)}`;
+
+/** One figure when the ends round together, a range when they do not. */
+const factorSpan = (factors: number[]): string => {
+  if (factors.length === 0) return '';
+  const low = asFactor(Math.min(...factors));
+  const high = asFactor(Math.max(...factors));
+  return low === high ? low : `${low} to ${high}`;
+};
+
+// --- 2.0 against 1.x, from the same file /benchmarks reads -----------------
+const legacySlower = perfBaseline.legacyComparison.filter((row) => row.speedup < 1);
+const legacyFaster = perfBaseline.legacyComparison.filter((row) => row.speedup > 1);
+
+const legacySentence =
+  legacySlower.length === 0
+    ? 'Measured head to head against Luq 1.x, 2.0 is no slower on any shape.'
+    : `2.0 is slower than Luq 1.x on ${joinPhrases(
+        legacySlower.map((row) => nameShape(row.shape))
+      )} — ${factorSpan(
+        legacySlower.map((row) => 1 / row.speedup)
+      )}, measured head to head` +
+      (legacyFaster.length === 0
+        ? '.'
+        : `, and faster on ${joinPhrases(
+            legacyFaster.map((row) => nameShape(row.shape))
+          )}.`);
+
+// --- 2.0 against the other libraries, from the competitor baseline ---------
+const standings = competitorBenchmark.libraries.map((library) => {
+  const rows = competitorBenchmark.rows.filter((row) => row.competitor === library.name);
+  const wins = rows.filter((row) => row.luqIsFaster);
+  const losses = rows.filter((row) => !row.luqIsFaster);
+  return {
+    name: library.name,
+    total: rows.length,
+    wins,
+    losses,
+    winSpan: factorSpan(wins.map((row) => Number(row.ratio))),
+    lossSpan: factorSpan(losses.map((row) => 1 / Number(row.ratio))),
+  };
+});
+
+const describeStanding = (standing: (typeof standings)[number]): string => {
+  if (standing.losses.length === 0) {
+    return `faster than ${standing.name} on all ${standing.total} shapes, by ${standing.winSpan}`;
+  }
+  if (standing.wins.length === 0) {
+    return `slower than ${standing.name} on all ${standing.total} shapes, by ${standing.lossSpan}`;
+  }
+  return (
+    `faster than ${standing.name} on ${standing.wins.length} of the ${standing.total} shapes measured — ` +
+    `${joinPhrases(standing.wins.map((row) => nameShape(row.shape)))}, by ${standing.winSpan}` +
+    ` — and slower on ${joinPhrases(
+      standing.losses.map((row) => nameShape(row.shape))
+    )} by ${standing.lossSpan}`
+  );
+};
+
+const competitorSentence = standings.map(describeStanding).join('; ');
 
 const description =
   'When Luq is the right choice and when zod is. Luq declares rules against a type you already have; zod infers a type from a schema you write. The direction is the whole difference.';
@@ -110,14 +199,13 @@ router.input(toStandardSchema(validateUser));`;
 
 <BaseLayout title="Luq or zod?" description={description}>
   <Header />
-  <MobileMenuOverlay navItems={navItems} />
 
   <main class="px-4 py-16 sm:px-6 lg:px-8">
     <div class="container mx-auto max-w-3xl">
       <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
         Choosing
       </p>
-      <h1 class="mb-6 text-display-small text-on-surface">Luq or zod?</h1>
+      <h1 class="mb-6 text-on-surface">Luq or zod?</h1>
 
       <h2 class="mb-4 text-headline-small text-on-surface">
         Where does your type come from?
@@ -130,8 +218,9 @@ router.input(toStandardSchema(validateUser));`;
         <li class="flex gap-3">
           <span class="md-icon md-icon-sm text-primary" aria-hidden="true">code</span>
           <span
-            ><code class="font-mono">openapi-typescript</code>, generated from
-            an API spec you do not own</span
+            ><a class="text-primary underline underline-offset-2" href="/openapi"
+              ><code class="font-mono">openapi-typescript</code></a
+            >, generated from an API spec you do not own</span
           >
         </li>
         <li class="flex gap-3">
@@ -150,7 +239,7 @@ router.input(toStandardSchema(validateUser));`;
       <p class="mb-12 text-body-medium text-on-surface-variant">
         In all four the shape is upstream and not yours to move, so a schema-first
         validator asks you to write it a second time and keep the copy in step by
-        hand. The compiler can be made to check the copy against the original —
+        hand. The compiler can be made to check the copy against the original —{' '}
         <code>satisfies z.ZodType&lt;Order&gt;</code> does exactly that — but the
         copy still has to be authored, updated, and remembered.
       </p>
@@ -163,9 +252,19 @@ router.input(toStandardSchema(validateUser));`;
           default for good reasons: it is mature, it is everywhere, and every
           question you will have is already answered somewhere.
         </p>
-        <p class="text-body-large text-on-surface-variant">
-          Luq is for the other case — when the shape is already decided somewhere
-          you do not control.
+        <p class="mb-4 text-body-large text-on-surface-variant">
+          If the shape arrives already decided — a generated type, a spec you
+          consume, a schema of record —{' '}
+          <strong class="text-on-surface">use Luq</strong>. The rules are
+          declared against the type that is already there, so there is no second
+          description of the shape to author, update and keep in step.
+        </p>
+        <p class="text-body-medium text-on-surface-variant">
+          Neither direction is better in the abstract. Which one fits depends on
+          a question you can answer immediately:{' '}
+          <strong class="text-on-surface"
+            >where does the type come from today?</strong
+          >
         </p>
       </div>
 
@@ -173,7 +272,7 @@ router.input(toStandardSchema(validateUser));`;
         The part that is a real tension, not a talking point
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
-        A codebase should have one source of truth for a shape.
+        A codebase should have one source of truth for a shape.{' '}
         <strong class="text-on-surface"
           >If that source is a schema you author, schema-first is the coherent
           arrangement</strong
@@ -183,19 +282,22 @@ router.input(toStandardSchema(validateUser));`;
       </p>
       <p class="mb-4 text-body-large text-on-surface-variant">
         Luq's case is the one where the artefact already exists elsewhere and is
-        not yours to move. Then the schema-first arrangement asks you to author a
+        not yours to move. Then the schema-first arrangement asks you to author a{' '}
         <em>second</em> source of truth, and the question stops being which library
         is nicer and becomes which copy is right.
       </p>
       <p class="mb-4 text-body-medium text-on-surface-variant">
-        Two things follow that are easy to miss. First,
-        <strong class="text-on-surface">Luq contains both directions</strong>:
-        <code>fromJsonSchema(document)</code> is schema-first, and the document
-        decides. That is the same principle pointed at a different upstream, not a
-        contradiction to argue away — what Luq declines to do is make you
-        hand-write the second copy. Second, the choice is
-        <strong class="text-on-surface">per boundary, not per project</strong>:
-        Standard Schema means a zod schema and a Luq validator are interchangeable
+        Two things follow that are easy to miss. First,{' '}
+        <strong class="text-on-surface">Luq contains both directions</strong>:{' '}
+        <a class="text-primary underline underline-offset-2" href="/json-schema"
+          ><code>fromJsonSchema(document)</code></a
+        > is schema-first, and the document decides. That is the same principle pointed
+        at a different upstream, not a contradiction to argue away — what Luq declines
+        to do is make you hand-write the second copy. Second, the choice is{' '}
+        <strong class="text-on-surface">per boundary, not per project</strong>:{' '}
+        <a class="text-primary underline underline-offset-2" href="/standard-schema"
+          >Standard Schema</a
+        > means a zod schema and a Luq validator are interchangeable
         where they meet, so "the schema is the truth here, the type is the truth
         there" is a workable arrangement rather than an unresolved argument.
       </p>
@@ -209,9 +311,9 @@ router.input(toStandardSchema(validateUser));`;
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
         This is what being type-first buys you in an existing codebase, and it is
-        the main practical reason to reach for Luq:
-        <strong class="text-on-surface">your type definitions do not change.</strong>
-        Not re-authored as a schema, not replaced by an inferred one, not moved.
+        the main practical reason to reach for Luq:{' '}
+        <strong class="text-on-surface">your type definitions do not change.</strong>{' '}
+        Not re-authored as a schema, not replaced by an inferred one, not moved.{' '}
         <code>.for&lt;Order&gt;()</code> takes the <code>Order</code> that is
         already there, and every rule is declared against it.
       </p>
@@ -289,7 +391,7 @@ router.input(toStandardSchema(validateUser));`;
         <CodeBlock code={luqSample} language="typescript" fileName="Type first" />
       </div>
 
-      <p class="mb-6 text-body-medium text-on-surface-variant">
+      <p class="mb-12 text-body-medium text-on-surface-variant">
         Same job, same depth on both sides, and the Luq column is the longer
         one. The extra lines are not scattered: they are one plugin import plus
         one matching <code>.use()</code> per rule kind, and the type written out
@@ -299,14 +401,6 @@ router.input(toStandardSchema(validateUser));`;
         error. If a schema is the only place the shape exists in your codebase,
         the shorter column is also the honest answer.
       </p>
-
-      <p class="mb-12 text-body-medium text-on-surface-variant">
-        Neither direction is better in the abstract. Which one fits depends on a
-        question you can answer immediately: <strong class="text-on-surface"
-          >where does the type come from today?</strong
-        >
-      </p>
-
 
       <h2 class="mb-4 text-headline-small text-on-surface">
         What the type-first direction buys
@@ -330,7 +424,7 @@ router.input(toStandardSchema(validateUser));`;
         }
       </ul>
       <p class="mb-12 text-body-small text-on-surface-variant">
-        Each is pinned by a <code class="font-mono">@ts-expect-error</code> in
+        Each is pinned by a <code class="font-mono">@ts-expect-error</code> in{' '}
         <code class="font-mono">test/type/</code>. TypeScript reports an unused
         directive, so a green typecheck is the proof that they still fail.
       </p>
@@ -347,13 +441,20 @@ router.input(toStandardSchema(validateUser));`;
             <tr>
               <td class="py-3 pr-6 align-top text-on-surface">Speed</td>
               <td class="py-3 text-on-surface-variant">
-                2.0 is slower than Luq 1.x on flat and nested shapes — three to
-                nine times, measured head to head. Arrays and JSON Schema are
-                faster. The numbers are on
+                {legacySentence} The per-shape numbers are on{' '}
                 <a class="text-primary underline underline-offset-2" href="/benchmarks"
                   >the benchmarks page</a
-                >. No figure for any other library is published here, because
-                this repository has not measured one.
+                >.
+                <span class="mt-2 block"
+                  >Against the other libraries, measured in this repository
+                  against the same values rather than quoted from theirs: Luq is{' '}
+                  {competitorSentence}. Every pairing, the wins and the losses,
+                  is in{' '}
+                  <a
+                    class="text-primary underline underline-offset-2"
+                    href="/benchmarks#against-others">the comparison table</a
+                  >.</span
+                >
               </td>
             </tr>
             <tr>
@@ -397,6 +498,9 @@ router.input(toStandardSchema(validateUser));`;
       <div class="mt-12 flex flex-col gap-3 sm:flex-row">
         <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
           Get started
+        </a>
+        <a href="/openapi" class="md-button md-button-tonal md-state-layer md-focus-ring">
+          See it on a generated type
         </a>
         <a href="/benchmarks" class="md-button md-button-outlined md-state-layer md-focus-ring">
           See the measurements

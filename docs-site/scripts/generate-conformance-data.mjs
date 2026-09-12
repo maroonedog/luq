@@ -47,7 +47,9 @@ function run() {
     passingInvalidCases,
   } = pin;
   if (typeof passingCases !== "number" || typeof caseCount !== "number") {
-    throw new Error("config/json-schema-suite.json: case counts are unreadable");
+    throw new Error(
+      "config/json-schema-suite.json: case counts are unreadable"
+    );
   }
   const percent = toPercent(passingCases, caseCount);
 
@@ -80,7 +82,9 @@ function run() {
   ].join("\n");
 
   writeFileSync(OUTPUT_FILE, body, "utf8");
-  console.log(`src/data/conformance.ts: ${passingCases}/${caseCount} = ${percent}%`);
+  console.log(
+    `src/data/conformance.ts: ${passingCases}/${caseCount} = ${percent}%`
+  );
 }
 
 run();

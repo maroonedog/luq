@@ -6,8 +6,17 @@ import { packageInfo } from '../data/package-info';
  * Site footer, on `surface-container` so it separates from the page's
  * `surface` without a border. Links use the MD3 list-item shape.
  *
+ * This is the only component on all sixteen pages, which makes it the site's
+ * real universal navigation. The app bar carries five items; everything it does
+ * not carry is listed here, because /openapi, /standard-schema and /roadmap
+ * have no in-content inbound links anywhere on the site — strip the header,
+ * drawer, sidebar and footer out of the built HTML and all three have zero. The
+ * docs sidebar already re-lists three top-level reference pages for the same
+ * reason. Every label matches the h1 of the page it opens.
+ *
  * Every href must point at a page that exists — the 1.x footer linked
- * /docs/changelog, which has never been a page here.
+ * /docs/changelog, which has never been a page here. check-built-pages now
+ * resolves each one against dist/.
  */
 interface FooterLink {
   label: string;
@@ -17,15 +26,23 @@ interface FooterLink {
 
 const footerLinks: Record<string, FooterLink[]> = {
   Documentation: [
-    { label: 'Getting Started', href: '/docs/getting-started' },
-    { label: 'Core Concepts', href: '/docs/core-concepts' },
-    { label: 'Examples & Patterns', href: '/docs/examples' },
-    { label: 'Builder API', href: '/docs/api/builder' },
+    { label: 'Getting started', href: '/docs/getting-started' },
+    { label: 'Core concepts', href: '/docs/core-concepts' },
+    { label: 'Examples & patterns', href: '/docs/examples' },
+    { label: 'Troubleshooting', href: '/docs/troubleshooting' },
   ],
   Reference: [
-    { label: 'Plugin Catalog', href: '/plugins' },
+    { label: 'Plugin catalogue', href: '/plugins' },
+    { label: 'Builder API', href: '/docs/api/builder' },
+    { label: 'Validator API', href: '/docs/api/validator' },
     { label: 'JSON Schema', href: '/json-schema' },
+    { label: 'Standard Schema', href: '/standard-schema' },
     { label: 'Benchmarks', href: '/benchmarks' },
+  ],
+  Deciding: [
+    { label: 'Luq or zod?', href: '/luq-or-zod' },
+    { label: 'Rules on generated types', href: '/openapi' },
+    { label: 'Project status', href: '/roadmap' },
   ],
   Project: [
     { label: 'GitHub', href: 'https://github.com/maroonedog/luq', external: true },
@@ -36,7 +53,7 @@ const footerLinks: Record<string, FooterLink[]> = {
 
 <footer class="bg-surface-container text-on-surface">
   <div class="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-2 gap-8 py-12 md:grid-cols-4">
+    <div class="grid grid-cols-2 gap-8 py-12 md:grid-cols-3 lg:grid-cols-5">
       <div class="col-span-2 md:col-span-1">
         <LuqLogo class="mb-4 h-10 w-auto" />
         <p class="md-body-small text-on-surface-variant">
@@ -60,7 +77,7 @@ const footerLinks: Record<string, FooterLink[]> = {
                   >
                     {link.label}
                     {link.external && (
-                      <span class="md-icon text-[16px] leading-none" aria-hidden="true">
+                      <span class="md-icon md-icon-sm" aria-hidden="true">
                         open_in_new
                       </span>
                     )}
@@ -82,7 +99,7 @@ const footerLinks: Record<string, FooterLink[]> = {
         &copy; {new Date().getFullYear()} Luq. Released under the MIT License.
       </p>
       <span class="md-chip md-chip-static">
-        <span class="md-icon text-[18px] leading-none text-tertiary" aria-hidden="true">
+        <span class="md-icon md-icon-sm text-tertiary" aria-hidden="true">
           verified
         </span>
         {packageInfo.tag}

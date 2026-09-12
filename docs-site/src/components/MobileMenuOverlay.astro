@@ -1,18 +1,29 @@
 ---
+import { isActive } from './Header.astro';
+
 /**
  * MD3 modal navigation drawer for the primary navigation.
  *
- * Placed once per page at body level; MobileMenuButton (in the top app bar)
- * opens it. Slides in from the leading edge over a 32% scrim, with the
- * emphasized-decelerate easing MD3 specifies for entering elements.
+ * Rendered once per page by BaseLayout, at body level; MobileMenuButton (in the
+ * top app bar) opens it. Slides in from the leading edge over a 32% scrim, with
+ * the emphasized-decelerate easing MD3 specifies for entering elements.
+ *
+ * The drawer carries more than the app bar does: `navItems` is the five pills
+ * that fit across the md range, `secondaryNavItems` the three destinations
+ * demoted out of the bar. Below md the bar's nav is hidden entirely, so this is
+ * the only place a phone reader can reach those three except the footer.
+ *
+ * `isActive` comes from Header.astro rather than being reimplemented here — a
+ * second copy is how the two surfaces start disagreeing about which page you
+ * are on.
  */
 export interface Props {
-  navItems: Array<{ href: string; label: string; icon?: string }>;
+  navItems: Array<{ href: string; label: string; icon?: string; section?: string }>;
+  secondaryNavItems?: Array<{ href: string; label: string; icon?: string; section?: string }>;
 }
 
-const { navItems } = Astro.props;
+const { navItems, secondaryNavItems = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
-const isActive = (href: string) => currentPath === href || currentPath.startsWith(`${href}/`);
 ---
 
 <div id="mobile-menu" class="fixed inset-0 z-[100] hidden md:hidden">
@@ -45,19 +56,45 @@ const isActive = (href: string) => currentPath === href || currentPath.startsWit
               <a
                 href={item.href}
                 class="md-nav-drawer-item md-state-layer md-focus-ring"
-                aria-current={isActive(item.href) ? 'page' : undefined}
+                aria-current={isActive(currentPath, item) ? 'page' : undefined}
               >
                 {item.icon && (
                   <span class="md-icon md-icon-sm" aria-hidden="true">
                     {item.icon}
                   </span>
-                )}
+                )}{' '}
                 <span>{item.label}</span>
               </a>
             </li>
           ))
         }
       </ul>
+
+      {
+        secondaryNavItems.length > 0 && (
+          <div class="mt-4">
+            <h2 class="md-nav-drawer-headline">More</h2>
+            <ul class="space-y-1">
+              {secondaryNavItems.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    class="md-nav-drawer-item md-state-layer md-focus-ring"
+                    aria-current={isActive(currentPath, item) ? 'page' : undefined}
+                  >
+                    {item.icon && (
+                      <span class="md-icon md-icon-sm" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                    )}{' '}
+                    <span>{item.label}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
     </nav>
 
     <hr class="md-divider" />
@@ -69,7 +106,7 @@ const isActive = (href: string) => currentPath === href || currentPath.startsWit
         rel="noopener noreferrer"
         class="md-button md-button-tonal md-state-layer md-focus-ring w-full"
       >
-        <span class="md-icon md-icon-sm" aria-hidden="true">open_in_new</span>
+        <span class="md-icon md-icon-sm" aria-hidden="true">open_in_new</span>{' '}
         GitHub
       </a>
     </div>
