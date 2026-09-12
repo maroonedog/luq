@@ -63,6 +63,53 @@ describe("oneOf", () => {
     ).toThrow(PluginArgumentError);
   });
 
+  // A built validator is a SNAPSHOT of the list it was built from. Through the
+  // `enum` keyword that list is the array inside the caller's own schema
+  // document, so a reload path that appends to it in place — rather than
+  // replacing the document — must not widen a validator that already exists.
+  it("ignores a member appended to the source list after build()", () => {
+    const allowed = ["open", "closed"];
+    const validator = Builder()
+      .use(oneOfPlugin)
+      .for<Ticket>()
+      .v("status", (b) => b.string.oneOf(allowed))
+      .build();
+    allowed.push("archived");
+    expect(validator.validate({ status: "archived", priority: 1 }).valid).toBe(
+      false
+    );
+  });
+
+  // The same mutation past the Set threshold, where a snapshot was always
+  // taken. Both routes must answer alike, or the behaviour flips at a size the
+  // caller has no reason to know about.
+  it("ignores it the same way past the Set threshold", () => {
+    const allowed = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const validator = Builder()
+      .use(oneOfPlugin)
+      .for<Ticket>()
+      .v("status", (b) => b.string.oneOf(allowed))
+      .build();
+    allowed.push("z");
+    expect(validator.validate({ status: "z", priority: 1 }).valid).toBe(false);
+  });
+
+  it("renders the members it was built with, not the mutated list", () => {
+    const allowed = ["open", "closed"];
+    const validator = Builder()
+      .use(oneOfPlugin)
+      .for<Ticket>()
+      .v("status", (b) => b.string.oneOf(allowed))
+      .build();
+    allowed.push("archived");
+    const result = validator.validate({ status: "draft", priority: 1 });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.issues[0]?.message).toBe(
+      'Value must be one of: "open", "closed"'
+    );
+  });
+
   it("honours options.messageFactory", () => {
     const validator = Builder()
       .use(oneOfPlugin)

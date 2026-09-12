@@ -56,6 +56,44 @@
       "Ceiling = measured + about 8%. One added plugin costs roughly 200-950 B gzipped, so the",
       "headroom is deliberately smaller than that: adding a plugin must never fit inside the budget",
       "unnoticed."
+    ],
+    "reRecorded": [
+      {
+        "date": "2026-09-12",
+        "entries": [
+          "jsonschema-plugin",
+          "jsonschema-full-feature",
+          "full-feature"
+        ],
+        "grewByGzipBytes": "801 / 909 / 906",
+        "measuredBeforeGzipBytes": "21344 / 23734 / 26420",
+        "why": [
+          "The JSON Schema converter stopped trusting the VALUES of the keywords it reads. Twelve",
+          "keyword values are checked against the Draft-07 meta-schema at the point each is read —",
+          "`type`, `pattern`, `required`, `properties`, `additionalProperties`, `patternProperties`,",
+          "`propertyNames`, `dependencies`, `items`, `additionalItems`, `contains` and `uniqueItems` —",
+          "and a value the meta-schema forbids raises MalformedSchemaError instead of silently expanding",
+          "to no rule at all. `minContains` and `maxContains` became named refusals in the same pass.",
+          "The weight is the error class, the value renderer that keeps an untrusted document out of the",
+          "message, and one written reason per keyword; none of it is reachable from an entry that does",
+          "not take a JSON Schema plugin, which is why the other six entries measure to the byte what",
+          "they measured before it.",
+          "Paid deliberately: the alternative is a validator that answers `valid` for the inputs its own",
+          "document meant to refuse, and nothing downstream can detect that.",
+          "About 21 B of the full-feature figure is the price of writing the shared map check ONCE:",
+          "`properties` and `patternProperties` had byte-identical bodies, and folding them into one",
+          "took 124 B off the RAW bundle while adding to the gzipped one, because duplicated text",
+          "compresses almost to nothing and the call that replaced it does not. Kept on the design —",
+          "the member sentence is now written once and cannot drift between the two keywords.",
+          "The growth above is measured against measuredBeforeGzipBytes — the same three entries,",
+          "measured on the same machine from the sources this work started from — and not against the",
+          "figures previously recorded here, which sat 22 / 17 / 29 B above what they measured. Those six",
+          "other entries keep the recorded figures they had: they drift 2-21 B high for reasons older",
+          "than this feature, and re-recording them here would make the cost of the feature unreadable.",
+          "Headroom per entry is unchanged (135 / 124 / 107 B), so adding a plugin still cannot fit inside",
+          "the budget unnoticed."
+        ]
+      }
     ]
   },
   "crossCheckAgainstDist": {
@@ -159,8 +197,8 @@
       "plugins": [
         "jsonSchema"
       ],
-      "gzipCeilingBytes": 21501,
-      "recordedGzipBytes": 21366
+      "gzipCeilingBytes": 22280,
+      "recordedGzipBytes": 22145
     },
     {
       "id": "jsonschema-full-feature",
@@ -168,15 +206,15 @@
       "plugins": [
         "jsonSchemaFullFeature"
       ],
-      "gzipCeilingBytes": 23875,
-      "recordedGzipBytes": 23751
+      "gzipCeilingBytes": 24767,
+      "recordedGzipBytes": 24643
     },
     {
       "id": "full-feature",
       "description": "Builder + every plugin in the catalog, JSON Schema extensions included: the everything ceiling.",
       "plugins": "all",
-      "gzipCeilingBytes": 26556,
-      "recordedGzipBytes": 26449
+      "gzipCeilingBytes": 27433,
+      "recordedGzipBytes": 27326
     }
   ],
   "treeShaking": {

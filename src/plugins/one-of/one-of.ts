@@ -43,7 +43,10 @@ function areAllMembersPrimitive(allowed: readonly unknown[]): boolean {
   );
 }
 
-/** One membership test, decided ONCE at build time and never re-decided. */
+/** One membership test, decided ONCE at build time and never re-decided. The
+ *  list must already be a snapshot: the linear path CLOSES OVER it rather than
+ *  copying it into a Set, so a caller-owned array reaching here would stay
+ *  readable — and mutable — through the returned validator. */
 function createMembershipTest(
   allowed: readonly unknown[]
 ): (value: unknown) => boolean {
@@ -69,14 +72,25 @@ export const oneOfPlugin = /*#__PURE__*/ definePlugin<{
     if (!isArray(allowed) || allowed.length === 0) {
       throw new PluginArgumentError(ctx.pluginName, "allowed", allowed);
     }
-    const isMember = createMembershipTest(allowed);
-    const rendered = describeAllowed(allowed);
+    // A built validator is a SNAPSHOT of what it was built from, and this list
+    // arrives BY REFERENCE: reached through the `enum` keyword it is the very
+    // array inside the caller's schema document. Without this copy, appending
+    // to that array in place after build() — a config reload that mutates the
+    // document rather than replacing it — silently widens a validator that is
+    // already serving traffic. It would also do so only SOMETIMES: the Set
+    // path in createMembershipTest copies and the linear path does not, so the
+    // behaviour would flip at a member count the caller has no reason to know
+    // about. Copying here, at the one point where the caller's array enters
+    // the plugin, is what makes both paths and the reported `expected` agree.
+    const members: readonly unknown[] = Object.freeze(allowed.slice());
+    const isMember = createMembershipTest(members);
+    const rendered = describeAllowed(members);
     return check({
       code: ctx.code,
       messageFactory: ctx.messageFactory,
       severity: ctx.severity,
       run: (value) =>
-        isMember(value) ? PASS : fail({ expected: allowed, actual: value }),
+        isMember(value) ? PASS : fail({ expected: members, actual: value }),
       describe: () => `Value must be one of: ${rendered}`,
       buildMessageContext: () => ({}),
     });

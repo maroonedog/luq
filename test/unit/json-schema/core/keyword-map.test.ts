@@ -23,7 +23,12 @@ import { stringKeywordMap } from "../../../../src/json-schema/keyword-map-string
 import { arrayKeywordMap } from "../../../../src/json-schema/keyword-map-array";
 import { objectKeywordMap } from "../../../../src/json-schema/keyword-map-object";
 import { UnsupportedKeywordError } from "../../../../src/json-schema/unsupported-keyword-error";
+import { fromJsonSchema } from "../../../../src/json-schema/build-from-schema";
 import { jsonSchemaBagBuilder } from "./build-with-json-schema-bag";
+// The one fixture carrying every bound plugin as a BAG rather than as a
+// builder, which is what fromJsonSchema takes. It lives next door because the
+// converter tests drive it; a second copy would be a second thing to keep true.
+import { jsonSchemaBagFixture } from "../convert/json-schema-bag-fixture";
 
 /** The draft-07 meta-schema's own `properties` keys, transcribed. */
 const METASCHEMA_KEYWORDS: readonly string[] = [
@@ -277,7 +282,78 @@ describe("an unsupported keyword is refused, never dropped", () => {
         undefined,
       ]);
     }
-    expect(Object.keys(NON_DRAFT07_KEYWORDS)).toHaveLength(11);
+  });
+
+  // The names themselves, not their count: a keyword that belongs to another
+  // dialect and is listed NOWHERE falls through both branches of
+  // assertKeywordIsConvertible and is silently ignored, so what matters is
+  // WHICH names are written down. The list doubles as the count assertion.
+  it("lists every newer-draft name Luq recognises, by name", () => {
+    expect([...Object.keys(NON_DRAFT07_KEYWORDS)].sort()).toEqual([
+      "$anchor",
+      "$defs",
+      "$dynamicRef",
+      "$recursiveRef",
+      "contentSchema",
+      "dependentRequired",
+      "dependentSchemas",
+      "deprecated",
+      "maxContains",
+      "minContains",
+      "prefixItems",
+      "unevaluatedItems",
+      "unevaluatedProperties",
+    ]);
+  });
+
+  it("refuses every one of them with its own written reason", () => {
+    for (const [keyword, note] of Object.entries(NON_DRAFT07_KEYWORDS)) {
+      expect(() => assertKeywordSupported(keyword)).toThrow(
+        UnsupportedKeywordError
+      );
+      expect(() => assertKeywordSupported(keyword)).toThrow(note);
+    }
+  });
+});
+
+describe("the 2019-09 bounds on `contains`", () => {
+  // `contains` alone means "at least one", and Luq's arrayContains enforces
+  // exactly that. A document carrying a BOUND is therefore asking for
+  // something the converter cannot express: `minContains: 5` would be enforced
+  // as 1, `maxContains` not at all, and `minContains: 0` — which makes
+  // `contains` unconditionally satisfied — would reject an instance the
+  // document calls valid. All three are wrong answers, so the document is
+  // refused instead.
+  const build = (schema: unknown) =>
+    fromJsonSchema(jsonSchemaBagFixture, schema);
+
+  it.each(["minContains", "maxContains"])("refuses %s by name", (keyword) => {
+    expect(() => assertKeywordSupported(keyword)).toThrow(
+      UnsupportedKeywordError
+    );
+    expect(() => assertKeywordSupported(keyword)).toThrow(/2019-09/);
+  });
+
+  const withContains = (bound: Readonly<Record<string, number>>) => ({
+    properties: { a: { type: "array", contains: { const: 1 }, ...bound } },
+  });
+
+  it("refuses the document rather than enforcing a bound it cannot", () => {
+    expect(() => build(withContains({ minContains: 5 }))).toThrow(
+      UnsupportedKeywordError
+    );
+    expect(() => build(withContains({ maxContains: 2 }))).toThrow(
+      UnsupportedKeywordError
+    );
+    expect(() => build(withContains({ minContains: 0 }))).toThrow(
+      UnsupportedKeywordError
+    );
+  });
+
+  it("still converts a `contains` with no bound on it", () => {
+    const validator = build(withContains({}));
+    expect(validator.validate({ a: [0, 1] }).valid).toBe(true);
+    expect(validator.validate({ a: [0, 2] }).valid).toBe(false);
   });
 });
 
