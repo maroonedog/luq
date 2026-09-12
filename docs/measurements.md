@@ -23,14 +23,14 @@ so the two columns are comparable. Recorded in
 <!-- generated:bundle-size -->
 | `Builder` only, zero plugins | **8,447 B** | 17,423 B |
 | + 6 plugins (1.x's "simple" set) | **9,333 B** | 19,562 B |
-| core + `jsonSchema`, the plugin alone | **21,366 B** | — |
-| core + `jsonSchemaFullFeature` | **23,751 B** | — |
-| all 77 plugins | **26,449 B** | — |
+| core + `jsonSchema`, the plugin alone | **22,145 B** | — |
+| core + `jsonSchemaFullFeature` | **24,643 B** | — |
+| all 77 plugins | **27,326 B** | — |
 <!-- /generated:bundle-size -->
 
 1.x published "tree-shakeable, 19–23KB gzipped". Measured the same way, its
 core was 17.4 KB **before any plugin was imported** — 89.1% of its "simple"
-figure. Here the core is <!-- generated:bundle-core-share -->31.9% of the all-plugins build (8,447 of 26,449 B)<!-- /generated:bundle-core-share -->,
+figure. Here the core is <!-- generated:bundle-core-share -->30.9% of the all-plugins build (8,447 of 27,326 B)<!-- /generated:bundle-core-share -->,
 and adding a plugin costs 129–224 B of gzip. Both figures are in the table above;
 the difference is where the bytes sit, not which README is right.
 

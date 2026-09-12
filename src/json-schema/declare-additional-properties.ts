@@ -8,6 +8,7 @@
 // is needed to answer it and nothing else needs to know how.
 // ===========================================================================
 import type { Rule } from "../plugin-kit/compiled-rule";
+import { assertAdditionalPropertiesIsSchema } from "./assert-object-keyword-values";
 import { applyKeywordBinding } from "./apply-keyword-binding";
 import type { ConverterChain } from "./apply-keyword-binding";
 import type { Draft07SchemaObject } from "./draft07.types";
@@ -46,12 +47,23 @@ export function applyAdditionalPropertiesBoolean(
     : chain.additionalProperties(allowed, undefined, patterns);
 }
 
-/** The SCHEMA form: whatever matches neither a declaration nor a pattern follows it. */
+/**
+ * The SCHEMA form: whatever matches neither a declaration nor a pattern
+ * follows it.
+ *
+ * This is the ONE place a non-boolean `additionalProperties` is consumed — the
+ * boolean form is taken by declareObjectRules before this runs — so it is
+ * where the value is checked. A string or a number reaching the sub-schema
+ * route is not a schema, expands to no rules, and turns
+ * `{"additionalProperties":"false"}` into an object that accepts every extra
+ * property; the check refuses it instead. Both well-formed forms are untouched.
+ */
 export function declareAdditionalPropertiesSchema(
   schema: Draft07SchemaObject,
   context: StructuralContext
 ): readonly Rule[] {
   const additional = schema.additionalProperties;
+  assertAdditionalPropertiesIsSchema(additional);
   if (additional === undefined || typeof additional === "boolean") {
     return NO_RULES;
   }

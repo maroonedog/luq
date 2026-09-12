@@ -16,6 +16,7 @@ export {
 export type { JsonSchemaOptions } from "./json-schema";
 
 export {
+  MalformedSchemaError,
   NotASchemaError,
   UnsupportedKeywordError,
   RefResolutionError,

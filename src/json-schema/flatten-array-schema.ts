@@ -26,6 +26,13 @@ import { readChainRules } from "../chain/create-chain-node";
 import { createFieldSlots } from "../chain/create-field-slots";
 import { composite } from "../plugin-kit/create-rule";
 import { applyKeywordBinding } from "./apply-keyword-binding";
+import {
+  readCheckedAdditionalItems,
+  readCheckedContains,
+  readCheckedItems,
+  readCheckedUniqueItems,
+} from "./array-keyword-guards";
+import type { ItemsValue } from "./array-keyword-guards";
 import type { ConverterChain } from "./apply-keyword-binding";
 import type { JsonSchemaBag } from "./json-schema-bag.types";
 import {
@@ -51,7 +58,7 @@ const NO_RULES: readonly Rule[] = Object.freeze([]);
 
 /** True for the tuple form of `items`, which is an ARRAY of schemas. */
 function isTupleItems(
-  items: Draft07Schema | readonly Draft07Schema[] | undefined
+  items: ItemsValue | undefined
 ): items is readonly Draft07Schema[] {
   return isArray(items);
 }
@@ -59,11 +66,15 @@ function isTupleItems(
 /**
  * The single form only. The tuple form gets no child path: element 0 and
  * element 1 obey DIFFERENT schemas, and one declared `[*]` cannot say that.
+ *
+ * Reading through readCheckedItems is what stops a non-schema value here from
+ * becoming a child declaration whose sub-schema yields no rules at all; see
+ * array-keyword-guards.ts.
  */
 export function readItemChildren(
   schema: Draft07SchemaObject
 ): readonly ChildSchema[] {
-  const items = schema.items;
+  const items = readCheckedItems(schema);
   if (items === undefined || isTupleItems(items)) return NO_CHILDREN;
   return Object.freeze([{ step: EACH_STEP, schema: items, isRequired: false }]);
 }
@@ -72,7 +83,9 @@ export function readItemChildren(
  * Element i against position i, extra elements against `additionalItems`.
  * A non-array passes, a short array passes, and `additionalItems: false`
  * becomes the schema that matches nothing (collect-definitions), so the
- * "no extra elements" case needs no fourth branch kind.
+ * "no extra elements" case needs no fourth branch kind. A rest branch built
+ * from a non-schema would carry no rules and check none of those elements,
+ * which is why the value is read through array-keyword-guards.ts.
  */
 function applyPositionally(
   runners: readonly BranchRunner[],
@@ -106,12 +119,12 @@ export function composeTupleItems(
   schema: Draft07SchemaObject,
   context: StructuralContext
 ): readonly Rule[] {
-  const items = schema.items;
+  const items = readCheckedItems(schema);
   if (items === undefined || !isTupleItems(items)) return NO_RULES;
   const branches = items.map((position, index) =>
     context.toBranch(`position:${String(index)}`, position)
   );
-  const rest = schema.additionalItems;
+  const rest = readCheckedAdditionalItems(schema);
   const hasRest = rest !== undefined;
   if (rest !== undefined) branches.push(context.toBranch("rest", rest));
   const positionCount = items.length;
@@ -132,12 +145,16 @@ export function composeTupleItems(
  * `contains` is EXISTENTIAL: at least one element matches. arrayContains owns
  * that reduction, and its default bounds (min 1, no max) are exactly the
  * draft's, so this is one call and no arithmetic.
+ *
+ * An element branch holding no rules would satisfy the existence check on the
+ * first element and turn the keyword into "the array is non-empty", so the
+ * value is read through array-keyword-guards.ts.
  */
 export function composeContains(
   schema: Draft07SchemaObject,
   context: StructuralContext
 ): readonly Rule[] {
-  const contains = schema.contains;
+  const contains = readCheckedContains(schema);
   if (contains === undefined) return NO_RULES;
   const element = context.collectSubSchemaRules(toSchemaObject(contains));
   return Object.freeze([
@@ -153,7 +170,9 @@ export function composeContains(
  * and `maxItems` to `maxLength`; writing "minItems" as the method name does not
  * compile (keyword-map-array.ts), which is the C2 regression made impossible.
  * `uniqueItems: false` never reaches its binding: §6.4.3 gives it no effect and
- * the binding's value type is `true`.
+ * the binding's value type is `true`. That is why the value is read through
+ * readCheckedUniqueItems: with a bare `=== true`, a non-boolean would take the
+ * same silent route as the lawful `false` and lose the constraint entirely.
  */
 export function declareArrayRules(
   schema: Draft07SchemaObject,
@@ -170,7 +189,7 @@ export function declareArrayRules(
   if (schema.maxItems !== undefined) {
     chain = applyKeywordBinding(chain, maxItemsBinding, schema.maxItems);
   }
-  if (schema.uniqueItems === true) {
+  if (readCheckedUniqueItems(schema) === true) {
     chain = applyKeywordBinding(chain, uniqueItemsBinding, true);
   }
   return readChainRules(chain) ?? NO_RULES;

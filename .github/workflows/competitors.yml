@@ -73,7 +73,14 @@ jobs:
       # Measured once. Running the check and the report back to back measured
       # every matchup twice, which was about half the job. --write emits the
       # very measurement the gate judged.
-      - run: npm run bench:competitors:check -- --write
+      #
+      # continue-on-error, and the job is failed deliberately at the end
+      # instead. A failed step skips every step after it, and the step after
+      # this one is the one that offers to fix the most common way this fails.
+      # `outcome` still reads `failure` here; only `conclusion` is softened.
+      - id: measure
+        continue-on-error: true
+        run: npm run bench:competitors:check -- --write
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -93,8 +100,24 @@ jobs:
       # with the runner, so a human should see how much before they become the
       # published comparison. The dependency bump and the re-measurement then
       # arrive as one reviewable change.
+      #
+      # It is not gated on the check passing, but on WHICH check failed.
+      #
+      # The version gate failing is the ordinary case this step exists for: the
+      # record names a version nobody runs, and re-measuring is the fix. Gating
+      # this on success made those two requirements circular, and the gate sat
+      # red on master waiting for a re-record that could not run.
+      #
+      # A moved verdict is the one failure that must NOT be re-recorded here.
+      # Writing a competitor's new behaviour into the baseline unreviewed is
+      # how a behavioural change stops being visible, so that case skips this
+      # and leaves the job red with nothing proposed.
       - name: Open a pull request when the record has moved
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: >-
+          !cancelled()
+          && github.event_name == 'push'
+          && github.ref == 'refs/heads/master'
+          && steps.measure.outputs.agreement-failed != 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           base: develop
@@ -117,3 +140,13 @@ jobs:
             13x higher than the same comparison against a current zod.
           labels: competitor-baseline
           delete-branch: true
+
+      # The job's verdict, moved to the end so the step above could run first.
+      # Nothing here is softened: if the check failed, this job is red, and the
+      # artifact and the pull request are what it leaves behind for whoever
+      # looks at why.
+      - name: Fail if the comparison did not pass
+        if: steps.measure.outcome == 'failure'
+        run: |
+          echo "bench:competitors:check failed — see the step above." >&2
+          exit 1

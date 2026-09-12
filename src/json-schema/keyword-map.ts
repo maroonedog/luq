@@ -38,6 +38,8 @@ export const NON_DRAFT07_KEYWORDS: Readonly<Record<string, string>> = {
   $recursiveRef: "2019-09 recursive references",
   dependentRequired: "2019-09 split of `dependencies`; use `dependencies`",
   dependentSchemas: "2019-09 split of `dependencies`; use `dependencies`",
+  minContains: "2019-09 bound on `contains`; Draft-07's is fixed at one",
+  maxContains: "2019-09 bound on `contains`; Draft-07 states no maximum",
   unevaluatedItems: "2019-09; no annotation-collection model in Luq",
   unevaluatedProperties: "2019-09; no annotation-collection model in Luq",
   contentSchema: "2019-09 companion to contentMediaType",

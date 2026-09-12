@@ -7,7 +7,9 @@
 // table in this repository — 1.x shipped three of them and they disagreed
 // (docs/legacy-spec/json-schema-mapping.md records the disagreements).
 // ===========================================================================
+import { isString } from "../types";
 import { bindKeyword, structural } from "./bind-keyword";
+import { MalformedSchemaError } from "./malformed-schema-error";
 import type { KeywordTable } from "./keyword-binding.types";
 import type { Draft07StringKeyword } from "./draft07-keyword-value.types";
 import { stringMinPlugin } from "../plugins/string-min";
@@ -34,6 +36,41 @@ export const maxLengthBinding = bindKeyword(
 );
 
 /**
+ * Compiles the document's source, refusing anything the meta-schema forbids.
+ *
+ * The parameter is `unknown` although the keyword's value type is `string`,
+ * and that is the whole point: compiling is a TOTAL operation on JSON values —
+ * every one of them has a string form — so a number becomes a literal digit
+ * pattern and an object becomes one that matches almost every string. Both
+ * then reach stringPattern as a perfectly valid RegExp, leaving its
+ * non-RegExp guard nothing to fire on. The refusal has to be here, before the
+ * value is turned into something well formed.
+ *
+ * A string that is not a valid ECMA-262 pattern is the same failure wearing a
+ * different coat: the compile step throws a SyntaxError naming neither the
+ * keyword nor the document, so it is caught and re-raised as the typed refusal
+ * every other malformed value gets.
+ */
+function compilePattern(source: unknown): RegExp {
+  if (!isString(source)) {
+    throw new MalformedSchemaError(
+      "pattern",
+      "the value must be a string",
+      source
+    );
+  }
+  try {
+    return new RegExp(source);
+  } catch {
+    throw new MalformedSchemaError(
+      "pattern",
+      "the value must be a valid ECMA-262 regular expression",
+      source
+    );
+  }
+}
+
+/**
  * Draft-07 spells `pattern` as an ECMA-262 SOURCE string; the plugin accepts a
  * RegExp and only a RegExp, because 1.x's `new RegExp(source)` at the call site
  * dropped flags silently and gave the caller no compile-time check. Compiling
@@ -43,7 +80,7 @@ export const patternBinding = bindKeyword(
   "string",
   "pattern",
   stringPatternPlugin,
-  (v: string) => [new RegExp(v)] as const
+  (v: string) => [compilePattern(v)] as const
 );
 
 /**

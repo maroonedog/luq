@@ -17,7 +17,7 @@
 // They are read here, by resolve-ref, and nowhere else.
 // ===========================================================================
 import type { Draft07Schema, Draft07SchemaObject } from "./draft07.types";
-import { isSchemaObject } from "./draft07.types";
+import { isDraft07Schema, isSchemaObject } from "./draft07.types";
 import type { RefScope } from "./ref-scope";
 import { createLocalScope } from "./ref-scope";
 import { resolveRefInScope } from "./resolve-ref";
@@ -120,8 +120,16 @@ export function advanceBase(
  * a recursive definition BEFORE it walks into it: `#/definitions/node` inside
  * its own `properties` is a legitimate schema whose declared paths are
  * infinite, and Luq declares finite paths.
+ *
+ * The node is asked what it IS, not what it is not. Untyped JSON reaches here —
+ * a `properties` entry is whatever the document wrote — and "not a boolean"
+ * counts `null` as something to read `$ref` off, which throws before the
+ * malformed entry can be named. The pair is the same one resolve-ref uses:
+ * isDraft07Schema keeps out everything that is not a schema at all, and
+ * isSchemaObject drops the §4.4 boolean form, which carries no pointer.
  */
 export function readRefPointer(schema: Draft07Schema): string | undefined {
+  if (!isDraft07Schema(schema)) return undefined;
   if (!isSchemaObject(schema)) return undefined;
   return schema.$ref;
 }
