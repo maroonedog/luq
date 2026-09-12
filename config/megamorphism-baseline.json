@@ -1,25 +1,216 @@
 {
   "note": [
-    "PLACEHOLDER. No figure has been recorded yet, and `lanes` being empty is what says so.",
-    "The docs site reads this file and prints 'not measured yet' for exactly as long as `lanes` is empty,",
-    "so the statement on the site cannot go stale on its own once a recording lands here.",
-    "",
-    "The harness that fills it is bench/megamorphism/, and the only machine allowed to fill it is CI's",
-    "runner (.github/workflows/megamorphism.yml). bench/megamorphism/report-megamorphism.ts refuses to",
-    "write this file anywhere else without --local, because what it records is a ratio between two",
-    "figures taken on the same machine, and how V8 behaves once a shared call site has many targets",
-    "depends on the CPU, the core count and the Node version.",
-    "",
-    "Why the file is not simply absent: a figure of '11% degradation across 40 validators' is quoted",
-    "for this library as a favourable fact, and nothing in this repository measured behaviour with more",
-    "than one validator alive. An empty record that names the harness and the recorder is the honest",
-    "state, and it is a state the site can render."
+    "How per-call throughput moves when many DIFFERENT validators are alive, measured by bench/megamorphism/.",
+    "Each window is measured in its own child process, because V8's inline caches are process-wide and a",
+    "one-validator figure taken after a forty-validator run in the same process cannot see the effect at all.",
+    "degradationPercent is against the same lane's one-validator point; POSITIVE MEANS SLOWER, and a negative",
+    "number means the larger window measured faster, which is what no effect plus noise looks like.",
+    "Accepted and rejected pools are timed separately: under abortEarly the rejection path is a different",
+    "program, and a pool that mixed the two would measure error construction as much as validation.",
+    "The liveValues lane holds the working set equal with one set of call targets, so the liveValidators lane",
+    "can be read net of it. Neither lane varies the SIZE of a validator; every family member does equal work.",
+    "READ `resolution` FIRST. Both lanes start from the identical one-validator window, so their two first",
+    "points are one request measured twice and their gap is what this run could not resolve. A degradation",
+    "smaller than that gap is noise about the machine, not a fact about the library."
   ],
-  "status": "awaiting the first recording on CI's runner",
-  "harness": "bench/megamorphism/",
-  "recordedBy": ".github/workflows/megamorphism.yml",
-  "measuredAt": null,
-  "machine": null,
-  "conditions": null,
-  "lanes": []
+  "measuredAt": "2026-09-12T16:49:37.164Z",
+  "machine": {
+    "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+    "logicalCores": 4,
+    "platform": "linux",
+    "arch": "x64",
+    "nodeVersion": "v20.20.2",
+    "totalMemoryGb": 15.6
+  },
+  "conditions": {
+    "windowSizes": [
+      1,
+      2,
+      5,
+      10,
+      20,
+      40
+    ],
+    "repeatCount": 7,
+    "processPerWindow": "every window is measured in its own child process: V8's inline caches are process-wide, so a one-validator figure taken after a forty-validator run is measured against caches the forty already spoiled",
+    "familySize": 40,
+    "declares": "every family member declares 3 fields with the same rule kinds (required/stringMin/stringMax/stringPattern/numberMin/numberMax) over values of the same lengths; only the names, the pattern and the bounds differ",
+    "moduleUnderTest": "src/ transpiled by ts-node (CommonJS, ES2020) — not the bundled dist"
+  },
+  "resolution": {
+    "acceptedPercent": 2.4,
+    "rejectedPercent": 1.13,
+    "worstPercent": 2.4,
+    "note": "Both lanes start from the identical window — one validator over four values — so these two figures are one request measured twice. Their gap is what this run could not resolve, and a degradation smaller than worstPercent is not evidence of anything."
+  },
+  "lanes": [
+    {
+      "name": "liveValidators",
+      "question": "N different validators, 4 values each, called in turn: what an application with N live validators pays per call",
+      "points": [
+        {
+          "validatorCount": 1,
+          "poolSize": 4,
+          "distinctValues": 4,
+          "acceptedOpsPerSecond": 3097847,
+          "rejectedOpsPerSecond": 2010889,
+          "acceptedDegradationPercent": 0,
+          "rejectedDegradationPercent": 0,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 33.18,
+          "rejectedRunSpreadPercent": 5.5,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 2,
+          "poolSize": 4,
+          "distinctValues": 8,
+          "acceptedOpsPerSecond": 2649088,
+          "rejectedOpsPerSecond": 1646801,
+          "acceptedDegradationPercent": 14.49,
+          "rejectedDegradationPercent": 18.11,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 4.28,
+          "rejectedRunSpreadPercent": 12.66,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 5,
+          "poolSize": 4,
+          "distinctValues": 20,
+          "acceptedOpsPerSecond": 2188227,
+          "rejectedOpsPerSecond": 1494509,
+          "acceptedDegradationPercent": 29.36,
+          "rejectedDegradationPercent": 25.68,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 15.98,
+          "rejectedRunSpreadPercent": 12.31,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 10,
+          "poolSize": 4,
+          "distinctValues": 40,
+          "acceptedOpsPerSecond": 2079701,
+          "rejectedOpsPerSecond": 1472109,
+          "acceptedDegradationPercent": 32.87,
+          "rejectedDegradationPercent": 26.79,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 6.43,
+          "rejectedRunSpreadPercent": 7.27,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 20,
+          "poolSize": 4,
+          "distinctValues": 80,
+          "acceptedOpsPerSecond": 1963755,
+          "rejectedOpsPerSecond": 1450820,
+          "acceptedDegradationPercent": 36.61,
+          "rejectedDegradationPercent": 27.85,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 11.61,
+          "rejectedRunSpreadPercent": 9.11,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 40,
+          "poolSize": 4,
+          "distinctValues": 160,
+          "acceptedOpsPerSecond": 2051555,
+          "rejectedOpsPerSecond": 1449884,
+          "acceptedDegradationPercent": 33.77,
+          "rejectedDegradationPercent": 27.9,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 13.67,
+          "rejectedRunSpreadPercent": 7.1,
+          "everyRunQuiet": true
+        }
+      ]
+    },
+    {
+      "name": "liveValues",
+      "question": "1 validator over 4N values: the same working set with only one set of call targets, so the lane above can be read net of it",
+      "points": [
+        {
+          "validatorCount": 1,
+          "poolSize": 4,
+          "distinctValues": 4,
+          "acceptedOpsPerSecond": 3023421,
+          "rejectedOpsPerSecond": 1988162,
+          "acceptedDegradationPercent": 0,
+          "rejectedDegradationPercent": 0,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 29.29,
+          "rejectedRunSpreadPercent": 14.82,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 1,
+          "poolSize": 8,
+          "distinctValues": 8,
+          "acceptedOpsPerSecond": 3119176,
+          "rejectedOpsPerSecond": 1722977,
+          "acceptedDegradationPercent": -3.17,
+          "rejectedDegradationPercent": 13.34,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 26.5,
+          "rejectedRunSpreadPercent": 28.61,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 1,
+          "poolSize": 20,
+          "distinctValues": 20,
+          "acceptedOpsPerSecond": 3086951,
+          "rejectedOpsPerSecond": 1992626,
+          "acceptedDegradationPercent": -2.1,
+          "rejectedDegradationPercent": -0.22,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 5.58,
+          "rejectedRunSpreadPercent": 25.41,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 1,
+          "poolSize": 40,
+          "distinctValues": 40,
+          "acceptedOpsPerSecond": 3034933,
+          "rejectedOpsPerSecond": 1930765,
+          "acceptedDegradationPercent": -0.38,
+          "rejectedDegradationPercent": 2.89,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 5.08,
+          "rejectedRunSpreadPercent": 26.1,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 1,
+          "poolSize": 80,
+          "distinctValues": 80,
+          "acceptedOpsPerSecond": 3111555,
+          "rejectedOpsPerSecond": 1760695,
+          "acceptedDegradationPercent": -2.92,
+          "rejectedDegradationPercent": 11.44,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 32.41,
+          "rejectedRunSpreadPercent": 27.51,
+          "everyRunQuiet": true
+        },
+        {
+          "validatorCount": 1,
+          "poolSize": 160,
+          "distinctValues": 160,
+          "acceptedOpsPerSecond": 2980411,
+          "rejectedOpsPerSecond": 1768684,
+          "acceptedDegradationPercent": 1.42,
+          "rejectedDegradationPercent": 11.04,
+          "runs": 7,
+          "acceptedRunSpreadPercent": 33.05,
+          "rejectedRunSpreadPercent": 30.03,
+          "everyRunQuiet": true
+        }
+      ]
+    }
+  ]
 }
