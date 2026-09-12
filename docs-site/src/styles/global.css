@@ -18,7 +18,6 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
 @import "./md3-tokens.css";
-@import "./md3-components.css";
 
 /*
  * Tailwind 4 takes one import in place of the three layer directives, and it
@@ -26,9 +25,30 @@
  * MD3 token layer in tailwind.config.mjs is 309 lines of generated palette,
  * colour roles and type scale, so it is kept and pointed at rather than
  * transcribed; @config is Tailwind 4's supported way to do that.
+ *
+ * It comes FIRST because it declares the layer order — theme, base, components,
+ * utilities — and the component sheet below has to land inside that order.
  */
 @import "tailwindcss";
 @config '../../tailwind.config.mjs';
+
+/*
+ * The component sheet goes INTO the components layer, and that is load-bearing
+ * rather than tidy.
+ *
+ * Tailwind 3's `@tailwind components` / `@tailwind utilities` were not real
+ * cascade layers, so plain source order decided a tie and the utility, emitted
+ * later, won. Tailwind 4 emits real `@layer` blocks — and unlayered CSS beats
+ * layered CSS outright, whatever its specificity or position. Importing this
+ * sheet outside a layer therefore inverted the whole relationship: every
+ * `.md-*` component rule began winning against every utility written to
+ * override it.
+ *
+ * What that looked like: the app bar's menu button carries `md:hidden`, and
+ * `.md-icon-button { display: inline-flex }` beat it, so the hamburger showed
+ * on desktop next to the full navigation and opened a drawer meant for phones.
+ */
+@import "./md3-components.css" layer(components);
 
 @layer base {
   :root {
