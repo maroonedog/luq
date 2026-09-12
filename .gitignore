@@ -12,18 +12,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # ========================================
-# Rust Build Artifacts
-# ========================================
-# Main target directory (contains all Rust build artifacts)
-/target
-**/target
-/compiler/target
-
-# Cargo files (keep Cargo.lock for applications)
-**/*.rs.bak
-.#*
-
-# ========================================
 # Production builds and compiled outputs
 # ========================================
 /build
@@ -45,7 +33,6 @@ lerna-debug.log*
 *.wasm.d.ts
 
 # Binary executables
-luqc
 luq-lsp
 *.exe
 
@@ -107,11 +94,8 @@ test-*.js
 test-*.ts
 debug-*.ts
 debug-*.js
-test.luq
 
 # Test import files (generated during testing)
-test-imports/*.generated.luq
-test-imports/temp-*.luq
 
 # ========================================
 # Language-specific build outputs

@@ -1,6 +1,0 @@
-import { validateEmail } from "./validators.luq";
-
-interface Test {
-    @required
-    email: string;
-}

@@ -1,7 +1,0 @@
-// Type import from TypeScript
-import { type User } from "../src-ts/types/user.ts";
-
-interface Test {
-    @required
-    user: User;
-}

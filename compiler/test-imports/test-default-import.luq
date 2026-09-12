@@ -1,6 +1,0 @@
-import UserValidator from "./validators.luq";
-
-interface Test {
-    @required
-    name: string;
-}

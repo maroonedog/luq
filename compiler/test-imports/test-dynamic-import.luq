@@ -1,3 +1,0 @@
-export function loadValidator(): Promise<any> {
-    return import("./validators.luq");
-}
