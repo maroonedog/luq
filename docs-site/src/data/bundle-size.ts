@@ -34,19 +34,19 @@ export const bundleSize = {
     ceiling: 10010,
   },
   jsonSchemaPlugin: {
-    bytes: 21366,
-    gzip: "21,366 B",
-    ceiling: 21501,
+    bytes: 22145,
+    gzip: "22,145 B",
+    ceiling: 22280,
   },
   jsonSchemaFullFeature: {
-    bytes: 23751,
-    gzip: "23,751 B",
-    ceiling: 23875,
+    bytes: 24643,
+    gzip: "24,643 B",
+    ceiling: 24767,
   },
   fullFeature: {
-    bytes: 26449,
-    gzip: "26,449 B",
-    ceiling: 26556,
+    bytes: 27326,
+    gzip: "27,326 B",
+    ceiling: 27433,
   },
   legacyCoreGzip: 17423,
 } as const;

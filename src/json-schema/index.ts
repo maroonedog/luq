@@ -59,6 +59,7 @@ export { createDocumentScope, createLocalScope } from "./ref-scope";
 export type { SchemaRegistry } from "./schema-registry";
 export { createSchemaRegistry } from "./schema-registry";
 export { UnsupportedKeywordError } from "./unsupported-keyword-error";
+export { MalformedSchemaError } from "./malformed-schema-error";
 export { isDraft07Schema, isSchemaObject } from "./draft07.types";
 export type {
   Draft07Schema,

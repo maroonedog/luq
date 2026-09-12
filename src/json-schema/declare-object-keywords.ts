@@ -16,6 +16,13 @@ import { readChainRules } from "../chain/create-chain-node";
 import { createFieldSlots } from "../chain/create-field-slots";
 import type { Rule } from "../plugin-kit/compiled-rule";
 import { isStringArray } from "../types";
+import {
+  assertDependenciesIsSchemaOrNameListMap,
+  assertPatternPropertiesIsSchemaMap,
+  assertPropertiesIsSchemaMap,
+  assertPropertyNamesIsSchema,
+  assertRequiredIsNameList,
+} from "./assert-object-keyword-values";
 import { applyAdditionalPropertiesBoolean } from "./declare-additional-properties";
 import { applyKeywordBinding } from "./apply-keyword-binding";
 import type { ConverterChain } from "./apply-keyword-binding";
@@ -29,10 +36,6 @@ import {
 import type { StructuralContext } from "./structural-expansion.types";
 
 const NO_RULES: readonly Rule[] = Object.freeze([]);
-
-function readRules(chain: unknown): readonly Rule[] {
-  return readChainRules(chain) ?? NO_RULES;
-}
 
 export function declareObjectRules(
   schema: Draft07SchemaObject,
@@ -65,7 +68,7 @@ export function declareObjectRules(
     // stays: it holds the keyword table and the check that the method exists.
     chain = applyAdditionalPropertiesBoolean(chain, schema, additional);
   }
-  return readRules(chain);
+  return readChainRules(chain) ?? NO_RULES;
 }
 
 /** EVERY matching pattern applies; 1.x broke after the first match. */
@@ -74,6 +77,7 @@ export function declarePatternProperties(
   context: StructuralContext
 ): readonly Rule[] {
   const patterns = schema.patternProperties;
+  assertPatternPropertiesIsSchemaMap(patterns);
   if (patterns === undefined) return NO_RULES;
   const byPattern: Record<string, readonly Rule[]> = {};
   for (const [pattern, member] of Object.entries(patterns)) {
@@ -94,6 +98,7 @@ export function declarePropertyNames(
   context: StructuralContext
 ): readonly Rule[] {
   const names = schema.propertyNames;
+  assertPropertyNamesIsSchema(names);
   if (names === undefined) return NO_RULES;
   const plugin = context.bag.objectPropertyNames;
   return Object.freeze([
@@ -127,6 +132,7 @@ export function declareDependencies(
   context: StructuralContext
 ): readonly Rule[] {
   const dependencies = schema.dependencies;
+  assertDependenciesIsSchemaOrNameListMap(dependencies);
   if (dependencies === undefined) return NO_RULES;
   const split = splitDependencies(dependencies);
   const rules: Rule[] = [];
@@ -165,10 +171,16 @@ export function declareDependencies(
  * (declareRequiredProperties). A name in `required` with no `properties` entry
  * still gets a path on the empty schema, because §6.5.3 makes the two keywords
  * independent and the root distribution needs the path to exist.
+ *
+ * Both keywords are first READ here, for the root and for every nested node
+ * alike, so this is where both are checked. Unchecked, a string `required` is
+ * iterated character by character and every character becomes a declared path.
  */
 export function readPropertyChildren(
   schema: Draft07SchemaObject
 ): readonly { step: string; schema: Draft07Schema; isRequired: boolean }[] {
+  assertPropertiesIsSchemaMap(schema.properties);
+  assertRequiredIsNameList(schema.required);
   const properties = schema.properties ?? {};
   const required = schema.required ?? [];
   const children = Object.entries(properties).map(([key, member]) => ({

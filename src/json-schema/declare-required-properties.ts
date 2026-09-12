@@ -17,6 +17,7 @@
 import { check } from "../plugin-kit/create-rule";
 import type { Rule } from "../plugin-kit/compiled-rule";
 import { PASS, fail, isArray, isPlainObject } from "../types";
+import { assertRequiredIsNameList } from "./assert-object-keyword-values";
 import type { Draft07SchemaObject } from "./draft07.types";
 import type { StructuralContext } from "./structural-expansion.types";
 
@@ -41,6 +42,11 @@ export function declareRequiredProperties(
   context: StructuralContext
 ): readonly Rule[] {
   const required = schema.required;
+  // Checked again here, and not only where the children are read: this rule
+  // closes over `required` and calls `.filter` on it at VALIDATION time, so an
+  // unchecked non-array escapes the build and surfaces as a raw TypeError on
+  // the first request.
+  assertRequiredIsNameList(required);
   if (required === undefined || required.length === 0) return NO_RULES;
   const missingOf = (value: Record<string, unknown>): readonly string[] =>
     required.filter((key) => !Object.prototype.hasOwnProperty.call(value, key));
