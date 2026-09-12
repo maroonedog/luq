@@ -42,6 +42,7 @@ compile error, not a rule that quietly never fires.
 | Descending into a built-in (`"when.getTime"` on a `Date`) | compile error |
 | A method that does not exist inside an element sub-chain | compile error |
 | A JSON Schema keyword bound to a chain method that does not exist | compile error |
+| A JSON Schema document declaring 2019-09 or 2020-12 | throws when the validator is built, rather than being read as Draft-07 |
 | A documented example drifting from the API | fails CI |
 
 That matters most when the code calling this library is generated rather than
@@ -136,12 +137,23 @@ const result = orderValidator.validate({ reference: "ab", quantity: 0 });
 if (!result.valid) {
   for (const issue of result.issues) {
     // issue.path  "reference"   — where, with array indices filled in
-    // issue.code  "stringMin"   — which rule, stable across messages
+    // issue.code  "stringMin"   — which rule; the vocabulary is pinned
     // issue.message             — the text, overridable per call
     // issue.severity "error"    — only "error" makes the value invalid
   }
 }
 ```
+
+`issue.code` is the machine-readable half: a plugin's own name by default,
+overridden per rule with `{ code }`. The set is not a convention. The codes the
+library reports are enumerated in `config/issue-code.lock.json`, derived from
+the source by `npm run generate:issue-codes` and checked by
+`npm run check:issue-code-lock`, so renaming one is a diff in a committed file
+and a deliberate act rather than a silent break. The lock records who reports
+each code, because some codes are shared on purpose — a missing root and a
+missing field both report `required`. Codes a gate carries (`skip`,
+`validateIf`) sit in a separate list: they are accepted from a caller but no
+issue can ever carry one.
 
 `.v(path, chain)` declares rules for one field. A path you do not declare is
 not validated, not required and not read, so covering a type partly is a normal
@@ -295,7 +307,7 @@ const forStringMin = PLUGIN_MANIFEST.filter((entry) =>
 | [Getting started](https://luq.dev/docs/getting-started) | the builder, defaults, `normalize`, reading a result |
 | [Core concepts](https://luq.dev/docs/core-concepts) | field paths, slots, presence, transforms |
 | [Plugins](https://luq.dev/plugins) | every subpath, symbol, chain method and slot |
-| [JSON Schema](https://luq.dev/json-schema) | reading a document in, writing one back out, measured Draft-07 conformance |
+| [JSON Schema](https://luq.dev/json-schema) | reading a Draft-07 document in, writing one back out, measured conformance, and why a newer-dialect document is refused |
 | [Standard Schema](https://luq.dev/standard-schema) | tRPC, TanStack Form, Hono, react-hook-form — and what does not cross that boundary |
 | [Benchmarks](https://luq.dev/benchmarks) | bundle size and throughput, with the method |
 | [Luq or zod?](https://luq.dev/luq-or-zod) | when schema-first is the better answer |
@@ -311,6 +323,8 @@ Breaking changes happen in a major and nowhere else, an API being removed is
 deprecated one major ahead, and each major ships with the codemod needed to
 cross it.
 
+- **[CHANGELOG.md](https://github.com/maroonedog/luq/blob/master/CHANGELOG.md)** — every released version, what a caller
+  sees change in each, and which ones need reading before you take them
 - **[CONTRIBUTING.md](https://github.com/maroonedog/luq/blob/master/CONTRIBUTING.md)** — `npm run verify` is the whole
   contract; the gates and what each one refuses
 - **[SECURITY.md](https://github.com/maroonedog/luq/blob/master/SECURITY.md)** — reporting, zero runtime dependencies, the
@@ -320,11 +334,13 @@ cross it.
 
 ## About the "universal platform" goal
 
-1.x described a `.luq` DSL that would generate validators for other languages,
-against dated milestones. Those dates have passed and none of it shipped, so the
-plan has been withdrawn rather than moved: no part of it is in this package, and
-this release makes no claim about when any of it will exist. What is in the box
-is the TypeScript validation library described above.
+The first published line — `0.1.0-alpha` through `0.1.2-alpha`, which the
+migration guide and the docs site both call "1.x" although no `1.x` was ever
+published — described a `.luq` DSL that would generate validators for other
+languages, against dated milestones. Those dates have passed and none of it
+shipped, so the plan has been withdrawn rather than moved: no part of it is in
+this package, and this release makes no claim about when any of it will exist.
+What is in the box is the TypeScript validation library described above.
 
 ## License
 

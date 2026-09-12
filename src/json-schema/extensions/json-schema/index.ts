@@ -16,8 +16,10 @@ export {
 export type { JsonSchemaOptions } from "./json-schema";
 
 export {
+  DRAFT07_DIALECT_URI,
   MalformedSchemaError,
   NotASchemaError,
+  UnsupportedDialectError,
   UnsupportedKeywordError,
   RefResolutionError,
   buildFieldEntries,
@@ -30,6 +32,7 @@ export {
 } from "../../index";
 
 export type {
+  DialectOptions,
   Draft07Schema,
   Draft07SchemaObject,
   JsonSchemaBag,

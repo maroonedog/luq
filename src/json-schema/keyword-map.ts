@@ -35,7 +35,11 @@ export const NON_DRAFT07_KEYWORDS: Readonly<Record<string, string>> = {
   $defs: "2019-09 spelling of `definitions`; resolve-ref follows it anyway",
   $anchor: "2019-09 anchors; resolve-ref resolves JSON Pointers only",
   $dynamicRef: "2020-12 dynamic references",
+  $dynamicAnchor: "2020-12 dynamic anchors; the target half of $dynamicRef",
   $recursiveRef: "2019-09 recursive references",
+  $recursiveAnchor:
+    "2019-09 recursive anchors; the target half of $recursiveRef",
+  $vocabulary: "2019-09 vocabulary declaration; Luq has one fixed vocabulary",
   dependentRequired: "2019-09 split of `dependencies`; use `dependencies`",
   dependentSchemas: "2019-09 split of `dependencies`; use `dependencies`",
   minContains: "2019-09 bound on `contains`; Draft-07's is fixed at one",

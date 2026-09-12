@@ -37,18 +37,21 @@ below exists because something like that got through.
 | `npm run check:docs` | a documented example that no longer compiles |
 | `npm run check:size` | a bundle over its recorded ceiling |
 | `npm run check:no-dynamic-code` | `eval` or `new Function` in the published artifact |
-| `npm test` | 2,598 tests, including 929/929 JSON Schema Draft-07 conformance |
+| `npm test` | every suite, including 929/929 JSON Schema Draft-07 conformance — the corpus count and the pass count are both pinned in `config/json-schema-suite.json`, so a regression and an unrecorded improvement both fail |
 | `npm run bench:competitors:check` | a competitor library that started answering differently |
 
 A file over 200 lines and a module without a test are both failures. So is a
 plugin that appears in the catalogue without appearing in `package.json#exports`.
 
-Two things are measured in CI but deliberately **not** gated: throughput ratios
-against the hand-written reference on shapes whose reference sits below the
-harness's measurement floor, and throughput against competitor libraries. Both
-move with the runner. What IS gated about competitors is whether they still
-agree with Luq about which values are valid — that is deterministic, and if zod
-changes how strict its email is on a version bump, the build says so.
+Three things are measured in CI but deliberately **not** gated: throughput
+ratios against the hand-written reference on shapes whose reference sits below
+the harness's measurement floor; throughput against competitor libraries; and
+how throughput moves when many different validators are alive at once
+(`npm run bench:megamorphism`, recorded only on the runner). All three move with
+the runner, and the last has nothing deterministic in it at all. What IS gated
+about competitors is whether they still agree with Luq about which values are
+valid — that is deterministic, and if zod changes how strict its email is on a
+version bump, the build says so.
 
 ## House rules that a linter cannot check
 

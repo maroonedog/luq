@@ -109,13 +109,51 @@ describe("resolvePresence merges ORDER-INDEPENDENTLY", () => {
     expect(policy.code).toBe("required");
   });
 
-  it("breaks a tie on the code, not on declaration order", () => {
-    const zebra = makePresence("zebra", true, false, false);
-    const alpha = makePresence("alpha", false, true, false);
-    expect(resolvePresence([zebra, alpha]).code).toBe(
-      resolvePresence([alpha, zebra]).code
+  it("breaks a tie on WHAT is forbidden, not on declaration order", () => {
+    const forbidsNull = makePresence("alpha", true, false, false);
+    const forbidsUndefined = makePresence("zebra", false, true, false);
+    expect(resolvePresence([forbidsNull, forbidsUndefined]).code).toBe(
+      resolvePresence([forbidsUndefined, forbidsNull]).code
     );
-    expect(resolvePresence([zebra, alpha]).code).toBe("alpha");
+    expect(resolvePresence([forbidsNull, forbidsUndefined]).code).toBe("zebra");
+  });
+
+  /**
+   * The identity a merged policy reports must survive renaming a code. The
+   * vocabulary in config/issue-code.lock.json is a contract, and a contract
+   * that cannot be re-spelled without silently moving behaviour elsewhere is
+   * not one — so nothing in the merge may compare two code strings.
+   */
+  it("picks the same rule whatever the two codes are spelled", () => {
+    const forbidsNull = (code: string) =>
+      makePresence(code, true, false, false);
+    const forbidsUndefined = (code: string) =>
+      makePresence(code, false, true, false);
+    expect(
+      resolvePresence([forbidsNull("aaa"), forbidsUndefined("zzz")]).code
+    ).toBe("zzz");
+    expect(
+      resolvePresence([forbidsNull("zzz"), forbidsUndefined("aaa")]).code
+    ).toBe("aaa");
+  });
+
+  it("prefers forbidding null over treating the empty string as missing", () => {
+    const forbidsNull = makePresence("zebra", true, false, false);
+    const emptyIsMissing = makePresence("alpha", true, true, true);
+    expect(resolvePresence([forbidsNull, emptyIsMissing]).code).toBe("zebra");
+    expect(resolvePresence([emptyIsMissing, forbidsNull]).code).toBe("zebra");
+  });
+
+  /**
+   * Two rules that forbid exactly the same things are indistinguishable to
+   * every reader of the policy, so the one written first is reported. This is
+   * the ONLY case where the order the methods were typed in is observable.
+   */
+  it("reports the first of two rules that forbid the same things", () => {
+    const first = makePresence("first", true, false, false);
+    const second = makePresence("second", true, false, false);
+    expect(resolvePresence([first, second]).code).toBe("first");
+    expect(resolvePresence([second, first]).code).toBe("second");
   });
 
   it("freezes the merged policy", () => {

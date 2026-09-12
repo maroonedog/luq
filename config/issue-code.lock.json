@@ -1,0 +1,597 @@
+{
+  "codeCount": 95,
+  "codes": [
+    {
+      "code": "additionalProperties",
+      "owners": [
+        "src/json-schema/declare-additional-properties.ts"
+      ]
+    },
+    {
+      "code": "allOf",
+      "owners": [
+        "src/json-schema/compose-keyword.ts"
+      ]
+    },
+    {
+      "code": "anyOf",
+      "owners": [
+        "src/json-schema/compose-keyword.ts"
+      ]
+    },
+    {
+      "code": "arrayContains",
+      "owners": [
+        "src/plugins/array-contains"
+      ]
+    },
+    {
+      "code": "arrayEach",
+      "owners": [
+        "src/plugins/array-each"
+      ]
+    },
+    {
+      "code": "arrayIncludes",
+      "owners": [
+        "src/plugins/array-includes"
+      ]
+    },
+    {
+      "code": "arrayMaxLength",
+      "owners": [
+        "src/plugins/array-max-length"
+      ]
+    },
+    {
+      "code": "arrayMinLength",
+      "owners": [
+        "src/plugins/array-min-length"
+      ]
+    },
+    {
+      "code": "arrayType",
+      "owners": [
+        "src/chain/slot-type-guard.ts"
+      ]
+    },
+    {
+      "code": "arrayUnique",
+      "owners": [
+        "src/plugins/array-unique"
+      ]
+    },
+    {
+      "code": "asyncContextUnavailable",
+      "owners": [
+        "src/async/async-validator.ts"
+      ]
+    },
+    {
+      "code": "booleanFalsy",
+      "owners": [
+        "src/plugins/boolean-falsy"
+      ]
+    },
+    {
+      "code": "booleanTruthy",
+      "owners": [
+        "src/plugins/boolean-truthy"
+      ]
+    },
+    {
+      "code": "booleanType",
+      "owners": [
+        "src/chain/slot-type-guard.ts"
+      ]
+    },
+    {
+      "code": "compareField",
+      "owners": [
+        "src/plugins/compare-field"
+      ]
+    },
+    {
+      "code": "conditionalSchema",
+      "owners": [
+        "src/plugins/conditional-schema"
+      ]
+    },
+    {
+      "code": "contains",
+      "owners": [
+        "src/json-schema/flatten-array-schema.ts"
+      ]
+    },
+    {
+      "code": "custom",
+      "owners": [
+        "src/plugins/custom"
+      ]
+    },
+    {
+      "code": "dateType",
+      "owners": [
+        "src/chain/slot-type-guard.ts"
+      ]
+    },
+    {
+      "code": "dependencies",
+      "owners": [
+        "src/json-schema/declare-object-keywords.ts"
+      ]
+    },
+    {
+      "code": "enum",
+      "owners": [
+        "src/json-schema/declare-value-keywords.ts"
+      ]
+    },
+    {
+      "code": "fromContext",
+      "owners": [
+        "src/plugins/from-context"
+      ]
+    },
+    {
+      "code": "if",
+      "owners": [
+        "src/json-schema/compose-conditional.ts"
+      ]
+    },
+    {
+      "code": "items",
+      "owners": [
+        "src/json-schema/collect-sub-schema-rules.ts",
+        "src/json-schema/flatten-array-schema.ts"
+      ]
+    },
+    {
+      "code": "jsonSchema",
+      "owners": [
+        "src/json-schema/extensions/json-schema"
+      ]
+    },
+    {
+      "code": "jsonSchemaFullFeature",
+      "owners": [
+        "src/json-schema/extensions/json-schema-full-feature"
+      ]
+    },
+    {
+      "code": "literal",
+      "owners": [
+        "src/plugins/literal"
+      ]
+    },
+    {
+      "code": "not",
+      "owners": [
+        "src/json-schema/compose-keyword.ts"
+      ]
+    },
+    {
+      "code": "nullable",
+      "owners": [
+        "src/plugins/nullable"
+      ]
+    },
+    {
+      "code": "numberFinite",
+      "owners": [
+        "src/plugins/number-finite"
+      ]
+    },
+    {
+      "code": "numberInteger",
+      "owners": [
+        "src/plugins/number-integer"
+      ]
+    },
+    {
+      "code": "numberMax",
+      "owners": [
+        "src/plugins/number-max"
+      ]
+    },
+    {
+      "code": "numberMin",
+      "owners": [
+        "src/plugins/number-min"
+      ]
+    },
+    {
+      "code": "numberMultipleOf",
+      "owners": [
+        "src/plugins/number-multiple-of"
+      ]
+    },
+    {
+      "code": "numberNegative",
+      "owners": [
+        "src/plugins/number-negative"
+      ]
+    },
+    {
+      "code": "numberPositive",
+      "owners": [
+        "src/plugins/number-positive"
+      ]
+    },
+    {
+      "code": "numberRange",
+      "owners": [
+        "src/plugins/number-range"
+      ]
+    },
+    {
+      "code": "numberType",
+      "owners": [
+        "src/chain/slot-type-guard.ts"
+      ]
+    },
+    {
+      "code": "object",
+      "owners": [
+        "src/plugins/object"
+      ]
+    },
+    {
+      "code": "objectAdditionalProperties",
+      "owners": [
+        "src/plugins/object-additional-properties"
+      ]
+    },
+    {
+      "code": "objectAdditionalPropertiesSchema",
+      "owners": [
+        "src/plugins/object-additional-properties"
+      ]
+    },
+    {
+      "code": "objectDependentRequired",
+      "owners": [
+        "src/plugins/object-dependent-required"
+      ]
+    },
+    {
+      "code": "objectDependentSchemas",
+      "owners": [
+        "src/plugins/object-dependent-schemas"
+      ]
+    },
+    {
+      "code": "objectMaxProperties",
+      "owners": [
+        "src/plugins/object-max-properties"
+      ]
+    },
+    {
+      "code": "objectMinProperties",
+      "owners": [
+        "src/plugins/object-min-properties"
+      ]
+    },
+    {
+      "code": "objectPatternProperties",
+      "owners": [
+        "src/plugins/object-pattern-properties"
+      ]
+    },
+    {
+      "code": "objectPropertyNames",
+      "owners": [
+        "src/plugins/object-property-names"
+      ]
+    },
+    {
+      "code": "objectRecursively",
+      "owners": [
+        "src/plugins/object-recursively"
+      ]
+    },
+    {
+      "code": "objectType",
+      "owners": [
+        "src/chain/slot-type-guard.ts"
+      ]
+    },
+    {
+      "code": "oneOf",
+      "owners": [
+        "src/json-schema/compose-keyword.ts",
+        "src/plugins/one-of"
+      ]
+    },
+    {
+      "code": "optional",
+      "owners": [
+        "src/plugins/optional"
+      ]
+    },
+    {
+      "code": "optionalIf",
+      "owners": [
+        "src/plugins/optional-if"
+      ]
+    },
+    {
+      "code": "orFail",
+      "owners": [
+        "src/plugins/or-fail"
+      ]
+    },
+    {
+      "code": "patternProperties",
+      "owners": [
+        "src/json-schema/declare-object-keywords.ts"
+      ]
+    },
+    {
+      "code": "properties",
+      "owners": [
+        "src/json-schema/collect-sub-schema-rules.ts"
+      ]
+    },
+    {
+      "code": "propertyNames",
+      "owners": [
+        "src/json-schema/declare-object-keywords.ts"
+      ]
+    },
+    {
+      "code": "readOnly",
+      "owners": [
+        "src/plugins/read-only"
+      ]
+    },
+    {
+      "code": "required",
+      "owners": [
+        "src/json-schema/declare-presence.ts",
+        "src/json-schema/declare-required-properties.ts",
+        "src/plugins/required",
+        "src/runtime/create-validator.ts"
+      ]
+    },
+    {
+      "code": "requiredIf",
+      "owners": [
+        "src/plugins/required-if"
+      ]
+    },
+    {
+      "code": "stitch",
+      "owners": [
+        "src/plugins/stitch"
+      ]
+    },
+    {
+      "code": "stitchWith",
+      "owners": [
+        "src/plugins/stitch-with"
+      ]
+    },
+    {
+      "code": "stringAlphanumeric",
+      "owners": [
+        "src/plugins/string-alphanumeric"
+      ]
+    },
+    {
+      "code": "stringBase64",
+      "owners": [
+        "src/plugins/string-base64"
+      ]
+    },
+    {
+      "code": "stringContentEncoding",
+      "owners": [
+        "src/plugins/string-content-encoding"
+      ]
+    },
+    {
+      "code": "stringContentMediaType",
+      "owners": [
+        "src/plugins/string-content-media-type"
+      ]
+    },
+    {
+      "code": "stringDate",
+      "owners": [
+        "src/plugins/string-date"
+      ]
+    },
+    {
+      "code": "stringDatetime",
+      "owners": [
+        "src/plugins/string-datetime"
+      ]
+    },
+    {
+      "code": "stringDuration",
+      "owners": [
+        "src/plugins/string-duration"
+      ]
+    },
+    {
+      "code": "stringEmail",
+      "owners": [
+        "src/plugins/string-email"
+      ]
+    },
+    {
+      "code": "stringEndsWith",
+      "owners": [
+        "src/plugins/string-ends-with"
+      ]
+    },
+    {
+      "code": "stringExactLength",
+      "owners": [
+        "src/plugins/string-exact-length"
+      ]
+    },
+    {
+      "code": "stringHostname",
+      "owners": [
+        "src/plugins/string-hostname"
+      ]
+    },
+    {
+      "code": "stringIdnEmail",
+      "owners": [
+        "src/plugins/string-idn-email"
+      ]
+    },
+    {
+      "code": "stringIdnHostname",
+      "owners": [
+        "src/plugins/string-idn-hostname"
+      ]
+    },
+    {
+      "code": "stringIpv4",
+      "owners": [
+        "src/plugins/string-ipv4"
+      ]
+    },
+    {
+      "code": "stringIpv6",
+      "owners": [
+        "src/plugins/string-ipv6"
+      ]
+    },
+    {
+      "code": "stringIri",
+      "owners": [
+        "src/plugins/string-iri"
+      ]
+    },
+    {
+      "code": "stringIriReference",
+      "owners": [
+        "src/plugins/string-iri-reference"
+      ]
+    },
+    {
+      "code": "stringJsonPointer",
+      "owners": [
+        "src/plugins/string-json-pointer"
+      ]
+    },
+    {
+      "code": "stringMax",
+      "owners": [
+        "src/plugins/string-max"
+      ]
+    },
+    {
+      "code": "stringMin",
+      "owners": [
+        "src/plugins/string-min"
+      ]
+    },
+    {
+      "code": "stringPattern",
+      "owners": [
+        "src/plugins/string-pattern"
+      ]
+    },
+    {
+      "code": "stringRegex",
+      "owners": [
+        "src/plugins/string-regex"
+      ]
+    },
+    {
+      "code": "stringRelativeJsonPointer",
+      "owners": [
+        "src/plugins/string-relative-json-pointer"
+      ]
+    },
+    {
+      "code": "stringStartsWith",
+      "owners": [
+        "src/plugins/string-starts-with"
+      ]
+    },
+    {
+      "code": "stringTime",
+      "owners": [
+        "src/plugins/string-time"
+      ]
+    },
+    {
+      "code": "stringType",
+      "owners": [
+        "src/chain/slot-type-guard.ts"
+      ]
+    },
+    {
+      "code": "stringUriReference",
+      "owners": [
+        "src/plugins/string-uri-reference"
+      ]
+    },
+    {
+      "code": "stringUriTemplate",
+      "owners": [
+        "src/plugins/string-uri-template"
+      ]
+    },
+    {
+      "code": "stringUrl",
+      "owners": [
+        "src/plugins/string-url"
+      ]
+    },
+    {
+      "code": "tupleBuilder",
+      "owners": [
+        "src/plugins/tuple-builder"
+      ]
+    },
+    {
+      "code": "type",
+      "owners": [
+        "src/chain/create-chain-node.ts",
+        "src/json-schema/declare-presence.ts",
+        "src/json-schema/declare-value-keywords.ts"
+      ]
+    },
+    {
+      "code": "unionGuard",
+      "owners": [
+        "src/plugins/union-guard"
+      ]
+    },
+    {
+      "code": "uuid",
+      "owners": [
+        "src/plugins/uuid"
+      ]
+    },
+    {
+      "code": "writeOnly",
+      "owners": [
+        "src/plugins/write-only"
+      ]
+    }
+  ],
+  "gateOnlyCodes": [
+    {
+      "code": "skip",
+      "owners": [
+        "src/plugins/skip"
+      ]
+    },
+    {
+      "code": "validateIf",
+      "owners": [
+        "src/plugins/validate-if"
+      ]
+    }
+  ],
+  "unresolvedSites": []
+}

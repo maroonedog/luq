@@ -43,11 +43,13 @@ import type { RuleBuildContext } from "../../../plugin-kit/rule-build-context";
 import type { Unchanged } from "../../../plugin-kit/marker.types";
 import {
   NotASchemaError,
+  assertSupportedDialect,
   collectSubSchemaRules,
   createStructuralContext,
   createDocumentScope,
   isDraft07Schema,
   resolveSchemaNodeInScope,
+  type DialectOptions,
   type Draft07Schema,
   type JsonSchemaBag,
 } from "../../index";
@@ -80,7 +82,7 @@ export const SCHEMA_BRANCH_LABEL = "schema";
  * The caller fetches, reads from disk, or bundles — whichever is right for
  * their deployment — and hands over what they already have.
  */
-export interface JsonSchemaOptions {
+export interface JsonSchemaOptions extends DialectOptions {
   readonly externalDocuments?: Readonly<Record<string, unknown>> | undefined;
 }
 
@@ -100,6 +102,9 @@ export function collectDocumentRules(
   options: JsonSchemaOptions = {}
 ): readonly Rule[] {
   if (!isDraft07Schema(document)) throw new NotASchemaError(document);
+  // Before any keyword is read, and in the same place the function front door
+  // reads it: the dialect decides what the keywords below MEAN.
+  assertSupportedDialect(document, options);
   const root: Draft07Schema = document;
   const scope = createDocumentScope(
     root,

@@ -60,6 +60,15 @@ export type { SchemaRegistry } from "./schema-registry";
 export { createSchemaRegistry } from "./schema-registry";
 export { UnsupportedKeywordError } from "./unsupported-keyword-error";
 export { MalformedSchemaError } from "./malformed-schema-error";
+export {
+  DRAFT07_DIALECT_URI,
+  UnsupportedDialectError,
+} from "./unsupported-dialect-error";
+export {
+  NON_DRAFT07_DIALECTS,
+  assertSupportedDialect,
+} from "./assert-supported-dialect";
+export type { DialectOptions } from "./assert-supported-dialect";
 export { isDraft07Schema, isSchemaObject } from "./draft07.types";
 export type {
   Draft07Schema,
