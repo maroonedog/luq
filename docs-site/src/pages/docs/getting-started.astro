@@ -350,7 +350,7 @@ const tableOfContents = [
           <div class="md-card md-card-filled p-4">
             <h2 class="text-title-medium">Plugins are imports</h2>
             <p class="mt-1 text-body-medium text-on-surface-variant">
-              An unimported plugin's method does not typecheck. The builder alone gzips to
+              An unimported plugin's method does not typecheck. The builder alone gzips to{' '}
               {bundleSize.coreOnly.gzip}.
             </p>
           </div>
@@ -710,6 +710,13 @@ const tableOfContents = [
 </BaseLayout>
 
 <style>
+  /*
+   * A scoped style block is compiled on its own, so Tailwind 4 has to be told
+   * where the theme lives before `@apply` can resolve a utility. @reference
+   * loads it for name resolution only and emits nothing.
+   */
+  @reference '../../styles/global.css';
+
   /* Inline code, on the MD3 container tone the design system reserves for it. */
   article :not(pre) > code {
     @apply rounded-shape-xs bg-surface-container-highest px-1.5 py-0.5 font-mono text-[0.875em] text-on-surface;

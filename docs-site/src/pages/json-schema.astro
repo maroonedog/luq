@@ -838,7 +838,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       <h2 class="mb-2 text-headline-medium text-on-surface">Which one to use</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         <code>./plugins/jsonSchema</code> is billed as the tree-shakeable half, and measured it
-        is not: it gzips to {bundleSize.jsonSchemaPlugin.gzip} against
+        is not: it gzips to {bundleSize.jsonSchemaPlugin.gzip} against{' '}
         {bundleSize.jsonSchemaFullFeature.gzip} for the bundle — and that first figure is the
         plugin <em>alone</em>, which cannot validate a document without a bag of plugins behind
         it. Both entries, with their ceilings, are on
