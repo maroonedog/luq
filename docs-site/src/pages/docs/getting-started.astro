@@ -418,8 +418,12 @@ const tableOfContents = [
         </h3>
 
         <p class="mt-3 text-body-large">
-          <code>strict</code> is required: without it, the path and slot checks stop being
-          compile errors. <code>node16</code> and <code>bundler</code> resolution both work.
+          <code>strict</code> is not required. Every check below is a compile error either
+          way — a slot that does not match the field, a missing <code>[*]</code>, a path the
+          type does not declare, a method whose plugin you did not import. Luq is checked
+          under <code>strict</code> too, so turning it on costs you nothing here and catches
+          the rest of your code. <code>node16</code> and <code>bundler</code> resolution both
+          work.
         </p>
 
         <CodeBlock code={tsconfigExample} language="json" fileName="tsconfig.json" />
