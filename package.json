@@ -1,7 +1,7 @@
 {
   "name": "@maroonedog/luq",
   "version": "2.6.0",
-  "description": "Universal Model & API Definition Platform - TypeScript validation library evolving into cross-language code generation",
+  "description": "Validate the TypeScript types you already have. Rules are declared against your own type's field paths, so a rule that does not apply to its field is a compile error.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -510,13 +510,22 @@
     "url": "https://github.com/maroonedog/luq/issues"
   },
   "keywords": [
-    "form",
-    "validation",
     "typescript",
+    "validation",
     "validator",
-    "library"
+    "schema",
+    "json-schema",
+    "draft-07",
+    "openapi",
+    "standard-schema",
+    "standardschema",
+    "type-safe",
+    "form-validation",
+    "runtime-validation",
+    "content-security-policy",
+    "zero-dependencies"
   ],
-  "author": "",
+  "author": "maroonedog (https://github.com/maroonedog)",
   "license": "MIT",
   "files": [
     "dist"
