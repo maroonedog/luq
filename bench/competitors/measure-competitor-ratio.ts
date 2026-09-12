@@ -22,6 +22,17 @@ import type { BenchShape, BenchShapeName } from "../shapes/bench-shape.types";
 import type { Competitor } from "./competitor.types";
 import { measureShapeAgreement } from "./measure-agreement";
 
+/** One pool, timed. */
+export interface PoolRatio {
+  readonly luqOpsPerSecond: number;
+  readonly competitorOpsPerSecond: number;
+  /** Above 1 means Luq is faster. The median of the per-pair ratios. */
+  readonly ratio: number;
+  readonly values: number;
+  readonly luqSpreadPercent: number;
+  readonly competitorSpreadPercent: number;
+}
+
 export interface CompetitorRatio {
   readonly shape: BenchShapeName;
   readonly competitor: string;
@@ -35,6 +46,22 @@ export interface CompetitorRatio {
   readonly disagreedValues: number;
   readonly luqSpreadPercent: number;
   readonly competitorSpreadPercent: number;
+  /**
+   * The same measurement over the accepted values alone and the rejected ones
+   * alone.
+   *
+   * The mixed figure above is what this file used to report on its own, and it
+   * is kept so a reader can see the difference rather than having to trust that
+   * there is one. There usually is: a library that constructs a rich error on
+   * every refusal does most of its work in `rejected`, so a pool that is half
+   * refusals measures error construction as much as validation. Published as
+   * one number, that reads as a validation result.
+   *
+   * `undefined` when a pool held fewer than two values — the engine
+   * constant-folds a single value away on one side and not the other.
+   */
+  readonly accepted: PoolRatio | undefined;
+  readonly rejected: PoolRatio | undefined;
 }
 
 const TARGET_SAMPLE_MS = 60;
@@ -69,6 +96,42 @@ function toPool(values: readonly unknown[]): ValuePool | undefined {
   return [first, second, ...rest];
 }
 
+/** Times one pool of agreed values, Luq and the competitor alternately. */
+function timePool(
+  values: readonly unknown[],
+  validator: { validate(value: unknown): { valid: boolean } },
+  check: (value: unknown) => boolean,
+  expected: ReadonlyMap<unknown, boolean>
+): PoolRatio | undefined {
+  const pool = toPool(values);
+  if (pool === undefined) return undefined;
+
+  const samples = takeInterleavedSamples(
+    buildRotation(pool, (v) => validator.validate(v).valid, expected),
+    buildRotation(pool, check, expected),
+    {
+      targetSampleMs: TARGET_SAMPLE_MS,
+      sampleCount: SAMPLE_COUNT,
+      warmupMs: WARMUP_MS,
+    }
+  );
+
+  const luqMedian = median(samples.firstRates);
+  const otherMedian = median(samples.secondRates);
+
+  return {
+    luqOpsPerSecond: luqMedian,
+    competitorOpsPerSecond: otherMedian,
+    ratio: median(samples.pairRatios),
+    values: values.length,
+    luqSpreadPercent: relativeSpreadPercent(samples.firstRates, luqMedian),
+    competitorSpreadPercent: relativeSpreadPercent(
+      samples.secondRates,
+      otherMedian
+    ),
+  };
+}
+
 export function measureCompetitorRatio(
   shape: BenchShape,
   competitor: Competitor
@@ -84,35 +147,22 @@ export function measureCompetitorRatio(
     expected.set(value, validator.validate(value).valid);
   }
 
-  const pool = toPool(agreement.agreedValues);
-  if (pool === undefined) return undefined;
-
-  const samples = takeInterleavedSamples(
-    buildRotation(pool, (v) => validator.validate(v).valid, expected),
-    buildRotation(pool, (v) => subject.check(v), expected),
-    {
-      targetSampleMs: TARGET_SAMPLE_MS,
-      sampleCount: SAMPLE_COUNT,
-      warmupMs: WARMUP_MS,
-    }
-  );
-
-  const luqRates = samples.firstRates;
-  const otherRates = samples.secondRates;
-
-  const luqMedian = median(luqRates);
-  const otherMedian = median(otherRates);
+  const check = (value: unknown): boolean => subject.check(value);
+  const mixed = timePool(agreement.agreedValues, validator, check, expected);
+  if (mixed === undefined) return undefined;
 
   return {
     shape: shape.name,
     competitor: competitor.name,
     competitorVersion: competitor.version,
-    luqOpsPerSecond: luqMedian,
-    competitorOpsPerSecond: otherMedian,
-    ratio: median(samples.pairRatios),
+    luqOpsPerSecond: mixed.luqOpsPerSecond,
+    competitorOpsPerSecond: mixed.competitorOpsPerSecond,
+    ratio: mixed.ratio,
     comparedValues: agreement.agreedValues.length,
     disagreedValues: agreement.disagreements.length,
-    luqSpreadPercent: relativeSpreadPercent(luqRates, luqMedian),
-    competitorSpreadPercent: relativeSpreadPercent(otherRates, otherMedian),
+    luqSpreadPercent: mixed.luqSpreadPercent,
+    competitorSpreadPercent: mixed.competitorSpreadPercent,
+    accepted: timePool(agreement.acceptedAgreed, validator, check, expected),
+    rejected: timePool(agreement.rejectedAgreed, validator, check, expected),
   };
 }

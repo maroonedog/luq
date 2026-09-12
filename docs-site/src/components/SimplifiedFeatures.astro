@@ -12,7 +12,14 @@ const corePercent = (
 ).toFixed(1);
 
 /**
- * What Luq costs you and what it covers, each claim with the code that backs it.
+ * What Luq enforces, what it covers, and what it costs — each claim with the
+ * code that backs it.
+ *
+ * The bundle-size claim is last on purpose. It used to be second, which put a
+ * cost figure ahead of every guarantee on the page and invited the reader to
+ * choose this library the way you choose between two implementations of the
+ * same thing. Size is the least interesting reason to pick it and the easiest
+ * for a competitor to beat; the order says so.
  *
  * "Your type is the schema" used to open this list. It is now the hero's
  * must-fail block, where the compiler makes the claim instead of a comment: the
@@ -44,25 +51,6 @@ const draftValidator = Builder()
   // was never \`use\`d, so the method does not exist.
   .v("title", (b) => b.string.required())
   .build();`,
-  },
-  {
-    icon: 'deployed_code',
-    title: 'You pay for what you import',
-    description:
-      `Measured with esbuild and gzip. The core is ${corePercent}% of the all-plugins build — the floor you pay before importing anything, which is the part a bundle-size claim usually hides.`,
-    fileName: 'imports.ts',
-    example: `// Six plugins, six imports.
-import { requiredPlugin } from "@maroonedog/luq/plugins/required";
-import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
-import { stringMaxPlugin } from "@maroonedog/luq/plugins/stringMax";
-import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
-import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
-import { numberMaxPlugin } from "@maroonedog/luq/plugins/numberMax";
-
-// Measured gzip — config/size-budget.json:
-//   Builder alone ............. ${bundleSize.coreOnly.gzip}
-//   Builder + these six ....... ${bundleSize.sixPlugin.gzip}
-//   Builder + all 77 plugins .. ${bundleSize.fullFeature.gzip}`,
   },
   {
     icon: 'compare_arrows',
@@ -113,6 +101,25 @@ const accountValidator = fromJsonSchema<Account>({
 
 // ${conformance.headline} — docs/json-schema-conformance.md`,
   },
+  {
+    icon: 'deployed_code',
+    title: 'You pay for what you import',
+    description:
+      `Measured with esbuild and gzip. The core is ${corePercent}% of the all-plugins build — the floor you pay before importing anything, which is the part a bundle-size claim usually hides.`,
+    fileName: 'imports.ts',
+    example: `// Six plugins, six imports.
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
+import { stringMaxPlugin } from "@maroonedog/luq/plugins/stringMax";
+import { stringEmailPlugin } from "@maroonedog/luq/plugins/stringEmail";
+import { numberMinPlugin } from "@maroonedog/luq/plugins/numberMin";
+import { numberMaxPlugin } from "@maroonedog/luq/plugins/numberMax";
+
+// Measured gzip — config/size-budget.json:
+//   Builder alone ............. ${bundleSize.coreOnly.gzip}
+//   Builder + these six ....... ${bundleSize.sixPlugin.gzip}
+//   Builder + all 77 plugins .. ${bundleSize.fullFeature.gzip}`,
+  },
 ];
 ---
 
@@ -120,7 +127,7 @@ const accountValidator = fromJsonSchema<Account>({
   <div class="container mx-auto max-w-6xl">
     <div class="mb-8 text-center">
       <h2 class="mb-3 text-headline-medium text-on-surface">
-        What it costs and what it covers
+        What it enforces, what it covers, what it costs
       </h2>
       <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
         Four claims, each with the code that backs it and the file the number came from.

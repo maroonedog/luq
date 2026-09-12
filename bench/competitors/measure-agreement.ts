@@ -31,6 +31,19 @@ export interface ShapeAgreement {
   readonly shape: BenchShapeName;
   readonly competitor: string;
   readonly agreedValues: readonly unknown[];
+  /**
+   * The same values, split by which answer they get.
+   *
+   * They used to be reported only as one pool, and the ratio was measured over
+   * it — four accepted values and four rejected ones, timed together and
+   * published as a single figure. That hides the thing most likely to move it:
+   * a library can be fast to accept and slow to refuse, and the pool's
+   * composition then decides the headline. config/perf-baseline.json already
+   * carries `inputIsAccepted` on every Luq row for exactly this reason; the
+   * competitor rows had no equivalent.
+   */
+  readonly acceptedAgreed: readonly unknown[];
+  readonly rejectedAgreed: readonly unknown[];
   readonly disagreements: readonly Disagreement[];
 }
 
@@ -55,18 +68,30 @@ export function measureShapeAgreement(
 
   const validator = shape.buildValidator();
   const agreed: unknown[] = [];
+  const acceptedAgreed: unknown[] = [];
+  const rejectedAgreed: unknown[] = [];
   const disagreements: Disagreement[] = [];
 
+  // Which pool a value came from is not the same question as what Luq answers
+  // about it: a value in `rejectedValues` that Luq accepts is a disagreement
+  // with the shape, not a rejection. The split below follows the ANSWER, which
+  // is what decides how much error-construction work each side does.
   for (const value of [...shape.acceptedValues, ...shape.rejectedValues]) {
     const luqSaid = validator.validate(value).valid;
-    if (subject.check(value) === luqSaid) agreed.push(value);
-    else disagreements.push({ value, luqSaid });
+    if (subject.check(value) !== luqSaid) {
+      disagreements.push({ value, luqSaid });
+      continue;
+    }
+    agreed.push(value);
+    (luqSaid ? acceptedAgreed : rejectedAgreed).push(value);
   }
 
   return {
     shape: shape.name,
     competitor: competitor.name,
     agreedValues: Object.freeze(agreed),
+    acceptedAgreed: Object.freeze(acceptedAgreed),
+    rejectedAgreed: Object.freeze(rejectedAgreed),
     disagreements: Object.freeze(disagreements),
   };
 }

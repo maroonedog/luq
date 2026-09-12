@@ -20,6 +20,8 @@ export const competitorBenchmark = {
       luqIsFaster: true,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "singleField",
@@ -31,6 +33,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "singleField",
@@ -42,6 +46,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "singleField",
@@ -53,6 +59,8 @@ export const competitorBenchmark = {
       luqIsFaster: true,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "multiField",
@@ -64,6 +72,8 @@ export const competitorBenchmark = {
       luqIsFaster: true,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "multiField",
@@ -75,6 +85,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "multiField",
@@ -86,6 +98,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "multiField",
@@ -97,6 +111,8 @@ export const competitorBenchmark = {
       luqIsFaster: true,
       comparedValues: 7,
       disagreedValues: 1,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "nested",
@@ -108,6 +124,8 @@ export const competitorBenchmark = {
       luqIsFaster: true,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "nested",
@@ -119,6 +137,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "nested",
@@ -130,6 +150,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "nested",
@@ -141,6 +163,8 @@ export const competitorBenchmark = {
       luqIsFaster: true,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "array",
@@ -152,6 +176,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "array",
@@ -163,6 +189,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "array",
@@ -174,6 +202,8 @@ export const competitorBenchmark = {
       luqIsFaster: false,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
     {
       shape: "array",
@@ -185,6 +215,8 @@ export const competitorBenchmark = {
       luqIsFaster: true,
       comparedValues: 8,
       disagreedValues: 0,
+      acceptedRatio: null,
+      rejectedRatio: null,
     },
   ],
   disagreements: [
