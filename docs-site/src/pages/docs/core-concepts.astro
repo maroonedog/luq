@@ -10,24 +10,6 @@ import OnThisPage from '../../components/OnThisPage.astro';
 // package. The blocks marked "does not compile" were checked the other way:
 // they are required to be rejected, and they are.
 
-const typeFirstExample = `import { Builder } from '@maroonedog/luq';
-import { requiredPlugin } from '@maroonedog/luq/plugins/required';
-import { numberMinPlugin } from '@maroonedog/luq/plugins/numberMin';
-
-// The type is written once, as ordinary TypeScript.
-type User = {
-  name: string;
-  age: number;
-};
-
-const userValidator = Builder()
-  .use(requiredPlugin)
-  .use(numberMinPlugin)
-  .for<User>()          // the type IS the schema
-  .v('name', b => b.string.required())
-  .v('age', b => b.number.required().min(0))
-  .build();`;
-
 // luq-example: skip — a caret pointing at one line, not a statement on its own
 const slotExample = `.v('title', b => b.number.required().min(3))
 //              ^^^^^^^^
@@ -131,25 +113,24 @@ if (result.valid) {
   }
 }`;
 
-const parseExample = `import { Builder } from '@maroonedog/luq';
-import { requiredPlugin } from '@maroonedog/luq/plugins/required';
-import { transformPlugin } from '@maroonedog/luq/plugins/transform';
-
-type Signup = { email: string };
-
-const signupValidator = Builder()
-  .use(requiredPlugin)
-  .use(transformPlugin)
-  .for<Signup>()
-  .v('email', b => b.string.required().transform(value => value.trim()))
-  .build();
-
-// -> "  a@b.com  " — validate() never changes your value.
-const kept = signupValidator.validate({ email: '  a@b.com  ' });
-
-// -> "a@b.com" — parse() applies transforms, and only to a field whose
-// checks all passed.
-const trimmed = signupValidator.parse({ email: '  a@b.com  ' });`;
+// The runtime half of a slot, from src/chain/slot-type-guard.ts. Literal rows,
+// so nothing here is derived and nothing here is a code block to compile.
+const slotSeedRows = [
+  { slot: 'b.string', code: 'stringType', accepts: 'typeof value === "string"' },
+  {
+    slot: 'b.number',
+    code: 'numberType',
+    accepts: 'typeof value === "number" — NaN included',
+  },
+  { slot: 'b.boolean', code: 'booleanType', accepts: 'typeof value === "boolean"' },
+  { slot: 'b.date', code: 'dateType', accepts: 'value instanceof Date' },
+  { slot: 'b.array', code: 'arrayType', accepts: 'Array.isArray(value)' },
+  {
+    slot: 'b.object',
+    code: 'objectType',
+    accepts: 'a plain object: not an array, not null',
+  },
+];
 
 const pathGrammar = [
   { form: '"name"', means: 'a property of the root' },
@@ -167,14 +148,12 @@ const presenceRows = [
 ];
 
 const tableOfContents = [
-  { id: 'type-first-design', title: 'Type-first design', level: 2 },
   { id: 'slots', title: 'Slots', level: 2 },
   { id: 'plugins-are-the-vocabulary', title: 'Plugins are the vocabulary', level: 2 },
   { id: 'field-paths', title: 'Field paths', level: 2 },
   { id: 'presence', title: 'Presence', level: 2 },
   { id: 'the-order-rules-run-in', title: 'The order rules run in', level: 2 },
   { id: 'results', title: 'Results', level: 2 },
-  { id: 'validate-vs-parse', title: 'validate() vs parse()', level: 2 },
   { id: 'next-steps', title: 'Next steps', level: 2 },
 ];
 ---
@@ -196,17 +175,11 @@ const tableOfContents = [
           is a discriminated union.
         </p>
 
-        <h2 id="type-first-design" class="mt-12 text-headline-small">Type-first design</h2>
-
-        <p class="mt-3 text-body-large">
-          Luq builds a validator from a type you already have. There is no inferred schema
-          type to keep in step with your own, because there is no second declaration.
-        </p>
-
-        <CodeBlock code={typeFirstExample} language="typescript" />
-
         <p class="mt-4 text-body-large">
-          A path that does not exist on the type is a compile error, not a silent no-op.
+          Getting started already built one: a validator comes from a type you already
+          have, so there is no inferred schema type to keep in step with your own. This
+          page is the rest of that sentence — what a slot decides, what the bag decides,
+          what a path resolves against, and what comes back.
         </p>
 
         <h2 id="slots" class="mt-12 text-headline-small">Slots</h2>
@@ -233,6 +206,73 @@ const tableOfContents = [
           </p>
           <CodeBlock code={slotExample} language="typescript" showCopy={false} />
         </div>
+
+        <p class="mt-6 text-body-large">
+          A slot also has a run-time half. Entering <code>b.&lt;slot&gt;</code> seeds the
+          chain with one rule — the value is of that type — so a field declared{' '}
+          <code>b.number</code> and handed a string reports <code>numberType</code>, with
+          no value rule on it at all.
+        </p>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full border-collapse text-body-medium">
+            <thead>
+              <tr class="border-b border-outline">
+                <th class="py-2 pr-4 text-left text-title-small">Slot</th>
+                <th class="py-2 pr-4 text-left text-title-small">Issue code</th>
+                <th class="py-2 text-left text-title-small">Accepts</th>
+              </tr>
+            </thead>
+            <tbody class="text-on-surface-variant">
+              {
+                slotSeedRows.map((row) => (
+                  <tr class="border-b border-outline-variant">
+                    <td class="py-2 pr-4 font-mono text-body-small text-on-surface">
+                      {row.slot}
+                    </td>
+                    <td class="py-2 pr-4 font-mono text-body-small text-on-surface">
+                      {row.code}
+                    </td>
+                    <td class="py-2">{row.accepts}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-4 text-body-large">
+          <code>tuple</code>, <code>union</code> and <code>any</code> seed nothing.{' '}
+          <code>any</code> accepts everything by definition, and the other two are settled
+          by the branches declared inside them rather than by one <code>typeof</code>.
+        </p>
+
+        <div class="md-card md-card-outlined mt-6 p-5">
+          <h3 class="text-title-medium">Two things the seeded rule leaves alone</h3>
+          <p class="mt-2 text-body-medium text-on-surface-variant">
+            <strong class="text-on-surface"
+              ><code>undefined</code> and <code>null</code> pass it.</strong
+            >{' '}
+            Absence belongs to <code>required</code>, <code>optional</code> and{' '}
+            <code>nullable</code>, which run in the same list — so a missing field reports{' '}
+            <code>required</code>, not a type error, and <code>.optional()</code> can still
+            switch it off.
+          </p>
+          <p class="mt-3 text-body-medium text-on-surface-variant">
+            <strong class="text-on-surface"><code>NaN</code> is a number.</strong> The rule
+            answers the type question only; <code>min</code>, <code>integer</code> and{' '}
+            <code>finite</code> are where you say what you think of <code>NaN</code>.
+          </p>
+        </div>
+
+        <p class="mt-6 text-body-large">
+          None of this needs <code>strict</code> in your <code>tsconfig.json</code>. The
+          compile-time half — a slot that does not match the field, a missing{' '}
+          <code>[*]</code>, a path the type does not declare, a method whose plugin you did
+          not import — is an error either way, because Luq is checked both ways. Turning{' '}
+          <code>strict</code> on is still worth doing; it costs nothing here and it catches
+          the rest of your code.
+        </p>
 
         <h2 id="plugins-are-the-vocabulary" class="mt-12 text-headline-small">
           Plugins are the vocabulary
@@ -305,8 +345,10 @@ const tableOfContents = [
         <p class="mt-3 text-body-large">
           Whether a value is <em>absent</em> is decided once, by the field's presence policy,
           before any check sees it. A check therefore never re-decides whether{' '}
-          <code>null</code> is acceptable — which is why <code>stringMin</code> lets a
-          non-string through instead of failing it under the wrong code.
+          <code>null</code> is acceptable, and never re-decides the type either: the slot's
+          seeded rule has already reported a wrong type under its own code, so{' '}
+          <code>stringMin</code> answers pass for a non-string rather than failing it a
+          second time. One invalid value produces one issue, not one per rule in the chain.
         </p>
 
         <div class="mt-4 overflow-x-auto">
@@ -374,10 +416,27 @@ const tableOfContents = [
         <p class="mt-4 text-body-large">
           <code>build()</code> sorts the chain into those buckets, so{' '}
           <code>.min(3).validateIf(c)</code> and <code>.validateIf(c).min(3)</code> mean the
-          same thing. In 1.x the answer depended on where in the chain the call sat. Three
-          consequences worth stating: a closed gate silences the whole field rather than the
-          rules after it; a rejected presence rule ends the field with exactly one issue; and
-          transforms run in <code>parse()</code> only, and only when every check passed.
+          same thing. In 1.x the answer depended on where in the chain the call sat.
+        </p>
+
+        <p class="mt-4 text-body-large">
+          A <strong>gate</strong> is <code>validateIf</code> or its polarity-inverted twin{' '}
+          <code>skip</code>: a predicate over the root value, asked before any check runs,
+          with no message of its own to write when it closes. Three consequences worth
+          stating: a closed gate silences the whole field rather than the rules after it,
+          and reports nothing; a rejected presence rule ends the field with exactly one
+          issue; and transforms run in <code>parse()</code> only, and only when every check
+          passed.
+        </p>
+
+        <p id="validate-vs-parse" class="mt-4 text-body-large">
+          That last bucket is the whole difference between the two entry points.{' '}
+          <code>validate()</code> never changes your value; <code>parse()</code> applies the
+          transforms, to a field whose checks all passed and only after they have.{' '}
+          <code>.transform()</code> also changes the chain's <em>type</em>, so a transform to
+          another type is reflected in what <code>parse()</code> hands back. Use{' '}
+          <code>validate()</code> when you want to judge a value and keep it; use{' '}
+          <code>parse()</code> when you want the value the rules produced.
         </p>
 
         <h2 id="results" class="mt-12 text-headline-small">Results</h2>
@@ -400,22 +459,20 @@ const tableOfContents = [
           >.
         </p>
 
-        <h2 id="validate-vs-parse" class="mt-12 text-headline-small">
-          <code>validate()</code> vs <code>parse()</code>
-        </h2>
-
-        <CodeBlock code={parseExample} language="typescript" />
-
-        <p class="mt-4 text-body-large">
-          <code>.transform()</code> also changes the chain's <em>type</em>, so a transform to
-          another type is reflected in what <code>parse()</code> hands back. Use{' '}
-          <code>validate()</code> when you want to judge a value and keep it; use{' '}
-          <code>parse()</code> when you want the value the rules produced.
-        </p>
-
         <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <a
+            href="/docs/examples"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">lightbulb</span>
+            <h3 class="mt-2 text-title-medium">Examples &amp; patterns</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              Cross-field rules, form errors, and two real-world validators
+            </p>
+          </a>
+
           <a
             href="/docs/custom-plugins"
             class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
@@ -455,21 +512,3 @@ const tableOfContents = [
 
   <Footer />
 </BaseLayout>
-
-<style>
-  /*
-   * A scoped style block is compiled on its own, so Tailwind 4 has to be told
-   * where the theme lives before `@apply` can resolve a utility. @reference
-   * loads it for name resolution only and emits nothing.
-   */
-  @reference '../../styles/global.css';
-
-  /* Inline code, on the MD3 container tone the design system reserves for it. */
-  article :not(pre) > code {
-    @apply rounded-shape-xs bg-surface-container-highest px-1.5 py-0.5 font-mono text-[0.875em] text-on-surface;
-  }
-
-  article th > code {
-    @apply bg-transparent p-0;
-  }
-</style>

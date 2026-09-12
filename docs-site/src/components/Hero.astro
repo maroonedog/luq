@@ -41,10 +41,35 @@ const measured = [
 
 const install = packageInfo.install;
 
+// The first row of `refused`, written out so the compiler answers for it
+// rather than the page.
+//
+// Every other headline figure here is read from a generated file. This one
+// claim — the one the h1, the <title> and the README all lead with — was four
+// English sentences footnoted to a directory nobody reading the page can open.
+// The directive is what turns it back into a measurement: check:doc-examples
+// compiles the block on every build and fails if it ever succeeds. If an API
+// change ever makes `b.string` legal on a number field, this breaks the build,
+// and the claim is what has to change — not the directive.
+//
+// luq-example: must-fail — the page's headline claim; compiling would make it false
+const refusedExample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+// The type is the schema, and \`age\` is a number.
+type User = { age: number };
+
+const userValidator = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v("age", (b) => b.string.required())
+  //               ^^^^^^^^ not a slot a number field can be.
+  .build();`;
+
 // Things the previous major accepted and this one refuses to compile: the
-// claim that constraints are machine-enforced, shown case by case.
-// Each one comes from a negative type test, so the type check passing is
-// itself the proof that these still fail.
+// claim that constraints are machine-enforced, shown case by case. The first
+// is proved by the block above; the other three come from negative type tests,
+// so the type check passing is itself the proof that they still fail.
 const refused = [
   {
     mistake: 'A slot unrelated to the field’s type',
@@ -86,40 +111,23 @@ const refused = [
       <span class="text-primary">does not compile</span>
     </h1>
 
-    <p class="mx-auto mb-4 max-w-3xl text-body-large text-on-surface-variant sm:text-title-medium">
-      Your types were probably not written by you. <code>openapi-typescript</code>{' '}
-      generates them from a spec you do not own; Prisma generates them from the
-      schema of record; protobuf generates them for four languages at once. When
-      the shape is already decided somewhere else, a validator whose schema is the
-      source of truth asks you to maintain a second description of it.
-    </p>
-
-    <p class="mx-auto mb-4 max-w-3xl text-body-large text-on-surface-variant sm:text-title-medium">
-      Luq runs the other way. It takes the type you already have and lets you
-      declare rules against its field paths — and the compiler checks those
-      declarations against the type, so a rule that does not apply to the field it
-      is written on is an error rather than a rule that quietly never fires.
-    </p>
-
-    <p class="mx-auto mb-8 max-w-3xl text-body-medium text-on-surface-variant">
-      That matters most when the code calling this library is generated rather
-      than typed by hand. A generator that picks the wrong rule, misspells a path
-      or drops an array wildcard gets a red squiggle instead of a validator that
-      passes everything.
-    </p>
-
-    <p class="mx-auto mb-8 max-w-3xl text-body-medium text-on-surface-variant">
-      Being type-first is also what makes it patchable: your type definitions do
-      not change, so covering one field of one type is a normal state rather than
-      a half-finished migration. There is no second description of the shape to
-      author and keep in step — only the rules.
-    </p>
-
-    <div class="mx-auto mb-12 max-w-xl">
-      <CodeBlock code={install} language="bash" fileName="Install" showCopy={true} />
+    <div class="mx-auto max-w-3xl text-left">
+      <p class="mb-8 text-body-large text-on-surface">
+        Your types were probably not written by you.{' '}
+        <a class="text-primary underline underline-offset-2" href="/openapi"
+          ><code class="font-mono">openapi-typescript</code></a
+        >{' '}
+        generates them from a spec you do not own; Prisma generates them from the
+        schema of record; protobuf generates them for four languages at once. When
+        the shape is already decided somewhere else,{' '}
+        <strong class="text-on-surface"
+          >a validator whose schema is the source of truth asks you to maintain a
+          second description of it</strong
+        >.
+      </p>
     </div>
 
-    <div class="mx-auto mb-12 max-w-3xl text-left">
+    <div class="mx-auto mb-8 max-w-3xl text-left">
       <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
         Caught by the compiler, not at run time
       </p>
@@ -136,10 +144,59 @@ const refused = [
           ))
         }
       </ul>
+    </div>
+
+    <div class="mb-8 flex flex-col justify-center gap-3 sm:flex-row">
+      <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
+        Get started
+      </a>
+      <a href="/plugins" class="md-button md-button-tonal md-state-layer md-focus-ring">
+        Browse the plugins
+      </a>
+      <a
+        href="https://github.com/maroonedog/luq"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="md-button md-button-outlined md-state-layer md-focus-ring"
+      >
+        <span class="md-icon md-icon-sm" aria-hidden="true">open_in_new</span>{' '}
+        GitHub
+      </a>
+    </div>
+
+    <div class="mx-auto mb-12 max-w-xl">
+      <CodeBlock code={install} language="bash" fileName="Install" showCopy={true} />
+    </div>
+
+    <div class="mx-auto mb-12 max-w-3xl text-left">
+      <p class="mb-3 text-body-large text-on-surface-variant">
+        Luq runs the other way. It takes the type you already have and lets you
+        declare rules against its field paths —{' '}
+        <strong class="text-on-surface"
+          >the compiler checks those declarations against the type</strong
+        >, so a rule that does not apply to the field it is written on is an error
+        rather than a rule that quietly never fires.
+      </p>
+      <p class="mb-4 text-body-medium text-on-surface-variant">
+        Nothing is rewritten and no type is inferred back out of a schema object:
+        the type below is the schema, and <code class="font-mono">b.string</code> is
+        not a slot a number field can be. That is the first row of the list above,
+        written out.
+      </p>
+      <div class="rounded-shape-md border border-error p-1">
+        <p class="px-3 py-2 text-label-large text-error">
+          <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
+          This does not compile
+        </p>
+        <CodeBlock code={refusedExample} language="typescript" showCopy={false} />
+      </div>
       <p class="mt-3 text-body-small text-on-surface-variant">
-        Each of these is pinned by a <code class="font-mono">@ts-expect-error</code> in{' '}
-        <code class="font-mono">test/type/</code>. TypeScript reports an unused directive,
-        so a green typecheck is itself the proof that they still fail.
+        That block is marked <code class="font-mono">must-fail</code> in this
+        component's source. <code class="font-mono">npm run check:doc-examples</code>{' '}
+        compiles it on every build and fails if it ever succeeds, so the claim is
+        checked in the direction it is made. The other three rows are pinned the
+        same way by a <code class="font-mono">@ts-expect-error</code> in{' '}
+        <code class="font-mono">test/type/</code>.
       </p>
     </div>
 
@@ -157,29 +214,9 @@ const refused = [
       }
     </div>
 
-    <p class="mb-12 text-body-small text-on-surface-variant">
+    <p class="text-body-small text-on-surface-variant">
       Every number on this site was measured on this repository, and the file it
-      came from is named beside it. Where a measurement is worse than the 1.x
-      release, it is written down as worse — see{' '}
-      <a class="text-primary underline underline-offset-2" href="/benchmarks">the benchmarks</a>.
+      came from is named beside it.
     </p>
-
-    <div class="flex flex-col justify-center gap-3 sm:flex-row">
-      <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
-        Get started
-      </a>
-      <a href="/plugins" class="md-button md-button-tonal md-state-layer md-focus-ring">
-        Browse the plugins
-      </a>
-      <a
-        href="https://github.com/maroonedog/luq"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="md-button md-button-outlined md-state-layer md-focus-ring"
-      >
-        <span class="md-icon md-icon-sm" aria-hidden="true">open_in_new</span>{' '}
-        GitHub
-      </a>
-    </div>
   </div>
 </section>

@@ -5,9 +5,45 @@ import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
+import perfBaseline from '../../../../config/perf-baseline.json';
+
+/**
+ * The performance paragraph is derived, not written. It said "35–100
+ * validate() calls" against recorded per-shape figures of 81, 102, 101, 207
+ * and 6, and "about 33 µs" for the array against 11.0 — every number in it had
+ * drifted, and the same sentence exists on four other pages.
+ *
+ * config/perf-baseline.json is one machine on one date, so the range is
+ * computed from the data rather than restated in words: the next
+ * `npm run generate-all` moves the sentence instead of falsifying it.
+ *
+ * The figures stay OUT of the code blocks. A template literal containing a
+ * real ${…} is auto-skipped by check:doc-examples, so a number interpolated
+ * into an example would quietly take that example out of the compile gate.
+ */
+const buildMicroseconds = perfBaseline.buildCost.map((entry) => entry.microsecondsPerBuild);
+const callsToPayForABuild = perfBaseline.buildCost.map((entry) => entry.validateCallsPerBuild);
+
+const buildCostRange = {
+  fastest: Math.min(...buildMicroseconds),
+  slowest: Math.max(...buildMicroseconds),
+};
+const payoffRange = {
+  fewest: Math.min(...callsToPayForABuild),
+  most: Math.max(...callsToPayForABuild),
+};
+const measuredShapeCount = perfBaseline.buildCost.length;
+
+const arrayShape = perfBaseline.buildCost.find((entry) => entry.shape === 'array');
+const arrayValidate = perfBaseline.throughput.find(
+  (entry) => entry.shape === 'array' && entry.operation === 'validate'
+);
+const arrayElementCount = perfBaseline.conditions.arrayElementCount;
+const arrayValidateMicroseconds = arrayValidate ? 1_000_000 / arrayValidate.opsPerSecond : 0;
+
+const formatMicroseconds = (value: number) => value.toFixed(1);
 
 const tableOfContents = [
-  { id: 'reading-a-result', title: 'Reading a result', level: 2 },
   { id: 'basic-patterns', title: 'Basic patterns', level: 2 },
   { id: 'nested-objects', title: 'Nested objects', level: 3 },
   { id: 'arrays', title: 'Arrays and collections', level: 3 },
@@ -24,32 +60,6 @@ const tableOfContents = [
   { id: 'product', title: 'E-commerce product', level: 3 },
   { id: 'registration', title: 'User registration', level: 3 },
 ];
-
-const readingResultExample = `import { Builder } from '@maroonedog/luq';
-import { requiredPlugin } from '@maroonedog/luq/plugins/required';
-import { stringEmailPlugin } from '@maroonedog/luq/plugins/stringEmail';
-
-type User = { name: string; email: string };
-
-const userValidator = Builder()
-  .use(requiredPlugin)
-  .use(stringEmailPlugin)
-  .for<User>()
-  .v('name', b => b.string.required())
-  .v('email', b => b.string.required().email())
-  .build();
-
-const result = userValidator.validate({ name: 'Ada', email: 'nope' });
-
-if (result.valid) {
-  // data exists on this branch only — narrowing, not a cast.
-  console.log(result.data.email);
-} else {
-  for (const issue of result.issues) {
-    // 'email: Invalid email: invalid format (stringEmail)'
-    console.error(issue.path + ': ' + issue.message + ' (' + issue.code + ')');
-  }
-}`;
 
 const nestedObjectsExample = `import { Builder } from '@maroonedog/luq';
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
@@ -443,11 +453,10 @@ export const registrationValidator = Builder()
   <Header />
 
   <div class="flex min-h-screen">
-    <DocsSidebar currentPath="/docs/examples" />
+    <DocsSidebar currentPath="/docs/examples" tableOfContents={tableOfContents} />
 
     <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
       <article class="mx-auto max-w-4xl">
-        <p class="md-label-large mb-2 text-primary">Guide</p>
         <h1 class="md-headline-large mb-4">Examples &amp; patterns</h1>
         <p class="md-body-large mb-10 text-on-surface-variant">
           Working shapes, from a single field to a registration form. Every block on this page
@@ -456,34 +465,12 @@ export const registrationValidator = Builder()
         </p>
 
         <div class="prose max-w-none">
-          <h2 id="reading-a-result">Reading a result</h2>
-
           <p>
-            Start here, because it is what changed most from 1.x. A result is a plain
-            discriminated union: check <code>valid</code>, and the compiler hands you{' '}
-            <code>data</code> on the success branch and <code>issues</code> on both.
+            This page assumes the five calls and the result union. If either is new,{' '}
+            <a href="/docs/getting-started">Getting started</a> has them, and{' '}
+            <a href="/docs/core-concepts">Core concepts</a> has the slots, paths and rule
+            order the chains below rely on.
           </p>
-
-          <CodeBlock code={readingResultExample} language="typescript" />
-
-          <div class="not-prose md-card md-card-filled my-8 p-6">
-            <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">info</span>{' '}
-              Two defaults worth knowing before you read on
-            </h3>
-            <ul class="md-body-medium space-y-2 text-on-surface-variant">
-              <li>
-                <code>abortEarly</code> defaults to <strong>true</strong>: validation stops at
-                the first field that produced an issue. Pass{' '}
-                <code>&#123; abortEarly: false &#125;</code> when you want every field's complaint.
-              </li>
-              <li>
-                An issue's <code>code</code> defaults to the <strong>plugin's name</strong> —{' '}
-                <code>required</code>, <code>stringMin</code>, <code>stringEmail</code> — not
-                to a constant like <code>REQUIRED</code>.
-              </li>
-            </ul>
-          </div>
 
           <h2 id="basic-patterns">Basic patterns</h2>
 
@@ -622,6 +609,13 @@ export const registrationValidator = Builder()
 
           <h3 id="form-errors">Errors for a form</h3>
 
+          <p>
+            <code>abortEarly</code> defaults to <strong>true</strong>, which stops at the
+            first field that produced an issue — which is why this example passes{' '}
+            <code>&#123; abortEarly: false &#125;</code>. A form wants every field's
+            complaint at once, not the first one.
+          </p>
+
           <CodeBlock code={formErrorsExample} language="typescript" />
 
           <div
@@ -654,12 +648,14 @@ export const registrationValidator = Builder()
           <h2 id="performance">Performance patterns</h2>
 
           <p>
-            <code>build()</code> is the expensive half — 14–662&nbsp;µs depending on shape,
-            against sub-microsecond <code>validate()</code> calls. Build at module scope and
-            reuse the object; one <code>build()</code> pays for itself after 35–100{' '}
-            <code>validate()</code> calls on four of the five measured shapes, and after 2
-            calls on the 50-element array, where <code>validate()</code> itself costs about
-            33&nbsp;µs.
+            <code>build()</code> is the expensive half: {formatMicroseconds(buildCostRange.fastest)}–{
+              formatMicroseconds(buildCostRange.slowest)
+            }&nbsp;µs depending on shape. Build at module scope and reuse the object — across
+            the {measuredShapeCount} measured shapes, one <code>build()</code> pays for itself
+            after {payoffRange.fewest}–{payoffRange.most} <code>validate()</code> calls. The{' '}
+            {arrayElementCount}-element array amortises fastest, after only{' '}
+            {arrayShape?.validateCallsPerBuild}, because <code>validate()</code> itself costs{' '}
+            {formatMicroseconds(arrayValidateMicroseconds)}&nbsp;µs on that shape.
           </p>
 
           <CodeBlock code={reuseExample} language="typescript" />
@@ -678,6 +674,13 @@ export const registrationValidator = Builder()
           </div>
 
           <h2 id="real-world">Real-world examples</h2>
+
+          <p>
+            Both validators below end with <a href="/docs/api/builder#strict"><code>.strict()</code></a>,
+            which is a compile-time assertion that every leaf path of the type has been
+            declared. It has no runtime effect and does not reject extra properties: add a
+            field to the type and the build stops compiling until you declare a rule for it.
+          </p>
 
           <h3 id="product">E-commerce product</h3>
 

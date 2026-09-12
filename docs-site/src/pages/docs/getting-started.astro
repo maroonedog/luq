@@ -7,9 +7,71 @@ import DocsSidebar from '../../components/DocsSidebar.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 import { packageInfo } from '../../data/package-info';
+import { pluginSubpathCount } from '../../data/plugins';
+import perfBaseline from '../../../../config/perf-baseline.json';
+import sizeBudget from '../../../../config/size-budget.json';
 
 // Every TypeScript block on this page was typechecked against the built
 // package (dist/*.d.ts through package.json#exports) before it was pasted in.
+
+/**
+ * No performance figure on this page is typed. Each one is derived below from
+ * config/perf-baseline.json — the file `npm run bench:record` writes and CI
+ * re-reads — exactly as benchmarks.astro does it.
+ *
+ * Two rules this page learned the hard way:
+ *
+ *   A figure cannot live inside a code block. A template literal containing a
+ *   real ${…} is auto-skipped by check:doc-examples, so interpolating into an
+ *   example would take that example out of the compile gate. Derived figures
+ *   go in the prose beside the block, never in a comment inside it.
+ *
+ *   A sentence that characterises a shape has to say WHICH shapes. The
+ *   baseline is one machine on one date; "sub-microsecond" is true of three of
+ *   the five measured shapes and 11× wrong on a fourth, so the split is
+ *   computed rather than asserted.
+ */
+const buildMicroseconds = perfBaseline.buildCost.map((entry) => entry.microsecondsPerBuild);
+const buildCostRange = {
+  fastest: Math.min(...buildMicroseconds),
+  slowest: Math.max(...buildMicroseconds),
+};
+
+const shapeLabels: Record<string, string> = {
+  singleField: 'one field',
+  multiField: 'three fields',
+  nested: 'a nested object',
+  array: 'a 50-element array',
+  jsonSchema: 'a Draft-07 document',
+};
+
+const validateCost = perfBaseline.throughput
+  .filter((entry) => entry.operation === 'validate')
+  .map((entry) => ({
+    label: shapeLabels[entry.shape] ?? entry.shape,
+    microseconds: 1_000_000 / entry.opsPerSecond,
+  }));
+
+const subMicrosecondShapes = validateCost.filter((entry) => entry.microseconds < 1);
+const slowerShapes = validateCost
+  .filter((entry) => entry.microseconds >= 1)
+  .sort((left, right) => left.microseconds - right.microseconds);
+
+const formatMicroseconds = (value: number) => value.toFixed(1);
+
+/** "3.2 µs on a Draft-07 document and 11.0 µs on a 50-element array" */
+const joinClauses = (clauses: readonly string[]) =>
+  clauses.length <= 1
+    ? (clauses[0] ?? '')
+    : `${clauses.slice(0, -1).join(', ')} and ${clauses[clauses.length - 1]}`;
+
+const slowerShapesSentence = joinClauses(
+  slowerShapes.map((entry) => `${formatMicroseconds(entry.microseconds)} µs on ${entry.label}`)
+);
+
+/** What the first plugin added to the bare builder actually cost, gzipped. */
+const onePluginCostBytes = bundleSize.onePlugin.bytes - bundleSize.coreOnly.bytes;
+const barrelDivergencePercent = sizeBudget.barrelEquivalence.maxDivergencePercent;
 
 const tsconfigExample = `{
   "compilerOptions": {
@@ -243,9 +305,8 @@ const importsExample = `// The supported route: one subpath per plugin.
 import { requiredPlugin } from '@maroonedog/luq/plugins/required';
 import { stringMinPlugin } from '@maroonedog/luq/plugins/stringMin';
 
-// The barrel also resolves, and is measurably free when a bundler can
-// tree-shake: three plugins gzip to 7,986 B through it against 7,987 B
-// through three subpaths — a difference of 1 byte, 0.01%.
+// The barrel also resolves, and costs the same when a bundler can tree-shake.
+// The measured figures are in the prose below this block.
 import { stringEmailPlugin } from '@maroonedog/luq/plugins';`;
 
 const standardSchemaExample = `import { Builder } from '@maroonedog/luq';
@@ -300,11 +361,12 @@ const signupValidator = Builder()
   })
   .build();
 
-// true — the rules saw "ada@example.com" and 30
-signupValidator.validate({ email: "  Ada@Example.com  ", age: "30" } as never).valid;
+// true — the rules saw "ada@example.com" and 30.
+// validate() and parse() both take unknown, so the untidied shape needs no cast.
+signupValidator.validate({ email: "  Ada@Example.com  ", age: "30" }).valid;
 
 // parse() writes the tidied values back; validate() leaves your object alone.
-signupValidator.parse({ email: "  Ada@Example.com  ", age: "30" } as never);`;
+signupValidator.parse({ email: "  Ada@Example.com  ", age: "30" });`;
 
 const tableOfContents = [
   { id: 'installation', title: 'Installation', level: 2 },
@@ -440,8 +502,15 @@ const tableOfContents = [
         <div class="md-card md-card-outlined mt-6 p-5">
           <h3 class="text-title-medium">Build once, keep the validator</h3>
           <p class="mt-2 text-body-medium text-on-surface-variant">
-            <code>build()</code> costs 14–662&nbsp;µs; <code>validate()</code> is
-            sub-microsecond. Build at module scope, not per request.
+            <code>build()</code> costs {formatMicroseconds(buildCostRange.fastest)}–{
+              formatMicroseconds(buildCostRange.slowest)
+            }&nbsp;µs depending on the shape. <code>validate()</code> is sub-microsecond on{' '}
+            {subMicrosecondShapes.length} of the {validateCost.length} measured shapes, and
+            costs {slowerShapesSentence}. Build at module scope, not per request — the{' '}
+            <a class="text-primary underline underline-offset-2" href="/benchmarks">
+              measured figures
+            </a>{' '}
+            are per shape, on one named machine.
           </p>
         </div>
 
@@ -630,12 +699,25 @@ const tableOfContents = [
 
         <h2 id="importing-plugins" class="mt-12 text-headline-small">Importing plugins</h2>
 
+        <p class="mt-3 text-body-large">
+          Every method the chain offers is a plugin you imported by name — there is no
+          built-in rule and no method you get for free. The{' '}
+          <a class="text-primary underline underline-offset-2" href="/plugins">
+            plugin catalogue
+          </a>{' '}
+          lists all {pluginSubpathCount} of them with their subpath, chain method and the
+          slots each one may be used on.
+        </p>
+
         <CodeBlock code={importsExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
           The root <code>@maroonedog/luq</code> entry exports no plugins at all, which is why
-          the bare builder gzips to {bundleSize.coreOnly.gzip} and a plugin costs
-          129–224&nbsp;B to add.
+          the bare builder gzips to {bundleSize.coreOnly.gzip} and adding the first one costs{' '}
+          {onePluginCostBytes}&nbsp;B on top of it. Going through the barrel instead of the
+          subpaths is not a tax on that: <code>check:barrel-equivalence</code> fails the build
+          if the same three plugins gzip more than {barrelDivergencePercent}% apart the two
+          ways, and through the subpaths they are {bundleSize.threePlugin.gzip}.
         </p>
 
         <h2 id="standard-schema" class="mt-12 text-headline-small">Standard Schema</h2>
@@ -643,22 +725,25 @@ const tableOfContents = [
         <p class="mt-3 text-body-large">
           Luq implements <a
             class="text-primary underline underline-offset-2"
-            href="https://standardschema.dev">Standard Schema v1</a>, on the{' '}
-          <code>@maroonedog/luq/standard-schema</code> subpath.
+            href="https://standardschema.dev">Standard Schema v1</a> on the{' '}
+          <code>@maroonedog/luq/standard-schema</code> subpath — a separate specifier, so a
+          validator that never reaches a form or an RPC boundary does not pay for it. It
+          collects every issue and runs <code>parse()</code>, so transforms apply.
         </p>
 
         <CodeBlock code={standardSchemaExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          It collects every issue, runs <code>parse()</code> so transforms apply, and{' '}
-          <code>InferInput</code> is the type you wrote in <code>.for&lt;T&gt;()</code>.
-          It is a subpath so the 312&nbsp;B is not charged to validators that never
-          reach a form or an RPC boundary.
+          <a class="text-primary underline underline-offset-2" href="/standard-schema">
+            Standard Schema
+          </a>{' '}
+          has the rest: the three decisions the spec leaves open, and the call sites it plugs
+          into.
         </p>
 
         <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <a
             href="/docs/core-concepts"
             class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
@@ -667,6 +752,17 @@ const tableOfContents = [
             <h3 class="mt-2 text-title-medium">Core concepts</h3>
             <p class="mt-1 text-body-medium text-on-surface-variant">
               Slots, presence, field paths, and the order rules run in
+            </p>
+          </a>
+
+          <a
+            href="/docs/examples"
+            class="md-card md-card-outlined md-state-layer md-focus-ring block p-5"
+          >
+            <span class="md-icon text-primary" aria-hidden="true">lightbulb</span>
+            <h3 class="mt-2 text-title-medium">Examples &amp; patterns</h3>
+            <p class="mt-1 text-body-medium text-on-surface-variant">
+              Cross-field rules, form errors, and two whole validators
             </p>
           </a>
 
@@ -720,11 +816,6 @@ const tableOfContents = [
    * loads it for name resolution only and emits nothing.
    */
   @reference '../../styles/global.css';
-
-  /* Inline code, on the MD3 container tone the design system reserves for it. */
-  article :not(pre) > code {
-    @apply rounded-shape-xs bg-surface-container-highest px-1.5 py-0.5 font-mono text-[0.875em] text-on-surface;
-  }
 
   .tab-button {
     @apply relative rounded-t-shape-sm px-4 py-2 text-label-large text-on-surface-variant;

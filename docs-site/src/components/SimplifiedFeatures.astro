@@ -12,7 +12,13 @@ const corePercent = (
 ).toFixed(1);
 
 /**
- * The five claims worth making, each with the code that backs it.
+ * What Luq costs you and what it covers, each claim with the code that backs it.
+ *
+ * "Your type is the schema" used to open this list. It is now the hero's
+ * must-fail block, where the compiler makes the claim instead of a comment: the
+ * two "-> compile error" annotations that lived in the example below were
+ * written inside a block that compiles precisely because the offending lines are
+ * commented out, which is the opposite of proof.
  *
  * Where a claim carries a number, the number is measured on this repository and
  * the file it came from is named in the block. The 1.x version of this file
@@ -20,27 +26,6 @@ const corePercent = (
  * belonged to a core bundle 2.3x this one's size.
  */
 const features = [
-  {
-    icon: 'data_object',
-    title: 'Your type is the schema',
-    description:
-      'No interface gets rewritten and no type gets inferred back out of a schema object. A path that does not exist on the type is a compile error, and so is choosing a slot the field’s type cannot be.',
-    fileName: 'user.ts',
-    example: `type User = {
-  name: string;
-  email: string;
-  age: number;
-};
-
-Builder()
-  .use(requiredPlugin)
-  .use(stringMinPlugin)
-  .for<User>()
-  .v("name", (b) => b.string.required().min(3))
-  // .v("nmae", ...)      -> compile error: no such path
-  // .v("age", b => b.string...) -> compile error: wrong slot
-  .build();`,
-  },
   {
     icon: 'extension',
     title: 'A plugin you did not import has no method',
@@ -131,12 +116,14 @@ const accountValidator = fromJsonSchema<Account>({
 ];
 ---
 
-<section class="bg-surface px-4 py-20 sm:px-6 lg:px-8">
+<section class="border-t border-outline-variant bg-surface px-4 py-20 sm:px-6 lg:px-8">
   <div class="container mx-auto max-w-6xl">
     <div class="mb-16 text-center">
-      <h2 class="mb-3 text-headline-medium text-on-surface">What Luq actually does</h2>
+      <h2 class="mb-3 text-headline-medium text-on-surface">
+        What it costs and what it covers
+      </h2>
       <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
-        Five claims, each with the code that backs it and the file the number came from.
+        Four claims, each with the code that backs it and the file the number came from.
       </p>
     </div>
 

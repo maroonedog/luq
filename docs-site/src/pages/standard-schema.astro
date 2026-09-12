@@ -13,11 +13,18 @@ import CodeBlock from '../components/CodeBlock.astro';
  *   examples/react-hook-form/              the resolver line, running
  *
  * The guide is the version-tracked copy; this page renders it. Every code
- * block below was executed against the built package before it was written.
+ * block that imports only from this package was executed against the built
+ * package before it was written.
+ *
+ * The tRPC, Hono and TanStack Form blocks are the exception and are marked
+ * `skip`: none of those packages is a dependency here, so what each one shows
+ * is that consumer's own documented entry point for a Standard Schema with a
+ * Luq validator in the slot. The page says as much rather than implying they
+ * were run. react-hook-form is the one that is — examples/react-hook-form.
  */
 
 const description =
-  'Luq implements Standard Schema v1, so a Luq validator goes wherever a zod schema goes — tRPC, TanStack Form, Hono, t3-env, react-hook-form. What crosses that boundary, and what does not.';
+  'Luq implements Standard Schema v1, so a Luq validator goes wherever a zod schema goes — tRPC, TanStack Form, Hono, react-hook-form. What crosses that boundary, and what does not.';
 
 const standardExample = `import { Builder } from "@maroonedog/luq";
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -50,6 +57,35 @@ const stillAValidatorExample = `// toStandardSchema ADDS ~standard and takes not
 // still the validator. Nothing has to be given up to get the other face.
 account.pick("handle").validate("j");
 account.parse({ handle: "ada" });`;
+
+// luq-example: skip — @trpc/server is not a dependency of the doc harness's scratch consumer
+const trpcExample = `import { initTRPC } from "@trpc/server";
+import { account } from "./account";
+
+const t = initTRPC.create();
+
+// .input() takes any Standard Schema, so it takes this one.
+export const setHandle = t.procedure
+  .input(account)
+  .mutation(({ input }) => input.handle);`;
+
+// luq-example: skip — hono and @hono/standard-validator are not dependencies of the doc harness's scratch consumer
+const honoExample = `import { Hono } from "hono";
+import { sValidator } from "@hono/standard-validator";
+import { account } from "./account";
+
+const app = new Hono().post("/account", sValidator("json", account), (c) =>
+  c.json(c.req.valid("json"))
+);`;
+
+// luq-example: skip — @tanstack/react-form is not a dependency of the doc harness's scratch consumer
+const tanstackExample = `import { useForm } from "@tanstack/react-form";
+import { account } from "./account";
+
+const form = useForm({
+  defaultValues: { handle: "" },
+  validators: { onChange: account },
+});`;
 
 // luq-example: skip — needs react and react-hook-form, which the doc harness's scratch consumer does not install
 const resolverExample = `import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
@@ -91,9 +127,9 @@ const decisions = [
         Luq implements <a
           class="text-primary underline underline-offset-2"
           href="https://standardschema.dev">Standard Schema v1</a
-        >. Anything that accepts a Standard Schema — tRPC, TanStack Form, Hono,
-        t3-env, react-hook-form — accepts a Luq validator wherever it accepts a
-        zod schema.
+        >. Anything that accepts a Standard Schema over an object — tRPC,
+        TanStack Form, Hono, react-hook-form — accepts a Luq validator wherever
+        it accepts a zod schema.
       </p>
       <p class="mb-12 text-body-medium text-on-surface-variant">
         It is a subpath, not part of <code class="font-mono">build()</code>.
@@ -112,6 +148,33 @@ const decisions = [
         are all still there for the rest of the application.
       </p>
       <CodeBlock code={stillAValidatorExample} language="typescript" fileName="both-faces.ts" />
+
+      <h2 class="mb-4 mt-12 text-headline-small text-on-surface">Where it plugs in</h2>
+      <p class="mb-6 text-body-large text-on-surface-variant">
+        <code class="font-mono">account</code> above is the value each of these is handed.
+        The call site belongs to the consumer, not to Luq — what follows is that
+        consumer's own documented entry point for a Standard Schema, with a Luq
+        validator in the slot a zod schema would occupy. Of the four, the one this
+        repository runs is react-hook-form, in{' '}
+        <code class="font-mono">examples/react-hook-form</code>.
+      </p>
+
+      <h3 class="mb-3 text-title-large text-on-surface">tRPC</h3>
+      <CodeBlock code={trpcExample} language="typescript" fileName="router.ts" />
+
+      <h3 class="mb-3 mt-8 text-title-large text-on-surface">Hono</h3>
+      <CodeBlock code={honoExample} language="typescript" fileName="server.ts" />
+
+      <h3 class="mb-3 mt-8 text-title-large text-on-surface">TanStack Form</h3>
+      <CodeBlock code={tanstackExample} language="typescript" fileName="AccountForm.tsx" />
+
+      <h3 class="mb-3 mt-8 text-title-large text-on-surface">react-hook-form</h3>
+      <p class="mb-12 text-body-large text-on-surface-variant">
+        One line as well, and the one with a running form behind it —{' '}
+        <a class="text-primary underline underline-offset-2" href="#react-hook-form"
+          >further down this page</a
+        >, with what <code class="font-mono">normalize</code> does to the payload.
+      </p>
 
       <h2 class="mb-4 mt-12 text-headline-small text-on-surface">
         Three decisions the spec leaves open
@@ -146,7 +209,22 @@ const decisions = [
         <em>is</em> the validator, so nothing has to be given up to get it.
       </p>
 
-      <h2 class="mb-4 text-headline-small text-on-surface">react-hook-form</h2>
+      <p class="mb-12 text-body-large text-on-surface-variant">
+        One shape does not fit at all.{' '}
+        <code class="font-mono">toStandardSchema</code> is declared over{' '}
+        <code class="font-mono">T extends object</code>, because{' '}
+        <code class="font-mono">.for&lt;T&gt;()</code> is — so what it returns
+        validates an object, never a bare string or number. A consumer that wants
+        one schema per scalar has nothing to hand it: t3-env's{' '}
+        <code class="font-mono">server</code> and{' '}
+        <code class="font-mono">client</code> maps take a schema per environment
+        variable, and an environment variable is a string. The four above all
+        pass an object at the seam, which is why they work.
+      </p>
+
+      <h2 id="react-hook-form" class="mb-4 text-headline-small text-on-surface">
+        react-hook-form
+      </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
         react-hook-form takes any Standard Schema, so the integration is one line.
       </p>

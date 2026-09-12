@@ -2,30 +2,22 @@
 import CodeBlock from './CodeBlock.astro';
 
 /**
- * "How it works" — the same three steps the README opens with, then the two
- * things a reader has to see before they trust the library: what adding Luq
- * does to code that already exists, and what a failing path actually says.
+ * The two things a reader has to see before they trust the library: what
+ * adding Luq does to code that already exists, and what a failing path
+ * actually says.
+ *
+ * The three step-cards that used to open this section are gone. CodeExample,
+ * one band above, already shows all three steps as code, and SimplifiedFeatures
+ * said two of them again in prose — three statements of the same claim inside
+ * one scroll, which is what stops a reader opening the fourth code block.
+ *
+ * The paragraph under the before/after pair came out of the hero, where it was
+ * the fourth of four paragraphs of prose above the fold. It says the same thing
+ * here, next to the two columns that show it.
  *
  * Every block here typechecks against src/ and was executed; the commented
  * output lines are the real output, not an illustration.
  */
-const steps = [
-  {
-    icon: 'data_object',
-    title: 'Keep your type',
-    body: 'The TypeScript type you already wrote is the schema. Nothing is generated, nothing is inferred back out of a schema object.',
-  },
-  {
-    icon: 'checklist',
-    title: 'Declare rules against its paths',
-    body: 'A path that does not exist on the type is a compile error. So is choosing a slot the field’s type cannot be.',
-  },
-  {
-    icon: 'rule',
-    title: 'Read a discriminated union',
-    body: 'validate() hands back { valid: true, data } or { valid: false, issues }. The branch you are on decides what exists.',
-  },
-];
 
 // luq-example: skip — the "before" code, using none of this library; api is the reader's own HTTP client and has no type here
 const beforeCode = `// Your type, unchanged.
@@ -104,35 +96,19 @@ console.log(result.issues.map((issue) => issue.path));
 // -> ["items[1].productId"]  — the real index, never "items[*]"`;
 ---
 
-<section class="bg-surface-container px-4 py-20 sm:px-6 lg:px-8">
+<section class="border-t border-outline-variant bg-surface-container px-4 py-20 sm:px-6 lg:px-8">
   <div class="container mx-auto max-w-6xl">
     <div class="mb-14 text-center">
-      <h2 class="mb-3 text-headline-medium text-on-surface">How it works</h2>
+      <h2 class="mb-3 text-headline-medium text-on-surface">
+        What it looks like in code you already have
+      </h2>
       <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
-        Three steps, and none of them ask you to restate a type you have already written.
+        The same file before and after, then what a failing path in an array
+        actually names.
       </p>
     </div>
 
-    <ol class="mb-16 grid gap-6 md:grid-cols-3">
-      {
-        steps.map((step, index) => (
-          <li class="md-card md-card-filled min-w-0 p-6">
-            <div class="mb-4 flex items-center gap-3">
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-shape-full bg-primary-container text-title-medium text-on-primary-container">
-                {index + 1}
-              </span>
-              <span class="md-icon text-primary" aria-hidden="true">
-                {step.icon}
-              </span>
-            </div>
-            <h3 class="mb-2 text-title-large text-on-surface">{step.title}</h3>
-            <p class="text-body-medium text-on-surface-variant">{step.body}</p>
-          </li>
-        ))
-      }
-    </ol>
-
-    <div class="mb-16 grid gap-6 lg:grid-cols-2">
+    <div class="mb-8 grid items-start gap-6 lg:grid-cols-2">
       <div class="min-w-0">
         <h3 class="mb-3 flex items-center gap-2 text-title-medium text-on-surface-variant">
           <span class="md-icon md-icon-sm" aria-hidden="true">history</span>{' '}
@@ -149,6 +125,15 @@ console.log(result.issues.map((issue) => issue.path));
         <CodeBlock code={afterCode} language="typescript" fileName="save-user.ts" showCopy={true} />
       </div>
     </div>
+
+    <p class="mx-auto mb-16 max-w-3xl text-body-large text-on-surface-variant">
+      The type declaration is the same in both columns.{' '}
+      <strong class="text-on-surface"
+        >Being type-first is what makes adoption a patch</strong
+      >: your type definitions do not change, so covering one field of one type is a
+      normal state rather than a half-finished migration. There is no second
+      description of the shape to author and keep in step — only the rules.
+    </p>
 
     <div class="grid items-center gap-8 lg:grid-cols-5">
       <div class="min-w-0 lg:col-span-2">

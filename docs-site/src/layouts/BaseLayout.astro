@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { navItems } from '../components/Header.astro';
+import { navItems, secondaryNavItems } from '../components/Header.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
 
 export interface Props {
@@ -110,7 +110,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       from the layout is what makes "the button exists" and "the drawer exists"
       the same fact. check-built-pages.mjs holds the pair.
     */}
-    <MobileMenuOverlay navItems={navItems} />
+    <MobileMenuOverlay navItems={navItems} secondaryNavItems={secondaryNavItems} />
 
     <script>
       // Prism highlights the code blocks CodeBlock.astro emits. Colours come

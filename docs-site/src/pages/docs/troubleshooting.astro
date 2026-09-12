@@ -5,17 +5,40 @@ import { legacySpeedups } from '../../data/legacy-speedups';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
+import { packageInfo } from '../../data/package-info';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 
+// Every symptom on this page is an entry, not only the eight category
+// headings: a reader arrives knowing their error message, and the list of
+// messages is the index. The level-3 ids are the <details> elements below, so
+// one entry is also a link a colleague can be sent.
 const tableOfContents = [
   { id: 'imports', title: 'Import errors', level: 2 },
+  { id: 'not-exported', title: 'Specifier is not exported', level: 3 },
+  { id: 'root-plugin-undefined', title: 'Root import is undefined', level: 3 },
   { id: 'compile-errors', title: 'Compile errors', level: 2 },
+  { id: 'method-missing', title: 'A chain method is missing', level: 3 },
+  { id: 'wrong-slot', title: 'Slot does not match the type', level: 3 },
+  { id: 'bad-path', title: 'Field path is not accepted', level: 3 },
+  { id: 'allow-null', title: 'allowNull is rejected', level: 3 },
+  { id: 'not-callable', title: 'Validator is not callable', level: 3 },
   { id: 'unexpected-results', title: 'Unexpected results', level: 2 },
+  { id: 'abort-early', title: 'Only one issue comes back', level: 3 },
+  { id: 'missing-field-passes', title: 'A missing field passes', level: 3 },
+  { id: 'transform-did-not-run', title: 'A transform did not run', level: 3 },
+  { id: 'gate-order', title: 'A gate ran too late', level: 3 },
+  { id: 'strict-extra-property', title: 'strict() kept an extra property', level: 3 },
   { id: 'messages', title: 'Messages and codes', level: 2 },
+  { id: 'error-codes', title: 'The error code changed', level: 3 },
+  { id: 'message-option', title: 'A message option is rejected', level: 3 },
   { id: 'async', title: 'Async checks', level: 2 },
+  { id: 'async-lookup', title: 'Checking against a database', level: 3 },
+  { id: 'async-failure', title: 'A lookup failed or timed out', level: 3 },
   { id: 'bundle-size', title: 'Bundle size', level: 2 },
+  { id: 'bundle-larger', title: 'More Luq than expected', level: 3 },
   { id: 'performance', title: 'Performance', level: 2 },
+  { id: 'slow-validation', title: 'Slower than expected', level: 3 },
   { id: 'getting-help', title: 'Getting help', level: 2 },
 ];
 
@@ -352,7 +375,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
   <Header />
 
   <div class="flex min-h-screen">
-    <DocsSidebar currentPath="/docs/troubleshooting" />
+    <DocsSidebar currentPath="/docs/troubleshooting" tableOfContents={tableOfContents} />
 
     <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
       <article class="mx-auto max-w-4xl">
@@ -366,13 +389,18 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
         <div class="prose max-w-none">
           <h2 id="imports">Import errors</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >ERR_PACKAGE_PATH_NOT_EXPORTED, or "cannot find module"</summary
-            >
+          <details id="not-exported" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >ERR_PACKAGE_PATH_NOT_EXPORTED, or "cannot find module"</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> A 1.x specifier. The package publishes 84 export keys:
+                <strong>Cause.</strong> A 1.x specifier. The package publishes {packageInfo.exportKeyCount} export keys:
                 seven fixed ones and 77 under <code>./plugins/</code>. Nothing else resolves,
                 and the ones below never did — 1.x's own README named specifiers that were not
                 in its exports map.
@@ -437,10 +465,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A plugin imported from the package root is <code>undefined</code></summary
-            >
+          <details id="root-plugin-undefined" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >A plugin imported from the package root is <code>undefined</code></span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> 1.x's <code>dist/index.d.ts</code> declared 57 plugin
@@ -455,10 +488,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="compile-errors">Compile errors</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >"Property '.email' does not exist" — a chain method is missing</summary
-            >
+          <details id="method-missing" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >"Property '.email' does not exist" — a chain method is missing</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> The plugin contributing that method is not in the bag.
@@ -477,10 +515,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >The slot does not match the field's type</summary
-            >
+          <details id="wrong-slot" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >The slot does not match the field's type</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> Choosing a slot the field's type cannot be is now a
@@ -491,10 +534,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >The field path is not accepted</summary
-            >
+          <details id="bad-path" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">The field path is not accepted</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> One rule, not four special cases: array members are
@@ -511,10 +557,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              ><code>required(&#123; allowNull: true &#125;)</code> is rejected</summary
-            >
+          <details id="allow-null" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                ><code>required(&#123; allowNull: true &#125;)</code> is rejected</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> <code>.required()</code> now narrows out{' '}
@@ -526,10 +577,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >"This expression is not callable" on the built validator</summary
-            >
+          <details id="not-callable" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >"This expression is not callable" on the built validator</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> <code>build()</code> returns an object with{' '}
@@ -543,10 +599,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="unexpected-results">Unexpected results</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >Only one issue comes back, but several fields are wrong</summary
-            >
+          <details id="abort-early" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >Only one issue comes back, but several fields are wrong</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> <code>abortEarly</code> defaults to{' '}
@@ -563,10 +624,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A missing field passes validation</summary
-            >
+          <details id="missing-field-passes" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">A missing field passes validation</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> There is no implicit <code>required</code>. A field
@@ -579,10 +643,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A transform did not run</summary
-            >
+          <details id="transform-did-not-run" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">A transform did not run</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> Transforms run only in <code>parse()</code>, and they
@@ -595,10 +662,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >A gate ran too late, or a conditional produced the wrong issue</summary
-            >
+          <details id="gate-order" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >A gate ran too late, or a conditional produced the wrong issue</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <ul class="md-body-medium space-y-2 text-on-surface-variant">
                 <li>
@@ -619,10 +691,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              ><code>strict()</code> did not reject an extra property</summary
-            >
+          <details id="strict-extra-property" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                ><code>strict()</code> did not reject an extra property</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> <code>strict()</code> is a compile-time obligation
@@ -636,10 +713,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="messages">Messages and codes</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >The error code I match on has changed</summary
-            >
+          <details id="error-codes" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">The error code I match on has changed</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> The default code is now the <strong>plugin's
@@ -683,10 +763,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              ><code>&#123; message: "…" &#125;</code> is not accepted on a rule</summary
-            >
+          <details id="message-option" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                ><code>&#123; message: "…" &#125;</code> is not accepted on a rule</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> There is one message channel:{' '}
@@ -707,10 +792,15 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="async">Async checks</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >Checking a value against a database or an API</summary
-            >
+          <details id="async-lookup" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words"
+                >Checking a value against a database or an API</span
+              >
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 The whole <code>@maroonedog/luq/async</code> subpath is one{' '}
@@ -748,10 +838,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </div>
           </details>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6">
-            <summary class="md-title-medium cursor-pointer"
-              >One async lookup failed or timed out</summary
-            >
+          <details id="async-failure" class="not-prose md-card md-card-outlined mb-6 p-6">
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">One async lookup failed or timed out</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <CodeBlock code={asyncFailureExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
@@ -765,10 +858,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="bundle-size">Bundle size</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >More Luq in the bundle than expected</summary
-            >
+          <details id="bundle-larger" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">More Luq in the bundle than expected</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 First, check what "expected" was. Every entry is measured and re-measured by
@@ -808,10 +904,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
 
           <h2 id="performance">Performance</h2>
 
-          <details class="not-prose md-card md-card-outlined mb-6 p-6" open>
-            <summary class="md-title-medium cursor-pointer"
-              >Validation is slower than expected</summary
-            >
+          <details id="slow-validation" class="not-prose md-card md-card-outlined mb-6 p-6" open>
+            <summary class="md-title-medium flex cursor-pointer items-center gap-2">
+              <span class="summary-marker md-icon md-icon-sm" aria-hidden="true"
+                >expand_more</span
+              >
+              <span class="min-w-0 break-words">Validation is slower than expected</span>
+            </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>First check: are you building inside the hot path?</strong>
@@ -849,10 +948,22 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <ol class="md-body-medium space-y-3 text-on-surface-variant">
               <li>
-                <strong>1. Check the breaking-change list.</strong> If you are coming from
-                1.x, most surprises are on it — build()'s return value, the loss of the{' '}
-                <code>Result</code> class, and the <code>abortEarly</code> default in
-                particular.
+                <strong>1. Check the 1.x mapping.</strong> If you are coming from 1.x, most
+                surprises are on it. The{' '}
+                <a href="/docs/api/validator#porting" class="text-primary underline"
+                  >result</a
+                >, the{' '}
+                <a href="/docs/api/builder#removed" class="text-primary underline">builder</a>{' '}
+                and the{' '}
+                <a href="/docs/api/plugin-registry#removed" class="text-primary underline"
+                  >plugin registry</a
+                > each carry their own table; the import specifiers are{' '}
+                <a href="/docs/troubleshooting#imports" class="text-primary underline"
+                  >at the top of this page</a
+                > and the <code>abortEarly</code> default is{' '}
+                <a href="/docs/troubleshooting#abort-early" class="text-primary underline"
+                  >under Unexpected results</a
+                >.
               </li>
               <li>
                 <strong>2. Reduce it to one file.</strong> Every example on this site is a
@@ -919,18 +1030,16 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
     display: none;
   }
 
-  details > summary::before {
-    content: 'expand_more';
-    font-family: 'Material Symbols Outlined', sans-serif;
-    font-size: 20px;
-    line-height: 1;
-    vertical-align: -0.2em;
-    margin-right: 0.5rem;
-    display: inline-block;
+  /*
+   * The disclosure arrow is a real element, not generated content: an icon
+   * drawn through ::before cannot carry aria-hidden, so every summary here was
+   * announced prefixed with "expand more".
+   */
+  .summary-marker {
     transition: transform var(--md-sys-motion-duration-short-4) var(--md-sys-motion-easing-standard);
   }
 
-  details[open] > summary::before {
+  details[open] > summary > .summary-marker {
     transform: rotate(180deg);
   }
 </style>

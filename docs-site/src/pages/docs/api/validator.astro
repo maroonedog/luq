@@ -19,6 +19,7 @@ const tableOfContents = [
   { id: 'result-subpath', title: 'The ./result subpath', level: 2 },
   { id: 'http-boundary', title: 'At an HTTP boundary', level: 2 },
   { id: 'porting', title: 'Porting from the 1.x Result', level: 2 },
+  { id: 'porting-elsewhere', title: 'The rest of the 1.x mapping', level: 3 },
 ];
 
 const resultShapeExample = `import { Builder } from '@maroonedog/luq';
@@ -292,7 +293,7 @@ export async function handleUpdate(request: Request): Promise<Response> {
   <Header />
 
   <div class="flex min-h-screen">
-    <DocsSidebar currentPath="/docs/api/validator" />
+    <DocsSidebar currentPath="/docs/api/validator" tableOfContents={tableOfContents} />
 
     <main class="flex-1 px-4 py-8 pt-20 sm:px-6 lg:px-8 lg:pt-8">
       <article class="mx-auto max-w-4xl">
@@ -733,6 +734,54 @@ type ValidationResult<T> =
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="not-prose md-card md-card-filled my-8 p-6">
+            <h3 id="porting-elsewhere" class="md-title-small mb-3 flex items-center gap-2">
+              <span class="md-icon md-icon-sm" aria-hidden="true">swap_horiz</span>{' '}
+              The rest of the 1.x mapping
+            </h3>
+            <p class="md-body-medium mb-3 text-on-surface-variant">
+              The table above covers the result. Everything else 1.x changed is recorded
+              beside the API it belongs to:
+            </p>
+            <ul class="md-body-medium space-y-2 text-on-surface-variant">
+              <li>
+                <a href="/docs/api/builder#removed" class="text-primary underline"
+                  >Builder — removed since 1.x</a
+                >: variadic <code>use(a, b, c)</code>, <code>.field()</code>,{' '}
+                <code>.strictOnEditor()</code>, the bare-value third argument to{' '}
+                <code>.v()</code>, and <code>Builder().fromJsonSchema()</code>, which is now
+                a free function.
+              </li>
+              <li>
+                <a href="/docs/api/plugin-registry#removed" class="text-primary underline"
+                  >Plugin registry — changed since 1.x</a
+                >: <code>createPluginRegistry</code> moved to{' '}
+                <code>@maroonedog/luq/field-rule</code>, <code>registry.register()</code>{' '}
+                became <code>registry.use()</code>, and both{' '}
+                <code>useField</code> and <code>createFieldRule</code> take the builder as
+                their first argument.
+              </li>
+              <li>
+                <a href="/docs/troubleshooting#imports" class="text-primary underline"
+                  >Import errors</a
+                >: the specifiers that resolve, and the 1.x ones that never did.
+              </li>
+              <li>
+                <a href="/docs/troubleshooting#messages" class="text-primary underline"
+                  >Messages and codes</a
+                >: the default code is the plugin's name, so <code>REQUIRED</code> and the{' '}
+                <code>VALIDATION_ERROR</code> family are gone, and a per-rule{' '}
+                <code>message</code> is now <code>messageFactory</code>.
+              </li>
+              <li>
+                <a href="/docs/troubleshooting#abort-early" class="text-primary underline"
+                  >Only one issue comes back</a
+                >: <code>abortEarly</code> defaults to <code>true</code>, which 1.x's own
+                documentation had backwards.
+              </li>
+            </ul>
           </div>
 
           <div class="not-prose mt-12 grid gap-6 md:grid-cols-2">

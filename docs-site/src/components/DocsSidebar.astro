@@ -7,10 +7,17 @@
  * expected a trigger with id `mobile-docs-menu-button` that no page ever
  * rendered, so the drawer was unreachable on phones.
  *
- * Every href below must point at a page that exists. The "Porting from 1.x"
- * entry deliberately points at a section rather than a page: the 1.x-to-now
- * mapping lives on the Validator page, next to the API it maps onto, and there
- * is no separate migration page to send readers to.
+ * Every href below must point at a page that exists, and every label matches the
+ * h1 of the page it opens. The "Result: 1.x → now" entry deliberately points at
+ * a section rather than a page: the 1.x-to-now mapping lives on the Validator
+ * page, next to the API it maps onto, and there is no separate migration page to
+ * send readers to. It sits under API directly beneath Validator so the group
+ * explains why the click lands there — filed under Guides it read as a promise
+ * of a guide that does not exist.
+ *
+ * The Reference group re-lists the four top-level reference pages, so the docs
+ * tree is not a cul-de-sac. /standard-schema is there because the app bar no
+ * longer carries it.
  */
 export interface TableOfContentsItem {
   id: string;
@@ -27,26 +34,26 @@ const { currentPath, tableOfContents } = Astro.props;
 
 const sections = [
   {
-    title: 'Getting Started',
+    title: 'Learn',
     items: [
-      { label: 'Introduction', href: '/docs/getting-started', icon: 'rocket_launch' },
-      { label: 'Core Concepts', href: '/docs/core-concepts', icon: 'category' },
-      { label: 'Examples & Patterns', href: '/docs/examples', icon: 'lightbulb' },
+      { label: 'Getting started', href: '/docs/getting-started', icon: 'rocket_launch' },
+      { label: 'Core concepts', href: '/docs/core-concepts', icon: 'category' },
+      { label: 'Examples & patterns', href: '/docs/examples', icon: 'lightbulb' },
     ],
   },
   {
     title: 'Guides',
     items: [
       { label: 'Writing a plugin', href: '/docs/custom-plugins', icon: 'build' },
-      { label: 'Porting from 1.x', href: '/docs/api/validator#porting', icon: 'swap_horiz' },
       { label: 'Troubleshooting', href: '/docs/troubleshooting', icon: 'help' },
     ],
   },
   {
-    title: 'API Reference',
+    title: 'API',
     items: [
-      { label: 'Builder API', href: '/docs/api/builder', icon: 'construction' },
-      { label: 'Validator API', href: '/docs/api/validator', icon: 'checklist' },
+      { label: 'Builder', href: '/docs/api/builder', icon: 'construction' },
+      { label: 'Validator', href: '/docs/api/validator', icon: 'checklist' },
+      { label: 'Result: 1.x → now', href: '/docs/api/validator#porting', icon: 'swap_horiz' },
       {
         label: 'Plugin registry & field rules',
         href: '/docs/api/plugin-registry',
@@ -57,8 +64,9 @@ const sections = [
   {
     title: 'Reference',
     items: [
-      { label: 'Plugin Catalog', href: '/plugins', icon: 'extension' },
+      { label: 'Plugin catalogue', href: '/plugins', icon: 'extension' },
       { label: 'JSON Schema', href: '/json-schema', icon: 'schema' },
+      { label: 'Standard Schema', href: '/standard-schema', icon: 'hub' },
       { label: 'Benchmarks', href: '/benchmarks', icon: 'speed' },
     ],
   },

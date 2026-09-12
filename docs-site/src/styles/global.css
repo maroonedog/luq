@@ -118,6 +118,52 @@
     min-width: 0;
   }
 
+  /*
+   * Inline `<code>`. The site's densest piece of vocabulary: over six hundred
+   * elements across the API, troubleshooting and reference pages, which until
+   * now rendered as body-size monospace with no ground of its own on thirteen
+   * of sixteen pages — wider than the prose around it and marked as nothing.
+   * Three pages carried a local @apply copy of exactly this rule, so the same
+   * token rendered two ways depending on which page you were reading.
+   *
+   * The values are DESIGN.md's own pairing for "a code chip or inline token":
+   * shape-xs on surface-container-highest, with its on-surface partner. The
+   * size is 0.875em rather than a token so it tracks whatever the surrounding
+   * type role is — an inline token inside body-small must not grow.
+   *
+   * `:not(pre) > code` deliberately excludes the code block's own child, whose
+   * ground is the dark `--md-code-*` surface and whose syntax colours are
+   * measured against it.
+   */
+  :not(pre) > code {
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background-color: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+    padding: 2px 6px;
+    font-family: var(--md-sys-typescale-code-font-family);
+    font-size: 0.875em;
+  }
+
+  /*
+   * Two places where a token already sits on a tinted ground of its own and a
+   * second one would read as a box inside a box: a table's header row and the
+   * code block's toolbar.
+   */
+  th > code,
+  .md-code-toolbar code {
+    background: transparent;
+    padding: 0;
+  }
+
+  /*
+   * A token that is itself the link keeps the link's colour. Without this the
+   * `color` above wins over the anchor's and the only thing left saying the
+   * word is clickable is the underline.
+   */
+  a > code {
+    color: inherit;
+  }
+
   ::selection {
     background-color: var(--md-sys-color-primary-container);
     color: var(--md-sys-color-on-primary-container);

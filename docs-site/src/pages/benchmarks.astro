@@ -28,6 +28,7 @@ import CodeBlock from '../components/CodeBlock.astro';
  *   config/competitor-baseline.json  written by bench/competitors/
  */
 import { competitorBenchmark } from '../data/competitors';
+import { packageInfo } from '../data/package-info';
 import perfBaseline from '../../../config/perf-baseline.json';
 import sizeBudget from '../../../config/size-budget.json';
 
@@ -74,6 +75,18 @@ const buildCostRows = shapeOrder.map((shape) => {
 });
 
 const gatedRows = perfBaseline.referenceRatio.filter((row) => row.inputIsAccepted);
+
+/**
+ * What one validate() costs on the 50-element array, derived rather than
+ * stated: the break-even count IS buildCost / validateCost, so dividing the
+ * recorded build cost by the recorded count recovers the second figure. It was
+ * written by hand as "2 calls ... about 33 µs" and sat four lines under the
+ * generated table that already said otherwise.
+ */
+const arrayBuildCost = perfBaseline.buildCost.find((row) => row.shape === 'array');
+const arrayValidateMicroseconds = arrayBuildCost
+  ? (arrayBuildCost.microsecondsPerBuild / arrayBuildCost.validateCallsPerBuild).toFixed(1)
+  : '—';
 
 /**
  * The measured bytes, the ceilings and the ids all come from the JSON. Only the
@@ -162,11 +175,16 @@ npm run check:no-dynamic-code`;
     <!-- ================= Hero ================= -->
     <header class="mb-12">
       <p class="mb-2 text-label-large text-primary">Measured, not claimed</p>
-      <h1 class="mb-4 text-display-small text-on-surface">Benchmarks</h1>
+      <h1 class="mb-4 text-on-surface">Benchmarks</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
         Every number below was produced by a script in this repository and is read back by CI.
-        Where a measurement is worse than the 1.x release, it is on this page as worse. There are
-        no third-party comparisons here, because this repository does not measure other libraries.
+        Where a measurement is worse than the 1.x release, it is on this page as worse. Nothing is
+        republished from another project&rsquo;s README: the zod, valibot, ajv and yup figures were
+        re-run here, in this process, against the same values, and the pairings Luq loses sit in
+        the same table as the ones it wins.{' '}
+        <a class="text-primary underline underline-offset-2" href="#against-others">
+          That table is below.
+        </a>
       </p>
 
       <dl class="mt-8 grid gap-4 sm:grid-cols-3">
@@ -190,7 +208,7 @@ npm run check:no-dynamic-code`;
           <dt class="text-label-medium text-on-surface-variant">Dynamic code</dt>
           <dd class="mt-1 text-headline-small text-on-surface">0 occurrences</dd>
           <dd class="mt-1 text-body-small text-on-surface-variant">
-            across 762 emitted <code>.js</code> / <code>.mjs</code> files
+            across {packageInfo.moduleCount} emitted <code>.js</code> / <code>.mjs</code> files
           </dd>
         </div>
       </dl>
@@ -649,8 +667,9 @@ npm run check:no-dynamic-code`;
       </div>
 
       <p class="mt-4 max-w-3xl text-body-medium text-on-surface-variant">
-        The 50-element array breaks even after 2 calls only because <code>validate()</code> itself
-        costs about 33&nbsp;µs there. The JSON Schema document is the expensive build:{' '}
+        The 50-element array breaks even after{' '}
+        {buildCostRows[3].entry?.validateCallsPerBuild} calls only because{' '}
+        <code>validate()</code> itself costs about {arrayValidateMicroseconds}&nbsp;µs there. The JSON Schema document is the expensive build:{' '}
         {buildCostRows[4].entry?.microsecondsPerBuild}&nbsp;µs, because converting a document is
         real work — done once.
       </p>

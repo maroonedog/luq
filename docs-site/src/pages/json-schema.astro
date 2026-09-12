@@ -3,8 +3,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+import OnThisPage from '../components/OnThisPage.astro';
 import { bundleSize } from '../data/bundle-size';
 import { conformance as measured } from '../data/conformance';
+import { packageInfo } from '../data/package-info';
 
 /**
  * Sources for every figure and every name on this page:
@@ -289,13 +291,13 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
         keyword: 'minLength',
         handling: 'bind',
         target: 'stringMin — .min(n)',
-        note: 'Counts UTF-16 code units, not code points. Two suite cases fail on that.',
+        note: 'Counts code points, by iterating the string rather than reading .length, so one astral character is one character.',
       },
       {
         keyword: 'maxLength',
         handling: 'bind',
         target: 'stringMax — .max(n)',
-        note: 'Same counting caveat.',
+        note: 'Same counting.',
       },
       {
         keyword: 'pattern',
@@ -365,7 +367,7 @@ const keywordGroups: Array<{ title: string; blurb: string; rows: KeywordRow[] }>
         keyword: 'additionalItems',
         handling: 'structural',
         target: 'tupleBuilder — .builder()',
-        note: 'The rest sub-chain; meaningful only beside a tuple items. Six suite cases still fail on this pairing.',
+        note: 'The rest sub-chain; meaningful only beside a tuple items.',
       },
       {
         keyword: 'minItems',
@@ -576,6 +578,20 @@ const handlingStyles: Record<KeywordRow['handling'], string> = {
   annotation: 'bg-surface-container-highest text-on-surface-variant',
 };
 
+// One entry per <section id> below, in page order. OnThisPage is hidden under
+// xl, so this changes nothing on a narrower viewport.
+const tableOfContents = [
+  { id: 'conformance', title: 'Conformance, measured', level: 2 },
+  { id: 'two-doors', title: 'Two front doors', level: 2 },
+  { id: 'which-door', title: 'Which one to use', level: 2 },
+  { id: 'emit', title: 'The other direction', level: 2 },
+  { id: 'keywords', title: 'Every Draft-07 keyword', level: 2 },
+  { id: 'formats', title: 'All twenty format names', level: 2 },
+  { id: 'what-used-to-fail', title: 'What used to fail', level: 2 },
+  { id: 'not-supported', title: 'Limits today', level: 2 },
+  { id: 'reproduce', title: 'Reproduce it', level: 2 },
+];
+
 const handlingLabels: Record<KeywordRow['handling'], string> = {
   bind: 'bind',
   structural: 'structural',
@@ -589,7 +605,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
 >
   <Header />
 
-  <main class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+  <div class="flex min-h-screen">
+    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
     <!-- ================= Hero ================= -->
     <header class="mb-12">
       <p class="mb-2 text-label-large text-primary">Draft-07</p>
@@ -824,7 +841,7 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         <p class="mb-4 max-w-3xl text-body-medium text-on-surface-variant">
           This works under a Content-Security-Policy that forbids <code>unsafe-eval</code>: the
           conversion builds closures, never source text. There is no <code>eval</code> and no{' '}
-          <code>new Function</code> anywhere in the 762 emitted modules, and that is checked
+          <code>new Function</code> anywhere in the {packageInfo.moduleCount} emitted modules, and that is checked
           mechanically rather than asserted.
         </p>
         <CodeBlock code={runtimeSchemaExample} fileName="load-validator.ts" />
@@ -1065,8 +1082,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
       </p>
     </section>
 
-    <!-- ================= Not supported ================= -->
-    <section id="not-supported" class="mb-16 scroll-mt-24">
+    <!-- ================= What used to fail ================= -->
+    <section id="what-used-to-fail" class="mb-16 scroll-mt-24">
       <h2 class="mb-2 text-headline-medium text-on-surface">What used to fail</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         Nothing fails now, so this is the record of what did. Each row was an entry in a typed skip
@@ -1150,32 +1167,39 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           <CodeBlock code={nullPresenceExample} showCopy={false} />
         </div>
       </div>
+    </section>
 
-      <div class="mt-6 md-card md-card-filled p-6">
-        <h3 class="mb-3 text-title-medium text-on-surface">Limits worth knowing before you start</h3>
-        <ul class="space-y-2 text-body-medium text-on-surface-variant">
-          <li>
-            <strong class="text-on-surface">No external or remote <code>$ref</code>.</strong>{' '}
-            A loader that touches the network is not a default feature of a validation library.
-          </li>
-          <li>
-            <strong class="text-on-surface"><code>__proto__</code> is refused as a path segment.</strong>{' '}
-            A deliberate decision, recorded as one, so that prototype pollution is unreachable.
-          </li>
-          <li>
-            <strong class="text-on-surface"><code>additionalProperties</code> does not consult{' '}
-            <code>patternProperties</code>.</strong> It over-rejects in that combination.
-          </li>
-          <li>
-            <strong class="text-on-surface">A recursive <code>$ref</code> stops after the first
-            iteration.</strong> No required suite case covers this, but a depth like{' '}
-            <code>tree.child.name</code> is not validated.
-          </li>
-          <li>
-            <strong class="text-on-surface"><code>minLength</code> / <code>maxLength</code> count
-            code units.</strong> A string of astral characters counts double.
-          </li>
-        </ul>
+    <!-- ================= Limits today ================= -->
+    <section id="not-supported" class="mb-16 scroll-mt-24">
+      <h2 class="mb-2 text-headline-medium text-on-surface">Limits today</h2>
+      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
+        One, and it is a bound rather than a gap. Everything else this section used to
+        list — external <code>$ref</code>, <code>__proto__</code> as a declared path
+        segment, <code>additionalProperties</code> beside <code>patternProperties</code>,
+        code-unit string lengths — is closed, and the table above is the record of how.
+      </p>
+
+      <div class="md-card md-card-filled p-6">
+        <h3 class="mb-3 text-title-medium text-on-surface">
+          A recursive <code>$ref</code> is unrolled three times, and then stops
+        </h3>
+        <p class="text-body-medium text-on-surface-variant">
+          A recursive definition has infinitely many declared paths and Luq declares finite
+          ones, so the expansion is bounded: one <code>$ref</code> may be entered{' '}
+          <strong class="text-on-surface">three times</strong> on a branch. Three is what
+          the Draft-07 corpus needs — its mutually recursive tree puts the invalid value
+          three levels down — and unrolling further is exponential in the number of
+          definitions in the cycle, which the constant's own comment measures.
+        </p>
+        <p class="mt-3 text-body-medium text-on-surface-variant">
+          Past that depth the document is{' '}
+          <strong class="text-on-surface">not checked</strong>: the conversion stops adding
+          rules rather than throwing, so a value nested deeper than three turns of the
+          cycle is accepted without being looked at. The cost of the unrolling is paid once,
+          when the validator is built, not on every <code>validate()</code>. A whole
+          conversion also carries a total expansion budget, far above anything a real
+          document reaches, so a pathological schema cannot run away.
+        </p>
       </div>
     </section>
 
@@ -1200,7 +1224,10 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
         Benchmarks
       </a>
     </nav>
-  </main>
+    </main>
+
+    <OnThisPage tableOfContents={tableOfContents} />
+  </div>
 
   <Footer />
 </BaseLayout>

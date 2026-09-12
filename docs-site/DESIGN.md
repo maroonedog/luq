@@ -154,6 +154,11 @@ its own container tone.
 Prefer a container tone over elevation for static hierarchy. Elevation is for
 things that float *over* content.
 
+Of the `.md-elevation-*` utility classes, only `-3` appears in a page, and the
+levels a page does use otherwise arrive through a component class that already
+carries the token — `.md-top-app-bar.is-scrolled` is level 2. `-1`, `-2`, `-4`
+and `-5` are provided but unproven as standalone utilities.
+
 ---
 
 ## State layers
@@ -174,15 +179,21 @@ element that carries the radius.
 
 ## Components
 
+**Unproven** in the last column means the class is defined in
+`md3-components.css` and used by no page. It is kept because deleting it removes
+the option for about a kilobyte gzipped — but nothing has checked it against this
+site's spacing, so the first author to reach for one is the first to find out.
+
 | Class | MD3 component | Notes |
 | --- | --- | --- |
 | `.md-button` + `.md-button-filled` | Filled button | The one primary action. |
 | `.md-button` + `.md-button-tonal` | Filled tonal button | Secondary action next to a filled one. |
-| `.md-button` + `.md-button-elevated` | Elevated button | On a busy or coloured background. |
+| `.md-button` + `.md-button-elevated` | Elevated button | On a busy or coloured background. **Unproven.** |
 | `.md-button` + `.md-button-outlined` | Outlined button | Medium emphasis. |
 | `.md-button` + `.md-button-text` | Text button | Lowest emphasis, in dense rows. |
-| `.md-icon-button` (+ `-filled` / `-tonal` / `-outlined`) | Icon button | 40dp target; always give it an `aria-label`. |
-| `.md-card` + `.md-card-elevated` | Elevated card | A card that stands alone. |
+| `.md-icon-button` | Icon button | 40dp target; always give it an `aria-label`. |
+| `.md-icon-button-filled` / `-tonal` / `-outlined` | Icon button variants | **Unproven** — the site's icon buttons are all the bare form. |
+| `.md-card` + `.md-card-elevated` | Elevated card | A card that stands alone. **Unproven.** |
 | `.md-card` + `.md-card-filled` | Filled card | A card inside an already-elevated surface. |
 | `.md-card` + `.md-card-outlined` | Outlined card | **Default for grids of many cards** — elevation competes across a dense collection. |
 | `.md-chip` (+ `.is-selected` / `aria-selected`) | Assist / filter chip | Interactive. |
@@ -191,10 +202,12 @@ element that carries the radius.
 | `.md-nav-drawer`, `.md-nav-drawer-modal` | Navigation drawer | Standard and modal. |
 | `.md-nav-drawer-headline` | Drawer section label | `title-small` on `on-surface-variant`. |
 | `.md-nav-drawer-item` (+ `-dense`, + `aria-current="page"`) | Drawer item | Active state is `secondary-container`. |
-| `.md-list-item`, `-headline`, `-supporting` | List item | |
-| `.md-divider`, `-inset`, `-vertical` | Divider | 1px `outline-variant`. |
+| `.md-list-item`, `-headline`, `-supporting` | List item | **Unproven.** |
+| `.md-divider` | Divider | 1px `outline-variant`. |
+| `.md-divider-inset`, `.md-divider-vertical` | Divider variants | **Unproven.** |
 | `.md-scrim` | Scrim | `scrim` at 32%. |
 | `.md-code-surface`, `.md-code-toolbar` | — | Code. Use the `CodeBlock.astro` component instead of these directly. |
+| `:not(pre) > code` | — | Inline code. Styled once in `global.css`'s base layer — `shape-xs`, `surface-container-highest`, `on-surface`, 0.875em mono. Do **not** restyle it per page; three pages used to carry their own copy and the same token rendered two ways across the site. |
 
 Buttons must be 40dp tall and pill-shaped; the classes handle it. Do not resize
 them with `h-*` or `py-*`.
@@ -275,51 +288,57 @@ site-wide; nothing extra is needed per component.
 
 ---
 
-## Migrating a page off the 1.x classes
+## The 1.x class bridge is gone
 
-`global.css` still defines `.luq-card`, `.luq-button-primary`, `.luq-code`,
-`.luq-feature-card`, `.luq-gradient-text` and friends, re-pointed at MD3 roles
-so an untouched page is not broken. **They are a bridge, not an API.** When you
-rewrite a page, replace them:
-
-| Legacy | Replacement |
-| --- | --- |
-| `luq-card` | `md-card md-card-outlined` |
-| `luq-feature-card` | `md-card md-card-filled` |
-| `luq-button luq-button-primary` | `md-button md-button-filled md-state-layer` |
-| `luq-button luq-button-secondary` | `md-button md-button-tonal md-state-layer` |
-| `luq-code` | the `CodeBlock.astro` component |
-| `bg-luq-neutral-50 dark:bg-luq-neutral-900` | `bg-surface-container` |
-| `text-luq-neutral-600 dark:text-luq-neutral-400` | `text-on-surface-variant` |
-| `text-luq-purple-600 dark:text-luq-teal-400` | `text-primary` |
-| `border-luq-neutral-200 dark:border-luq-neutral-800` | `border-outline-variant` |
-| `rounded-lg` / `rounded-xl` on a card | `rounded-shape-md` |
-| `shadow-md` / `shadow-luq` | `shadow-elevation-1` |
-
-The `luq.*` Tailwind scales still exist and now resolve to real MD3 palette
-tones, so a half-migrated page is coherent rather than two-toned.
+`global.css` used to define `.luq-card`, `.luq-button-primary`, `.luq-code`,
+`.luq-feature-card`, `.luq-gradient-text` and friends, re-pointed at MD3 roles so
+that a page not yet rewritten was not broken; every page was rewritten, the built
+output contains zero occurrences of `luq-`, and the 251 lines were deleted, so
+there is nothing to migrate off and no replacement table to consult. The `luq.*`
+scales in `tailwind.config.mjs` are still declared and still cost nothing —
+Tailwind emits a utility only when it finds that class name in the source, and no
+source names one.
 
 ---
 
 ## Navigation is data, not markup
 
 - **Primary nav**: the `navItems` array exported from `src/components/Header.astro`.
-  `MobileMenuOverlay.astro` renders the same array. Add a page in one place.
+  Keep it short — the bar's items are 40dp pills that are not to be resized, and
+  more than five multi-word labels do not fit between 768px and ~1200px.
+- **Secondary nav**: `secondaryNavItems`, exported from the same file. The
+  destinations that are not peers of `Docs` live here: they are left off the app
+  bar and rendered by `MobileMenuOverlay.astro` as a second group under a
+  `.md-nav-drawer-headline`, so the phone drawer carries every destination the
+  bar does not. Anything demoted to this array must also be reachable from the
+  footer or from page prose — the drawer alone is a phone-only route.
+- **Active state**: `isActive(currentPath, item)`, exported from `Header.astro`
+  and imported by `MobileMenuOverlay.astro` rather than copied into it. An item
+  may carry an optional `section` — the `Docs` entry carries `'/docs'` — and the
+  predicate matches the item's own `href`, that section root, or any path beneath
+  it. Without it an entry pointing at a leaf shows no `aria-current="page"` on the
+  rest of its section, and the `secondary-container` indicator this document
+  assigns to selection never fires.
 - **Docs tree**: the `sections` array in `src/components/DocsSidebar.astro`.
 - **Footer**: `footerLinks` in `src/components/Footer.astro`.
 
-Nothing checks these links at build time. Every `href` must be a page that
-exists. The 1.x versions pointed at `/generator` (twice) and `/docs/changelog`,
-neither of which was ever a page here; those entries are gone.
+Every `href` must be a page that exists, and the build does check it — see
+**What the build checks about the pages themselves** at the end of this file:
+`scripts/check-built-pages.mjs` resolves every root-relative href and every
+`#fragment` against the emitted HTML, so a dead nav link fails the build instead
+of shipping. The 1.x versions pointed at `/generator` (twice) and
+`/docs/changelog`, neither of which was ever a page here; those entries are gone.
 
-`DocsSidebar`'s `Reference` group links `/plugins`, `/json-schema` and
-`/benchmarks`, so the three top-level reference pages are reachable from inside
-the docs tree and not only from the top app bar. Its `Guides` group carries
-"Porting from 1.x", which points at `/docs/api/validator#porting` rather than at
-a page of its own: the 1.x-to-now mapping lives beside the API it maps onto, and
-there is no separate migration page. `aria-current` is set by exact path
-equality, so that anchored entry never highlights — which is correct, since the
-Validator page's own entry does.
+`DocsSidebar`'s reference group re-lists the top-level reference pages —
+`/plugins`, `/json-schema`, `/standard-schema` and `/benchmarks` — so they are
+reachable from inside the docs tree and not only from the top app bar. That
+duplication is deliberate: the docs tree is otherwise a cul-de-sac, and one of
+those pages is not on the app bar at all. One entry points at a section
+rather than at a page of its own: the 1.x-to-now mapping lives at
+`/docs/api/validator#porting`, beside the API it maps onto, and there is no
+separate migration page. `aria-current` is set by exact path equality here, so
+that anchored entry never highlights — which is correct, since the Validator
+page's own entry does.
 
 ---
 
