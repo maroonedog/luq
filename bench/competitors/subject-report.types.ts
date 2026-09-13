@@ -26,14 +26,53 @@
 /** Which pool a child was asked to time. */
 export type SubjectPool = "mixed" | "accepted" | "rejected";
 
+/**
+ * Whether the child may build code at run time.
+ *
+ * `blocked` starts the child with --disallow-code-generation-from-strings, so
+ * `new Function` and `eval` throw. That is what a strict Content-Security-
+ * Policy does to a page, and it is not a detail: zod 4 compiles a per-shape
+ * function through `new Function` when it can, probes for permission with a
+ * `try { new Function("") }`, and falls back to interpretation when the probe
+ * fails. ajv does not fall back — `compile()` throws EvalError and there is no
+ * validator at all.
+ *
+ * Measured as one number, "zod" therefore names two different programs
+ * depending on where it runs. Both are recorded, and neither is the headline.
+ */
+export type CodeGeneration = "allowed" | "blocked";
+
 export interface SubjectRequest {
   readonly shape: string;
   /** `"luq"`, or a competitor's name as `COMPETITORS` spells it. */
   readonly subject: string;
+  /**
+   * The competitor whose agreement defines the pool.
+   *
+   * Equal to `subject` for a competitor. For the Luq side it names the
+   * competitor Luq is being compared against, and it is REQUIRED rather than
+   * optional: only the values both sides answered the same way are timed, so
+   * the two children of one comparison must walk the same pool. The
+   * one-process harness passed no such thing and resolved the Luq side against
+   * whichever competitor came first in the list, which meant Luq's rate for
+   * every pair was measured over zod's agreed values.
+   */
+  readonly against: string;
   readonly pool: SubjectPool;
+  readonly codeGeneration: CodeGeneration;
 }
 
 export interface SubjectReport {
+  /**
+   * What stopped the subject from being measured at all, or undefined when it
+   * ran.
+   *
+   * Recorded rather than thrown, because "this library cannot run here" is the
+   * most interesting answer the comparison produces and a crash would discard
+   * it. ajv under blocked code generation is the case: it does not degrade, it
+   * fails to build.
+   */
+  readonly unavailable?: string;
   readonly opsPerSecond: number;
   /**
    * The same walk with nothing under it, measured in the same process.

@@ -30,30 +30,10 @@
 import type { BenchShape, BenchShapeName } from "../shapes/bench-shape.types";
 import type { Competitor } from "./competitor.types";
 import { measureShapeAgreement } from "./measure-agreement";
-import { spawnSubject } from "./spawn-subject";
-import type { SubjectPool, SubjectReport } from "./subject-report.types";
+import { measureBlocked, timePool } from "./time-pool";
 
-/** One pool, timed. */
-export interface PoolRatio {
-  readonly luqOpsPerSecond: number;
-  readonly competitorOpsPerSecond: number;
-  /** Above 1 means Luq is faster. */
-  readonly ratio: number;
-  readonly values: number;
-  readonly luqSpreadPercent: number;
-  readonly competitorSpreadPercent: number;
-  /**
-   * The harness's own per-call cost, measured in each child as the same pool
-   * walk with nothing under it.
-   *
-   * Published rather than subtracted, because it is what tells a reader when a
-   * ratio is being decided by the harness rather than by the libraries. On the
-   * shapes where a competitor answers in tens of nanoseconds, a floor of ten is
-   * a fifth of its call and a twentieth of Luq's — and a reader comparing two
-   * numbers cannot see that unless it is printed.
-   */
-  readonly floorNanoseconds: number;
-}
+export type { BlockedCodeGeneration, PoolRatio } from "./time-pool";
+import type { BlockedCodeGeneration, PoolRatio } from "./time-pool";
 
 export interface CompetitorRatio {
   readonly shape: BenchShapeName;
@@ -83,54 +63,21 @@ export interface CompetitorRatio {
    */
   readonly accepted: PoolRatio | undefined;
   readonly rejected: PoolRatio | undefined;
-}
-
-const LUQ = "luq";
-
-/**
- * Spawns the two children for one pool, competitor first on alternate calls.
- *
- * Which goes first is alternated for the reason the old harness interleaved
- * samples: a machine that slows down for a second should not be able to charge
- * that second to the same subject every time.
- */
-let competitorGoesFirst = false;
-
-function timePool(
-  shape: BenchShapeName,
-  competitor: string,
-  pool: SubjectPool
-): PoolRatio | undefined {
-  competitorGoesFirst = !competitorGoesFirst;
-  const order: readonly string[] = competitorGoesFirst
-    ? [competitor, LUQ]
-    : [LUQ, competitor];
-
-  const reports = new Map<string, SubjectReport>();
-  for (const subject of order) {
-    reports.set(subject, spawnSubject({ shape, subject, pool }));
-  }
-
-  const luq = reports.get(LUQ);
-  const other = reports.get(competitor);
-  if (luq === undefined || other === undefined) return undefined;
-  if (luq.values < 2 || luq.opsPerSecond === 0 || other.opsPerSecond === 0) {
-    return undefined;
-  }
-
-  // The mean of the two floors: they are the same walk over the same pool, so
-  // a difference between them is the machine, not the harness.
-  const floorOps = (luq.floorOpsPerSecond + other.floorOpsPerSecond) / 2;
-
-  return {
-    luqOpsPerSecond: luq.opsPerSecond,
-    competitorOpsPerSecond: other.opsPerSecond,
-    ratio: luq.opsPerSecond / other.opsPerSecond,
-    values: luq.values,
-    luqSpreadPercent: luq.spreadPercent,
-    competitorSpreadPercent: other.spreadPercent,
-    floorNanoseconds: floorOps > 0 ? 1e9 / floorOps : 0,
-  };
+  /**
+   * The competitor with run-time code generation forbidden, or undefined when
+   * it is the same program either way.
+   *
+   * A strict Content-Security-Policy is not a footnote to these figures, it is
+   * a different comparison. zod 4 compiles a per-shape function through
+   * `new Function` when it is allowed to and interprets when it is not, so one
+   * number named "zod" is two programs. ajv does not degrade at all — it throws
+   * out of `compile()` and there is no validator, which is recorded here as an
+   * absent rate with the reason.
+   *
+   * Luq is measured under the same flag and does not move: it generates no
+   * code, and `npm run check:no-dynamic-code` is what keeps that true.
+   */
+  readonly blockedCodeGeneration: BlockedCodeGeneration | undefined;
 }
 
 export function measureCompetitorRatio(
@@ -158,5 +105,6 @@ export function measureCompetitorRatio(
     competitorSpreadPercent: mixed.competitorSpreadPercent,
     accepted: timePool(shape.name, competitor.name, "accepted"),
     rejected: timePool(shape.name, competitor.name, "rejected"),
+    blockedCodeGeneration: measureBlocked(shape.name, competitor.name),
   };
 }

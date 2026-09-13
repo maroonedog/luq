@@ -23,8 +23,23 @@ const BENCH_TSCONFIG = path.join(__dirname, "..", "tsconfig.json");
 export class SubjectChildError extends Error {}
 
 function describe(request: SubjectRequest): string {
-  return `${request.shape}/${request.subject} (${request.pool})`;
+  return (
+    `${request.shape}/${request.subject} (${request.pool}, ` +
+    `codegen ${request.codeGeneration})`
+  );
 }
+
+/**
+ * What a strict Content-Security-Policy does to a page, done to a process.
+ *
+ * `new Function` and `eval` throw under this flag, which is what the libraries
+ * that compile a validator at run time actually meet in a browser that forbids
+ * it. Passed to the child rather than simulated with a library's own option,
+ * so each one is measured doing whatever it really does — zod probes and falls
+ * back to interpretation, ajv throws out of compile() and never produces a
+ * validator at all.
+ */
+const NO_CODE_GENERATION = "--disallow-code-generation-from-strings";
 
 /** The last non-empty line, so a warning printed ahead of the report survives. */
 function lastLineOf(output: string): string {
@@ -33,9 +48,17 @@ function lastLineOf(output: string): string {
 }
 
 export function spawnSubject(request: SubjectRequest): SubjectReport {
+  const nodeFlags =
+    request.codeGeneration === "blocked" ? [NO_CODE_GENERATION] : [];
   const finished = spawnSync(
     process.execPath,
-    ["-r", "ts-node/register", CHILD, ...formatSubjectArguments(request)],
+    [
+      ...nodeFlags,
+      "-r",
+      "ts-node/register",
+      CHILD,
+      ...formatSubjectArguments(request),
+    ],
     {
       encoding: "utf8",
       env: {
@@ -62,6 +85,7 @@ export function spawnSubject(request: SubjectRequest): SubjectReport {
       `${describe(request)}: the child printed no subject report`
     );
   }
+  if (parsed.unavailable !== undefined) return parsed;
   if (!parsed.verdictsHeld) {
     throw new SubjectChildError(
       `${describe(request)}: a timed call stopped answering as the agreement ` +

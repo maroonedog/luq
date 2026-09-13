@@ -9,11 +9,17 @@
 // The same argument bench/megamorphism/window-arguments.ts makes, for the same
 // reason.
 // ===========================================================================
-import type { SubjectPool, SubjectRequest } from "./subject-report.types";
+import type {
+  CodeGeneration,
+  SubjectPool,
+  SubjectRequest,
+} from "./subject-report.types";
 
 const SHAPE = "--shape=";
 const SUBJECT = "--subject=";
+const AGAINST = "--against=";
 const POOL = "--pool=";
+const CODEGEN = "--codegen=";
 
 const POOLS: readonly SubjectPool[] = Object.freeze([
   "mixed",
@@ -39,13 +45,19 @@ function isPool(value: string): value is SubjectPool {
   return POOLS.some((pool) => pool === value);
 }
 
+function isCodeGeneration(value: string): value is CodeGeneration {
+  return value === "allowed" || value === "blocked";
+}
+
 export function formatSubjectArguments(
   request: SubjectRequest
 ): readonly string[] {
   return [
     `${SHAPE}${request.shape}`,
     `${SUBJECT}${request.subject}`,
+    `${AGAINST}${request.against}`,
     `${POOL}${request.pool}`,
+    `${CODEGEN}${request.codeGeneration}`,
   ];
 }
 
@@ -56,8 +68,16 @@ export function parseSubjectArguments(argv: readonly string[]): SubjectRequest {
       `${POOL} wants one of ${POOLS.join(", ")}, got "${pool}"`
     );
   }
+  const codeGeneration = readText(argv, CODEGEN);
+  if (!isCodeGeneration(codeGeneration)) {
+    throw new SubjectArgumentError(
+      `${CODEGEN} wants allowed or blocked, got "${codeGeneration}"`
+    );
+  }
   return {
+    codeGeneration,
     shape: readText(argv, SHAPE),
+    against: readText(argv, AGAINST),
     subject: readText(argv, SUBJECT),
     pool,
   };
