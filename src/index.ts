@@ -36,11 +36,18 @@ export {
   isString,
   isStringArray,
 } from "./types";
-export { ISSUE_CODES, isIssueCode } from "./types";
+/**
+ * Straight from the generated module, never through ./types.
+ *
+ * These are VALUES, so a re-export is a runtime dependency, and src/types is
+ * reached by the very generator that writes this file — on a clean checkout it
+ * would be required before it exists. src/index.ts is outside that chain.
+ */
+export { ISSUE_CODES, isIssueCode } from "./types/issue-code.generated";
+export type { IssueCode } from "./types/issue-code.generated";
 export type {
   ArrayItemContext,
   CheckOutcome,
-  IssueCode,
   IssueDetail,
   IssueSeverity,
   MessageContext,

@@ -460,7 +460,7 @@
     "typecheck:scripts": "tsc --noEmit -p scripts/tsconfig.json",
     "typecheck:bench": "tsc --noEmit -p bench/tsconfig.json",
     "generate": "npm run generate:sources && npm run generate:exports && npm run generate:lock && npm run generate:issue-codes",
-    "generate:sources": "npm run generate:manifest && npm run generate:barrel && npm run generate:slot-catalog && npm run generate:issue-code-union",
+    "generate:sources": "npm run generate:issue-code-union && npm run generate:manifest && npm run generate:barrel && npm run generate:slot-catalog",
     "generate:slot-catalog": "npx ts-node --project scripts/tsconfig.json scripts/generate-slot-catalog.ts",
     "generate:manifest": "npx ts-node --project scripts/tsconfig.json scripts/generate-plugin-manifest.ts",
     "generate:barrel": "npx ts-node --project scripts/tsconfig.json scripts/generate-plugin-barrel.ts",

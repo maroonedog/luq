@@ -1,6 +1,3 @@
-export type { IssueCode } from "./issue-code.generated";
-export { ISSUE_CODES, isIssueCode } from "./issue-code.generated";
-
 // ===========================================================================
 // L0  src/types/index.ts — the vocabulary layer. No imports, no mutable state.
 // ===========================================================================
