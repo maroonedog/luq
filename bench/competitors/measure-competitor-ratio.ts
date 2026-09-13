@@ -1,36 +1,58 @@
 // ===========================================================================
 // bench/competitors/measure-competitor-ratio.ts
 //
-// Measures Luq and a competitor alternately against the same pool of values.
+// One shape against one competitor. Each side is measured in its OWN child
+// process, and the ratio is taken between the two rates afterwards.
 //
-// Alternating matters because measuring one of them to completion first drops
-// whatever else the machine was doing onto one side, and the ratio moves.
+// It used to time them alternately in one process, which was wrong in a way
+// that only showed when the result was checked against a plain loop. Both
+// sides went through the same `consume(value)` call site inside
+// `rotateOverValues`; that site then saw two different functions and stopped
+// being monomorphic. The cost is a fixed number of nanoseconds per call, and a
+// fixed cost is worth proportionally more to whichever library is faster:
+// measured directly, zod answered `singleField` at 28.1M ops/sec, and through
+// a rotation that had seen a second consume, 21.2M. Luq, five times slower per
+// call, did not move. The published ratio was flattering Luq by roughly three
+// times, and the further ahead a competitor was, the more it flattered.
+//
+// Alternating them was meant to stop machine drift landing on one side. That
+// reason was real, and it is now served differently: the children are spawned
+// alternately, so a slow patch on the machine still straddles both subjects.
 //
 // **Only values whose verdicts agreed are timed.** Disagreements are counted
-// elsewhere; timing them here would report "the other library did different
-// work" as a difference in speed. They are not discarded, only reported in
-// their own column.
+// elsewhere; timing them would report "the other library did different work"
+// as a difference in speed.
 //
 // Only the validate-equivalent round trip is timed, never parse. Most
 // competitors do not separate validating from converting, and forcing a
 // correspondence makes the comparison the arbitrary part.
 // ===========================================================================
-import { median, relativeSpreadPercent } from "../sample-rate";
-import { takeInterleavedSamples } from "../take-interleaved-samples";
-import { rotateOverValues, type ValuePool } from "../rotate-over-values";
 import type { BenchShape, BenchShapeName } from "../shapes/bench-shape.types";
 import type { Competitor } from "./competitor.types";
 import { measureShapeAgreement } from "./measure-agreement";
+import { spawnSubject } from "./spawn-subject";
+import type { SubjectPool, SubjectReport } from "./subject-report.types";
 
 /** One pool, timed. */
 export interface PoolRatio {
   readonly luqOpsPerSecond: number;
   readonly competitorOpsPerSecond: number;
-  /** Above 1 means Luq is faster. The median of the per-pair ratios. */
+  /** Above 1 means Luq is faster. */
   readonly ratio: number;
   readonly values: number;
   readonly luqSpreadPercent: number;
   readonly competitorSpreadPercent: number;
+  /**
+   * The harness's own per-call cost, measured in each child as the same pool
+   * walk with nothing under it.
+   *
+   * Published rather than subtracted, because it is what tells a reader when a
+   * ratio is being decided by the harness rather than by the libraries. On the
+   * shapes where a competitor answers in tens of nanoseconds, a floor of ten is
+   * a fifth of its call and a twentieth of Luq's — and a reader comparing two
+   * numbers cannot see that unless it is printed.
+   */
+  readonly floorNanoseconds: number;
 }
 
 export interface CompetitorRatio {
@@ -39,7 +61,7 @@ export interface CompetitorRatio {
   readonly competitorVersion: string;
   readonly luqOpsPerSecond: number;
   readonly competitorOpsPerSecond: number;
-  /** Above 1 means Luq is faster. The median of the per-pair ratios. */
+  /** Above 1 means Luq is faster. */
   readonly ratio: number;
   /** How many values were timed, and how many were excluded as disagreements. */
   readonly comparedValues: number;
@@ -50,85 +72,64 @@ export interface CompetitorRatio {
    * The same measurement over the accepted values alone and the rejected ones
    * alone.
    *
-   * The mixed figure above is what this file used to report on its own, and it
-   * is kept so a reader can see the difference rather than having to trust that
-   * there is one. There usually is: a library that constructs a rich error on
-   * every refusal does most of its work in `rejected`, so a pool that is half
-   * refusals measures error construction as much as validation. Published as
-   * one number, that reads as a validation result.
+   * The mixed figure above is what this file used to report on its own. A
+   * library that constructs a rich error on every refusal does most of its work
+   * in `rejected`, so a pool that is half refusals measures error construction
+   * as much as validation — and published as one number, that reads as a
+   * validation result.
    *
-   * `undefined` when a pool held fewer than two values — the engine
+   * `undefined` when a pool held fewer than two values: the engine
    * constant-folds a single value away on one side and not the other.
    */
   readonly accepted: PoolRatio | undefined;
   readonly rejected: PoolRatio | undefined;
 }
 
-const TARGET_SAMPLE_MS = 60;
-const SAMPLE_COUNT = 9;
-const WARMUP_MS = 120;
+const LUQ = "luq";
 
 /**
- * Builds the function that cycles over the agreed values. What it returns is
- * "did it answer as expected", not "did it pass": if either side starts
- * answering differently partway through, the premise of the comparison has
- * broken, and the caller can notice by comparing the counts.
+ * Spawns the two children for one pool, competitor first on alternate calls.
+ *
+ * Which goes first is alternated for the reason the old harness interleaved
+ * samples: a machine that slows down for a second should not be able to charge
+ * that second to the same subject every time.
  */
-function buildRotation(
-  values: ValuePool,
-  judge: (value: unknown) => boolean,
-  expected: ReadonlyMap<unknown, boolean>
-): () => boolean {
-  return rotateOverValues(
-    values,
-    (value) => judge(value) === expected.get(value)
-  );
-}
+let competitorGoesFirst = false;
 
-/**
- * A value pool requires at least two values, in the type. A competitor
- * agreeing on only one value is not measured: with a single value the engine
- * constant-folds it away on one side and not the other.
- */
-function toPool(values: readonly unknown[]): ValuePool | undefined {
-  const [first, second, ...rest] = values;
-  if (values.length < 2) return undefined;
-  return [first, second, ...rest];
-}
-
-/** Times one pool of agreed values, Luq and the competitor alternately. */
 function timePool(
-  values: readonly unknown[],
-  validator: { validate(value: unknown): { valid: boolean } },
-  check: (value: unknown) => boolean,
-  expected: ReadonlyMap<unknown, boolean>
+  shape: BenchShapeName,
+  competitor: string,
+  pool: SubjectPool
 ): PoolRatio | undefined {
-  const pool = toPool(values);
-  if (pool === undefined) return undefined;
+  competitorGoesFirst = !competitorGoesFirst;
+  const order: readonly string[] = competitorGoesFirst
+    ? [competitor, LUQ]
+    : [LUQ, competitor];
 
-  const samples = takeInterleavedSamples(
-    buildRotation(pool, (v) => validator.validate(v).valid, expected),
-    buildRotation(pool, check, expected),
-    {
-      targetSampleMs: TARGET_SAMPLE_MS,
-      sampleCount: SAMPLE_COUNT,
-      warmupMs: WARMUP_MS,
-    }
-  );
+  const reports = new Map<string, SubjectReport>();
+  for (const subject of order) {
+    reports.set(subject, spawnSubject({ shape, subject, pool }));
+  }
 
-  const luqMedian = median(samples.firstRates);
-  const otherMedian = median(samples.secondRates);
+  const luq = reports.get(LUQ);
+  const other = reports.get(competitor);
+  if (luq === undefined || other === undefined) return undefined;
+  if (luq.values < 2 || luq.opsPerSecond === 0 || other.opsPerSecond === 0) {
+    return undefined;
+  }
+
+  // The mean of the two floors: they are the same walk over the same pool, so
+  // a difference between them is the machine, not the harness.
+  const floorOps = (luq.floorOpsPerSecond + other.floorOpsPerSecond) / 2;
 
   return {
-    luqOpsPerSecond: luqMedian,
-    competitorOpsPerSecond: otherMedian,
-    ratio: median(samples.pairRatios),
-    values: values.length,
-    luqSpreadPercent: relativeSpreadPercent(samples.firstRates, luqMedian),
-    competitorSpreadPercent: relativeSpreadPercent(
-      samples.secondRates,
-      otherMedian
-    ),
+    luqOpsPerSecond: luq.opsPerSecond,
+    competitorOpsPerSecond: other.opsPerSecond,
+    ratio: luq.opsPerSecond / other.opsPerSecond,
+    values: luq.values,
+    luqSpreadPercent: luq.spreadPercent,
+    competitorSpreadPercent: other.spreadPercent,
+    floorNanoseconds: floorOps > 0 ? 1e9 / floorOps : 0,
   };
 }
 
@@ -141,14 +142,7 @@ export function measureCompetitorRatio(
   if (subject === undefined || agreement === undefined) return undefined;
   if (agreement.agreedValues.length === 0) return undefined;
 
-  const validator = shape.buildValidator();
-  const expected = new Map<unknown, boolean>();
-  for (const value of agreement.agreedValues) {
-    expected.set(value, validator.validate(value).valid);
-  }
-
-  const check = (value: unknown): boolean => subject.check(value);
-  const mixed = timePool(agreement.agreedValues, validator, check, expected);
+  const mixed = timePool(shape.name, competitor.name, "mixed");
   if (mixed === undefined) return undefined;
 
   return {
@@ -162,7 +156,7 @@ export function measureCompetitorRatio(
     disagreedValues: agreement.disagreements.length,
     luqSpreadPercent: mixed.luqSpreadPercent,
     competitorSpreadPercent: mixed.competitorSpreadPercent,
-    accepted: timePool(agreement.acceptedAgreed, validator, check, expected),
-    rejected: timePool(agreement.rejectedAgreed, validator, check, expected),
+    accepted: timePool(shape.name, competitor.name, "accepted"),
+    rejected: timePool(shape.name, competitor.name, "rejected"),
   };
 }
