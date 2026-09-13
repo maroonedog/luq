@@ -13,7 +13,7 @@
 //      emitted — a gate's code, the open presence policy's code, and the
 //      transform plugin's name.
 // ===========================================================================
-import { Builder } from "../../src/index";
+import { Builder, ISSUE_CODES, isIssueCode } from "../../src/index";
 import { requiredPlugin } from "../../src/plugins/required";
 import { optionalPlugin } from "../../src/plugins/optional";
 import { stringMinPlugin } from "../../src/plugins/string-min";
@@ -173,5 +173,61 @@ describe("codes the vocabulary deliberately leaves out", () => {
     expect(lock.gateOnlyCodes.map((entry) => entry.code)).not.toContain(
       "transform"
     );
+  });
+});
+
+describe("the IssueCode union", () => {
+  // The union is generated from the same catalog as the lock, so the two agree
+  // by construction. What that does NOT establish is that either of them
+  // matches what the library emits — a scanner reads the source, and the source
+  // is not the running program. These cases drive real validators and check the
+  // codes that come back, which is the only reading that can contradict both.
+
+  it("names every code the lock names, and no other", () => {
+    expect([...ISSUE_CODES].sort()).toEqual([...vocabulary].sort());
+  });
+
+  it("accepts a code the library actually reported", () => {
+    const validator = Builder()
+      .use(requiredPlugin)
+      .use(stringMinPlugin)
+      .for<{ name: string }>()
+      .v("name", (field) => field.string.required().min(3))
+      .build();
+    const outcome = validator.validate({ name: "ab" });
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    for (const issue of outcome.issues) {
+      expect(isIssueCode(issue.code)).toBe(true);
+    }
+  });
+
+  it("refuses a code the caller invented, which is the question it answers", () => {
+    // `{ code }` is how a rule carries a code Luq never chose. A caller's own
+    // switch has to handle those itself, and this predicate is how it tells
+    // them apart from the vocabulary.
+    const validator = Builder()
+      .use(requiredPlugin)
+      .use(stringMinPlugin)
+      .for<{ name: string }>()
+      .v("name", (field) =>
+        field.string.required().min(3, { code: "tooShortForUs" })
+      )
+      .build();
+    const outcome = validator.validate({ name: "ab" });
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    expect(outcome.issues.map((issue) => issue.code)).toContain(
+      "tooShortForUs"
+    );
+    expect(isIssueCode("tooShortForUs")).toBe(false);
+  });
+
+  it("leaves gate codes out, because no issue can carry one", () => {
+    expect(isIssueCode("skip")).toBe(false);
+    expect(isIssueCode("validateIf")).toBe(false);
+    for (const entry of lock.gateOnlyCodes) {
+      expect(ISSUE_CODES).not.toContain(entry.code);
+    }
   });
 });

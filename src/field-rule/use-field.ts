@@ -33,6 +33,7 @@ import { eraseRuleDefineToBuilderSlots } from "../core/type-erasure";
 import type { PluginBag } from "../chain/plugin-bag.types";
 import type { FieldRuleNeedsPlugins } from "../chain/plugin-not-imported.types";
 import type { FieldPath } from "../path/field-path.types";
+import type { ParsedOverride } from "../path/write-at-path.types";
 import type { ValueAtPath } from "../path/value-at-path.types";
 import type { FieldRule } from "./field-rule.types";
 
@@ -42,19 +43,27 @@ export function useField<
   BRule extends PluginBag,
   TDeclared extends string,
   K extends FieldPath<T> & string,
+  TParsed extends readonly ParsedOverride[] = readonly [],
 >(
   // The gate rides on the BUILDER rather than on the rule, so a builder that
   // is missing plugins fails at the argument that is actually short of them.
   // When it carries what the rule needs the intersection is `& unknown` and
   // changes nothing; when it does not, the builder is asked to be a type no
   // builder is, and the error names the plugins it lacks.
-  builder: FieldBuilder<T, B, TDeclared> &
+  builder: FieldBuilder<T, B, TDeclared, TParsed> &
     (keyof BRule extends keyof B
       ? unknown
       : FieldRuleNeedsPlugins<Exclude<keyof BRule, keyof B>>),
   path: K,
   rule: FieldRule<ValueAtPath<T, K>, BRule>
-): FieldBuilder<T, B, TDeclared | K> {
+  // `TParsed` passes through UNCHANGED, and that is a known limit rather than
+  // an oversight. A field rule stores its chain as `AnyChain`
+  // (FieldRuleDefine), so the type the chain leaves behind is already erased
+  // by the time it reaches here — there is nothing to record. A rule that
+  // transforms therefore does not show up in `parse()`'s type, the way it did
+  // not for any field before this change. Closing it means making FieldRule
+  // generic over its chain, which moves a published type.
+): FieldBuilder<T, B, TDeclared | K, TParsed> {
   return builder.v(
     path,
     eraseRuleDefineToBuilderSlots(rule.define),

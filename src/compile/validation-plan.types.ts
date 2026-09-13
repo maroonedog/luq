@@ -134,6 +134,16 @@ export interface CompiledField {
   readonly transforms: readonly TransformRule[];
   /** null for every field that declared no RecursiveRule, i.e. almost all. */
   readonly recursion: RecursionPolicy | null;
+  /**
+   * True when this field declared nothing but presence and checks.
+   *
+   * Which stages a field has is settled here, at compile time, and was being
+   * re-asked on every call: five guards and five calls, per field, per
+   * validate(), to reach the two stages actually declared. The flag is what
+   * lets the runtime pick the short route instead. It caches nothing and
+   * cannot go stale — the plan is frozen.
+   */
+  readonly isPlain: boolean;
 }
 
 /** Loop interchange: one array is read once however many element fields exist. */

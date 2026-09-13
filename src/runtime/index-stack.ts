@@ -34,9 +34,22 @@
 // already been rendered against the short one.
 // ===========================================================================
 
+/** What `indices` answers before anything has been pushed. */
+const NO_OPEN_INDICES: readonly number[] = Object.freeze([]);
+
 export class IndexStack {
-  private readonly nodePaths: string[] = [];
-  private readonly openIndices: number[] = [];
+  /**
+   * Null until the first push, and null for the whole life of a stack that
+   * never enters an array — which is every run of a plan that declares no
+   * array path, and those are most of them.
+   *
+   * A stack is built on every validate() call, so two empty arrays nobody
+   * reads were two allocations per call charged to every shape for the benefit
+   * of the ones with arrays in them. Everything that reads them answers for
+   * the empty case without them.
+   */
+  private nodePaths: string[] | null = null;
+  private openIndices: number[] | null = null;
   /**
    * The rendered prefix, or `null` when it has not been asked for since the
    * last push or pop. `null` and not `""` because the empty string is a real
@@ -55,12 +68,12 @@ export class IndexStack {
 
   /** How many array levels are currently open. */
   get depth(): number {
-    return this.openIndices.length;
+    return this.openIndices === null ? 0 : this.openIndices.length;
   }
 
   /** The open indices, outermost first: `[0, 2]` inside `grid[0][2]`. */
   get indices(): readonly number[] {
-    return this.openIndices;
+    return this.openIndices ?? NO_OPEN_INDICES;
   }
 
   /**
@@ -77,9 +90,15 @@ export class IndexStack {
     const already = this.currentPrefix;
     if (already !== null) return already;
     let built = this.basePath;
-    for (let i = 0; i < this.nodePaths.length; i += 1) {
-      const nodePath = this.nodePaths[i];
-      const index = this.openIndices[i];
+    const nodePaths = this.nodePaths;
+    const openIndices = this.openIndices;
+    if (nodePaths === null || openIndices === null) {
+      this.currentPrefix = built;
+      return built;
+    }
+    for (let i = 0; i < nodePaths.length; i += 1) {
+      const nodePath = nodePaths[i];
+      const index = openIndices[i];
       if (nodePath === undefined || index === undefined) continue;
       built = `${joinIssuePath(built, nodePath)}[${index}]`;
     }
@@ -111,18 +130,26 @@ export class IndexStack {
         `an array index must be a non-negative integer, received ${String(index)}`
       );
     }
-    this.nodePaths.push(nodePath);
-    this.openIndices.push(index);
+    const nodePaths = this.nodePaths ?? (this.nodePaths = []);
+    const openIndices = this.openIndices ?? (this.openIndices = []);
+    nodePaths.push(nodePath);
+    openIndices.push(index);
     this.currentPrefix = null;
   }
 
   /** An unbalanced pop means a runner lost track of its own nesting. */
   pop(): void {
-    if (this.openIndices.length === 0) {
+    const nodePaths = this.nodePaths;
+    const openIndices = this.openIndices;
+    if (
+      nodePaths === null ||
+      openIndices === null ||
+      openIndices.length === 0
+    ) {
       throw new RangeError("popped an array index that was never pushed");
     }
-    this.nodePaths.pop();
-    this.openIndices.pop();
+    nodePaths.pop();
+    openIndices.pop();
     this.currentPrefix = null;
   }
 

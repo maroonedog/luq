@@ -75,18 +75,16 @@ export type TransformKeepsInput = Assert<
 >;
 
 /**
- * Pins a KNOWN GAP: **Output currently equals Input.**
+ * Output is the type the transform leaves behind, not the one declared.
  *
- * At run time the transform applies and the field becomes a number, while the
- * type still says string. The cause is on the builder side, not the Standard
- * Schema side: build() does not pass the parsed type through, so it always
- * falls back to the declared one.
- *
- * Fixing that makes this assertion fail. That is deliberate — the failure is
- * the signal that it was fixed. Change the expectation then.
+ * This assertion used to read `{ name: string }` and was labelled a known gap:
+ * at run time the transform applied and the field held a number, while the
+ * type said string, so `output.name.toUpperCase()` compiled and threw. The
+ * cause was on the builder side — build() did not pass a parsed type through —
+ * and closing it there is what changed this line.
  */
-export type TransformOutputIsNotTrackedYet = Assert<
-  Equals<InferStandardOutput<typeof trimmedSchema>, { name: string }>
+export type TransformChangesOutput = Assert<
+  Equals<InferStandardOutput<typeof trimmedSchema>, { name: number }>
 >;
 
 // ---- what validate returns -----------------------------------------------

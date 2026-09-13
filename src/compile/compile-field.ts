@@ -66,6 +66,11 @@ export function compileField(request: FieldCompileRequest): CompiledField {
   // is the reader's job; formatting the path before that raises a "not enough
   // indices" RangeError which overtakes the PathSyntaxError that should win.
   const read = createValueReader(template);
+  const recursion = resolveRecursion(
+    byKind.recursions,
+    request.planRef,
+    request.fieldPath
+  );
   const field: CompiledField = {
     template,
     renderedPath: formatIssuePath(template, NO_INDICES),
@@ -79,11 +84,13 @@ export function compileField(request: FieldCompileRequest): CompiledField {
     gates: byKind.gates,
     checks: collectOrderedChecks(request.rules, request.eraseComposite),
     transforms: byKind.transforms,
-    recursion: resolveRecursion(
-      byKind.recursions,
-      request.planRef,
-      request.fieldPath
-    ),
+    recursion,
+    isPlain:
+      request.defaultOf === null &&
+      request.normalize === null &&
+      byKind.gates.length === 0 &&
+      byKind.transforms.length === 0 &&
+      recursion === null,
   };
   return Object.freeze(field);
 }

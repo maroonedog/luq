@@ -460,7 +460,7 @@
     "typecheck:scripts": "tsc --noEmit -p scripts/tsconfig.json",
     "typecheck:bench": "tsc --noEmit -p bench/tsconfig.json",
     "generate": "npm run generate:sources && npm run generate:exports && npm run generate:lock && npm run generate:issue-codes",
-    "generate:sources": "npm run generate:manifest && npm run generate:barrel && npm run generate:slot-catalog",
+    "generate:sources": "npm run generate:issue-code-union && npm run generate:manifest && npm run generate:barrel && npm run generate:slot-catalog",
     "generate:slot-catalog": "npx ts-node --project scripts/tsconfig.json scripts/generate-slot-catalog.ts",
     "generate:manifest": "npx ts-node --project scripts/tsconfig.json scripts/generate-plugin-manifest.ts",
     "generate:barrel": "npx ts-node --project scripts/tsconfig.json scripts/generate-plugin-barrel.ts",
@@ -499,7 +499,8 @@
     "lint:ox": "oxlint -c .oxlintrc.json src bench",
     "lint:naming": "eslint \"src/**/*.ts\" \"bench/**/*.ts\"",
     "generate:perf-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-perf-figures.ts --write",
-    "check:perf-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-perf-figures.ts"
+    "check:perf-figures": "npx ts-node --project scripts/tsconfig.json scripts/check-perf-figures.ts",
+    "generate:issue-code-union": "npx ts-node --project scripts/tsconfig.json scripts/generate-issue-code-union.ts"
   },
   "repository": {
     "type": "git",

@@ -27,9 +27,10 @@ import {
   takeRateSample,
 } from "../sample-rate";
 import { calibrateIterations, warmUp } from "../sample-rate";
-import { COMPETITORS } from "./index";
+import { loadCompetitor } from "./load-competitor";
 import { measureShapeAgreement } from "./measure-agreement";
 import { parseSubjectArguments } from "./subject-arguments";
+import { describeFailure, unavailableReport } from "./unavailable-report";
 import {
   SAMPLE_COUNT,
   TARGET_SAMPLE_MS,
@@ -62,13 +63,9 @@ function poolFor(request: SubjectRequest): {
   readonly expected: ReadonlyMap<unknown, boolean>;
 } {
   const shape = shapeNamed(request.shape);
-  const competitorName = request.subject === LUQ ? undefined : request.subject;
-  const competitor = COMPETITORS.find(
-    (candidate) => candidate.name === (competitorName ?? candidate.name)
-  );
-  if (competitor === undefined) {
-    throw new SubjectError(`no competitor "${request.subject}"`);
-  }
+  // `against` and not `subject`: the Luq side has no subject of its own here,
+  // and both children of one comparison must walk the same agreed pool.
+  const competitor = loadCompetitor(request.against);
   const agreement = measureShapeAgreement(shape, competitor);
   if (agreement === undefined) {
     throw new SubjectError(
@@ -108,10 +105,7 @@ function checkerFor(request: SubjectRequest): (value: unknown) => boolean {
     const validator = shape.buildValidator();
     return (value) => validator.validate(value).valid;
   }
-  const competitor = COMPETITORS.find(
-    (candidate) => candidate.name === request.subject
-  );
-  const subject = competitor?.subjects[shape.name];
+  const subject = loadCompetitor(request.subject).subjects[shape.name];
   if (subject === undefined) {
     throw new SubjectError(`${request.shape}: no ${request.subject} subject`);
   }
@@ -120,7 +114,18 @@ function checkerFor(request: SubjectRequest): (value: unknown) => boolean {
 
 function run(): void {
   const request = parseSubjectArguments(process.argv.slice(2));
-  const { values, expected } = poolFor(request);
+  let values: readonly unknown[];
+  let expected: ReadonlyMap<unknown, boolean>;
+  try {
+    ({ values, expected } = poolFor(request));
+  } catch (thrown) {
+    // Building the subject is part of poolFor, so a library that cannot be
+    // built at all fails here rather than at the timed loop.
+    process.stdout.write(
+      `${JSON.stringify(unavailableReport(describeFailure(thrown)))}\n`
+    );
+    return;
+  }
 
   if (values.length < 2) {
     // Below two values the engine constant-folds the single value away on one
@@ -137,7 +142,15 @@ function run(): void {
     return;
   }
 
-  const check = checkerFor(request);
+  let check: (value: unknown) => boolean;
+  try {
+    check = checkerFor(request);
+  } catch (thrown) {
+    process.stdout.write(
+      `${JSON.stringify(unavailableReport(describeFailure(thrown)))}\n`
+    );
+    return;
+  }
 
   // Checked ONCE, before anything is timed, and never inside the loop.
   //
