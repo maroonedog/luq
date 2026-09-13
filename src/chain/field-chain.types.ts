@@ -1,9 +1,15 @@
 import type { TypeName } from "../types";
 import type { PluginBag, SlotPlugins } from "./plugin-bag.types";
 import type { ChainState } from "./chain-state.types";
+import type {
+  PluginDefinition,
+  PluginSignature,
+} from "../plugin-kit/plugin-definition";
+import type { TransformOut } from "../plugin-kit/marker.types";
 import type { ChainMethod } from "./chain-method.types";
 import type { RefineMethods } from "./refine-methods.types";
 import type { SlotCatalog } from "./slot-catalog.generated";
+import type { CheckAfterTransform } from "./plugin-not-imported.types";
 
 /** The phantom is REQUIRED, not optional. */
 export interface ChainMarks<TValue, TState extends ChainState> {
@@ -23,6 +29,44 @@ type NotImported<B extends PluginBag, S extends TypeName> = Omit<
   keyof SlotPlugins<B, S>
 >;
 
+/** Whether a plugin's method replaces the value rather than judging it. */
+type IsTransform<P> =
+  P extends PluginDefinition<
+    string,
+    string,
+    readonly TypeName[],
+    infer Sig extends PluginSignature
+  >
+    ? [Sig["out"]] extends [TransformOut]
+      ? true
+      : false
+    : false;
+
+/**
+ * The method names a chain still offers.
+ *
+ * Everything, until a transform has been declared; after that, only further
+ * transforms. A check written past a transform would run BEFORE it — the
+ * runtime order is fixed and is not the written one — so the reading and the
+ * behaviour disagree, and the disagreement is invisible. The name is removed
+ * rather than deprecated because there is no correct way to call it.
+ */
+/**
+ * Every check the slot offers, resolved to a refusal that says why.
+ *
+ * Intersected in only when the chain has been transformed, so an ordinary
+ * chain carries none of it and the names keep their real signatures.
+ */
+type ClosedAfterTransform<B extends PluginBag, S extends TypeName> = {
+  readonly [
+    M in keyof SlotPlugins<B, S> as IsTransform<
+      SlotPlugins<B, S>[M]
+    > extends true
+      ? never
+      : M
+  ]: CheckAfterTransform<M & string>;
+};
+
 export type FieldChain<
   B extends PluginBag,
   S extends TypeName,
@@ -30,15 +74,17 @@ export type FieldChain<
   TValue,
   TState extends ChainState,
 > = {
-  readonly [M in keyof SlotPlugins<B, S>]: ChainMethod<
-    SlotPlugins<B, S>[M],
-    B,
-    S,
-    TRoot,
-    TValue,
-    TState
-  >;
-} & NotImported<B, S> &
+  readonly [
+    M in keyof SlotPlugins<B, S> as TState["transformed"] extends true
+      ? IsTransform<SlotPlugins<B, S>[M]> extends true
+        ? M
+        : never
+      : M
+  ]: ChainMethod<SlotPlugins<B, S>[M], B, S, TRoot, TValue, TState>;
+} & (TState["transformed"] extends true
+  ? ClosedAfterTransform<B, S>
+  : unknown) &
+  NotImported<B, S> &
   RefineMethods<B, TRoot, TValue, TState> & {
     readonly __chain: ChainMarks<TValue, TState>;
   };

@@ -19,7 +19,7 @@
     "argumentMarkerKinds": "A closed vocabulary. Adding one moves the exhaustiveness proofs of both resolvers at once. Frozen down to the names and their order.",
     "outputMarkerKinds": "Decides build()'s return type. One more entry changes the out constraint of every plugin.",
     "resolveArgTypeParameterCount": "Drop a parameter and it still compiles against the default, so resolution silently becomes something else.",
-    "chainStateMembers": "Fixed at three. Add one and the presence state machine is a different machine.",
+    "chainStateMembers": "Fixed at four. Three of them are the presence state machine and adding one there makes it a different machine. `transformed` is not part of it: it records that a transform has been declared, and it is what stops the chain offering checks afterwards — a check written past a transform runs BEFORE it, because the runtime order is fixed and is not the written one.",
     "ruleBuildContextMembers": "The only entrance build() gets. Removing one breaks existing plugins; adding one changes what authors may assume.",
     "pluginDefinitionBuildIsMethodDeclaration": "A method declaration makes the parameters bivariant. Rewritten as an arrow-function property, AnyPlugin breaks silently. Settled design."
   },
@@ -72,7 +72,8 @@
     "chainStateMembers": [
       "undefinedAllowed",
       "nullAllowed",
-      "covered"
+      "covered",
+      "transformed"
     ],
     "ruleBuildContextMembers": [
       "pluginName",
