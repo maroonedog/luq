@@ -1,6 +1,11 @@
 import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import type { FieldPath } from "../path/field-path.types";
 import type { ValueAtPath } from "../path/value-at-path.types";
+import type {
+  ApplyParsedOverrides,
+  ParsedOverride,
+  RecordParsedOverride,
+} from "../path/write-at-path.types";
 import type { MissingLeafPaths } from "../path/leaf-path.types";
 import type { BagEntry, PluginBag } from "../chain/plugin-bag.types";
 import type {
@@ -30,6 +35,15 @@ export interface FieldBuilder<
   T extends object,
   B extends PluginBag,
   TDeclared extends string,
+  /**
+   * The fields whose chain leaves a different type behind than it was given.
+   *
+   * Empty for a builder that declares no transform, which is nearly all of
+   * them, and `build()` then returns `Validator<T>` exactly as before. What it
+   * fixes when it is NOT empty: `parse()` applies the transforms and hands
+   * back the transformed value, and its type used to say otherwise.
+   */
+  TParsed extends readonly ParsedOverride[] = readonly [],
 > {
   /**
    * `options` is a FIELD CONFIGURATION and never a Rule; it is where a default
@@ -40,14 +54,19 @@ export interface FieldBuilder<
     define: (b: FieldSlots<T, B, ValueAtPath<T, K>>) => C,
     options?: FieldOptions<ValueAtPath<T, K>>
   ): [UncoveredOf<C>] extends [never]
-    ? FieldBuilder<T, B, TDeclared | K>
+    ? FieldBuilder<
+        T,
+        B,
+        TDeclared | K,
+        RecordParsedOverride<TParsed, K, ValueAtPath<T, K>, ChainOutput<C>>
+      >
     : UnionGuardCoverageError<K, UncoveredOf<C>>;
 
   strict(): [MissingLeafPaths<T, TDeclared>] extends [never]
-    ? FieldBuilder<T, B, TDeclared>
+    ? FieldBuilder<T, B, TDeclared, TParsed>
     : MissingFieldsError<MissingLeafPaths<T, TDeclared>>;
 
-  build(): Validator<T>;
+  build(): Validator<T, ApplyParsedOverrides<T, TParsed>>;
 }
 
 export interface Builder<B extends PluginBag = Record<never, never>> {
