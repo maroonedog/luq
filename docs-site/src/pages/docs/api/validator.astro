@@ -406,13 +406,25 @@ type ValidationResult<T> =
                     Already rendered. Override with <code>&#123; messageFactory &#125;</code>.
                   </td>
                 </tr>
-                <tr>
+                <tr class="border-b border-outline-variant">
                   <td class="py-2 pr-4"><code>severity</code></td>
                   <td class="py-2 pr-4">
                     <code>'error' | 'warning' | 'info'</code>
                   </td>
                   <td class="py-2">
                     <strong>Never optional.</strong> Resolved once, at build time.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4"><code>causes</code></td>
+                  <td class="py-2 pr-4"><code>ValidationIssue[]?</code></td>
+                  <td class="py-2">
+                    Why a composite failed. <code>allOf</code>, <code>anyOf</code> and{' '}
+                    <code>oneOf</code> report which applicator failed and cannot say why; the
+                    branch failures behind it land here, each a full issue with its own code, so{' '}
+                    <code>allOf</code> reads down to the <code>stringMin</code> underneath it.{' '}
+                    <strong>Absent</strong> on an ordinary issue rather than present and
+                    undefined, so <code>'causes' in issue</code> is a question worth asking.
                   </td>
                 </tr>
               </tbody>
