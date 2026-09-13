@@ -39,6 +39,79 @@ than `latest`.
 
 Nothing yet.
 
+## [2.8.0] — 2026-09-13
+
+### Breaking changes, in a minor
+
+Two types stop accepting code they used to accept. Both reject only code
+that was **already wrong when it ran** — see the exception recorded in
+[docs/RELEASING.md](docs/RELEASING.md), which requires this heading and the
+argument below.
+
+- **`parse()` returns the type your transforms leave behind.** It applies
+  them, so it always did return the transformed value; the type said
+  otherwise:
+
+  ```ts
+  .v("when", (b) => b.string.required().transform((s) => new Date(s)))
+
+  parsed.data.when.toUpperCase()   // compiled. threw.
+  ```
+
+  **What breaks:** code reading a transformed field as its declared type.
+  That code was throwing. `validate()` is unchanged — it applies no
+  transform, so its type was right and stays right.
+
+  Nested paths and `items[*].field` both rewrite. A field declared through
+  `useField()` does not participate: a field rule stores its chain as
+  `AnyChain`, so the type is erased before it can be recorded.
+
+- **A check written after a transform no longer compiles.** The runtime
+  order is fixed and is not the written order — every check runs before
+  every transform:
+
+  ```ts
+  b.string
+    .required()
+    .transform((s) => `${s}!`)
+    .min(3);
+  ```
+
+  reads as "append, then require three characters". With `"ab"` the `min`
+  fails, **the transform never runs**, and the field is invalid.
+
+  **What breaks:** any chain with a check after a transform. It was doing
+  the opposite of what it read. Move the check above the transform, or
+  transform first and check the new value in its own field. The refusal
+  says so: `CheckAfterTransform` carries the method name and the fix,
+  rather than "Property 'min' does not exist", which is what a forgotten
+  import says too.
+
+### Changed
+
+- **A field runs the stages it declared, and no others.** One that declared
+  only presence and checks was reaching them through five stages with
+  nothing to do. Measured A/B, four rounds alternating: 221.0 / 192.3 /
+  211.2 / 177.6 ns before, 152.5 / 163.0 / 139.0 / 144.4 ns after, no round
+  overlapping. Allocation per `validate()` of one string field went 144.6
+  to 8.5 bytes.
+
+### Fixed
+
+- An issue raised inside an array element could be lost. `forArrayElements()`
+  shares the parent's issue buffer by reference, and the buffer is built
+  lazily now — sharing it before it exists shared nothing.
+
+### Repository
+
+- Competitors are measured twice, once with run-time code generation
+  allowed and once with it forbidden, because a strict Content-Security-
+  Policy makes them different programs. zod compiles a per-shape validator
+  through `new Function` when it can and interprets when it cannot; **ajv
+  does not degrade at all — `compile()` throws and there is no validator.**
+- The version policy gained one narrow exception, with the burden of proof
+  written into it.
+
 ## [2.7.0] — 2026-09-13
 
 ### Added
@@ -578,7 +651,8 @@ be reconstructed honestly, so nothing more is claimed.
 This is the line the rest of this repository's documentation calls "1.x". See
 [A note on version numbers](#a-note-on-version-numbers).
 
-[Unreleased]: https://github.com/maroonedog/luq/compare/v2.7.0...develop
+[Unreleased]: https://github.com/maroonedog/luq/compare/v2.8.0...develop
+[2.8.0]: https://github.com/maroonedog/luq/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/maroonedog/luq/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/maroonedog/luq/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/maroonedog/luq/compare/v2.4.4...v2.5.0

@@ -18,7 +18,11 @@ import type {
 import type { FieldPath } from "../path/field-path.types";
 import type { PickPaths } from "../path/value-at-path.types";
 import type { PluginBag } from "./plugin-bag.types";
-import type { ChainState, CoverWith } from "./chain-state.types";
+import type {
+  ChainState,
+  CoverWith,
+  MarkTransformed,
+} from "./chain-state.types";
 import type { ResolveArgs, ResolveOut } from "./resolve-args.types";
 import type { AnyChain, FieldChain } from "./field-chain.types";
 import type { FieldSlots } from "./field-slots.types";
@@ -42,7 +46,7 @@ export type ChainMethod<
       ? <R>(
           map: (value: Present<TValue, TState>) => R,
           options?: RuleOptions<Sig["context"]>
-        ) => FieldChain<B, S, TRoot, R, TState>
+        ) => FieldChain<B, S, TRoot, R, MarkTransformed<TState>>
       : [Sig["out"]] extends [GuardOut]
         ? <X extends Present<TValue, TState>>(
             condition: (value: Present<TValue, TState>) => value is X,

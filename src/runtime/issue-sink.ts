@@ -33,31 +33,62 @@ export const DEFAULT_ABORT_EARLY_ON_EACH_FIELD = true;
  */
 export const ARRAY_ELEMENTS_ABORT_ON_EACH_FIELD = false;
 
+/**
+ * The policy every call gets when the caller asked for nothing.
+ *
+ * Shared rather than rebuilt. A policy is read-only, so one frozen object
+ * serves every call that does not override it — which is most of them, because
+ * `validate(value)` with no second argument is the ordinary shape.
+ */
+const DEFAULT_ABORT_POLICY: AbortPolicy = Object.freeze({
+  abortEarly: DEFAULT_ABORT_EARLY,
+  abortEarlyOnEachField: DEFAULT_ABORT_EARLY_ON_EACH_FIELD,
+});
+
 export function resolveAbortPolicy(options?: ValidateOptions): AbortPolicy {
-  return {
-    abortEarly: options?.abortEarly ?? DEFAULT_ABORT_EARLY,
-    abortEarlyOnEachField:
-      options?.abortEarlyOnEachField ?? DEFAULT_ABORT_EARLY_ON_EACH_FIELD,
-  };
+  if (options === undefined) return DEFAULT_ABORT_POLICY;
+  const abortEarly = options.abortEarly ?? DEFAULT_ABORT_EARLY;
+  const abortEarlyOnEachField =
+    options.abortEarlyOnEachField ?? DEFAULT_ABORT_EARLY_ON_EACH_FIELD;
+  // An options object carrying neither flag — `{ external }` is the common one
+  // — resolves to the same policy as no options at all, so it gets the same
+  // object rather than a copy of it.
+  if (
+    abortEarly === DEFAULT_ABORT_EARLY &&
+    abortEarlyOnEachField === DEFAULT_ABORT_EARLY_ON_EACH_FIELD
+  ) {
+    return DEFAULT_ABORT_POLICY;
+  }
+  return { abortEarly, abortEarlyOnEachField };
 }
 
+/** What `issues` answers before anything has been reported. */
+const NO_ISSUES: readonly ValidationIssue[] = Object.freeze([]);
+
 export class IssueSink {
-  private collected: ValidationIssue[] = [];
+  /**
+   * Null until the first issue, which for a value that passes is the whole
+   * life of the sink. A buffer nobody writes to was one allocation on every
+   * validate() call, charged to the accepted path for the benefit of the
+   * rejected one.
+   */
+  private collected: ValidationIssue[] | null = null;
 
   constructor(private readonly policy: AbortPolicy) {}
 
   /** The mark a field captures before it runs its own rules. */
   get count(): number {
-    return this.collected.length;
+    return this.collected === null ? 0 : this.collected.length;
   }
 
   /** The live buffer. runPlan freezes it once, at the end of the call. */
   get issues(): readonly ValidationIssue[] {
-    return this.collected;
+    return this.collected ?? NO_ISSUES;
   }
 
   add(issue: ValidationIssue): void {
-    this.collected.push(issue);
+    const collected = this.collected ?? (this.collected = []);
+    collected.push(issue);
   }
 
   /**
@@ -67,23 +98,28 @@ export class IssueSink {
    * which plugin happened to fail first.
    */
   shouldStopPlan(): boolean {
-    return this.policy.abortEarly && this.collected.length > 0;
+    return this.policy.abortEarly && this.count > 0;
   }
 
   shouldStopField(mark: number): boolean {
-    return this.policy.abortEarlyOnEachField && this.collected.length > mark;
+    return this.policy.abortEarlyOnEachField && this.count > mark;
   }
 
   /**
    * A sink for the fields of one array element: the same issue buffer, so
    * abortEarly still sees everything, with the field-level abort disabled.
+   *
+   * Deriving is what forces the buffer into existence. Sharing `null` would
+   * share nothing — the derived sink would allocate its own on its first issue
+   * and every issue raised inside an element would stop there, which is
+   * exactly what the lazy buffer broke until this line was written.
    */
   forArrayElements(): IssueSink {
     const derived = new IssueSink({
       abortEarly: this.policy.abortEarly,
       abortEarlyOnEachField: ARRAY_ELEMENTS_ABORT_ON_EACH_FIELD,
     });
-    derived.collected = this.collected;
+    derived.collected = this.collected ?? (this.collected = []);
     return derived;
   }
 }

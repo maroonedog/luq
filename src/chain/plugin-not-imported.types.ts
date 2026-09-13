@@ -43,3 +43,21 @@ export interface FieldRuleNeedsPlugins<TMissing> {
   readonly message: "This builder is missing plugins the rule was minted from. Pass them to .use() as well.";
   readonly missing: TMissing;
 }
+
+/**
+ * What a check resolves to once a transform has been declared on the chain.
+ *
+ * The method is real, it belongs on this slot, and its plugin is imported —
+ * calling it here is simply not the thing the reader thinks it is. The runtime
+ * order is fixed: every check runs before every transform, whatever order they
+ * were written in. So this method would judge the value the transform has not
+ * seen yet, and the chain reads as the opposite of what it does.
+ *
+ * Without this the reader gets "Property 'min' does not exist", which is also
+ * what a forgotten import says, and those have completely different fixes.
+ */
+export interface CheckAfterTransform<TMethod extends string> {
+  readonly luqError: "checkAfterTransform";
+  readonly message: "Checks run BEFORE transforms whatever order they are written in. Move this call above the transform, or transform first and check the new value in its own field.";
+  readonly method: TMethod;
+}
