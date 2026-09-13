@@ -28,8 +28,7 @@ const shipped = [
   {
     icon: 'inventory_2',
     headline: `${pluginObjectCount} plugins across ${pluginSubpathCount} subpaths`,
-    detail:
-      'Every rule you can call is a plugin you imported by name. An unimported plugin is not merely absent at run time — its method does not typecheck.',
+    detail: 'Every rule you can call is a plugin you imported by name.',
     href: '/plugins',
     linkLabel: 'Browse the catalogue',
   },
@@ -45,7 +44,7 @@ const shipped = [
     icon: 'compress',
     headline: `A ${bundleSize.coreOnly.gzip} gzipped floor`,
     detail:
-      `That is Builder with zero plugins. 1.x charged ${bundleSize.legacyCoreGzip.toLocaleString('en-US')} B before you used anything. Adding the first six plugins costs about 148 B each.`,
+      `That is Builder with zero plugins. 1.x charged ${bundleSize.legacyCoreGzip.toLocaleString('en-US')} B before you used anything.`,
     href: '/benchmarks#bundle-size',
     linkLabel: 'See the measurements',
   },
@@ -53,7 +52,7 @@ const shipped = [
     icon: 'lock',
     headline: 'CSP-safe, and checked',
     detail:
-      `Zero occurrences of eval and new Function across all ${packageInfo.moduleCount} emitted modules, verified by a script and by the public-API smoke test. 1.x claimed this in its README while shipping a live new Function.`,
+      `Zero occurrences of eval and new Function across all ${packageInfo.moduleCount} emitted modules, verified by a script and by the public-API smoke test.`,
     href: '/benchmarks',
     linkLabel: 'How it is checked',
   },
@@ -77,9 +76,9 @@ const shipped = [
     icon: 'account_tree',
     headline: 'Paths that name the real index',
     detail:
-      'Declare items[*].productId and the issue you get back says items[1].productId. A path that does not exist on your type is a compile error, not a silent no-op.',
-    href: '/docs/getting-started',
-    linkLabel: 'Read the guide',
+      'Declare items[*].productId and the issue you get back says items[1].productId.',
+    href: '/docs/api/builder#field-paths',
+    linkLabel: 'The path grammar',
   },
 ];
 
@@ -145,7 +144,7 @@ const knownWeaknesses = [
   {
     title: 'Slower than 1.x on flat and nested shapes',
     detail:
-      `Measured in one process: ${legacySpeedups.singleField} on one field, ${legacySpeedups.multiField} on three fields, ${legacySpeedups.nested} nested. Arrays (${legacySpeedups.array}) and JSON Schema (${legacySpeedups.jsonSchema}) are the two wins. 1.x carried a directory of specialised fast paths that this implementation has no equivalent of. Recovering that ground is the largest single piece of unfinished engineering in the project.`,
+      `Measured in one process: ${legacySpeedups.singleField} on one field, ${legacySpeedups.multiField} on three fields, ${legacySpeedups.nested} nested. Arrays (${legacySpeedups.array}) and JSON Schema (${legacySpeedups.jsonSchema}) are the two wins. Recovering that ground is the largest single piece of unfinished engineering in the project.`,
     href: '/benchmarks#against-1x',
   },
   {
@@ -157,7 +156,7 @@ const knownWeaknesses = [
   {
     title: 'The performance gate has a resolution',
     detail:
-      'CI gates on the ratio between Luq and a hand-written validator in the same process. Measured against deliberate slowdowns, it catches a 35% regression and misses a 15% one. That floor is written down rather than assumed.',
+      'CI gates on the ratio between Luq and a hand-written validator: it catches a 35% regression and misses a 15% one.',
     href: '/benchmarks#the-gate',
   },
 ];
@@ -186,23 +185,17 @@ const tableOfContents = [
       <p class="mb-2 text-label-large text-primary">2.0</p>
       <h1 class="mb-4 text-on-surface">Project status</h1>
       <p class="max-w-3xl text-body-large text-on-surface-variant">
-        Where 2.0 stands: what has shipped and is measured, what has closed since this page listed
-        it as missing, where the release is still measurably weak — speed first — and why the 1.x{' '}
-        <code>.luq</code> roadmap was{' '}
+        What has shipped and is measured, where the release is still measurably weak — speed
+        first — and why the 1.x <code>.luq</code> roadmap was{' '}
         <a class="text-primary underline underline-offset-2" href="#withdrawn">
           withdrawn rather than rescheduled
-        </a>. Nothing here carries a date, and nothing here is unmeasured.
+        </a>.
       </p>
     </header>
 
     <!-- ================= Shipped ================= -->
     <section id="shipped" class="mb-16 scroll-mt-24">
-      <h2 class="mb-2 text-headline-medium text-on-surface">What is in the box</h2>
-      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        A TypeScript validation library that takes a type you already wrote and lets you declare
-        rules against its field paths. Each figure below is produced by a script in the repository
-        and read back by CI.
-      </p>
+      <h2 class="mb-6 text-headline-medium text-on-surface">What is in the box</h2>
 
       <div class="grid gap-4 md:grid-cols-2">
         {
@@ -230,10 +223,7 @@ const tableOfContents = [
       <h2 class="mb-2 text-headline-medium text-on-surface">What this page used to list as missing</h2>
       <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
         Nine rows, and all nine are closed — the Draft-07 corpus now passes{' '}
-        <strong class="text-on-surface">{conformance.passingCases} of {conformance.caseCount}</strong>. They are kept here rather than deleted,
-        because a roadmap that only ever shows what is left tells you nothing about whether the
-        things on it actually get done. The real remaining weaknesses are further down, and the
-        first of them is speed.
+        <strong class="text-on-surface">{conformance.passingCases} of {conformance.caseCount}</strong>.
       </p>
 
       <div class="md-card md-card-outlined overflow-hidden">
@@ -267,31 +257,11 @@ const tableOfContents = [
         </div>
       </div>
 
-      <h3 class="mb-3 mt-8 text-title-large text-on-surface">
-        A refusal that turned out not to be necessary
-      </h3>
-      <div class="md-card md-card-filled p-6">
-        <p class="text-body-medium text-on-surface-variant">
-          This page used to record <code>__proto__</code> in a declared path as decided against —
-          refused on purpose, so prototype pollution stayed unreachable, and 14 suite cases lost on
-          purpose with it. That was the wrong reading of the problem. Only ASSIGNMENT reaches{' '}
-          <code>Object.prototype</code>'s setter; writing the key with{' '}
-          <code>Object.defineProperty</code> creates an own property and touches nothing. The
-          refusal is gone, the 14 cases pass, and{' '}
-          <code>test/unit/path/prototype-pollution.test.ts</code> proves both halves — that{' '}
-          <code>__proto__</code> is declarable, and that <code>Object.prototype</code> is still
-          clean afterwards. Reverting the write back to an assignment makes it fail.
-        </p>
-      </div>
     </section>
 
     <!-- ================= Weaknesses ================= -->
     <section id="weaknesses" class="mb-16 scroll-mt-24">
-      <h2 class="mb-2 text-headline-medium text-on-surface">Where this release is weak</h2>
-      <p class="mb-6 max-w-3xl text-body-medium text-on-surface-variant">
-        Not everything unfinished is a JSON Schema keyword. These are the things a reader deserves
-        to know before adopting 2.0.
-      </p>
+      <h2 class="mb-6 text-headline-medium text-on-surface">Where this release is weak</h2>
 
       <div class="space-y-4">
         {
@@ -329,10 +299,8 @@ const tableOfContents = [
           What is in the box is the TypeScript validation library described above.
         </blockquote>
         <p class="text-body-medium text-on-surface-variant">
-          A roadmap whose dates have already elapsed is worse than no roadmap: it tells a reader
-          something about the project that is not true. So the milestones are gone rather than
-          moved, and nothing on this page has been given a new one. When something is built, it will
-          appear in the list above with a measurement beside it.
+          The milestones are gone rather than moved. When something is built, it appears in the
+          list above with a measurement beside it.
         </p>
       </div>
     </section>

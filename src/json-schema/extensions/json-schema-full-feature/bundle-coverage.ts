@@ -38,7 +38,6 @@ export const UNBOUND_BUNDLED_PLUGIN_NAMES: readonly string[] = Object.freeze([
   "arrayContains",
   "arrayEach",
   "conditionalSchema",
-  "numberInteger",
   "objectAdditionalPropertiesSchema",
   "objectDependentRequired",
   "objectDependentSchemas",
@@ -47,6 +46,12 @@ export const UNBOUND_BUNDLED_PLUGIN_NAMES: readonly string[] = Object.freeze([
   "oneOf",
   // Reachable only from a hand-written chain; the converter never calls them.
   "compareField",
+  // numberInteger moved into this group when the converter stopped building a
+  // second rule from it for `type: "integer"`: the type table's own predicate
+  // is `Number.isInteger`, so the plugin's rule only ever duplicated it. It
+  // stays in the bag because `.integer()` is still a method a hand-written
+  // chain can call.
+  "numberInteger",
   "nullable",
   "optional",
   "tupleBuilder",

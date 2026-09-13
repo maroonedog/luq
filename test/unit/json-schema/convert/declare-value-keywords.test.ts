@@ -133,3 +133,43 @@ describe("the refusal reaches the converter", () => {
     expect(validator.validate({ a: 42 }).valid).toBe(false);
   });
 });
+
+describe("`type: integer` reports one failure, not two", () => {
+  // Every issue must be distinguishable by (path, code): that pair is what a
+  // machine consumer groups and de-duplicates on. `type: "integer"` used to
+  // produce TWO issues at the same path both coded `type` — the type check,
+  // whose own test is `Number.isInteger`, and a second rule built from the
+  // numberInteger plugin with its code overridden to `type`. A consumer
+  // de-duplicating the pair silently dropped one and could not tell it had.
+  const integerField = { properties: { a: { type: "integer" } } };
+  const everyIssue = { abortEarly: false, abortEarlyOnEachField: false };
+
+  it("reports a non-integer number once", () => {
+    const outcome = build(integerField).validate({ a: 1.5 }, everyIssue);
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    expect(outcome.issues.map((issue) => [issue.path, issue.code])).toEqual([
+      ["a", "type"],
+    ]);
+  });
+
+  it("reports a value of the wrong type once", () => {
+    const outcome = build(integerField).validate({ a: "no" }, everyIssue);
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    expect(outcome.issues).toHaveLength(1);
+  });
+
+  it("still accepts an integer, and still refuses a fraction", () => {
+    expect(build(integerField).validate({ a: 7 }).valid).toBe(true);
+    expect(build(integerField).validate({ a: 7.5 }).valid).toBe(false);
+  });
+
+  it("keeps the union form working, where integer is one member of several", () => {
+    const union = build({ properties: { a: { type: ["integer", "string"] } } });
+    expect(union.validate({ a: "abc" }).valid).toBe(true);
+    expect(union.validate({ a: 7 }).valid).toBe(true);
+    expect(union.validate({ a: 1.5 }).valid).toBe(false);
+    expect(union.validate({ a: true }).valid).toBe(false);
+  });
+});

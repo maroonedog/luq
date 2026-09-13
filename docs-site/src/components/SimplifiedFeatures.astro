@@ -55,8 +55,7 @@ const draftValidator = Builder()
   {
     icon: 'compare_arrows',
     title: 'Rules that read other fields',
-    description:
-      'compareField resolves the other field’s path once, at build time. requiredIf is a presence rule rather than a check, so it decides the field’s gate instead of only rejecting an empty string that already got through.',
+    description: 'compareField resolves the other field’s path once, at build time.',
     fileName: 'signup.ts',
     example: `type Signup = {
   password: string;
@@ -105,7 +104,7 @@ const accountValidator = fromJsonSchema<Account>({
     icon: 'deployed_code',
     title: 'You pay for what you import',
     description:
-      `Measured with esbuild and gzip. The core is ${corePercent}% of the all-plugins build — the floor you pay before importing anything, which is the part a bundle-size claim usually hides.`,
+      `Measured with esbuild and gzip. The core is ${corePercent}% of the all-plugins build — the floor you pay before importing anything.`,
     fileName: 'imports.ts',
     example: `// Six plugins, six imports.
 import { requiredPlugin } from "@maroonedog/luq/plugins/required";
@@ -129,9 +128,6 @@ import { numberMaxPlugin } from "@maroonedog/luq/plugins/numberMax";
       <h2 class="mb-3 text-headline-medium text-on-surface">
         What it enforces, what it covers, what it costs
       </h2>
-      <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
-        Four claims, each with the code that backs it and the file the number came from.
-      </p>
     </div>
 
     <div class="space-y-12">

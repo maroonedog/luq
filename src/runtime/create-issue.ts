@@ -29,6 +29,15 @@ export interface IssueRequest {
    * sees one call shape and needs no rule kind to dispatch on.
    */
   render(context: MessageContext): string;
+  /**
+   * The branch failures behind a composite, when the rule that failed is one.
+   *
+   * Passed rather than read off the detail because this layer never sees a
+   * rule kind: a presence policy closes over nothing and a check closes over
+   * its own IssueDetail, and keeping that asymmetry out of here is what lets
+   * one call shape serve both.
+   */
+  readonly causes?: readonly ValidationIssue[] | undefined;
 }
 
 /**
@@ -47,12 +56,21 @@ export function createIssue(request: IssueRequest): ValidationIssue {
     value: request.value,
     code: request.code,
   };
-  return Object.freeze({
+  const issue: ValidationIssue = {
     path: request.path,
     code: request.code,
     message: renderMessageOrFallback(request, context),
     severity: request.severity,
-  });
+  };
+  // Spread CONDITIONALLY. Writing `causes: request.causes` unconditionally
+  // would put the key on every issue the library reports, with the value
+  // undefined — and `"causes" in issue` would then answer true for a plain
+  // stringMin failure, which is exactly the question a caller asks it.
+  return Object.freeze(
+    request.causes === undefined || request.causes.length === 0
+      ? issue
+      : { ...issue, causes: request.causes }
+  );
 }
 
 function renderMessageOrFallback(

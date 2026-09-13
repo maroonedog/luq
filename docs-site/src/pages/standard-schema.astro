@@ -132,10 +132,8 @@ const decisions = [
         it accepts a zod schema.
       </p>
       <p class="mb-12 text-body-medium text-on-surface-variant">
-        It is a subpath, not part of <code class="font-mono">build()</code>.
-        Carrying <code class="font-mono">~standard</code> on every validator would
-        charge every caller for a seam most of them never cross, so you import it
-        and pay for it when you use it.
+        It is a subpath, not part of <code class="font-mono">build()</code>, so you
+        import it and pay for it when you use it.
       </p>
 
       <h2 class="mb-4 text-headline-small text-on-surface">One import</h2>
@@ -149,15 +147,7 @@ const decisions = [
       </p>
       <CodeBlock code={stillAValidatorExample} language="typescript" fileName="both-faces.ts" />
 
-      <h2 class="mb-4 mt-12 text-headline-small text-on-surface">Where it plugs in</h2>
-      <p class="mb-6 text-body-large text-on-surface-variant">
-        <code class="font-mono">account</code> above is the value each of these is handed.
-        The call site belongs to the consumer, not to Luq — what follows is that
-        consumer's own documented entry point for a Standard Schema, with a Luq
-        validator in the slot a zod schema would occupy. Of the four, the one this
-        repository runs is react-hook-form, in{' '}
-        <code class="font-mono">examples/react-hook-form</code>.
-      </p>
+      <h2 class="mb-6 mt-12 text-headline-small text-on-surface">Where it plugs in</h2>
 
       <h3 class="mb-3 text-title-large text-on-surface">tRPC</h3>
       <CodeBlock code={trpcExample} language="typescript" fileName="router.ts" />
@@ -167,14 +157,6 @@ const decisions = [
 
       <h3 class="mb-3 mt-8 text-title-large text-on-surface">TanStack Form</h3>
       <CodeBlock code={tanstackExample} language="typescript" fileName="AccountForm.tsx" />
-
-      <h3 class="mb-3 mt-8 text-title-large text-on-surface">react-hook-form</h3>
-      <p class="mb-12 text-body-large text-on-surface-variant">
-        One line as well, and the one with a running form behind it —{' '}
-        <a class="text-primary underline underline-offset-2" href="#react-hook-form"
-          >further down this page</a
-        >, with what <code class="font-mono">normalize</code> does to the payload.
-      </p>
 
       <h2 class="mb-4 mt-12 text-headline-small text-on-surface">
         Three decisions the spec leaves open
@@ -205,8 +187,7 @@ const decisions = [
         <code class="font-mono">path</code>. Luq's own <code class="font-mono">code</code>{' '}
         and <code class="font-mono">severity</code> have no field in the spec and do
         not survive, so a consumer that switches on <code class="font-mono">issue.code</code>{' '}
-        needs the validator rather than this face — and the same value{' '}
-        <em>is</em> the validator, so nothing has to be given up to get it.
+        needs the validator rather than this face.
       </p>
 
       <p class="mb-12 text-body-large text-on-surface-variant">
@@ -218,8 +199,7 @@ const decisions = [
         one schema per scalar has nothing to hand it: t3-env's{' '}
         <code class="font-mono">server</code> and{' '}
         <code class="font-mono">client</code> maps take a schema per environment
-        variable, and an environment variable is a string. The four above all
-        pass an object at the seam, which is why they work.
+        variable, and an environment variable is a string.
       </p>
 
       <h2 id="react-hook-form" class="mb-4 text-headline-small text-on-surface">
@@ -235,8 +215,7 @@ const decisions = [
           reaching <code class="font-mono">handleSubmit</code> is already tidied —
           the name trimmed, the email lowercased, the number input's string turned
           into a number — with no <code class="font-mono">valueAsNumber</code> and
-          no per-field <code class="font-mono">setValueAs</code>, because the
-          resolver reads the value Luq wrote back.
+          no per-field <code class="font-mono">setValueAs</code>.
         </p>
         <p class="text-body-medium text-on-surface-variant">
           A running form is in <code class="font-mono">examples/react-hook-form</code>{' '}

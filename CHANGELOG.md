@@ -39,6 +39,78 @@ than `latest`.
 
 Nothing yet.
 
+## [2.7.0] — 2026-09-13
+
+### Added
+
+- **`ValidationIssue.causes`** — why a composite failed. `allOf`, `anyOf` and
+  `oneOf` report which applicator failed and cannot say why; the branch failures
+  behind it now travel with the issue, each a full issue with its own code, so
+  `allOf` reads down to the `stringMin` underneath it. They were already being
+  collected and then dropped, because `ValidationIssue` carried no such member.
+
+  The key is **absent** on an ordinary issue rather than present and undefined,
+  so `"causes" in issue` is a question worth asking. A new exported member is
+  why this is a minor rather than a patch.
+
+### Fixed
+
+- **`{"type": "integer"}` reports one failure, not two.** It produced TWO issues
+  at the same path, both coded `type`, for one value: the type table's own
+  predicate is `Number.isInteger`, and a second rule was built from the
+  numberInteger plugin with its code overridden to `type`. `(path, code)` is the
+  pair a machine consumer groups and de-duplicates on, so one of the two
+  disappeared without trace.
+
+  **If you group issues by `(path, code)`, this changes what you see** — one
+  entry where there were two. No verdict changes: the duplicate rule never
+  decided anything the type check had not already decided, and the conformance
+  corpus is unchanged at 929 / 929.
+
+- Which presence rule a failure is attributed to no longer depends on how the
+  codes are spelled. The tie between two rules forbidding the same number of
+  things was broken on the lexicographically smaller `code`, so renaming a
+  published code moved the attribution.
+
+### Documentation
+
+- **What a throwing transform does.** Only `parse()` runs transforms, so only
+  `parse()` can throw one; `validate()` returns `valid: true` with the value
+  untouched. Nothing about the behaviour changes — zod, valibot and yup all let
+  the exception out of their own parse, and all three offer a separate API for
+  rejecting a value. Luq's is `custom`, which catches a throw from its predicate
+  and reports it as an issue. The asymmetry is the part that bites and it was
+  written down nowhere.
+
+- **The site is 3,800 words shorter, on every page.** The same claim was argued
+  on three pages, methodology was defended to readers who had not questioned it,
+  and conceded points were conceded twice. Each claim now has one home and the
+  other pages link to it. Nothing measured was lost; the figures that went were
+  hand-typed duplicates that had already drifted from the generated values they
+  copied, and they are replaced by links to the derived figure rather than by a
+  retyped number.
+
+### Repository
+
+- **The benchmarks page no longer carries a "many validators at once" section.**
+  The first CI recording landed and did not resolve the thing it was built to
+  resolve: the one-validator baseline every other point is divided by had a
+  33 per cent spread across its seven runs, the same size as the effect. The
+  record's own `resolution` field reads 2.4 per cent, but that is the gap
+  between two point estimates each carrying that spread, so it understates the
+  uncertainty rather than bounding it. Publishing a figure from that run would
+  have repeated, with a different number, the mistake that made the quoted
+  "11% across 40 validators" worth withdrawing.
+
+  A reader also has no second library to compare against; no comparable project
+  publishes this. What the page says instead is the part a reader can act on:
+  every figure on it was taken with one validator alive, so it is the
+  one-validator case rather than a per-call cost in an application.
+
+  The harness, the recorder and the record stay. `docs/measurements.md` carries
+  what the run showed, what it could not support, and what more repeats would
+  take.
+
 ## [2.6.0] — 2026-09-13
 
 ### Fixed
@@ -506,7 +578,8 @@ be reconstructed honestly, so nothing more is claimed.
 This is the line the rest of this repository's documentation calls "1.x". See
 [A note on version numbers](#a-note-on-version-numbers).
 
-[Unreleased]: https://github.com/maroonedog/luq/compare/v2.6.0...develop
+[Unreleased]: https://github.com/maroonedog/luq/compare/v2.7.0...develop
+[2.7.0]: https://github.com/maroonedog/luq/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/maroonedog/luq/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/maroonedog/luq/compare/v2.4.4...v2.5.0
 [2.4.4]: https://github.com/maroonedog/luq/compare/v2.4.3...v2.4.4

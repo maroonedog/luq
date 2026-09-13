@@ -6,6 +6,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import DocsSidebar from '../../components/DocsSidebar.astro';
 import { packageInfo } from '../../data/package-info';
+import sizeBudget from '../../../../config/size-budget.json';
 import CodeBlock from '../../components/CodeBlock.astro';
 import OnThisPage from '../../components/OnThisPage.astro';
 
@@ -13,6 +14,10 @@ import OnThisPage from '../../components/OnThisPage.astro';
 // headings: a reader arrives knowing their error message, and the list of
 // messages is the index. The level-3 ids are the <details> elements below, so
 // one entry is also a link a colleague can be sent.
+// The barrel-equivalence gate is read from the same config the CI script reads,
+// so the percentage below moves with the budget rather than with this page.
+const barrelDivergencePercent = sizeBudget.barrelEquivalence.maxDivergencePercent;
+
 const tableOfContents = [
   { id: 'imports', title: 'Import errors', level: 2 },
   { id: 'not-exported', title: 'Specifier is not exported', level: 3 },
@@ -21,6 +26,7 @@ const tableOfContents = [
   { id: 'method-missing', title: 'A chain method is missing', level: 3 },
   { id: 'wrong-slot', title: 'Slot does not match the type', level: 3 },
   { id: 'bad-path', title: 'Field path is not accepted', level: 3 },
+  { id: 'tsc-stack', title: 'tsc runs out of stack', level: 3 },
   { id: 'allow-null', title: 'allowNull is rejected', level: 3 },
   { id: 'not-callable', title: 'Validator is not callable', level: 3 },
   { id: 'unexpected-results', title: 'Unexpected results', level: 2 },
@@ -422,10 +428,10 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> A 1.x specifier. The package publishes {packageInfo.exportKeyCount} export keys:
-                seven fixed ones and 77 under <code>./plugins/</code>. Nothing else resolves,
-                and the ones below never did — 1.x's own README named specifiers that were not
-                in its exports map.
+                <strong>Cause.</strong> A 1.x specifier. The package publishes{' '}
+                {packageInfo.exportKeyCount} export keys — the fixed ones are in the table below,
+                and the rest are one per plugin under <code>./plugins/</code>. Nothing else
+                resolves.
               </p>
 
               <CodeBlock code={badImportsExample} language="typescript" invalid />
@@ -501,8 +507,8 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 <strong>Cause.</strong> 1.x's <code>dist/index.d.ts</code> declared 57 plugin
                 exports its <code>dist/index.js</code> did not have, so the import typechecked
                 and gave you <code>undefined</code> at run time. The root now exports no
-                plugins at all — a barrel naming all 77 would make every one statically
-                reachable and end per-plugin tree-shaking.
+                plugins at all —{' '}
+                <a href="/docs/getting-started#importing-plugins">import them by subpath</a>.
               </p>
               <CodeBlock code={rootPluginsExample} language="typescript" invalid />
             </div>
@@ -522,8 +528,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> The plugin contributing that method is not in the bag.
-                The bag is a type, so an unimported plugin's method does not typecheck —
-                that is the design, not a gap.
+                The bag is a type, so an unimported plugin's method does not typecheck.
               </p>
               <CodeBlock code={missingPluginExample} language="typescript" invalid />
               <CodeBlock code={missingPluginFixExample} language="typescript" />
@@ -548,9 +553,8 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> Choosing a slot the field's type cannot be is now a
-                compile error. 1.x let it through in silence. Use <code>b.any</code> when you
-                genuinely mean "whatever this is".
+                <strong>Cause.</strong> 1.x let this through in silence; it is a compile error
+                now. Use <code>b.any</code> when you genuinely mean "whatever this is".
               </p>
               <CodeBlock code={wrongSlotExample} language="typescript" invalid />
             </div>
@@ -606,12 +610,8 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Where the edge is.</strong> Measured against the published
                 declaration files on TypeScript 5.8.3: <strong>530</strong> chained{' '}
-                <code>.v()</code> calls compile and <strong>531</strong> crash. Treat that
-                as an order of magnitude rather than a constant — it moves with the
-                TypeScript version, with the rules on each field, and with how much else the
-                file asks the compiler to do. Compiling against the sources rather than the
-                declarations survives further, so a figure taken inside this repository is
-                not the one you will hit.
+                <code>.v()</code> calls compile and <strong>531</strong> crash. The edge moves
+                with the TypeScript version and with the rules on each field.
               </p>
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Fix.</strong> Split the declarations across several builders over the
@@ -620,12 +620,6 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 call site needs.
               </p>
               <CodeBlock code={splitWideTypeExample} language="typescript" />
-              <p class="md-body-medium text-on-surface-variant">
-                A type this wide is worth a second look on its own terms — several hundred
-                fields on one object is usually several objects. But the compiler failing
-                without a diagnostic is a bad way to find that out, which is why the number
-                is written down here.
-              </p>
             </div>
           </details>
 
@@ -660,10 +654,10 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> <code>build()</code> returns an object with{' '}
-                <code>validate</code>, <code>parse</code>, <code>pick</code> and{' '}
-                <code>pickAll</code>. 1.x's README showed it being called; no implementation
-                ever returned something callable.
+                <strong>Cause.</strong> <code>build()</code> returns{' '}
+                <a href="/docs/api/validator">an object with four members</a>, not a function.
+                1.x's README showed it being called; no implementation ever returned something
+                callable.
               </p>
               <CodeBlock code={buildCallableExample} language="typescript" invalid />
             </div>
@@ -682,11 +676,9 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> <code>abortEarly</code> defaults to{' '}
-                <strong>true</strong>. 1.x's documentation said <code>false</code>; its
-                implementation tested <code>options?.abortEarly !== false</code>, which makes
-                the default <code>true</code>. Nothing changed in behaviour — the
-                documentation was wrong.
+                <strong>Cause.</strong> <code>abortEarly</code> and{' '}
+                <code>abortEarlyOnEachField</code> both default to <strong>true</strong>. Pass{' '}
+                <code>&#123; abortEarly: false &#125;</code> to collect every field's issues.
               </p>
               <CodeBlock code={abortEarlyExample} language="typescript" />
               <p class="md-body-medium text-on-surface-variant">
@@ -705,11 +697,10 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> There is no implicit <code>required</code>. A field
-                that declares no presence rule accepts a missing value. 1.x had a
-                fast-path/slow-path split in which adding an array <em>elsewhere in the
-                schema</em> switched implicit-required on for unrelated fields; if you relied
-                on that, add <code>.required()</code>.
+                <strong>Cause.</strong> There is no implicit <code>required</code>: a field
+                that declares no presence rule accepts a missing value —{' '}
+                <a href="/docs/core-concepts#presence">presence</a>. Add{' '}
+                <code>.required()</code>.
               </p>
               <CodeBlock code={implicitRequiredExample} language="typescript" />
             </div>
@@ -724,12 +715,9 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> Transforms run only in <code>parse()</code>, and they
-                always run <strong>last</strong>. There is one order —{' '}
-                <code>default &rarr; presence &rarr; gates &rarr; checks &rarr; transforms
-                &rarr; recursion</code> — and chain position does not change it, so a check
-                written after a transform still sees the original value. 1.x had a second
-                order on a plugin-registry fallback path where transforms ran first.
+                <strong>Cause.</strong> Transforms run only in <code>parse()</code>, and
+                always last, whatever the chain order —{' '}
+                <a href="/docs/core-concepts#the-order-rules-run-in">the one order</a>.
               </p>
             </div>
           </details>
@@ -747,16 +735,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
               <ul class="md-body-medium space-y-2 text-on-surface-variant">
                 <li>
                   <strong><code>validateIf</code> / <code>skip</code>.</strong> Every gate on
-                  a field is asked before any check runs. In 1.x{' '}
-                  <code>.min(3).validateIf(c)</code> still ran <code>min(3)</code>; now the
-                  two orderings are the same declaration.
+                  a field is asked before any check runs —{' '}
+                  <a href="/docs/core-concepts#the-order-rules-run-in">rule order</a>.
                 </li>
                 <li>
-                  <strong><code>requiredIf</code> / <code>optionalIf</code>.</strong> These
-                  are presence rules, not checks. When the condition makes a field required
-                  and the value is missing you get one issue under{' '}
-                  <code>requiredIf</code> — not one per remaining rule, because the rest of
-                  the chain does not run.
+                  <strong><code>requiredIf</code> / <code>optionalIf</code>.</strong> Presence
+                  rules, not checks: one issue, and the rest of the chain does not run —{' '}
+                  <a href="/docs/core-concepts#presence">presence</a>.
                 </li>
               </ul>
               <CodeBlock code={gateOrderExample} language="typescript" />
@@ -794,10 +779,8 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>Cause.</strong> The default code is now the <strong>plugin's
-                name</strong>, uniformly, with <code>options.code</code> overriding it. 1.x
-                emitted constants such as <code>REQUIRED</code> and{' '}
-                <code>VALIDATION_ERROR</code>.
+                <strong>Cause.</strong> The default code is the <strong>plugin's name</strong>,
+                with <code>options.code</code> overriding it.
               </p>
               <div class="overflow-x-auto">
                 <table class="w-full min-w-[32rem] text-left">
@@ -848,9 +831,9 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Cause.</strong> There is one message channel:{' '}
                 <code>messageFactory</code>. <code>RuleOptions</code> is{' '}
-                <code>&#123; code?, messageFactory?, severity? &#125;</code> and nothing else, so
-                there is no second precedence rule to remember. It is always the{' '}
-                <strong>last</strong> argument of a chain method, after the plugin's own.
+                <code>&#123; code?, messageFactory?, severity? &#125;</code> and nothing else, and
+                it is always the <strong>last</strong> argument of a chain method, after the
+                plugin's own.
               </p>
               <CodeBlock code={messageOptionExample} language="typescript" invalid />
               <CodeBlock code={messageFactoryExample} language="typescript" />
@@ -877,11 +860,13 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
               <p class="md-body-medium text-on-surface-variant">
                 The whole <code>@maroonedog/luq/async</code> subpath is one{' '}
                 <code>await</code> followed by the ordinary synchronous engine. It contains no
-                rule, no plan and no loop over fields — deliberately, because a second
-                execution path is exactly how 1.x's async story died: its real context-based
-                branch existed but no call site reached it, so{' '}
-                <code>required: true</code> on <code>fromContext</code> could never see a
-                context and always failed.
+                rule, no plan and no loop over fields.
+              </p>
+              <p class="md-body-medium text-on-surface-variant">
+                The <code>external</code> validate option is the pre-resolved bag that{' '}
+                <code>@maroonedog/luq/plugins/fromContext</code> reads;{' '}
+                <code>@maroonedog/luq/async</code> resolves the promises and passes them in on
+                it.
               </p>
               <CodeBlock code={asyncExample} language="typescript" fileName="signup.ts" />
 
@@ -954,8 +939,11 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
               <ul class="md-body-medium space-y-2 text-on-surface-variant">
                 <li>
                   The barrel is <strong>not</strong> the problem when your bundler
-                  tree-shakes — it was measured at a 1 B difference over three plugins. Check
-                  that you are emitting ES modules and that tree-shaking is on.
+                  tree-shakes — it was measured at a 1 B difference over three plugins, which
+                  gzip to {bundleSize.threePlugin.gzip} through the subpaths, and{' '}
+                  <code>check:barrel-equivalence</code> fails the build if the two routes
+                  diverge by more than {barrelDivergencePercent}%. Check that you are emitting
+                  ES modules and that tree-shaking is on.
                 </li>
                 <li>
                   <code>jsonSchemaFullFeature</code> bundles the plugins a whole document
@@ -985,10 +973,12 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             </summary>
             <div class="mt-4 space-y-4">
               <p class="md-body-medium text-on-surface-variant">
-                <strong>First check: are you building inside the hot path?</strong>
-                <code>build()</code> costs 14–662&nbsp;µs depending on shape, against
-                sub-microsecond <code>validate()</code> calls. Building once at module scope
-                is the single change that matters.
+                <strong>First check: are you building inside the hot path?</strong> Building
+                once at module scope is the single change that matters —{' '}
+                <a
+                  class="text-primary underline underline-offset-2"
+                  href="/benchmarks#build-cost">what <code>build()</code> costs per shape</a
+                >.
               </p>
               <p class="md-body-medium text-on-surface-variant">
                 <strong>Second: this release really is slower than 1.x on flat and nested
@@ -1000,11 +990,6 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 specialised fast paths that this implementation has no equivalent of. If your
                 workload is millions of flat-object validations per second, measure before
                 upgrading.
-              </p>
-              <p class="md-body-medium text-on-surface-variant">
-                Third: leave <code>abortEarly</code> at its default for
-                accept-or-reject work, and turn it off only where you need every complaint —
-                a form boundary, not a hot loop.
               </p>
               <a
                 href="/benchmarks"
@@ -1021,7 +1006,7 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
             <ol class="md-body-medium space-y-3 text-on-surface-variant">
               <li>
                 <strong>1. Check the 1.x mapping.</strong> If you are coming from 1.x, most
-                surprises are on it. The{' '}
+                surprises are on it: the{' '}
                 <a href="/docs/api/validator#porting" class="text-primary underline"
                   >result</a
                 >, the{' '}
@@ -1029,17 +1014,11 @@ export const used = [requiredPlugin, stringMinPlugin, numberMinPlugin];`;
                 and the{' '}
                 <a href="/docs/api/plugin-registry#removed" class="text-primary underline"
                   >plugin registry</a
-                > each carry their own table; the import specifiers are{' '}
-                <a href="/docs/troubleshooting#imports" class="text-primary underline"
-                  >at the top of this page</a
-                > and the <code>abortEarly</code> default is{' '}
-                <a href="/docs/troubleshooting#abort-early" class="text-primary underline"
-                  >under Unexpected results</a
-                >.
+                > each carry their own table.
               </li>
               <li>
-                <strong>2. Reduce it to one file.</strong> Every example on this site is a
-                complete file that compiles; start from the nearest one and add your case.
+                <strong>2. Reduce it to one file.</strong> Start from the nearest example and
+                add your case.
               </li>
               <li>
                 <strong>3. Search the issues</strong> at{' '}

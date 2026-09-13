@@ -189,13 +189,6 @@ const tableOfContents = [
           is a discriminated union.
         </p>
 
-        <p class="mt-4 text-body-large">
-          Getting started already built one: a validator comes from a type you already
-          have, so there is no inferred schema type to keep in step with your own. This
-          page is the rest of that sentence — what a slot decides, what the bag decides,
-          what a path resolves against, and what comes back.
-        </p>
-
         <h2 id="slots" class="mt-12 text-headline-small">Slots</h2>
 
         <p class="mt-3 text-body-large">
@@ -273,15 +266,6 @@ const tableOfContents = [
           </p>
         </div>
 
-        <p class="mt-6 text-body-large">
-          None of this needs <code>strict</code> in your <code>tsconfig.json</code>. The
-          compile-time half — a slot that does not match the field, a missing{' '}
-          <code>[*]</code>, a path the type does not declare, a method whose plugin you did
-          not import — is an error either way, because Luq is checked both ways. Turning{' '}
-          <code>strict</code> on is still worth doing; it costs nothing here and it catches
-          the rest of your code.
-        </p>
-
         <h2 id="plugins-are-the-vocabulary" class="mt-12 text-headline-small">
           Plugins are the vocabulary
         </h2>
@@ -334,12 +318,13 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           The path you <em>declare</em> holds <code>[*]</code>; the path you <em>read back</em>{' '}
-          holds the index the failure happened at. A fixed index in a declaration
-          (<code>items[0].name</code>), a bare <code>items.name</code>, the legacy{' '}
-          <code>items.*.name</code>, and reaching into an array's own members
-          (<code>tags.length</code>) are all compile errors — as is reaching inside a{' '}
-          <code>Date</code>, <code>RegExp</code>, <code>Map</code>, <code>Set</code> or any
-          other built-in, which a path treats as opaque.
+          holds the index the failure happened at. Every other form is a compile error,
+          including reaching inside a <code>Date</code> or <code>Map</code>, which a path
+          treats as opaque —{' '}
+          <a
+            class="text-primary underline underline-offset-2"
+            href="/docs/troubleshooting#bad-path">the rejected forms</a
+          >.
         </p>
 
         <h2 id="presence" class="mt-12 text-headline-small">Presence</h2>
@@ -424,8 +409,8 @@ const tableOfContents = [
         <p class="mt-4 text-body-large">
           A <strong>gate</strong> is <code>validateIf</code> or its polarity-inverted twin{' '}
           <code>skip</code>: a predicate over the root value, asked before any check runs,
-          with no message of its own to write when it closes. Three consequences worth
-          stating: a closed gate silences the whole field rather than the rules after it,
+          with no message of its own to write when it closes. A closed gate silences the
+          whole field rather than the rules after it,
           and reports nothing; a rejected presence rule ends the field with exactly one
           issue; and transforms run in <code>parse()</code> only, and only when every check
           passed.
@@ -445,9 +430,8 @@ const tableOfContents = [
 
         <p class="mt-3 text-body-large">
           <code>validate()</code> and <code>parse()</code> return a discriminated union on{' '}
-          <code>valid</code>. There is no result class, no <code>unwrap()</code> on the value
-          and no <code>errors</code> member — narrowing on <code>valid</code> is what gives
-          you <code>data</code>.
+          <code>valid</code>. There is no <code>errors</code> member; narrowing on{' '}
+          <code>valid</code> is what gives you <code>data</code>.
         </p>
 
         <CodeBlock code={resultExample} language="typescript" />

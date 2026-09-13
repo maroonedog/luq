@@ -172,3 +172,50 @@ describe("applicators nest", () => {
     expect(validateA(schema, "a")).toBe(false);
   });
 });
+
+describe("a composite explains itself through causes", () => {
+  // A composite reports its own code — `allOf`, `anyOf`, `oneOf` — and that
+  // code says which applicator failed, never why. The inner failures were
+  // already collected into IssueDetail.causes by collectCauses(); they simply
+  // had nowhere to go, because ValidationIssue carried no such member and
+  // createIssue dropped them. A caller was left with "allOf failed" and no way
+  // to reach "minLength failed" short of re-running the sub-schemas.
+  const everyIssue = { abortEarly: false, abortEarlyOnEachField: false };
+
+  const buildA = (a: unknown) =>
+    fromJsonSchema(jsonSchemaBagFixture, { properties: { a } });
+
+  it("carries the inner code of an allOf branch that failed", () => {
+    const outcome = buildA({
+      allOf: [{ type: "string" }, { minLength: 5 }],
+    }).validate({ a: "ab" }, everyIssue);
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    const [issue] = outcome.issues;
+    expect(issue?.code).toBe("allOf");
+    expect(issue?.causes?.map((cause) => cause.code)).toEqual(["stringMin"]);
+  });
+
+  it("carries every branch's code when anyOf accepted none of them", () => {
+    const outcome = buildA({
+      anyOf: [{ type: "number" }, { type: "boolean" }],
+    }).validate({ a: "x" }, everyIssue);
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    const [issue] = outcome.issues;
+    expect(issue?.code).toBe("anyOf");
+    expect(issue?.causes?.length).toBe(2);
+  });
+
+  it("puts no causes key on an ordinary issue", () => {
+    const outcome = buildA({ minLength: 5 }).validate({ a: "ab" }, everyIssue);
+    expect(outcome.valid).toBe(false);
+    if (outcome.valid) return;
+    const [issue] = outcome.issues;
+    expect(issue?.code).toBe("stringMin");
+    // Present-and-undefined is not the same as absent: it would put the key on
+    // every issue the library reports, and `"causes" in issue` would answer
+    // true everywhere.
+    expect(issue !== undefined && "causes" in issue).toBe(false);
+  });
+});
