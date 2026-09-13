@@ -105,6 +105,47 @@ const describeStanding = (standing: (typeof standings)[number]): string => {
 
 const competitorSentence = standings.map(describeStanding).join('; ');
 
+/**
+ * The same standings read off the accepted-only column, and named wherever it
+ * disagrees with the mixed one.
+ *
+ * The ratios above come from a pool that is half values that fail, so they
+ * measure how cheaply a library builds an error as much as how quickly it
+ * validates — and the benchmarks page says so beside the same table, telling
+ * the reader to read the accepted column instead. Quoting the mixed figure
+ * here without that was the site arguing with itself: against zod the verdict
+ * does not merely soften between the two columns, it inverts.
+ *
+ * Counted from the rows rather than written down, so this cannot drift from
+ * the table it is describing or from the page that draws the same conclusion.
+ */
+const acceptedStandings = competitorBenchmark.libraries
+  .map((library) => {
+    const rows = competitorBenchmark.rows.filter(
+      (row) => row.competitor === library.name && row.acceptedRatio !== null
+    );
+    return {
+      name: library.name,
+      total: rows.length,
+      mixedWins: rows.filter((row) => Number(row.ratio) > 1).length,
+      acceptedWins: rows.filter((row) => Number(row.acceptedRatio) > 1).length,
+    };
+  })
+  .filter((standing) => standing.total > 0 && standing.acceptedWins !== standing.mixedWins);
+
+const acceptedSentence =
+  acceptedStandings.length === 0
+    ? null
+    : `Those are mixed pools — half the values in them fail — so they measure error ` +
+      `construction as much as validation. On accepted input alone the count changes: ` +
+      `${acceptedStandings
+        .map(
+          (standing) =>
+            `${standing.name} ${standing.acceptedWins} of ${standing.total} rather than ` +
+            `${standing.mixedWins} of ${standing.total}`
+        )
+        .join('; ')}.`;
+
 const description =
   'When Luq is the right choice and when zod is. Luq declares rules against a type you already have; zod infers a type from a schema you write. The direction is the whole difference.';
 
@@ -428,6 +469,7 @@ router.input(toStandardSchema(validateUser));`;
                     href="/benchmarks#against-others">the comparison table</a
                   >.</span
                 >
+                {acceptedSentence && <span class="mt-2 block">{acceptedSentence}</span>}
               </td>
             </tr>
             <tr>
