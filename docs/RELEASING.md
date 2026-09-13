@@ -17,6 +17,34 @@ at publish time, so a red tree cannot reach npm by accident.
 **SemVer, and the major is cheap.** A breaking change is a major, not a
 `2.x` with a note. There is no plan to avoid majors by making the API vague.
 
+**One exception, and it is narrow: a type that starts rejecting code which was
+already wrong at run time.** That goes in a minor, named in the release notes
+under its own heading.
+
+The case that forced this down: `parse()` was typed as returning the declared
+type while actually returning the transformed one, so
+
+```ts
+parsed.data.when.toUpperCase()   // when was transformed to a Date
+```
+
+compiled and threw. Correcting the type makes that line stop compiling. Read
+strictly, code that built no longer builds and it is a major. But the only code
+it can break is code that was already throwing, and a library that spends a
+major every time it stops lying is a library nobody can follow — TypeScript
+itself ships checker fixes of exactly this shape in minors, under a "Breaking
+Changes" heading, for the same reason.
+
+**What does NOT qualify**, so this stays one exception and not a loophole:
+
+- a run-time behaviour change a correct program could be relying on;
+- a rename, a removal, or a signature change;
+- a type that rejects code which was working. "It was wrong" has to mean
+  wrong when it ran, demonstrated, not wrong in someone's judgement.
+
+Argue it in the pull request each time, with the failure a user would have
+seen. If the argument is not obvious, the answer is a major.
+
 **2.0.0 stays published.** There was a temptation to re-tag it as an alpha to
 signal "still young". Doing so would be worse than useless: `2.0.0-alpha.1`
 sorts *below* `2.0.0`, so nobody on `^2.0.0` would receive it, and a release
