@@ -62,9 +62,10 @@ if (result.valid) {
           Every rule Luq can apply is a plugin you import by name. <code
             class="rounded-shape-xs bg-surface-container-highest px-1.5 py-0.5 font-mono text-[0.9em]"
             >.use()</code
-          > puts one in the builder's bag, and the bag decides which methods exist on which
-          slots — so an unimported plugin is not merely absent at runtime, its method
-          does not typecheck.
+          > puts one in{' '}
+          <a class="text-primary underline underline-offset-2" href="/docs/core-concepts#plugins-are-the-vocabulary"
+            >the builder's bag</a
+          >.
         </p>
 
         <dl class="mt-8 flex flex-wrap gap-x-10 gap-y-4">
@@ -212,11 +213,10 @@ if (result.valid) {
         <CodeBlock code={quickStart} language="typescript" fileName="draft-validator.ts" />
       </div>
       <p class="md-body-medium mt-4 max-w-3xl text-on-surface-variant">
-        <code class="font-mono">build()</code> returns an object, not a function, and a result
-        is a discriminated union on <code class="font-mono">valid</code>: the success branch
-        carries <code class="font-mono">data</code>, both branches carry{' '}
-        <code class="font-mono">issues</code>, and each issue is{' '}
-        <code class="font-mono">{'{ path, code, message, severity }'}</code>.
+        The result shape, and the four members of the built object:{' '}
+        <a class="text-primary underline underline-offset-2" href="/docs/api/validator"
+          >the Validator page</a
+        >.
       </p>
     </section>
 
@@ -248,7 +248,7 @@ if (result.valid) {
             <p class="md-body-medium mt-1 text-on-surface-variant">
               One import per plugin — the root export deliberately ships none, so every
               line names its own subpath. Ticking a plugin also ticks the plugins its
-              example chain calls, because an unimported method does not typecheck.
+              example chain calls.
             </p>
           </div>
           <button

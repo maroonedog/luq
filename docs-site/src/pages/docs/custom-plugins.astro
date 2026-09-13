@@ -377,6 +377,11 @@ const tableOfContents = [
 
         <CodeBlock code={minimalExample} language="typescript" fileName="even.ts" />
 
+        <p class="mt-4 text-body-large">
+          The <code>/*#__PURE__*/</code> annotation matters: it lets a bundler that ignores{' '}
+          <code>sideEffects: false</code> still drop a plugin nobody imported.
+        </p>
+
         <div class="md-card md-card-outlined mt-6 p-5">
           <h3 class="text-title-medium">Why <code>definePlugin&lt;Sig&gt;()(spec)</code> is two calls</h3>
           <p class="mt-2 text-body-medium text-on-surface-variant">
@@ -384,8 +389,6 @@ const tableOfContents = [
             literals from the spec. That split is what lets <code>name</code>,{' '}
             <code>method</code> and <code>slots</code> stay literal types while{' '}
             <code>args</code>, <code>out</code> and <code>context</code> stay yours to declare.
-            The <code>/*#__PURE__*/</code> annotation matters too: it lets a bundler that
-            ignores <code>sideEffects: false</code> still drop a plugin nobody imported.
           </p>
         </div>
 
@@ -434,8 +437,8 @@ const tableOfContents = [
         </div>
 
         <p class="mt-4 text-body-large">
-          Note the asymmetry, because it is the point: the caller writes typed things and{' '}
-          <code>build()</code> receives erased things. A plugin cannot see the root type, so it
+          The caller writes typed things and <code>build()</code> receives erased things. A
+          plugin cannot see the root type, so it
           cannot depend on it, so one plugin works for every type. Markers also nest —{' '}
           <code>readonly ElementChain[]</code> (a tuple's positions) and{' '}
           <code>Readonly&lt;Record&lt;string, NarrowedChain&gt;&gt;</code> (a key set, as{' '}
@@ -557,10 +560,13 @@ const tableOfContents = [
           <h3 class="text-title-medium">Two conventions that are load-bearing</h3>
           <ul class="mt-3 space-y-3 text-body-medium text-on-surface-variant">
             <li>
-              <strong class="text-on-surface">A wrong-typed value passes.</strong>
-              <code>!isString(value) || …</code> is not defensive clutter. The slot guard owns
-              type and the presence rules own <code>null</code> and <code>undefined</code>, so a
-              value rule that re-decides either produces a duplicate issue under the wrong code.
+              <strong class="text-on-surface">A wrong-typed value passes.</strong> The slot
+              guard owns type and{' '}
+              <a
+                class="text-primary underline underline-offset-2"
+                href="/docs/core-concepts#presence">the presence rules</a>{' '}
+              own <code>null</code> and <code>undefined</code>, so a value rule that re-decides
+              either produces a duplicate issue under the wrong code.
             </li>
             <li>
               <strong class="text-on-surface">
@@ -644,18 +650,12 @@ const tableOfContents = [
           </table>
         </div>
 
-        <p class="mt-4 text-body-large">
-          Here are all four at their call sites. Note what <code>b</code> is inside each
-          callback — an element chain, a key chain, a value chain, a narrowed chain — and that
-          the compiler knows which:
-        </p>
+        <p class="mt-4 text-body-large">All four at their call sites:</p>
 
         <CodeBlock code={chainMarkerCallSiteExample} language="typescript" />
 
         <p class="mt-4 text-body-large">
-          On the implementation side, a plugin must declare <strong>which argument
-          positions</strong> carry a sub-chain, because a <code>NarrowedChain</code> and a{' '}
-          <code>RootPredicate</code> are both plain functions once the types are erased.
+          A plugin must declare <strong>which argument positions</strong> carry a sub-chain.
         </p>
 
         <CodeBlock code={subChainExample} language="typescript" fileName="each.ts" />
@@ -683,24 +683,13 @@ const tableOfContents = [
         </h2>
 
         <p class="mt-3 text-body-large">
-          Plugins inside this repository live in one of two tiers, enforced by{' '}
-          <code>npm run check:plugin-isolation</code>:
+          Every plugin sits in one of{' '}
+          <a class="text-primary underline underline-offset-2" href="/plugins">
+            two tiers
+          </a>, enforced by <code>npm run check:plugin-isolation</code>: an isolated plugin may
+          import nothing but <code>plugin-kit</code>, <code>types</code>, <code>path</code> and
+          its own directory.
         </p>
-
-        <ul class="mt-4 space-y-3 text-body-large">
-          <li>
-            <strong>isolated</strong> (<code>src/plugins/&lt;kebab-name&gt;/</code>) — may
-            import <code>plugin-kit</code>, <code>types</code>, <code>path</code>, and its own
-            directory. Nothing else: not a sibling plugin, not the JSON Schema layer, not the
-            builder. 75 of the 77 are here.
-          </li>
-          <li>
-            <strong>extension</strong>{' '}
-            (<code>src/json-schema/extensions/&lt;kebab-name&gt;/</code>) — may additionally
-            import the JSON Schema layer and other plugins' entry files.{' '}
-            <code>jsonSchema</code> and <code>jsonSchemaFullFeature</code> are the two.
-          </li>
-        </ul>
 
         <p class="mt-4 text-body-large">
           That rule is why importing one plugin does not drag in the other 76, and it is
@@ -710,12 +699,8 @@ const tableOfContents = [
         </p>
 
         <p class="mt-4 text-body-large">
-          Naming inside the repository: the directory is <code>kebab-case</code> and the public
-          subpath is <code>camelCase</code>, derived from each other and round-trip asserted at
-          build time; <code>index.ts</code> re-exports only; and one method name per slot across
-          the whole catalogue — <code>npm run check:plugin-uniqueness</code> refuses a
-          collision. <code>stringMin</code> and <code>numberMin</code> may both be{' '}
-          <code>.min()</code> because their slots do not overlap.
+          One method name per slot across the whole catalogue:{' '}
+          <code>npm run check:plugin-uniqueness</code> refuses a collision.
         </p>
 
         <h2 id="next-steps" class="mt-12 text-headline-small">Next steps</h2>

@@ -25,12 +25,6 @@ const description =
       <div class="container mx-auto max-w-6xl">
         <div class="mb-8 text-center">
           <h2 class="mb-3 text-headline-medium text-on-surface">The whole API</h2>
-          <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
-            A builder that takes your type, and a result you narrow with{' '}
-            <code class="font-mono">valid</code>. There is no <code class="font-mono">Result</code>{' '}
-            class, no <code class="font-mono">unwrap()</code>, and{' '}
-            <code class="font-mono">build()</code> returns an object rather than a function.
-          </p>
         </div>
         <CodeExample />
       </div>
@@ -48,8 +42,7 @@ const description =
         <p class="mb-4 text-body-large text-on-surface-variant">
           Install it, declare one rule against a type you already have, and read the
           result — that is the whole first hour. It is slower than 1.x on flat and
-          nested shapes, and the benchmarks page says by how much rather than
-          leaving it out.
+          nested shapes — the benchmarks page says by how much.
         </p>
         <p class="mb-8 text-body-medium text-on-surface-variant">
           Coming from 1.x, the mapping from the old{' '}
@@ -57,7 +50,7 @@ const description =
           the{' '}
           <a class="text-primary underline underline-offset-2" href="/docs/api/validator#porting"
             >Validator page</a
-          >, beside the API it maps onto.
+          >.
         </p>
         <div class="flex flex-col justify-center gap-3 sm:flex-row">
           <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">

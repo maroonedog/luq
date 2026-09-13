@@ -269,16 +269,14 @@ router.input(toStandardSchema(validateUser));`;
       </div>
 
       <h2 class="mb-4 text-headline-small text-on-surface">
-        The part that is a real tension, not a talking point
+        Where schema-first is the better fit
       </h2>
       <p class="mb-4 text-body-large text-on-surface-variant">
         A codebase should have one source of truth for a shape.{' '}
         <strong class="text-on-surface"
           >If that source is a schema you author, schema-first is the coherent
           arrangement</strong
-        > — you write one artefact, the types come out of it, and there is nothing
-        to keep in step. That is a better position than Luq's, and Luq cannot give
-        it to you.
+        >, and Luq cannot give you that.
       </p>
       <p class="mb-4 text-body-large text-on-surface-variant">
         Luq's case is the one where the artefact already exists elsewhere and is
@@ -286,24 +284,13 @@ router.input(toStandardSchema(validateUser));`;
         <em>second</em> source of truth, and the question stops being which library
         is nicer and becomes which copy is right.
       </p>
-      <p class="mb-4 text-body-medium text-on-surface-variant">
-        Two things follow that are easy to miss. First,{' '}
-        <strong class="text-on-surface">Luq contains both directions</strong>:{' '}
+      <p class="mb-12 text-body-medium text-on-surface-variant">
+        One thing that is easy to miss:{' '}
+        <strong class="text-on-surface">Luq contains both directions</strong>.{' '}
         <a class="text-primary underline underline-offset-2" href="/json-schema"
           ><code>fromJsonSchema(document)</code></a
-        > is schema-first, and the document decides. That is the same principle pointed
-        at a different upstream, not a contradiction to argue away — what Luq declines
-        to do is make you hand-write the second copy. Second, the choice is{' '}
-        <strong class="text-on-surface">per boundary, not per project</strong>:{' '}
-        <a class="text-primary underline underline-offset-2" href="/standard-schema"
-          >Standard Schema</a
-        > means a zod schema and a Luq validator are interchangeable
-        where they meet, so "the schema is the truth here, the type is the truth
-        there" is a workable arrangement rather than an unresolved argument.
-      </p>
-      <p class="mb-12 text-body-medium text-on-surface-variant">
-        If neither description fits — you own the shape and you are starting from
-        nothing — the honest recommendation is still the one in the card above.
+        > is schema-first, and the document decides. What Luq declines to do is make
+        you hand-write the second copy.
       </p>
 
       <h2 class="mb-4 text-headline-small text-on-surface">
@@ -319,12 +306,7 @@ router.input(toStandardSchema(validateUser));`;
       </p>
       <p class="mb-4 text-body-large text-on-surface-variant">
         So Luq asks you to describe the <strong class="text-on-surface">rules</strong>,
-        not the shape — the shape is already written down. Covering an existing
-        codebase with a schema-first validator means producing a second description
-        of the same shape for every type you cover, and then keeping the two in
-        agreement; that is per-type work whether you author the schema beside the
-        type or switch the type to be inferred from it. Luq skips that step because
-        it never needs the second description.
+        not the shape.
       </p>
       <p class="mb-4 text-body-large text-on-surface-variant">
         Which is what makes adoption a patch rather than a migration. Nothing here
@@ -370,9 +352,8 @@ router.input(toStandardSchema(validateUser));`;
         The direction is the whole difference
       </h2>
       <p class="mb-6 text-body-large text-on-surface-variant">
-        Nearly every widely used validator in TypeScript works one way: you
-        write a schema, and the type is inferred out of it. Luq runs the other
-        way. You keep the type, and the rules are declared against it.
+        Nearly every widely used validator in TypeScript infers the type out of a
+        schema you write. Luq runs the other way.
       </p>
       <p class="mb-6 text-body-medium text-on-surface-variant">
         Luq is not the first to run that way. <a
@@ -380,10 +361,7 @@ router.input(toStandardSchema(validateUser));`;
           href="https://github.com/AlexJPotter/fluentvalidation-ts"
           >fluentvalidation-ts</a
         > has declared rules against an existing type with a fluent chain since 2019.
-        The direction is older than this library and the credit is not ours. What
-        Luq adds is the enforcement: the path, the slot and the method are each
-        checked by the compiler, so a rule that does not apply to the field it
-        names is a type error rather than a rule that quietly never matches.
+        The direction is older than this library and the credit is not ours.
       </p>
 
       <div class="mb-4 grid gap-4 md:grid-cols-2">
@@ -398,17 +376,15 @@ router.input(toStandardSchema(validateUser));`;
         as a type instead of falling out of the schema. That is the cost of the
         direction — nothing is in the bundle that you did not name, and the type
         is yours rather than inferred — and it is a real cost, not a rounding
-        error. If a schema is the only place the shape exists in your codebase,
-        the shorter column is also the honest answer.
+        error.
       </p>
 
       <h2 class="mb-4 text-headline-small text-on-surface">
         What the type-first direction buys
       </h2>
       <p class="mb-6 text-body-large text-on-surface-variant">
-        Because the type is already known when the rules are read, the compiler
-        can check the rules against it. These are errors, not rules that compile
-        and then never fire:
+        Because the type is known when the rules are read, these are compile
+        errors:
       </p>
       <ul class="mb-4 divide-y divide-outline-variant border-y border-outline-variant">
         {
@@ -432,9 +408,6 @@ router.input(toStandardSchema(validateUser));`;
       <h2 class="mb-4 text-headline-small text-on-surface">
         What you give up by choosing this direction
       </h2>
-      <p class="mb-4 text-body-large text-on-surface-variant">
-        Written plainly, because you will find all of it out anyway:
-      </p>
       <div class="tablewrap mb-12 overflow-x-auto">
         <table class="w-full text-body-medium">
           <tbody class="divide-y divide-outline-variant">

@@ -222,7 +222,11 @@ accounts.pickAll(["email"]); //             several fields, same plan
 
 `validate` and `parse` return the same discriminated union: `{ valid: true,
 data, issues }` or `{ valid: false, issues }`. `validate` hands back the object
-you passed, by identity, when nothing was written.
+you passed, by identity, when nothing was written. Only `parse` runs your
+transform functions, so only `parse` can throw what one of them throws: a throw
+from a transform is a programmer error, not a validation issue, and zod, valibot
+and yup all propagate it the same way. To reject a value instead, use a check
+such as [`custom`](https://luq.dev/docs/api/validator#transform-throws).
 
 ### Slots
 

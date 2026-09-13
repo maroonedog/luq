@@ -149,16 +149,6 @@ export const accepted = articleValidator.validate({
   title: 'Field rules',
   slug: 'field-rules',
 }).valid;`;
-
-const typeArgumentExample = `// Naming the value type is what registry.createFieldRule is for:
-//
-//   registry.createFieldRule<string>(b => b.string.required().min(3))
-//   -> FieldRule<string, B>,  and rule.validate(123) does not compile.
-//
-// The free createFieldRule(builder, define) has TWO type parameters and no
-// default for the bag, so you cannot supply just the first. Called without
-// type arguments it infers a LOOSE value type — rule.validate(123) compiles.
-// Use the registry form whenever the rule's value type matters.`;
 ---
 
 <BaseLayout title="Plugin Registry & Field Rules - Luq Documentation">
@@ -227,19 +217,17 @@ import type {
             <p class="md-body-medium">
               <code>@maroonedog/luq/core/registry</code>,{' '}
               <code>@maroonedog/luq/core</code> and <code>@maroonedog/luq/plugin</code> are
-              not export keys and never were. The package has 84 keys:{' '}
-              <code>.</code>, <code>./package.json</code>, <code>./result</code>,{' '}
-              <code>./plugin-kit</code>, <code>./field-rule</code>, <code>./async</code>,{' '}
-              <code>./plugins</code>, and 77 under <code>./plugins/</code>.
+              not export keys and never were.{' '}
+              <a href="/docs/troubleshooting#not-exported" class="underline"
+                >The ones that are</a
+              >.
             </p>
           </div>
 
           <h2 id="create-plugin-registry">createPluginRegistry()</h2>
 
           <p>
-            Returns an empty registry. Fill it with <code>use()</code>, mint rules with{' '}
-            <code>createFieldRule()</code>, and get a fresh builder carrying the same plugins
-            with <code>toBuilder()</code>.
+            Returns an empty registry. Its four members:
           </p>
 
           <div class="not-prose my-8 overflow-x-auto">
@@ -286,10 +274,8 @@ import type {
 
           <p>
             This is the whole reason the registry still exists rather than being folded into
-            the builder. <code>Builder().use()</code> mutates and returns the receiver, so two
-            branches off one builder share plugins. A registry is meant to be a shared base
-            that different teams branch, so its <code>use()</code> returns a new registry and
-            leaves the receiver alone.
+            the builder. A registry is meant to be a shared base that different teams branch,
+            so its <code>use()</code> returns a new registry and leaves the receiver alone.
           </p>
 
           <CodeBlock code={immutabilityExample} language="typescript" />
@@ -300,9 +286,8 @@ import type {
               What it costs
             </h3>
             <p class="md-body-medium text-on-surface-variant">
-              A registry holds a thunk that replays <code>use()</code> onto a fresh builder,
-              never a builder it hands out. Replaying is O(n) per branch, and it happens when
-              you ask for a builder or mint a rule — not while validating.
+              Replaying happens when you ask for a builder or mint a rule, never while
+              validating.
             </p>
           </div>
 
@@ -311,11 +296,11 @@ import type {
           <p>
             Two doors to the same thing. The registry method is the ergonomic one because it
             takes a single type argument; the free function is there when you already have a
-            builder.
+            builder. Called without type arguments the free form infers a loose value type,
+            so reach for the registry form whenever the rule's value type matters.
           </p>
 
           <CodeBlock code={freeFunctionExample} language="typescript" />
-          <CodeBlock code={typeArgumentExample} language="typescript" showCopy={false} />
 
           <div class="not-prose my-8 overflow-x-auto">
             <table class="w-full min-w-[40rem] text-left">
@@ -359,10 +344,8 @@ import type {
             A standalone rule is exactly{' '}
             <code
               >Builder().use(...).for&lt;&#123; value: TValue &#125;&gt;().v('value', define).build()</code
-            >, built once at <code>createFieldRule()</code> time through the public entry
-            point. So <code>validate</code> and <code>parse</code> mean the same thing they do
-            on a full validator — and issues come back under the path{' '}
-            <code>'value'</code>, because the rule is not attached to a place yet.
+            >, built once at <code>createFieldRule()</code> time. So issues come back under
+            the path <code>'value'</code>: the rule is not attached to a place yet.
           </p>
 
           <CodeBlock code={standaloneExample} language="typescript" />
@@ -373,11 +356,8 @@ import type {
               1.x had a third execution semantics here
             </h3>
             <p class="md-body-medium text-on-surface-variant">
-              Its <code>FieldRule.validate</code> called the validator's <code>check()</code>{' '}
-              directly: it ignored <code>getErrorMessage</code>, ignored the null and
-              undefined skips, used the plugin's name in place of its code, and re-executed
-              your definition on every single call. None of that survives — there is one
-              engine and one answer to "what does this rule mean".
+              1.x ran a different engine for field rules than for fields. There is one engine
+              now, and one answer to "what does this rule mean".
             </p>
           </div>
 
@@ -389,10 +369,7 @@ import type {
 
           <p>
             A <strong>free function</strong>, and the builder is its first argument.{' '}
-            <code>builder.useField(path, rule)</code> is gone: a second way to declare a field
-            on the one entry point is how the registry grew into a parallel world in 1.x.{' '}
-            <code>useField</code> is a caller of <code>.v()</code>, so there is still exactly
-            one declaration mechanism.
+            <code>builder.useField(path, rule)</code> is gone.
           </p>
 
           <CodeBlock code={useFieldExample} language="typescript" />
@@ -424,10 +401,6 @@ import type {
           </div>
 
           <h2 id="choosing">Field rule or pick()?</h2>
-
-          <p>
-            Both give you one field on its own. They answer different questions.
-          </p>
 
           <div class="not-prose my-8 overflow-x-auto">
             <table class="w-full min-w-[40rem] text-left">
