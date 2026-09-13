@@ -151,56 +151,26 @@ npx tsc --noEmit`;
       </p>
       <CodeBlock code={driftSample} language="typescript" fileName="after-the-spec-changed.ts" invalid />
 
-      <div class="md-card md-card-filled my-8 p-6">
-        <p class="mb-3 text-body-large text-on-surface-variant">
-          The example above is marked <code class="font-mono">must-fail</code> in
-          this page's source. <code class="font-mono">npm run check:doc-examples</code>{' '}
-          compiles it on every build and fails if it ever succeeds.
-        </p>
-        <p class="text-body-medium text-on-surface-variant">
-          So the claim on this page is not prose. If the drift detection ever
-          breaks, this page breaks CI instead of quietly becoming untrue.
-        </p>
-      </div>
-
-      <p class="mb-4 text-body-large text-on-surface-variant">
-        A hand-written schema does not do this. It keeps compiling, keeps
-        validating a field the API no longer sends, and stays green until
-        something fails in production.
+      <p class="mb-4 mt-8 text-body-large text-on-surface-variant">
+        A hand-written schema does not: it keeps validating a field the API no
+        longer sends.
       </p>
       <CodeBlock code={workflowSample} language="bash" fileName="After a spec bump" />
 
       <h2 class="mb-4 mt-12 text-headline-small text-on-surface">
         Where the same argument applies
       </h2>
-      <p class="mb-4 text-body-large text-on-surface-variant">
-        Nothing here is specific to OpenAPI. It holds wherever the type is
-        generated and the generator owns it:
+      <p class="mb-12 text-body-large text-on-surface-variant">
+        Nothing here is specific to OpenAPI: Prisma, Drizzle, protobuf and
+        GraphQL codegen own their types the same way.
       </p>
-      <ul class="mb-12 space-y-2 text-body-large text-on-surface-variant">
-        <li class="flex gap-3">
-          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">database</span>
-          <span>Prisma and Drizzle, regenerated when the migration lands</span>
-        </li>
-        <li class="flex gap-3">
-          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">swap_horiz</span>
-          <span>protobuf and GraphQL codegen, shared with services you do not build</span>
-        </li>
-        <li class="flex gap-3">
-          <span class="md-icon md-icon-sm text-primary" aria-hidden="true">smart_toy</span>
-          <span>
-            A generator or a model writing the rules — the wrong path is rejected
-            before the code is ever run
-          </span>
-        </li>
-      </ul>
 
       <h2 class="mb-4 text-headline-small text-on-surface">Honest limits</h2>
       <ul class="mb-12 space-y-3 text-body-medium text-on-surface-variant">
         <li>
           Luq reads the generated type, not the OpenAPI document. Constraints the
           spec carries — <code class="font-mono">maxLength</code>,{' '}
-          <code class="font-mono">pattern</code>, <code class="font-mono">format</code>
+          <code class="font-mono">pattern</code>, <code class="font-mono">format</code>{' '}
           — do not survive into TypeScript, so you write those rules yourself.
           If you want the document itself to drive validation, that is the{' '}
           <a class="text-primary underline underline-offset-2" href="/json-schema">

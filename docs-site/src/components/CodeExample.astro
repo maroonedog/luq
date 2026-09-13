@@ -58,24 +58,6 @@ if (result.valid) {
 
 // name: String must have at least 3 characters, but got 2 (stringMin)`;
 
-const members = [
-  {
-    signature: 'validate(value, options?)',
-    detail: 'A ValidationResult<T> holding the original value.',
-  },
-  {
-    signature: 'parse(value, options?)',
-    detail: 'A ValidationResult<TParsed> holding the value after transforms.',
-  },
-  {
-    signature: 'pick(path)',
-    detail: 'A single-field validator for one declared path.',
-  },
-  {
-    signature: 'pickAll(paths)',
-    detail: 'A validator returning exactly those paths, keyed by the path string.',
-  },
-];
 ---
 
 <div class="grid items-start gap-6 lg:grid-cols-2">
@@ -102,14 +84,12 @@ const members = [
     </p>
   </div>
   <div class="md-divider"></div>
-  <ul class="divide-y divide-outline-variant">
-    {
-      members.map((member) => (
-        <li class="flex flex-col gap-1 px-6 py-4 sm:flex-row sm:items-baseline sm:gap-6">
-          <code class="shrink-0 font-mono text-body-medium text-primary sm:w-64">{member.signature}</code>
-          <span class="text-body-medium text-on-surface-variant">{member.detail}</span>
-        </li>
-      ))
-    }
-  </ul>
+  <p class="px-6 py-4 text-body-medium text-on-surface-variant">
+    They are <code class="font-mono">validate</code>, <code class="font-mono">parse</code>,{' '}
+    <code class="font-mono">pick</code> and <code class="font-mono">pickAll</code> — all four
+    are on the{' '}
+    <a class="text-primary underline underline-offset-2" href="/docs/api/validator"
+      >Validator page</a
+    >.
+  </p>
 </div>

@@ -24,12 +24,12 @@ const facts = [
   {
     icon: 'call_split',
     title: 'Enter one field at a time',
-    body: 'A path you do not declare is not validated, not required and not read. One .v() is the whole unit: cover a single field on a single type, ship it, and leave the rest of the shape alone for as long as you like. There is no registry to populate, no global setup and no config file, so a partly-covered type is a normal state rather than a half-finished migration.',
+    body: 'A path you do not declare is not validated, not required and not read. One .v() is the whole unit: cover a single field on a single type, ship it, and leave the rest of the shape alone for as long as you like — a partly-covered type is a normal state rather than a half-finished migration.',
   },
   {
     icon: 'undo',
     title: 'Leave without touching your types',
-    body: 'Your types were never authored here — .for<Order>() takes the Order you already had — so removing Luq deletes rules and imports, and nothing else. There is no generated file to delete, no inferred type to replace with a hand-written one, and no shape that now lives in a schema object instead of where it started.',
+    body: 'Your types were never authored here — .for<Order>() takes the Order you already had — so removing Luq deletes rules and imports, and nothing else.',
   },
   {
     icon: 'swap_horiz',
@@ -46,9 +46,8 @@ const facts = [
     <div class="mb-8 text-center">
       <h2 class="mb-3 text-headline-medium text-on-surface">What it costs to leave</h2>
       <p class="mx-auto max-w-2xl text-body-large text-on-surface-variant">
-        Worth answering before the case for adopting it, because it is the cheaper
-        question: a choice you can undo in an afternoon does not need to be the
-        right one on the first try.
+        A choice you can undo in an afternoon does not need to be the right one on
+        the first try.
       </p>
     </div>
 

@@ -13,6 +13,7 @@ const tableOfContents = [
   { id: 'severity', title: 'severity, and valid results with issues', level: 3 },
   { id: 'validate', title: 'validate(value, options?)', level: 2 },
   { id: 'parse', title: 'parse(value, options?)', level: 2 },
+  { id: 'transform-throws', title: 'When a transform throws', level: 3 },
   { id: 'options', title: 'ValidateOptions', level: 2 },
   { id: 'pick', title: 'pick(path)', level: 2 },
   { id: 'pick-all', title: 'pickAll(paths)', level: 2 },
@@ -123,6 +124,41 @@ const checked = signupValidator.validate(input);
 const parsed = signupValidator.parse(input);
 
 export const both = [checked.valid, parsed.valid];`;
+
+const rejectNotThrowExample = `import { Builder } from '@maroonedog/luq';
+import { requiredPlugin } from '@maroonedog/luq/plugins/required';
+import { transformPlugin } from '@maroonedog/luq/plugins/transform';
+import { customPlugin } from '@maroonedog/luq/plugins/custom';
+
+type Payload = { id: string };
+
+const throwingValidator = Builder()
+  .use(requiredPlugin)
+  .use(transformPlugin)
+  .for<Payload>()
+  .v('id', b =>
+    b.string.required().transform(id => {
+      if (!id.startsWith('user_')) throw new Error('not a user id');
+      return id.slice(5);
+    })
+  )
+  .build();
+
+// { valid: true }, and \`id\` is still 'order_9'. validate() runs no transform.
+export const checked = throwingValidator.validate({ id: 'order_9' });
+
+// throwingValidator.parse({ id: 'order_9' }) throws that Error at the call site.
+
+const rejectingValidator = Builder()
+  .use(requiredPlugin)
+  .use(customPlugin)
+  .for<Payload>()
+  // A check, not a transform: a rejected value is an issue, not a throw.
+  .v('id', b => b.string.required().custom(id => id.startsWith('user_')))
+  .build();
+
+// { valid: false }, one issue at 'id'. parse() of the same input does not throw.
+export const rejected = rejectingValidator.parse({ id: 'order_9' });`;
 
 const optionsExample = `import { Builder } from '@maroonedog/luq';
 import type { ValidateOptions } from '@maroonedog/luq';
@@ -301,8 +337,7 @@ export async function handleUpdate(request: Request): Promise<Response> {
         <h1 class="md-headline-large mb-4">Validator</h1>
         <p class="md-body-large mb-10 text-on-surface-variant">
           What <code>build()</code> hands back: an object with four members, returning a
-          plain discriminated union. There is no <code>Result</code> class, no{' '}
-          <code>isValid()</code>, and nothing to unwrap before you can read your data.
+          plain discriminated union.
         </p>
 
         <div class="prose max-w-none">
@@ -348,9 +383,7 @@ export async function handleUpdate(request: Request): Promise<Response> {
 
           <p>
             A discriminated union on <code>valid</code>. The success branch carries{' '}
-            <code>data</code>; both branches carry <code>issues</code>. That discriminant is
-            the whole point — narrowing on it is what removes the cast 1.x's{' '}
-            <code>unwrap()</code> existed to hide.
+            <code>data</code>; both branches carry <code>issues</code>.
           </p>
 
           <CodeBlock code={resultShapeExample} language="typescript" />
@@ -392,11 +425,8 @@ type ValidationResult<T> =
                   <td class="py-2">
                     Defaults to the <strong>plugin's name</strong> — <code>required</code>,{' '}
                     <code>stringMin</code> — and is overridden per rule with{' '}
-                    <code>&#123; code &#125;</code>. The vocabulary is enumerated in{' '}
-                    <code>config/issue-code.lock.json</code>, derived from the source and gated
-                    by <code>npm run check:issue-code-lock</code>, so a code cannot be renamed
-                    without a reviewed diff. A code may have more than one reporter: a missing
-                    root and a missing field both report <code>required</code>.
+                    <code>&#123; code &#125;</code>. A code may have more than one reporter: a
+                    missing root and a missing field both report <code>required</code>.
                   </td>
                 </tr>
                 <tr class="border-b border-outline-variant">
@@ -474,8 +504,7 @@ type ValidationResult<T> =
             <p class="md-body-medium text-on-surface-variant">
               Chain position does not change it. <code>.min(3).transform(f)</code> and{' '}
               <code>.transform(f).min(3)</code> are the same declaration: <code>min</code>{' '}
-              sees the value before <code>f</code> in both. 1.x had a second order on one
-              fallback path in which transforms ran first; there is only one now.
+              sees the value before <code>f</code> in both.
             </p>
           </div>
 
@@ -493,15 +522,56 @@ type ValidationResult<T> =
             </p>
           </div>
 
+          <h3 id="transform-throws">When a transform throws</h3>
+
+          <p>
+            Only <code>parse()</code> runs your transform functions, so only{' '}
+            <code>parse()</code> can throw what one of them throws. A throw from a transform
+            is a programmer error, not a validation issue: it is not caught, not turned into
+            an issue, and it leaves the call site as the exception you threw. To reject a
+            value instead, write a check — <code>custom</code> from{' '}
+            <code>@maroonedog/luq/plugins/custom</code> catches a throw from its predicate and
+            reports it as a failed issue.
+          </p>
+
+          <div class="not-prose my-8 overflow-x-auto">
+            <table class="w-full min-w-[40rem] text-left">
+              <thead>
+                <tr class="border-b border-outline">
+                  <th class="md-title-small py-2 pr-4">Same input</th>
+                  <th class="md-title-small py-2 pr-4"><code>validate()</code></th>
+                  <th class="md-title-small py-2"><code>parse()</code></th>
+                </tr>
+              </thead>
+              <tbody class="md-body-medium text-on-surface-variant">
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4">A transform that throws</td>
+                  <td class="py-2 pr-4">
+                    <code>valid: true</code>, value untouched
+                  </td>
+                  <td class="py-2">Throws</td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4">A <code>custom</code> predicate that throws</td>
+                  <td class="py-2 pr-4"><code>valid: false</code></td>
+                  <td class="py-2"><code>valid: false</code></td>
+                </tr>
+                <tr>
+                  <td class="py-2 pr-4">A <code>custom</code> predicate returning false</td>
+                  <td class="py-2 pr-4"><code>valid: false</code></td>
+                  <td class="py-2"><code>valid: false</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <CodeBlock code={rejectNotThrowExample} language="typescript" />
+
           <h2 id="options">ValidateOptions</h2>
 
           <p>
             Three keys, and the two abort flags <strong>both default to{' '}
-            <code>true</code></strong>. 1.x's documentation said <code>abortEarly</code>{' '}
-            defaulted to <code>false</code>; its implementation tested{' '}
-            <code>options?.abortEarly !== false</code>, which makes the default{' '}
-            <code>true</code>. If you read those docs and never passed the option, your
-            validators were short-circuiting all along.
+            <code>true</code></strong>.
           </p>
 
           <div class="not-prose my-8 overflow-x-auto">
@@ -592,9 +662,7 @@ type ValidationResult<T> =
           </div>
 
           <p>
-            Array-element paths need no cast. 1.x's <code>NestedKeyOf</code> broke on them, so{' '}
-            <code>pick('employees[*].name' as any)</code> was the documented workaround; the
-            path types resolve them now, and the cast is gone.
+            Array-element paths need no cast.
           </p>
 
           <h2 id="pick-all">pickAll(paths)</h2>
@@ -758,44 +826,29 @@ type ValidationResult<T> =
               The rest of the 1.x mapping
             </h3>
             <p class="md-body-medium mb-3 text-on-surface-variant">
-              The table above covers the result. Everything else 1.x changed is recorded
-              beside the API it belongs to:
+              The table above covers the result. Everything else is recorded beside the API it
+              belongs to:
             </p>
             <ul class="md-body-medium space-y-2 text-on-surface-variant">
               <li>
                 <a href="/docs/api/builder#removed" class="text-primary underline"
                   >Builder — removed since 1.x</a
-                >: variadic <code>use(a, b, c)</code>, <code>.field()</code>,{' '}
-                <code>.strictOnEditor()</code>, the bare-value third argument to{' '}
-                <code>.v()</code>, and <code>Builder().fromJsonSchema()</code>, which is now
-                a free function.
+                >: the chain methods that went.
               </li>
               <li>
                 <a href="/docs/api/plugin-registry#removed" class="text-primary underline"
                   >Plugin registry — changed since 1.x</a
-                >: <code>createPluginRegistry</code> moved to{' '}
-                <code>@maroonedog/luq/field-rule</code>, <code>registry.register()</code>{' '}
-                became <code>registry.use()</code>, and both{' '}
-                <code>useField</code> and <code>createFieldRule</code> take the builder as
-                their first argument.
+                >: the subpath and the argument order.
               </li>
               <li>
                 <a href="/docs/troubleshooting#imports" class="text-primary underline"
                   >Import errors</a
-                >: the specifiers that resolve, and the 1.x ones that never did.
+                >: the specifiers that resolve.
               </li>
               <li>
                 <a href="/docs/troubleshooting#messages" class="text-primary underline"
                   >Messages and codes</a
-                >: the default code is the plugin's name, so <code>REQUIRED</code> and the{' '}
-                <code>VALIDATION_ERROR</code> family are gone, and a per-rule{' '}
-                <code>message</code> is now <code>messageFactory</code>.
-              </li>
-              <li>
-                <a href="/docs/troubleshooting#abort-early" class="text-primary underline"
-                  >Only one issue comes back</a
-                >: <code>abortEarly</code> defaults to <code>true</code>, which 1.x's own
-                documentation had backwards.
+                >: codes are plugin names now.
               </li>
             </ul>
           </div>

@@ -271,10 +271,8 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
           <h2 id="overview">Overview</h2>
 
           <p>
-            The chain has five steps, and each one narrows the type of what comes next. A
-            plugin you did not <code>use()</code> has no method on the field builder; a path
-            your type does not have is not offered by <code>v()</code>; a slot the field
-            cannot be does not compile.
+            The chain has five steps, and each one narrows the type of what comes next. Each
+            narrowing is described under the method that performs it, below.
           </p>
 
           <CodeBlock code={shapeExample} language="typescript" fileName="the whole chain" />
@@ -286,9 +284,8 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
             </h3>
             <p class="md-body-medium text-on-surface-variant">
               Not a function. Its four members are <code>validate</code>, <code>parse</code>,{' '}
-              <code>pick</code> and <code>pickAll</code>. 1.x's README showed{' '}
-              <code>const validate = ...build(); validate(value)</code>; no released
-              implementation ever returned something callable.
+              <code>pick</code> and <code>pickAll</code>, all covered on{' '}
+              <a href="/docs/api/validator" class="text-primary underline">the Validator page</a>.
             </p>
           </div>
 
@@ -306,11 +303,6 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
             typed with the plugin folded in. The signature is{' '}
             <code>use(plugin: AnyPlugin)</code> — there is no variadic form, so chain one
             call per plugin.
-          </p>
-
-          <p>
-            The bag decides which methods exist on which slots. That is a type-level fact,
-            not just a runtime one: an unimported plugin's method does not typecheck.
           </p>
 
           <CodeBlock code={useExample} language="typescript" />
@@ -408,9 +400,8 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
           <h2 id="for">for&lt;T&gt;()</h2>
 
           <p>
-            Names the type being validated and hands back a field builder. From here on the
-            path argument of <code>v()</code> is a union computed from <code>T</code>, so a
-            typo is a compile error rather than a rule that silently never runs.
+            Names the type being validated and hands back a field builder. From here on{' '}
+            <code>v()</code>'s path argument is a union computed from <code>T</code>.
           </p>
 
           <CodeBlock code={forExample} language="typescript" />
@@ -434,35 +425,12 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
             <a href="/docs/core-concepts#field-paths">the path grammar</a>.
           </p>
 
-          <div
-            class="not-prose my-8 rounded-shape-md bg-error-container p-6 text-on-error-container"
-          >
-            <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">block</span>{' '}
-              Four path forms 1.x accepted that no longer compile
-            </h3>
-            <ul class="md-body-medium space-y-2">
-              <li>
-                <code>'items.name'</code> and <code>'items.*.name'</code> — write{' '}
-                <code>'items[*].name'</code>.
-              </li>
-              <li>
-                <code>'items[0].name'</code> — a fixed index was already documented as
-                unsupported; write <code>'items[*].name'</code>.
-              </li>
-              <li>
-                <code>'tags.length'</code> — that reached the array's own property. Use{' '}
-                <code>.minLength()</code> / <code>.maxLength()</code> on{' '}
-                <code>'tags'</code>.
-              </li>
-              <li>
-                <code>'when.getTime'</code> — no path enters a <code>Date</code>,{' '}
-                <code>RegExp</code>, <code>Map</code>, <code>Set</code>,{' '}
-                <code>Promise</code>, <code>Error</code>, buffer, function or class. Those
-                are opaque leaves.
-              </li>
-            </ul>
-          </div>
+          <p>
+            No path enters an opaque leaf. <code>Date</code>, <code>RegExp</code>,{' '}
+            <code>Map</code>, <code>Set</code>, <code>Promise</code>, <code>Error</code>, a
+            buffer, a function and a class instance all stop the path, so{' '}
+            <code>'when.getTime'</code> does not compile.
+          </p>
 
           <h3 id="field-options">Field options</h3>
 
@@ -520,7 +488,6 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <p>
             It can sit anywhere in the chain, and you may keep adding rules after it.
-            1.x's <code>strictOnEditor()</code> was an alias and is gone.
           </p>
 
           <h3 id="extra-properties">Rejecting extra properties</h3>
@@ -537,10 +504,9 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
 
           <p>
             Compiles the declarations into a plan once and returns a{' '}
-            <code>Validator&lt;T&gt;</code>. Building is the expensive half — measured at
-            14–662&nbsp;µs depending on shape, against sub-microsecond{' '}
-            <code>validate()</code> calls — so build once at module scope and reuse the
-            object.
+            <code>Validator&lt;T&gt;</code>. Building is the expensive half, so build once at
+            module scope and reuse the object —{' '}
+            <a href="/benchmarks#build-cost">the measured cost per shape</a>.
           </p>
 
           <CodeBlock code={buildExample} language="typescript" />
@@ -583,17 +549,15 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
           </div>
 
           <p>
-            The <a href="/docs/api/validator">Validator page</a> covers all four in detail,
-            along with the result shape and the options object.
+            All four in detail: <a href="/docs/api/validator">the Validator page</a>.
           </p>
 
           <h2 id="reusable-rules">Reusing a field rule</h2>
 
           <p>
-            The same chain used on several fields — or several validators — is a{' '}
-            <code>FieldRule</code>. It is minted from a plugin registry and spliced in with
-            the free function <code>useField</code>, which is a caller of <code>v()</code>,
-            so a rule cannot produce anything a hand-written <code>v()</code> could not.
+            The same chain used on several fields is a <code>FieldRule</code>, minted from{' '}
+            <a href="/docs/api/plugin-registry">a plugin registry</a> and spliced in with{' '}
+            <code>useField</code>.
           </p>
 
           <CodeBlock code={reusableRuleExample} language="typescript" />
@@ -683,6 +647,25 @@ export const contactValidator = useField(withEmail, 'backupEmail', emailRule).bu
                   </td>
                   <td class="py-2">
                     Gone. Use <code>.v()</code> and <code>.strict()</code>.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4">
+                    <code>'items.name'</code>, <code>'items.*.name'</code>
+                  </td>
+                  <td class="py-2">Write <code>'items[*].name'</code>.</td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>'items[0].name'</code></td>
+                  <td class="py-2">
+                    A fixed index. Write <code>'items[*].name'</code>.
+                  </td>
+                </tr>
+                <tr class="border-b border-outline-variant">
+                  <td class="py-2 pr-4"><code>'tags.length'</code></td>
+                  <td class="py-2">
+                    Use <code>.minLength()</code> / <code>.maxLength()</code> on{' '}
+                    <code>'tags'</code>.
                   </td>
                 </tr>
                 <tr class="border-b border-outline-variant">

@@ -130,9 +130,7 @@ console.log(result.issues.map((issue) => issue.path));
       The type declaration is the same in both columns.{' '}
       <strong class="text-on-surface"
         >Being type-first is what makes adoption a patch</strong
-      >: your type definitions do not change, so covering one field of one type is a
-      normal state rather than a half-finished migration. There is no second
-      description of the shape to author and keep in step — only the rules.
+      >: what you add is rules, and only rules.
     </p>
 
     <div class="grid items-center gap-8 lg:grid-cols-5">
@@ -142,9 +140,6 @@ console.log(result.issues.map((issue) => issue.path));
           Nested fields use dots and array elements use <code class="font-mono">[*]</code>, but the
           issue you get back names the element that actually failed. A form can bind an error to a
           row without parsing the path back apart.
-        </p>
-        <p class="text-body-medium text-on-surface-variant">
-          The wildcard is a declaration, not a report.
         </p>
       </div>
       <div class="min-w-0 lg:col-span-3">

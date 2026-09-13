@@ -9,7 +9,6 @@ import OnThisPage from '../../components/OnThisPage.astro';
 import { packageInfo } from '../../data/package-info';
 import { pluginSubpathCount } from '../../data/plugins';
 import perfBaseline from '../../../../config/perf-baseline.json';
-import sizeBudget from '../../../../config/size-budget.json';
 
 // Every TypeScript block on this page was typechecked against the built
 // package (dist/*.d.ts through package.json#exports) before it was pasted in.
@@ -71,7 +70,6 @@ const slowerShapesSentence = joinClauses(
 
 /** What the first plugin added to the bare builder actually cost, gzipped. */
 const onePluginCostBytes = bundleSize.onePlugin.bytes - bundleSize.coreOnly.bytes;
-const barrelDivergencePercent = sizeBudget.barrelEquivalence.maxDivergencePercent;
 
 const tsconfigExample = `{
   "compilerOptions": {
@@ -405,8 +403,7 @@ const tableOfContents = [
           <div class="md-card md-card-filled p-4">
             <h2 class="text-title-medium">Type-first</h2>
             <p class="mt-1 text-body-medium text-on-surface-variant">
-              <code>.for&lt;T&gt;()</code> names your own type. There is no second schema to
-              keep in step with it.
+              <code>.for&lt;T&gt;()</code> names your own type.
             </p>
           </div>
           <div class="md-card md-card-filled p-4">
@@ -419,8 +416,7 @@ const tableOfContents = [
           <div class="md-card md-card-filled p-4">
             <h2 class="text-title-medium">One result shape</h2>
             <p class="mt-1 text-body-medium text-on-surface-variant">
-              A discriminated union on <code>valid</code>. No result class, no{' '}
-              <code>unwrap()</code> on the value.
+              A discriminated union on <code>valid</code>.
             </p>
           </div>
         </div>
@@ -482,10 +478,9 @@ const tableOfContents = [
         <p class="mt-3 text-body-large">
           <code>strict</code> is not required. Every check below is a compile error either
           way — a slot that does not match the field, a missing <code>[*]</code>, a path the
-          type does not declare, a method whose plugin you did not import. Luq is checked
-          under <code>strict</code> too, so turning it on costs you nothing here and catches
-          the rest of your code. <code>node16</code> and <code>bundler</code> resolution both
-          work.
+          type does not declare, a method whose plugin you did not import. Turning{' '}
+          <code>strict</code> on is still worth doing. <code>node16</code> and{' '}
+          <code>bundler</code> resolution both work.
         </p>
 
         <CodeBlock code={tsconfigExample} language="json" fileName="tsconfig.json" />
@@ -506,11 +501,10 @@ const tableOfContents = [
               formatMicroseconds(buildCostRange.slowest)
             }&nbsp;µs depending on the shape. <code>validate()</code> is sub-microsecond on{' '}
             {subMicrosecondShapes.length} of the {validateCost.length} measured shapes, and
-            costs {slowerShapesSentence}. Build at module scope, not per request — the{' '}
-            <a class="text-primary underline underline-offset-2" href="/benchmarks">
-              measured figures
-            </a>{' '}
-            are per shape, on one named machine.
+            costs {slowerShapesSentence}. Build at module scope, not per request —{' '}
+            <a class="text-primary underline underline-offset-2" href="/benchmarks#build-cost">
+              the full figures
+            </a>.
           </p>
         </div>
 
@@ -579,8 +573,7 @@ const tableOfContents = [
 
         <p class="mt-4 text-body-large">
           Prefer exceptions? <code>@maroonedog/luq/result</code> gives you{' '}
-          <code>unwrap()</code> and a <code>ValidationFailure</code> that carries{' '}
-          <code>.issues</code> — see{' '}
+          <code>unwrap()</code> — see{' '}
           <a class="text-primary underline underline-offset-2" href="/docs/api/validator#result-subpath"
             >the validator API</a>.
         </p>
@@ -621,12 +614,6 @@ const tableOfContents = [
           </p>
         </div>
 
-        <p class="mt-6 text-body-large">
-          <code>external</code> is a pre-resolved bag that{' '}
-          <code>@maroonedog/luq/plugins/fromContext</code> reads.{' '}
-          <code>@maroonedog/luq/async</code> resolves promises and passes them in on it.
-        </p>
-
         <h2 id="defaults" class="mt-12 text-headline-small">Defaults</h2>
 
         <CodeBlock code={defaultsExample} language="typescript" />
@@ -652,17 +639,9 @@ const tableOfContents = [
         <p class="mt-4 text-body-large">
           It takes and returns <code>unknown</code> on purpose: the value has not been
           validated yet, and <code>"42"</code>&nbsp;→&nbsp;<code>42</code> is the point.{' '}
-          <strong>It is never called with <code>undefined</code> or <code>null</code></strong>
+          <strong>It is never called with <code>undefined</code> or <code>null</code></strong>{' '}
           — so <code>(v) =&gt; String(v).trim()</code> cannot turn a missing field into the
-          string <code>"undefined"</code> and sneak it past <code>required</code>. Absence is{' '}
-          <code>default</code>'s job; <code>normalize</code> only sees a value that is there.
-        </p>
-
-        <p class="mt-4 text-body-large">
-          The order is what makes the common case work:{' '}
-          <code>"&nbsp;&nbsp;"</code>&nbsp;→ trim →
-          <code>""</code>&nbsp;→ presence reads an empty string as missing →
-          <code>required</code> fires.
+          string <code>"undefined"</code> and sneak it past <code>required</code>.
         </p>
 
         <h2 id="nested-fields-and-arrays" class="mt-12 text-headline-small">
@@ -700,13 +679,17 @@ const tableOfContents = [
         <h2 id="importing-plugins" class="mt-12 text-headline-small">Importing plugins</h2>
 
         <p class="mt-3 text-body-large">
-          Every method the chain offers is a plugin you imported by name — there is no
-          built-in rule and no method you get for free. The{' '}
+          Every chain method is a plugin you imported by name —{' '}
+          <a
+            class="text-primary underline underline-offset-2"
+            href="/docs/core-concepts#plugins-are-the-vocabulary"
+          >
+            why that typechecks
+          </a>. The{' '}
           <a class="text-primary underline underline-offset-2" href="/plugins">
             plugin catalogue
           </a>{' '}
-          lists all {pluginSubpathCount} of them with their subpath, chain method and the
-          slots each one may be used on.
+          lists all {pluginSubpathCount}, with subpath, chain method and slots.
         </p>
 
         <CodeBlock code={importsExample} language="typescript" />
@@ -714,10 +697,13 @@ const tableOfContents = [
         <p class="mt-4 text-body-large">
           The root <code>@maroonedog/luq</code> entry exports no plugins at all, which is why
           the bare builder gzips to {bundleSize.coreOnly.gzip} and adding the first one costs{' '}
-          {onePluginCostBytes}&nbsp;B on top of it. Going through the barrel instead of the
-          subpaths is not a tax on that: <code>check:barrel-equivalence</code> fails the build
-          if the same three plugins gzip more than {barrelDivergencePercent}% apart the two
-          ways, and through the subpaths they are {bundleSize.threePlugin.gzip}.
+          {onePluginCostBytes}&nbsp;B on top of it. The barrel is not a tax on that:{' '}
+          <a
+            class="text-primary underline underline-offset-2"
+            href="/docs/troubleshooting#bundle-larger"
+          >
+            the measurement
+          </a>.
         </p>
 
         <h2 id="standard-schema" class="mt-12 text-headline-small">Standard Schema</h2>
@@ -727,8 +713,7 @@ const tableOfContents = [
             class="text-primary underline underline-offset-2"
             href="https://standardschema.dev">Standard Schema v1</a> on the{' '}
           <code>@maroonedog/luq/standard-schema</code> subpath — a separate specifier, so a
-          validator that never reaches a form or an RPC boundary does not pay for it. It
-          collects every issue and runs <code>parse()</code>, so transforms apply.
+          validator that never reaches a boundary does not pay for it.
         </p>
 
         <CodeBlock code={standardSchemaExample} language="typescript" />

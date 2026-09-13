@@ -21,13 +21,8 @@ import perfBaseline from '../../../../config/perf-baseline.json';
  * real ${…} is auto-skipped by check:doc-examples, so a number interpolated
  * into an example would quietly take that example out of the compile gate.
  */
-const buildMicroseconds = perfBaseline.buildCost.map((entry) => entry.microsecondsPerBuild);
 const callsToPayForABuild = perfBaseline.buildCost.map((entry) => entry.validateCallsPerBuild);
 
-const buildCostRange = {
-  fastest: Math.min(...buildMicroseconds),
-  slowest: Math.max(...buildMicroseconds),
-};
 const payoffRange = {
   fewest: Math.min(...callsToPayForABuild),
   most: Math.max(...callsToPayForABuild),
@@ -459,19 +454,10 @@ export const registrationValidator = Builder()
       <article class="mx-auto max-w-4xl">
         <h1 class="md-headline-large mb-4">Examples &amp; patterns</h1>
         <p class="md-body-large mb-10 text-on-surface-variant">
-          Working shapes, from a single field to a registration form. Every block on this page
-          is a complete file: the imports are real subpaths and the chains compile against the
-          published declarations.
+          Working shapes, from a single field to a registration form.
         </p>
 
         <div class="prose max-w-none">
-          <p>
-            This page assumes the five calls and the result union. If either is new,{' '}
-            <a href="/docs/getting-started">Getting started</a> has them, and{' '}
-            <a href="/docs/core-concepts">Core concepts</a> has the slots, paths and rule
-            order the chains below rely on.
-          </p>
-
           <h2 id="basic-patterns">Basic patterns</h2>
 
           <h3 id="nested-objects">Nested objects</h3>
@@ -494,25 +480,12 @@ export const registrationValidator = Builder()
 
           <CodeBlock code={arraysExample} language="typescript" />
 
-          <div class="not-prose md-card md-card-filled my-8 p-6">
-            <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">tag</span>{' '}
-              Issue paths carry the real index
-            </h3>
-            <p class="md-body-medium text-on-surface-variant">
-              You declare <code>'tags[*]'</code> and you get back{' '}
-              <code>'tags[1]'</code>. A fixed index in the declaration —{' '}
-              <code>'tags[0]'</code> — does not compile.
-            </p>
-          </div>
-
           <h3 id="presence">Presence and conditionals</h3>
 
           <p>
-            <code>requiredIf</code> and <code>optionalIf</code> decide the field's{' '}
-            <em>presence gate</em>; they are not checks that run in chain order. The
-            consequence is visible: when the condition makes a field required and the value is
-            missing, the rest of that field's chain does not run.
+            <code>requiredIf</code> and <code>optionalIf</code> are{' '}
+            <a href="/docs/core-concepts#presence">presence rules, not checks</a>, so a field
+            they reject runs none of the rest of its chain.
           </p>
 
           <CodeBlock code={presenceExample} language="typescript" />
@@ -547,10 +520,10 @@ export const registrationValidator = Builder()
           </div>
 
           <p>
-            Also note <code>closedAt</code>. <code>.required()</code> now narrows out{' '}
-            <code>null</code> as well as <code>undefined</code>, and there is no{' '}
-            <code>allowNull</code> option to pass — a nullable field says{' '}
-            <code>.nullable()</code>.
+            <code>closedAt</code>:{' '}
+            <a href="/docs/troubleshooting#allow-null">
+              <code>.required()</code> narrows out <code>null</code> too
+            </a>.
           </p>
 
           <h2 id="advanced-patterns">Advanced patterns</h2>
@@ -558,9 +531,9 @@ export const registrationValidator = Builder()
           <h3 id="transforms">Transforms and parse()</h3>
 
           <p>
-            Transforms run <strong>last</strong> and only in <code>parse()</code>. Chain
-            position does not move them: <code>.email().transform(f)</code> and{' '}
-            <code>.transform(f).email()</code> both check the original value.
+            Transforms run <strong>last</strong> and only in <code>parse()</code>, whatever
+            the chain order:{' '}
+            <a href="/docs/core-concepts#validate-vs-parse">core concepts</a>.
           </p>
 
           <CodeBlock code={transformExample} language="typescript" />
@@ -578,8 +551,7 @@ export const registrationValidator = Builder()
           <h3 id="custom-rules">One-off custom rules</h3>
 
           <p>
-            When a rule is used once, the <code>custom</code> plugin is enough. A predicate
-            that throws becomes a failed validation carrying the thrown message, not a crashed{' '}
+            A predicate that throws becomes a failed validation carrying the thrown message, not a crashed{' '}
             <code>validate()</code>.
           </p>
 
@@ -591,11 +563,8 @@ export const registrationValidator = Builder()
               When it is worth a real plugin
             </h3>
             <p class="md-body-medium mb-4 text-on-surface-variant">
-              If the rule wants its own chain method, its own message context, or its own slot
-              list, write a plugin with <code>definePlugin</code> instead of repeating a
-              predicate. The 1.x kit —{' '}
-              <code>plugin(&#123; name, methodName, allowedTypes, category, impl &#125;)</code> —
-              does not exist.
+              If the rule wants its own chain method, message context or slot list, write a
+              plugin instead of repeating a predicate.
             </p>
             <a
               href="/docs/custom-plugins"
@@ -610,30 +579,16 @@ export const registrationValidator = Builder()
           <h3 id="form-errors">Errors for a form</h3>
 
           <p>
-            <code>abortEarly</code> defaults to <strong>true</strong>, which stops at the
-            first field that produced an issue — which is why this example passes{' '}
-            <code>&#123; abortEarly: false &#125;</code>. A form wants every field's
-            complaint at once, not the first one.
+            This example passes <code>&#123; abortEarly: false &#125;</code>: a form wants
+            every field's complaint at once, not the first one.
           </p>
 
           <CodeBlock code={formErrorsExample} language="typescript" />
 
-          <div
-            class="not-prose my-8 rounded-shape-md bg-error-container p-6 text-on-error-container"
-          >
-            <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">block</span>{' '}
-              The 1.x result API is gone
-            </h3>
-            <p class="md-body-medium">
-              <code>result.isValid()</code>, <code>result.errors</code>,{' '}
-              <code>result.unwrap()</code>, <code>result.map(...).unwrapOr(...)</code> — none
-              of these exist. Write <code>result.valid</code> and <code>result.issues</code>;
-              if you want the throwing form, <code>unwrap(result)</code> is a free function on{' '}
-              <code>@maroonedog/luq/result</code>. The full mapping is on the{' '}
-              <a href="/docs/api/validator#porting">Validator page</a>.
-            </p>
-          </div>
+          <p>
+            The 1.x result API is gone —{' '}
+            <a href="/docs/api/validator#porting">the full mapping</a>.
+          </p>
 
           <h3 id="partial-validation">Validating part of an object</h3>
 
@@ -648,38 +603,25 @@ export const registrationValidator = Builder()
           <h2 id="performance">Performance patterns</h2>
 
           <p>
-            <code>build()</code> is the expensive half: {formatMicroseconds(buildCostRange.fastest)}–{
-              formatMicroseconds(buildCostRange.slowest)
-            }&nbsp;µs depending on shape. Build at module scope and reuse the object — across
-            the {measuredShapeCount} measured shapes, one <code>build()</code> pays for itself
-            after {payoffRange.fewest}–{payoffRange.most} <code>validate()</code> calls. The{' '}
-            {arrayElementCount}-element array amortises fastest, after only{' '}
+            <code>build()</code> is the expensive half —{' '}
+            <a href="/benchmarks#build-cost">what it costs per shape</a>, including the shapes
+            where this release is slower than 1.x. Build at module scope and reuse the object:
+            across the {measuredShapeCount} measured shapes, one <code>build()</code> pays for
+            itself after {payoffRange.fewest}–{payoffRange.most} <code>validate()</code> calls.
+            The {arrayElementCount}-element array amortises fastest, after only{' '}
             {arrayShape?.validateCallsPerBuild}, because <code>validate()</code> itself costs{' '}
             {formatMicroseconds(arrayValidateMicroseconds)}&nbsp;µs on that shape.
           </p>
 
           <CodeBlock code={reuseExample} language="typescript" />
 
-          <div class="not-prose md-card md-card-filled my-8 p-6">
-            <h3 class="md-title-small mb-3 flex items-center gap-2">
-              <span class="md-icon md-icon-sm" aria-hidden="true">speed</span>{' '}
-              Where the time actually goes
-            </h3>
-            <p class="md-body-medium text-on-surface-variant">
-              Building inside a request handler is the one mistake that changes the order of
-              magnitude. Everything else is small by comparison — see the{' '}
-              <a href="/benchmarks">measured figures</a>, including the shapes where this
-              release is slower than 1.x.
-            </p>
-          </div>
-
           <h2 id="real-world">Real-world examples</h2>
 
           <p>
             Both validators below end with <a href="/docs/api/builder#strict"><code>.strict()</code></a>,
-            which is a compile-time assertion that every leaf path of the type has been
-            declared. It has no runtime effect and does not reject extra properties: add a
-            field to the type and the build stops compiling until you declare a rule for it.
+            a compile-time assertion that every leaf path of the type has been declared. It
+            does not reject extra properties at run time —{' '}
+            <a href="/docs/troubleshooting#strict-extra-property">the fix for that</a>.
           </p>
 
           <h3 id="product">E-commerce product</h3>
@@ -689,11 +631,8 @@ export const registrationValidator = Builder()
           <h3 id="registration">User registration</h3>
 
           <p>
-            Two things this shows that 1.x's version got wrong: a message is{' '}
-            <code>&#123; messageFactory &#125;</code> and never a second positional argument or a{' '}
-            <code>&#123; message &#125;</code> key, and a boolean that must be{' '}
-            <code>true</code> uses <code>.truthy()</code> — there is no{' '}
-            <code>.equals()</code> in the catalogue.
+            A boolean that must be <code>true</code> uses <code>.truthy()</code> — there is
+            no <code>.equals()</code> in the catalogue.
           </p>
 
           <CodeBlock
