@@ -190,6 +190,59 @@
           "(200-950 B) still cannot fit inside the budget unnoticed. The three JSON Schema entries did",
           "not move and keep the ceilings they had."
         ]
+      },
+      {
+        "date": "2026-09-13",
+        "entries": [
+          "core-only",
+          "one-plugin",
+          "three-plugin",
+          "six-plugin",
+          "preset-presence",
+          "preset-everyday",
+          "jsonschema-plugin",
+          "jsonschema-full-feature",
+          "full-feature"
+        ],
+        "ceilingsRaised": [
+          "core-only",
+          "one-plugin",
+          "three-plugin",
+          "six-plugin",
+          "preset-presence",
+          "preset-everyday",
+          "jsonschema-plugin",
+          "jsonschema-full-feature",
+          "full-feature"
+        ],
+        "grewByGzipBytes": "80 / 84 / 82 / 82 / 82 / 86 / 80 / 80 / 74",
+        "measuredBeforeGzipBytes": "8618 / 8752 / 9080 / 9492 / 8864 / 10045 / 23055 / 25510 / 28250",
+        "why": [
+          "runField takes one of two routes now, chosen by a flag the plan carries, and the second",
+          "route is the bytes. A field that declared nothing but presence and checks was reaching them",
+          "through five stages that had nothing to do — applyDefault to be told there is no default,",
+          "applyNormalize the same, an empty gate loop, a transform stage validate() never runs, and a",
+          "recursion stage holding null. compile-field.ts settles all five once and runField picks.",
+          "",
+          "Measured by A/B, four rounds alternating, best of five samples each: 221.0 / 192.3 / 211.2 /",
+          "177.6 ns before against 152.5 / 163.0 / 139.0 / 144.4 after. No round overlaps, which is what",
+          "makes it a result rather than a reading — an earlier attempt at this file's sibling produced",
+          "158.7-194.9 against 158.2-187.6 and was correctly discarded as unresolvable.",
+          "",
+          "Allocation per validate() of one string field went 40.6 -> 8.5 bytes in the same change, from",
+          "IssueSink building its buffer on the first issue rather than on every call.",
+          "",
+          "A warning for whoever edits these paths next, because it cost a day to learn: most of the",
+          "allocation V8 reports here is already being ELIDED by escape analysis, and escape analysis",
+          "follows inlining. Replacing `issues.some(cb)` with a plain for-loop in create-validator.ts —",
+          "strictly less work, no allocation of its own — multiplied the per-call allocation by 34,",
+          "because the enclosing function stopped being inlined and everything it had been eliding came",
+          "back. Keep the hot functions small, and measure every change, including the ones that cannot",
+          "possibly be slower.",
+          "",
+          "Headroom per entry is unchanged, so adding a plugin (200-950 B) still cannot fit inside the",
+          "budget unnoticed."
+        ]
       }
     ]
   },
@@ -217,8 +270,8 @@
       "id": "core-only",
       "description": "Builder alone: the floor paid by someone who uses no plugin at all.",
       "plugins": [],
-      "gzipCeilingBytes": 8689,
-      "recordedGzipBytes": 8618,
+      "gzipCeilingBytes": 8769,
+      "recordedGzipBytes": 8698,
       "legacyGzipBytes": 17423
     },
     {
@@ -227,8 +280,8 @@
       "plugins": [
         "required"
       ],
-      "gzipCeilingBytes": 8834,
-      "recordedGzipBytes": 8752
+      "gzipCeilingBytes": 8918,
+      "recordedGzipBytes": 8836
     },
     {
       "id": "three-plugin",
@@ -238,8 +291,8 @@
         "stringMin",
         "numberMin"
       ],
-      "gzipCeilingBytes": 9159,
-      "recordedGzipBytes": 9080
+      "gzipCeilingBytes": 9241,
+      "recordedGzipBytes": 9162
     },
     {
       "id": "six-plugin",
@@ -252,8 +305,8 @@
         "numberMin",
         "numberMax"
       ],
-      "gzipCeilingBytes": 9590,
-      "recordedGzipBytes": 9492,
+      "gzipCeilingBytes": 9672,
+      "recordedGzipBytes": 9574,
       "legacyGzipBytes": 19562
     },
     {
@@ -264,8 +317,8 @@
         "optional",
         "nullable"
       ],
-      "gzipCeilingBytes": 8957,
-      "recordedGzipBytes": 8864
+      "gzipCeilingBytes": 9039,
+      "recordedGzipBytes": 8946
     },
     {
       "id": "preset-everyday",
@@ -285,8 +338,8 @@
         "arrayMaxLength",
         "arrayEach"
       ],
-      "gzipCeilingBytes": 10126,
-      "recordedGzipBytes": 10045
+      "gzipCeilingBytes": 10212,
+      "recordedGzipBytes": 10131
     },
     {
       "id": "jsonschema-plugin",
@@ -294,8 +347,8 @@
       "plugins": [
         "jsonSchema"
       ],
-      "gzipCeilingBytes": 23190,
-      "recordedGzipBytes": 23055
+      "gzipCeilingBytes": 23328,
+      "recordedGzipBytes": 23193
     },
     {
       "id": "jsonschema-full-feature",
@@ -303,15 +356,15 @@
       "plugins": [
         "jsonSchemaFullFeature"
       ],
-      "gzipCeilingBytes": 25634,
-      "recordedGzipBytes": 25510
+      "gzipCeilingBytes": 25766,
+      "recordedGzipBytes": 25642
     },
     {
       "id": "full-feature",
       "description": "Builder + every plugin in the catalog, JSON Schema extensions included: the everything ceiling.",
       "plugins": "all",
-      "gzipCeilingBytes": 28357,
-      "recordedGzipBytes": 28250
+      "gzipCeilingBytes": 28504,
+      "recordedGzipBytes": 28397
     }
   ],
   "treeShaking": {

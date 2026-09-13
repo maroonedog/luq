@@ -20,6 +20,7 @@ import type {
 import { createIssue } from "./create-issue";
 import { FieldRuleContext } from "./field-rule-context";
 import { decidePresence } from "./decide-presence";
+import { applyDefault, applyNormalize, openGates } from "./field-stages";
 import type { IndexStack } from "./index-stack";
 import type { IssueSink } from "./issue-sink";
 
@@ -52,7 +53,51 @@ export const FIELD_VALUE_UNCHANGED: FieldRunOutcome = Object.freeze({
   hasWriteBack: false,
 });
 
+/**
+ * A field that declared nothing but presence and checks.
+ *
+ * Which is most of them, and the route below used to reach them through five
+ * stages that had nothing to do: applyDefault to be told there is no default,
+ * applyNormalize to be told there is no normalize, an empty gate loop, a
+ * transform stage that validate() never runs anyway, and a recursion stage
+ * holding null. The plan knows all five at compile time, so the question is
+ * asked once, there, and answered here by which function runs.
+ *
+ * Kept small on purpose: replacing `issues.some(cb)` with a plain loop in
+ * create-validator.ts cost 34x the per-call allocation, because what V8 had
+ * been eliding came back the moment the enclosing function stopped being
+ * inlined. Nothing here is worth that.
+ */
+function runPlainField(
+  field: CompiledField,
+  subject: unknown,
+  context: FieldRunContext
+): FieldRunOutcome {
+  const ruleContext: RuleContext = new FieldRuleContext(
+    context.root,
+    context.indices,
+    field.renderedPath,
+    context.item,
+    context.external
+  );
+  const value = field.read(subject);
+  if (!decidePresence(field, value, ruleContext, context.sink)) {
+    return FIELD_VALUE_UNCHANGED;
+  }
+  runChecks(field, value, ruleContext, context, context.sink.count);
+  return FIELD_VALUE_UNCHANGED;
+}
+
 export function runField(
+  field: CompiledField,
+  subject: unknown,
+  context: FieldRunContext
+): FieldRunOutcome {
+  if (field.isPlain) return runPlainField(field, subject, context);
+  return runDeclaredStages(field, subject, context);
+}
+
+function runDeclaredStages(
   field: CompiledField,
   subject: unknown,
   context: FieldRunContext
@@ -76,51 +121,6 @@ export function runField(
   reenterPlan(field, written, ruleContext, context, mark);
   if (written === read) return FIELD_VALUE_UNCHANGED;
   return { hasWriteBack: true, value: written };
-}
-
-/**
- * The default is substituted BEFORE anything else looks at the value, so
- * validate() and parse() judge the same value. Only parse writes it back,
- * which is the caller's decision and not this one's.
- */
-function applyDefault(
-  field: CompiledField,
-  value: unknown,
-  root: unknown
-): unknown {
-  if (field.defaultOf === null) return value;
-  if (value === undefined) return field.defaultOf(root);
-  if (value === null && field.applyDefaultToNull) return field.defaultOf(root);
-  return value;
-}
-
-/**
- * Tidies the value before anything judges it: after default, before presence.
- *
- * Never called for undefined or null. That closes the accident where a
- * caller's `(v) => String(v).trim()` turns a missing field into the string
- * `"undefined"` and walks it past `.required()`. Absence is default's job.
- */
-function applyNormalize(field: CompiledField, value: unknown): unknown {
-  if (field.normalize === null || value === undefined || value === null) {
-    return value;
-  }
-  return field.normalize(value);
-}
-
-/** A closed gate ends the field successfully: no check, no transform. */
-function openGates(
-  field: CompiledField,
-  value: unknown,
-  ruleContext: RuleContext
-): boolean {
-  const gates = field.gates;
-  for (let i = 0; i < gates.length; i += 1) {
-    const gate = gates[i];
-    if (gate === undefined) continue;
-    if (!gate.shouldRun(value, ruleContext)) return false;
-  }
-  return true;
 }
 
 /**
