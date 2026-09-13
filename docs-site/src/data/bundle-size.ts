@@ -4,34 +4,34 @@
 
 export const bundleSize = {
   coreOnly: {
-    bytes: 8508,
-    gzip: "8,508 B",
-    ceiling: 8579,
+    bytes: 8618,
+    gzip: "8,618 B",
+    ceiling: 8689,
   },
   onePlugin: {
-    bytes: 8636,
-    gzip: "8,636 B",
-    ceiling: 8718,
+    bytes: 8752,
+    gzip: "8,752 B",
+    ceiling: 8834,
   },
   threePlugin: {
-    bytes: 8970,
-    gzip: "8,970 B",
-    ceiling: 9049,
+    bytes: 9080,
+    gzip: "9,080 B",
+    ceiling: 9159,
   },
   sixPlugin: {
-    bytes: 9381,
-    gzip: "9,381 B",
-    ceiling: 9479,
+    bytes: 9492,
+    gzip: "9,492 B",
+    ceiling: 9590,
   },
   presetPresence: {
-    bytes: 8749,
-    gzip: "8,749 B",
-    ceiling: 8842,
+    bytes: 8864,
+    gzip: "8,864 B",
+    ceiling: 8957,
   },
   presetEveryday: {
-    bytes: 9929,
-    gzip: "9,929 B",
-    ceiling: 10010,
+    bytes: 10045,
+    gzip: "10,045 B",
+    ceiling: 10126,
   },
   jsonSchemaPlugin: {
     bytes: 23055,
