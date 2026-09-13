@@ -41,7 +41,13 @@ export function check<C extends MessageContextExtra>(
     kind: "check",
     code: spec.code,
     severity: spec.severity,
-    run: (value, ctx) => spec.run(value, ctx),
+    // The spec's own function, not a closure around it. This is the hot
+    // path — one call per check per field per validate() — and the wrapper
+    // added a frame that did nothing but forward two arguments. No plugin's
+    // `run` reads `this`, so detaching it from the spec changes nothing else;
+    // `describe` below is still wrapped because it has work to do and only
+    // runs when a check has already failed.
+    run: spec.run,
     describe: (detail, ctx) =>
       renderMessage(
         spec.messageFactory,
