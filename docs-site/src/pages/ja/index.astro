@@ -1,0 +1,208 @@
+---
+/**
+ * The Japanese landing page.
+ *
+ * Written for a Japanese reader rather than transliterated from index.astro,
+ * and self-contained rather than composed from the English components. Copying
+ * Hero.astro and its siblings would have duplicated the must-fail block, which
+ * `check:doc-examples` compiles by its exact text — a second copy is a second
+ * claim the compiler is not checking.
+ *
+ * EVERY FIGURE IS IMPORTED FROM THE SAME GENERATED MODULE THE ENGLISH PAGE
+ * READS. There is no second copy of a number here, so no number can drift out
+ * of step with the English page or with the measurement behind it. The prose is
+ * the only thing that can go stale, and `npm run check-translations` is what
+ * catches that: index.astro's digest is recorded in ../../i18n/translated-from.ts
+ * and the build fails when it moves.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import LuqLogo from '../../components/LuqLogo.astro';
+import { bundleSize } from '../../data/bundle-size';
+import { conformance } from '../../data/conformance';
+import { packageInfo } from '../../data/package-info';
+import { pluginSubpathCount } from '../../data/plugins';
+
+const description =
+  'Luq は、すでに書かれている TypeScript の型をそのまま検証するライブラリです。型のフィールドパスに対してルールを宣言し、その宣言をコンパイラが型と突き合わせます。';
+
+// The same block the English hero shows, with the same comments: the text is
+// what the compiler checks, so translating it would put a second claim on the
+// page that nothing verifies. Marked must-fail here as well as there — every
+// copy of it has to keep failing, or the page is asserting something false.
+//
+// luq-example: must-fail — the page's headline claim; compiling would make it false
+const refusedExample = `import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+
+// The type is the schema, and \`age\` is a number.
+type User = { age: number };
+
+const userValidator = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v("age", (b) => b.string.required())
+  //               ^^^^^^^^ not a slot a number field can be.
+  .build();`;
+
+const refused = [
+  { mistake: 'フィールドの型にないスロット', example: 'number のフィールドに b.string' },
+  { mistake: '配列ワイルドカードの欠落', example: '"items[*].name" と書くべきところを "items.name"' },
+  { mistake: '組み込みオブジェクトへの侵入', example: 'Date に対する "when.getTime"' },
+  { mistake: '存在しないメソッド', example: '要素のサブチェーンの内側で' },
+];
+
+const measured = [
+  { value: bundleSize.coreOnly.gzip, label: 'Builder のみ、gzip 後', source: 'config/size-budget.json' },
+  { value: String(pluginSubpathCount), label: 'プラグイン、それぞれ個別の import', source: 'config/plugin-catalog.lock.json' },
+  { value: `${conformance.percent}%`, label: 'JSON Schema Draft-07', source: 'config/json-schema-suite.json' },
+  {
+    value: '0',
+    label: 'eval / new Function — 実行時スキーマが strict な CSP 下で動く',
+    source: 'npm run check:no-dynamic-code',
+  },
+];
+---
+
+<BaseLayout title="間違ったルールはコンパイルできない" description={description}>
+  <Header />
+
+  <main>
+    <section class="relative overflow-hidden bg-surface px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div class="container mx-auto max-w-5xl text-center">
+        <div class="mb-8 flex justify-center">
+          <LuqLogo class="h-24 w-auto sm:h-28" label="Luq" />
+        </div>
+
+        <p class="mb-6">
+          <span class="md-chip md-chip-static">
+            <span class="md-icon md-icon-sm" aria-hidden="true">verified</span>
+            {packageInfo.tag}
+          </span>
+        </p>
+
+        <h1 class="mb-6 text-display-small text-on-surface sm:text-display-medium lg:text-display-large">
+          間違ったルールは<br class="hidden sm:block" />
+          <span class="text-primary">コンパイルできない</span>
+        </h1>
+
+        <div class="mx-auto max-w-3xl text-left">
+          <p class="mb-8 text-body-large text-on-surface">
+            あなたの型は、たいていあなたが書いたものではありません。{' '}
+            <a class="text-primary underline underline-offset-2" href="/openapi"
+              ><code class="font-mono">openapi-typescript</code></a
+            >{' '}
+            は自分が所有していない仕様から生成し、Prisma は正本のスキーマから生成し、protobuf
+            は4言語ぶんをまとめて生成します。形がすでに別の場所で決まっているとき、{' '}
+            <strong class="text-on-surface"
+              >スキーマを正本とするバリデータは、その形の2つ目の記述を保守しろと要求してきます</strong
+            >。
+          </p>
+        </div>
+
+        <div class="mx-auto mb-8 max-w-3xl text-left">
+          <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
+            実行時ではなくコンパイラが捕まえるもの
+          </p>
+          <ul class="divide-y divide-outline-variant border-y border-outline-variant">
+            {
+              refused.map((item) => (
+                <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
+                  <span class="md-icon md-icon-sm text-error" aria-hidden="true">block</span>
+                  <span class="text-body-medium text-on-surface">{item.mistake}</span>
+                  <span class="font-mono text-label-medium text-on-surface-variant">
+                    {item.example}
+                  </span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="mb-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
+            はじめる（英語）
+          </a>
+          <a href="/plugins" class="md-button md-button-tonal md-state-layer md-focus-ring">
+            プラグイン一覧（英語）
+          </a>
+        </div>
+
+        <div class="mx-auto mb-12 max-w-xl">
+          <CodeBlock code={packageInfo.install} language="bash" fileName="Install" showCopy={true} />
+        </div>
+
+        <div class="mx-auto mb-12 max-w-3xl text-left">
+          <p class="mb-4 text-body-large text-on-surface-variant">
+            Luq は逆向きに動きます。すでにある型を受け取り、そのフィールドパスに対してルールを宣言させる。{' '}
+            <strong class="text-on-surface">そして宣言を型と突き合わせるのはコンパイラです</strong>
+            。書いたフィールドに適用できないルールは、静かに一度も発火しないルールではなく、エラーになります。
+          </p>
+          <p class="mb-4 text-body-medium text-on-surface-variant">
+            書き換えは起きず、スキーマオブジェクトから型を逆算することもありません。下の
+            <code class="font-mono">User</code> がスキーマそのもので、{' '}
+            <code class="font-mono">b.string</code> は number のフィールドが取れるスロットではありません。
+          </p>
+          <div class="rounded-shape-md border border-error p-1">
+            <p class="px-3 py-2 text-label-large text-error">
+              <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
+              これはコンパイルできない
+            </p>
+            <CodeBlock code={refusedExample} language="typescript" invalid />
+          </div>
+          <p class="mt-3 text-body-small text-on-surface-variant">
+            このブロックは英語版と同じテキストのままです。{' '}
+            <code class="font-mono">npm run check:doc-examples</code>{' '}
+            がビルドのたびにこれをコンパイルし、通ってしまったらビルドを落とします。訳した文面を置くと、コンパイラが確かめていない2つ目の主張ができてしまうためです。
+          </p>
+        </div>
+
+        <div class="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {
+            measured.map((item) => (
+              <div class="md-card md-card-outlined min-w-0 p-5 text-left">
+                <div class="text-headline-small text-primary">{item.value}</div>
+                <div class="mt-1 text-body-medium text-on-surface">{item.label}</div>
+                <div class="mt-2 truncate font-mono text-label-small text-on-surface-variant" title={item.source}>
+                  {item.source}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <p class="text-body-small text-on-surface-variant">
+          この数字はすべて英語版と同じ生成ファイルから読み込んでいます。翻訳された数字はどこにもなく、ずれようがありません。
+        </p>
+      </div>
+    </section>
+
+    <section class="border-t border-outline-variant bg-surface-container px-4 py-14 sm:px-6 lg:px-8">
+      <div class="container mx-auto max-w-3xl text-center">
+        <h2 class="mb-4 text-headline-medium text-on-surface">日本語で読めるのはこのページだけです</h2>
+        <p class="mb-4 text-body-large text-on-surface-variant">
+          ガイド、API リファレンス、ベンチマーク、JSON Schema
+          のページはいまのところ英語だけです。訳していないページへ言語切替から飛ぶことはありません——
+          訳がないページでは、切替はここに戻ります。
+        </p>
+        <p class="mb-8 text-body-medium text-on-surface-variant">
+          中途半端に古い訳を置かないためです。英語版が変わったのに訳が追いついていないと{' '}
+          <code class="font-mono">npm run check-translations</code>{' '}
+          がビルドを落とすので、ここにあるページは誰かが英語版の差分を読んだうえで残しているものです。
+        </p>
+        <div class="flex flex-col justify-center gap-3 sm:flex-row">
+          <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
+            Getting started（英語）
+          </a>
+          <a href="/" class="md-button md-button-outlined md-state-layer md-focus-ring">
+            English
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

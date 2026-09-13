@@ -1,6 +1,7 @@
 ---
 import LuqLogo from './LuqLogo.astro';
 import ThemeToggle from './ThemeToggle.astro';
+import LanguageSwitcher from './LanguageSwitcher.astro';
 import MobileMenuButton from './MobileMenuButton.astro';
 
 /**
@@ -100,6 +101,7 @@ const currentPath = Astro.url.pathname;
         </svg>
       </a>
 
+      <span class="hidden sm:inline-flex"><LanguageSwitcher /></span>
       <ThemeToggle />
       <MobileMenuButton />
     </div>
