@@ -2,11 +2,16 @@
 /**
  * The Japanese landing page.
  *
- * Written for a Japanese reader rather than transliterated from index.astro,
- * and self-contained rather than composed from the English components. Copying
+ * Written for a Japanese reader rather than transliterated from index.astro.
+ * A sentence-for-sentence rendering of the English reads like a translation
+ * even when every word is right, and a landing page that reads like one gets
+ * read as an afterthought — so this is shorter than the English and says the
+ * same things the way they would be said if they had been written here first.
+ *
+ * Self-contained rather than composed from the English components: copying
  * Hero.astro and its siblings would have duplicated the must-fail block, which
- * `check:doc-examples` compiles by its exact text — a second copy is a second
- * claim the compiler is not checking.
+ * `check:doc-examples` compiles by its exact text, and a second copy is a
+ * second claim the compiler is not checking.
  *
  * EVERY FIGURE IS IMPORTED FROM THE SAME GENERATED MODULE THE ENGLISH PAGE
  * READS. There is no second copy of a number here, so no number can drift out
@@ -26,7 +31,7 @@ import { packageInfo } from '../../data/package-info';
 import { pluginSubpathCount } from '../../data/plugins';
 
 const description =
-  'Luq は、すでに書かれている TypeScript の型をそのまま検証するライブラリです。型のフィールドパスに対してルールを宣言し、その宣言をコンパイラが型と突き合わせます。';
+  'すでにある TypeScript の型に、そのままルールを宣言するバリデーションライブラリ。宣言が型と合っているかはコンパイラが検査します。';
 
 // The same block the English hero shows, with the same comments: the text is
 // what the compiler checks, so translating it would put a second claim on the
@@ -48,19 +53,23 @@ const userValidator = Builder()
   .build();`;
 
 const refused = [
-  { mistake: 'フィールドの型にないスロット', example: 'number のフィールドに b.string' },
-  { mistake: '配列ワイルドカードの欠落', example: '"items[*].name" と書くべきところを "items.name"' },
-  { mistake: '組み込みオブジェクトへの侵入', example: 'Date に対する "when.getTime"' },
-  { mistake: '存在しないメソッド', example: '要素のサブチェーンの内側で' },
+  { mistake: '型に合わないスロット', example: 'number のフィールドに b.string' },
+  { mistake: '配列のワイルドカード漏れ', example: '"items.name"（正しくは "items[*].name"）' },
+  { mistake: '組み込みオブジェクトの内部へのパス', example: 'Date に "when.getTime"' },
+  { mistake: '存在しないメソッド', example: '配列要素のサブチェーン内でも' },
 ];
 
 const measured = [
   { value: bundleSize.coreOnly.gzip, label: 'Builder のみ、gzip 後', source: 'config/size-budget.json' },
-  { value: String(pluginSubpathCount), label: 'プラグイン、それぞれ個別の import', source: 'config/plugin-catalog.lock.json' },
+  {
+    value: String(pluginSubpathCount),
+    label: 'プラグイン（個別に import 可能）',
+    source: 'config/plugin-catalog.lock.json',
+  },
   { value: `${conformance.percent}%`, label: 'JSON Schema Draft-07', source: 'config/json-schema-suite.json' },
   {
     value: '0',
-    label: 'eval / new Function — 実行時スキーマが strict な CSP 下で動く',
+    label: 'eval / new Function。strict な CSP 下でも動きます',
     source: 'npm run check:no-dynamic-code',
   },
 ];
@@ -90,21 +99,20 @@ const measured = [
 
         <div class="mx-auto max-w-3xl text-left">
           <p class="mb-8 text-body-large text-on-surface">
-            あなたの型は、たいていあなたが書いたものではありません。{' '}
+            型はたいてい、自分で書いたものではありません。{' '}
             <a class="text-primary underline underline-offset-2" href="/openapi"
               ><code class="font-mono">openapi-typescript</code></a
             >{' '}
-            は自分が所有していない仕様から生成し、Prisma は正本のスキーマから生成し、protobuf
-            は4言語ぶんをまとめて生成します。形がすでに別の場所で決まっているとき、{' '}
+            は手元にない仕様から、Prisma は DB のスキーマから、protobuf にいたっては1つの定義から4言語ぶんを生成します。{' '}
             <strong class="text-on-surface"
-              >スキーマを正本とするバリデータは、その形の2つ目の記述を保守しろと要求してきます</strong
+              >形がすでに決まっているのに、スキーマを正とするバリデータは同じ形をもう一度書かせます</strong
             >。
           </p>
         </div>
 
         <div class="mx-auto mb-8 max-w-3xl text-left">
           <p class="mb-3 text-label-large uppercase tracking-wide text-on-surface-variant">
-            実行時ではなくコンパイラが捕まえるもの
+            実行時ではなく、コンパイル時に落ちるもの
           </p>
           <ul class="divide-y divide-outline-variant border-y border-outline-variant">
             {
@@ -123,7 +131,7 @@ const measured = [
 
         <div class="mb-8 flex flex-col justify-center gap-3 sm:flex-row">
           <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
-            はじめる（英語）
+            入門ガイド（英語）
           </a>
           <a href="/plugins" class="md-button md-button-tonal md-state-layer md-focus-ring">
             プラグイン一覧（英語）
@@ -136,14 +144,14 @@ const measured = [
 
         <div class="mx-auto mb-12 max-w-3xl text-left">
           <p class="mb-4 text-body-large text-on-surface-variant">
-            Luq は逆向きに動きます。すでにある型を受け取り、そのフィールドパスに対してルールを宣言させる。{' '}
-            <strong class="text-on-surface">そして宣言を型と突き合わせるのはコンパイラです</strong>
-            。書いたフィールドに適用できないルールは、静かに一度も発火しないルールではなく、エラーになります。
+            Luq は逆から始めます。型を受け取り、そのフィールドパスにルールを宣言する。{' '}
+            <strong class="text-on-surface">合っているかを確かめるのはコンパイラです</strong>
+            。適用できないルールは、黙って一度も動かないのではなく、その場でエラーになります。
           </p>
           <p class="mb-4 text-body-medium text-on-surface-variant">
-            書き換えは起きず、スキーマオブジェクトから型を逆算することもありません。下の
-            <code class="font-mono">User</code> がスキーマそのもので、{' '}
-            <code class="font-mono">b.string</code> は number のフィールドが取れるスロットではありません。
+            型を書き換えることも、スキーマから型を逆算することもありません。下の{' '}
+            <code class="font-mono">User</code> がそのままスキーマで、number のフィールドに{' '}
+            <code class="font-mono">b.string</code> は置けません。
           </p>
           <div class="rounded-shape-md border border-error p-1">
             <p class="px-3 py-2 text-label-large text-error">
@@ -153,9 +161,9 @@ const measured = [
             <CodeBlock code={refusedExample} language="typescript" invalid />
           </div>
           <p class="mt-3 text-body-small text-on-surface-variant">
-            このブロックは英語版と同じテキストのままです。{' '}
+            このブロックは英語版と同じままです。{' '}
             <code class="font-mono">npm run check:doc-examples</code>{' '}
-            がビルドのたびにこれをコンパイルし、通ってしまったらビルドを落とします。訳した文面を置くと、コンパイラが確かめていない2つ目の主張ができてしまうためです。
+            がビルドのたびにコンパイルし、通ってしまったらビルドを落とします。訳を置くと、コンパイラが見ていない主張がもう1つ増えるので。
           </p>
         </div>
 
@@ -174,23 +182,22 @@ const measured = [
         </div>
 
         <p class="text-body-small text-on-surface-variant">
-          この数字はすべて英語版と同じ生成ファイルから読み込んでいます。翻訳された数字はどこにもなく、ずれようがありません。
+          数字はすべて英語版と同じ生成ファイルから読んでいます。訳した数字はどこにもないので、ずれません。
         </p>
       </div>
     </section>
 
     <section class="border-t border-outline-variant bg-surface-container px-4 py-14 sm:px-6 lg:px-8">
       <div class="container mx-auto max-w-3xl text-center">
-        <h2 class="mb-4 text-headline-medium text-on-surface">日本語で読めるのはこのページだけです</h2>
+        <h2 class="mb-4 text-headline-medium text-on-surface">日本語はこのページだけです</h2>
         <p class="mb-4 text-body-large text-on-surface-variant">
           ガイド、API リファレンス、ベンチマーク、JSON Schema
-          のページはいまのところ英語だけです。訳していないページへ言語切替から飛ぶことはありません——
-          訳がないページでは、切替はここに戻ります。
+          は英語だけです。言語切替が訳のないページに飛ばすことはありません。訳がなければ、このページに戻ります。
         </p>
         <p class="mb-8 text-body-medium text-on-surface-variant">
-          中途半端に古い訳を置かないためです。英語版が変わったのに訳が追いついていないと{' '}
+          古い訳を置きっぱなしにしないためです。英語版が変わって訳が追いつかないと{' '}
           <code class="font-mono">npm run check-translations</code>{' '}
-          がビルドを落とすので、ここにあるページは誰かが英語版の差分を読んだうえで残しているものです。
+          がビルドを落とすので、ここにある日本語は誰かが英語版の差分を読んだうえで残したものです。
         </p>
         <div class="flex flex-col justify-center gap-3 sm:flex-row">
           <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
