@@ -7,7 +7,7 @@
     "dev": "astro dev",
     "dev:full": "npm run generate-all && astro dev",
     "start": "astro dev",
-    "build": "npm run generate-all && astro check && astro build && npm run check-built-pages",
+    "build": "npm run generate-all && astro check && astro build && npm run check-built-pages && npm run check-translations",
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "astro check",
@@ -18,7 +18,8 @@
     "generate-package-data": "node scripts/generate-package-data.mjs",
     "generate-conformance-data": "node scripts/generate-conformance-data.mjs",
     "generate-size-data": "node scripts/generate-size-data.mjs",
-    "generate-competitor-data": "node scripts/generate-competitor-data.mjs"
+    "generate-competitor-data": "node scripts/generate-competitor-data.mjs",
+    "check-translations": "node scripts/check-translations.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",

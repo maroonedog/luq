@@ -1,0 +1,43 @@
+---
+/**
+ * The language switch.
+ *
+ * It links to the SAME page in the other language when one exists, and to that
+ * language's home page when it does not — never to a 404, and never silently
+ * to the wrong page. A reader on an untranslated page gets a title saying so,
+ * because a switch that lands somewhere other than where it pointed is worse
+ * than one that says where it is going.
+ *
+ * Which pages exist in Japanese is a fact somebody maintains: a translation
+ * that has not been checked against its source since the source changed fails
+ * `npm run check-translations`, so every path listed is a page someone is
+ * keeping current. Adding one is a commitment rather than a copy.
+ */
+import {
+  englishPathOf,
+  japaneseTranslationOf,
+  localeOfPath,
+} from "../i18n/locale-of-path";
+
+const path = Astro.url.pathname;
+const isJapanese = localeOfPath(path) === "ja";
+const translation = japaneseTranslationOf(path);
+
+const href = isJapanese ? englishPathOf(path) : (translation ?? "/ja");
+const label = isJapanese ? "English" : "日本語";
+const title = isJapanese
+  ? "Read this in English"
+  : translation !== null
+    ? "このページを日本語で読む"
+    : "日本語のページへ（このページはまだ英語だけです）";
+---
+
+<a
+  href={href}
+  hreflang={isJapanese ? "en" : "ja"}
+  title={title}
+  class="md-button md-button-text md-state-layer md-focus-ring whitespace-nowrap"
+>
+  <span class="md-icon md-icon-sm" aria-hidden="true">language</span>{' '}
+  {label}
+</a>

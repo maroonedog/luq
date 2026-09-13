@@ -2,6 +2,11 @@
 import '../styles/global.css';
 import { navItems, secondaryNavItems } from '../components/Header.astro';
 import MobileMenuOverlay from '../components/MobileMenuOverlay.astro';
+import {
+  englishPathOf,
+  japaneseTranslationOf,
+  localeOfPath,
+} from '../i18n/locale-of-path';
 
 export interface Props {
   title: string;
@@ -16,10 +21,28 @@ const {
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+// The language this page is actually written in, derived from its own URL
+// rather than assumed. A Japanese page that says lang="en" is read aloud by a
+// screen reader in an English voice, and offered for translation by a browser
+// that is already looking at the translation.
+const locale = localeOfPath(Astro.url.pathname);
+
+// hreflang is a claim that two URLs are the same page in two languages, and it
+// is only made where that is true: a page nobody has translated gets no
+// alternate at all, rather than one pointing at a route that does not exist.
+const japanese = japaneseTranslationOf(Astro.url.pathname);
+const alternates =
+  japanese === null
+    ? []
+    : [
+        { hreflang: 'en', href: new URL(englishPathOf(Astro.url.pathname), Astro.site) },
+        { hreflang: 'ja', href: new URL(japanese, Astro.site) },
+      ];
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -33,6 +56,11 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <title>{title} | Luq</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
+    {
+      alternates.map((alternate) => (
+        <link rel="alternate" hreflang={alternate.hreflang} href={alternate.href} />
+      ))
+    }
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalURL} />

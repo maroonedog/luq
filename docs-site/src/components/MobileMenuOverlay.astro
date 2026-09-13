@@ -1,5 +1,6 @@
 ---
 import { isActive } from './Header.astro';
+import LanguageSwitcher from './LanguageSwitcher.astro';
 
 /**
  * MD3 modal navigation drawer for the primary navigation.
@@ -95,6 +96,12 @@ const currentPath = Astro.url.pathname;
           </div>
         )
       }
+
+      {/* The app bar hides the switch below sm, so the drawer carries it —
+          the same reason the drawer carries the secondary nav. */}
+      <div class="mt-2 border-t border-outline-variant px-2 pt-4">
+        <LanguageSwitcher />
+      </div>
     </nav>
 
     <hr class="md-divider" />
