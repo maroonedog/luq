@@ -36,9 +36,11 @@ export {
   isString,
   isStringArray,
 } from "./types";
+export { ISSUE_CODES, isIssueCode } from "./types";
 export type {
   ArrayItemContext,
   CheckOutcome,
+  IssueCode,
   IssueDetail,
   IssueSeverity,
   MessageContext,

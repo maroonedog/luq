@@ -33,12 +33,33 @@ export const DEFAULT_ABORT_EARLY_ON_EACH_FIELD = true;
  */
 export const ARRAY_ELEMENTS_ABORT_ON_EACH_FIELD = false;
 
+/**
+ * The policy every call gets when the caller asked for nothing.
+ *
+ * Shared rather than rebuilt. A policy is read-only, so one frozen object
+ * serves every call that does not override it — which is most of them, because
+ * `validate(value)` with no second argument is the ordinary shape.
+ */
+const DEFAULT_ABORT_POLICY: AbortPolicy = Object.freeze({
+  abortEarly: DEFAULT_ABORT_EARLY,
+  abortEarlyOnEachField: DEFAULT_ABORT_EARLY_ON_EACH_FIELD,
+});
+
 export function resolveAbortPolicy(options?: ValidateOptions): AbortPolicy {
-  return {
-    abortEarly: options?.abortEarly ?? DEFAULT_ABORT_EARLY,
-    abortEarlyOnEachField:
-      options?.abortEarlyOnEachField ?? DEFAULT_ABORT_EARLY_ON_EACH_FIELD,
-  };
+  if (options === undefined) return DEFAULT_ABORT_POLICY;
+  const abortEarly = options.abortEarly ?? DEFAULT_ABORT_EARLY;
+  const abortEarlyOnEachField =
+    options.abortEarlyOnEachField ?? DEFAULT_ABORT_EARLY_ON_EACH_FIELD;
+  // An options object carrying neither flag — `{ external }` is the common one
+  // — resolves to the same policy as no options at all, so it gets the same
+  // object rather than a copy of it.
+  if (
+    abortEarly === DEFAULT_ABORT_EARLY &&
+    abortEarlyOnEachField === DEFAULT_ABORT_EARLY_ON_EACH_FIELD
+  ) {
+    return DEFAULT_ABORT_POLICY;
+  }
+  return { abortEarly, abortEarlyOnEachField };
 }
 
 export class IssueSink {
