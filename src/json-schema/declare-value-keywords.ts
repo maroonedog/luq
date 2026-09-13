@@ -42,6 +42,13 @@ const JSON_TYPE_TESTS: Readonly<
 > = {
   string: isString,
   number: (value) => typeof value === "number",
+  // The whole of `type: "integer"`. A second rule built from the numberInteger
+  // plugin used to run beside this one with its code overridden to `type`,
+  // which put two issues coded `type` at one path for one value — and (path,
+  // code) is the pair a machine consumer de-duplicates on, so one of them
+  // disappeared without trace. This test is the same predicate the plugin
+  // applies, so removing the second rule changed no verdict: the conformance
+  // corpus stayed at 929 / 929.
   integer: (value) => typeof value === "number" && Number.isInteger(value),
   boolean: (value) => typeof value === "boolean",
   array: isArray,
@@ -149,18 +156,6 @@ export function declareTypeRules(
         `Value must be of type ${rendered}, but got ${String(detail.actual)}`,
       buildMessageContext: () => ({}),
     }),
-  ]);
-}
-
-/** `type: "integer"` is the only `type` member that adds a chain method. */
-export function declareIntegerRules(
-  schema: Draft07SchemaObject,
-  context: StructuralContext
-): readonly Rule[] {
-  if (!readDeclaredTypes(schema).includes("integer")) return NO_RULES;
-  const plugin = context.bag.numberInteger;
-  return Object.freeze([
-    plugin.build(context.ruleContextFor(plugin.name, "type")),
   ]);
 }
 

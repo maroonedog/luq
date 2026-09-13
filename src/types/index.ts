@@ -48,6 +48,18 @@ export interface ValidationIssue {
   /** Never optional: the chain resolves it once at build time, so a reader
    *  never has to re-implement the "absent means error" fallback. */
   readonly severity: IssueSeverity;
+  /**
+   * Why a composite failed, when the failing rule is one.
+   *
+   * `allOf`, `anyOf` and `oneOf` report their own code, which says WHICH
+   * applicator failed and never why. The branch failures behind it land here,
+   * so a caller can reach "minLength" without re-running the sub-schemas.
+   *
+   * ABSENT, not undefined, on an ordinary issue. A key present everywhere
+   * would make `"causes" in issue` answer true for every issue the library
+   * reports, which is the opposite of what it is for.
+   */
+  readonly causes?: readonly ValidationIssue[];
 }
 
 /** branch / index / causes let a composite failure explain itself. */

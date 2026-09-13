@@ -143,6 +143,7 @@ function reportCheckFailure(
       severity: check.severity,
       value,
       render: (ctx) => check.describe(detail, ctx),
+      causes: detail.causes,
     })
   );
 }

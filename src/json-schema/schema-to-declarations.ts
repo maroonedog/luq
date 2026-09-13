@@ -38,7 +38,6 @@ import {
 import {
   declareConstRules,
   declareEnumRules,
-  declareIntegerRules,
   declareTypeRules,
 } from "./declare-value-keywords";
 import type { Draft07SchemaObject } from "./draft07.types";
@@ -76,10 +75,7 @@ export const STRUCTURAL_EXPANSIONS: StructuralExpansionTable = {
   },
   type: {
     expandsTo: "rules",
-    toRules: (schema, context) => [
-      ...declareTypeRules(schema, context),
-      ...declareIntegerRules(schema, context),
-    ],
+    toRules: declareTypeRules,
   },
   enum: { expandsTo: "rules", toRules: declareEnumRules },
   allOf: { expandsTo: "rules", toRules: composeAllOf },

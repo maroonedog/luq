@@ -140,6 +140,7 @@ if (!result.valid) {
     // issue.code  "stringMin"   — which rule; the vocabulary is pinned
     // issue.message             — the text, overridable per call
     // issue.severity "error"    — only "error" makes the value invalid
+    // issue.causes              — present only on a composite: why it failed
   }
 }
 ```
@@ -154,6 +155,12 @@ each code, because some codes are shared on purpose — a missing root and a
 missing field both report `required`. Codes a gate carries (`skip`,
 `validateIf`) sit in a separate list: they are accepted from a caller but no
 issue can ever carry one.
+
+A composite reports which applicator failed — `allOf`, `anyOf`, `oneOf` — and
+that code cannot say why. `issue.causes` carries the branch failures behind it,
+each a full issue with its own code, so `allOf` can be read down to the
+`stringMin` underneath it. The key is **absent** on an ordinary issue rather
+than present and undefined, so `"causes" in issue` is a question worth asking.
 
 `.v(path, chain)` declares rules for one field. A path you do not declare is
 not validated, not required and not read, so covering a type partly is a normal
