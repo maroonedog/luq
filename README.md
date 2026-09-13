@@ -12,89 +12,57 @@
 
 </div>
 
-## Why this exists
+## What is Luq?
 
-Your types were probably not written by you. `openapi-typescript` generates
-them from a spec you do not own. Prisma and Drizzle generate them from the
-schema of record. protobuf and GraphQL codegen generate them for services in
-four languages at once. Increasingly, a model generates the code that uses them.
+Luq is a TypeScript validation library that takes a type you already have and
+lets you declare rules against its field paths. Your type definitions do not
+change — not re-authored as a schema, not replaced by an inferred one. The
+compiler checks each rule against the field it is written on, so a rule that
+cannot apply is a compile error rather than a rule that quietly never fires.
 
-A validator whose schema is the source of truth assumes you are the one who
-decides the shape. When that assumption holds, it is the better arrangement and
-this page says so again below. When it does not, you end up maintaining a second
-description of a shape you did not choose. You can have the compiler check the
-copy against the original — zod's `satisfies z.ZodType<Order>` does exactly that
-— but you still author it, update it, and remember to write the check.
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
+import { stringMinPlugin } from "@maroonedog/luq/plugins/stringMin";
 
-Luq runs the other way. It takes the type you already have and lets you declare
-rules against its field paths. **Your type definitions do not change**: not
-re-authored as a schema, not replaced by an inferred one, not moved. `.for<Order>()`
-takes the `Order` you already have, exactly as it is.
+// The type is yours, already written, wherever it already lives.
+type User = { name: string; age: number };
 
-What makes those declarations worth writing is that the compiler checks them
-against the type: a rule that does not apply to the field it is written on is a
-compile error, not a rule that quietly never fires.
+const validateUser = Builder()
+  .use(requiredPlugin)
+  .use(stringMinPlugin)
+  .for<User>()
+  .v("name", (b) => b.string.required().min(3))
+  .build();
 
-| Mistake | Result |
-|---|---|
-| A slot unrelated to the field's type (`b.string` on a `number`) | compile error |
-| A missing `[*]` (`"items.name"`) | compile error |
-| Descending into a built-in (`"when.getTime"` on a `Date`) | compile error |
-| A method that does not exist inside an element sub-chain | compile error |
-| A JSON Schema keyword bound to a chain method that does not exist | compile error |
-| A JSON Schema document declaring 2019-09 or 2020-12 | throws when the validator is built, rather than being read as Draft-07 |
-| A documented example drifting from the API | fails CI |
+const result = validateUser.validate({ name: "Jo", age: 25 });
+if (!result.valid) {
+  for (const issue of result.issues) {
+    console.log(issue.path, issue.code);
+    // "name" "stringMin"
+  }
+}
+```
 
-That matters most when the code calling this library is generated rather than
-typed by hand. A generator that picks the wrong rule, misspells a path or drops
-an array wildcard gets a red squiggle, not a validator that passes everything.
+The rule below cannot apply to `age`, and that is a compile error, not a
+run-time surprise:
 
-Two consequences worth knowing before you read further:
+<!-- luq-example: must-fail the headline claim; if this ever compiled the sentence above it would be false -->
+```ts
+import { Builder } from "@maroonedog/luq";
+import { requiredPlugin } from "@maroonedog/luq/plugins/required";
 
-- **Adoption is a patch, and so is removal.** A path you did not declare is not
-  validated, not required, and not read, so a partly-covered type is a normal
-  state rather than a half-finished one. There is nothing global to migrate: no
-  registry, no plugin installation, no shared configuration object. Leaving is
-  the same size of change in the other direction — your types were never
-  authored here, so there is no generated file to delete and no inferred type to
-  replace by hand, and a consumer that takes a [Standard
-  Schema](https://luq.dev/standard-schema) does not change when you hand it a
-  different value. The rules themselves you would rewrite; that part is real,
-  and it is the same work whichever way you go.
-- **Every rule you can call is a plugin you imported by name**, so the bundle
-  contains what you used and nothing else — an unimported plugin's method does
-  not even typecheck. What each configuration costs is measured on every build:
-  [luq.dev/benchmarks](https://luq.dev/benchmarks).
+type User = { age: number };
 
-## When schema-first is the right answer
+const userValidator = Builder()
+  .use(requiredPlugin)
+  .for<User>()
+  .v("age", (b) => b.string.required())
+  //               ^^^^^^^^ not a slot a number field can be.
+  .build();
+```
 
-Worth stating plainly, because it is a real tension and not a debating point:
-**if the schema genuinely is your single source of truth, schema-first is the
-coherent arrangement, and zod, valibot or TypeBox are the right tools.** You
-write one artefact, your types come out of it, and there is nothing to keep in
-step. That is a better position than Luq's, and Luq cannot give it to you.
-
-Luq is for the case where that artefact already exists somewhere else and is not
-yours to move — an OpenAPI document you consume, a Prisma schema, a `.proto`
-shared with three other services, a type someone generated last week. There, the
-schema-first arrangement asks you to author a *second* source of truth, and the
-question stops being which library is nicer and becomes which copy is right.
-
-Two things follow that are easy to miss:
-
-- **Luq contains both directions.** `fromJsonSchema(document)` is schema-first —
-  the document decides, and Luq builds the rules from it. That is not a
-  contradiction to be argued away; it is the same principle applied to a
-  different upstream. What Luq declines to do is make you *hand-write* the second
-  copy.
-- **You do not have to pick a side per project, only per boundary.** Standard
-  Schema means a zod schema and a Luq validator are interchangeable where they
-  meet, so "the schema is the truth here, the type is the truth there" is a
-  workable arrangement rather than an unresolved argument.
-
-If you are starting from nothing and you will own the shape, use zod. It is
-mature, it is everywhere, and every question you will have is already answered
-somewhere.
+[Why the library works this way](#why-this-exists) is below, after the API.
 
 ## Install
 
@@ -308,6 +276,90 @@ const forStringMin = PLUGIN_MANIFEST.filter((entry) =>
 //    surfaces: [{ symbol: "stringMinPlugin", method: "min", slots: ["string"] }],
 //    ... }]
 ```
+
+## Why this exists
+
+Your types were probably not written by you. `openapi-typescript` generates
+them from a spec you do not own. Prisma and Drizzle generate them from the
+schema of record. protobuf and GraphQL codegen generate them for services in
+four languages at once. Increasingly, a model generates the code that uses them.
+
+A validator whose schema is the source of truth assumes you are the one who
+decides the shape. When that assumption holds, it is the better arrangement and
+this page says so again below. When it does not, you end up maintaining a second
+description of a shape you did not choose. You can have the compiler check the
+copy against the original — zod's `satisfies z.ZodType<Order>` does exactly that
+— but you still author it, update it, and remember to write the check.
+
+Luq runs the other way. It takes the type you already have and lets you declare
+rules against its field paths. **Your type definitions do not change**: not
+re-authored as a schema, not replaced by an inferred one, not moved. `.for<Order>()`
+takes the `Order` you already have, exactly as it is.
+
+What makes those declarations worth writing is that the compiler checks them
+against the type: a rule that does not apply to the field it is written on is a
+compile error, not a rule that quietly never fires.
+
+| Mistake | Result |
+|---|---|
+| A slot unrelated to the field's type (`b.string` on a `number`) | compile error |
+| A missing `[*]` (`"items.name"`) | compile error |
+| Descending into a built-in (`"when.getTime"` on a `Date`) | compile error |
+| A method that does not exist inside an element sub-chain | compile error |
+| A JSON Schema keyword bound to a chain method that does not exist | compile error |
+| A JSON Schema document declaring 2019-09 or 2020-12 | throws when the validator is built, rather than being read as Draft-07 |
+| A documented example drifting from the API | fails CI |
+
+That matters most when the code calling this library is generated rather than
+typed by hand. A generator that picks the wrong rule, misspells a path or drops
+an array wildcard gets a red squiggle, not a validator that passes everything.
+
+Two consequences worth knowing before you read further:
+
+- **Adoption is a patch, and so is removal.** A path you did not declare is not
+  validated, not required, and not read, so a partly-covered type is a normal
+  state rather than a half-finished one. There is nothing global to migrate: no
+  registry, no plugin installation, no shared configuration object. Leaving is
+  the same size of change in the other direction — your types were never
+  authored here, so there is no generated file to delete and no inferred type to
+  replace by hand, and a consumer that takes a [Standard
+  Schema](https://luq.dev/standard-schema) does not change when you hand it a
+  different value. The rules themselves you would rewrite; that part is real,
+  and it is the same work whichever way you go.
+- **Every rule you can call is a plugin you imported by name**, so the bundle
+  contains what you used and nothing else — an unimported plugin's method does
+  not even typecheck. What each configuration costs is measured on every build:
+  [luq.dev/benchmarks](https://luq.dev/benchmarks).
+
+## When schema-first is the right answer
+
+Worth stating plainly, because it is a real tension and not a debating point:
+**if the schema genuinely is your single source of truth, schema-first is the
+coherent arrangement, and zod, valibot or TypeBox are the right tools.** You
+write one artefact, your types come out of it, and there is nothing to keep in
+step. That is a better position than Luq's, and Luq cannot give it to you.
+
+Luq is for the case where that artefact already exists somewhere else and is not
+yours to move — an OpenAPI document you consume, a Prisma schema, a `.proto`
+shared with three other services, a type someone generated last week. There, the
+schema-first arrangement asks you to author a *second* source of truth, and the
+question stops being which library is nicer and becomes which copy is right.
+
+Two things follow that are easy to miss:
+
+- **Luq contains both directions.** `fromJsonSchema(document)` is schema-first —
+  the document decides, and Luq builds the rules from it. That is not a
+  contradiction to be argued away; it is the same principle applied to a
+  different upstream. What Luq declines to do is make you *hand-write* the second
+  copy.
+- **You do not have to pick a side per project, only per boundary.** Standard
+  Schema means a zod schema and a Luq validator are interchangeable where they
+  meet, so "the schema is the truth here, the type is the truth there" is a
+  workable arrangement rather than an unresolved argument.
+
+If you are starting from nothing and you will own the shape, use zod. It is
+mature, it is everywhere, and every question you will have is already answered
+somewhere.
 
 ## Documentation
 
