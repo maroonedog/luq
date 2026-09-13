@@ -37,7 +37,26 @@ than `latest`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Repository
+
+- **The benchmarks page no longer carries a "many validators at once" section.**
+  The first CI recording landed and did not resolve the thing it was built to
+  resolve: the one-validator baseline every other point is divided by had a
+  33 per cent spread across its seven runs, the same size as the effect. The
+  record's own `resolution` field reads 2.4 per cent, but that is the gap
+  between two point estimates each carrying that spread, so it understates the
+  uncertainty rather than bounding it. Publishing a figure from that run would
+  have repeated, with a different number, the mistake that made the quoted
+  "11% across 40 validators" worth withdrawing.
+
+  A reader also has no second library to compare against; no comparable project
+  publishes this. What the page says instead is the part a reader can act on:
+  every figure on it was taken with one validator alive, so it is the
+  one-validator case rather than a per-call cost in an application.
+
+  The harness, the recorder and the record stay. `docs/measurements.md` carries
+  what the run showed, what it could not support, and what more repeats would
+  take.
 
 ## [2.6.0] — 2026-09-13
 

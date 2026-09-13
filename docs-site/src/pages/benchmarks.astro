@@ -27,27 +27,11 @@ import OnThisPage from '../components/OnThisPage.astro';
  * to ajv by an order of magnitude, and both are here.
  *
  *   config/competitor-baseline.json  written by bench/competitors/
- *
- * One dimension on this page is deliberately EMPTY rather than absent: how
- * throughput moves with many validators alive. It has not been measured on a
- * machine allowed to record, so it prints no number — and it reads that state
- * out of config/megamorphism-baseline.json instead of being told, so the
- * sentence cannot outlive the measurement.
  */
 import { competitorBenchmark } from '../data/competitors';
 import { packageInfo } from '../data/package-info';
 import perfBaseline from '../../../config/perf-baseline.json';
 import sizeBudget from '../../../config/size-budget.json';
-import megamorphismBaseline from '../../../config/megamorphism-baseline.json';
-
-/**
- * The one section of this page that prints no number, and it reads its own
- * emptiness out of the record rather than being told. `lanes` is empty for
- * exactly as long as bench/megamorphism/ has not been recorded on CI's runner,
- * so the sentence "not measured yet" cannot outlive the measurement arriving.
- */
-const megamorphismIsMeasured = megamorphismBaseline.lanes.length > 0;
-const megamorphismStatus = megamorphismBaseline.status;
 
 const machine = perfBaseline.machine;
 const conditions = perfBaseline.conditions;
@@ -211,7 +195,6 @@ const tableOfContents = [
   { id: 'against-1x', title: 'Against 1.x', level: 2 },
   { id: 'against-others', title: 'Against other libraries', level: 2 },
   { id: 'build-cost', title: 'What build() costs', level: 2 },
-  { id: 'many-validators', title: 'Many validators at once', level: 2 },
   { id: 'the-gate', title: 'What CI gates on', level: 2 },
   { id: 'method', title: 'Method', level: 2 },
   { id: 'reproduce', title: 'Reproduce it', level: 2 },
@@ -303,21 +286,13 @@ const tableOfContents = [
             <strong class="text-on-surface">The subject is <code>src/</code>, not the bundle.</strong>{' '}
             Speed is measured on {conditions.moduleUnderTest}.
           </li>
-          {
-            !megamorphismIsMeasured && (
-              <li>
-                <strong class="text-on-surface">
-                  What happens with many validators alive is not measured yet.
-                </strong>{' '}
-                Every figure on this page was taken with one validator running. A page that simply
-                left the dimension out would not be lying, but the omission would look like an
-                answer, so it is named instead.{' '}
-                <a class="text-primary underline underline-offset-2" href="#many-validators">
-                  What the harness does and why nothing is published.
-                </a>
-              </li>
-            )
-          }
+          <li>
+            <strong class="text-on-surface">One validator was alive for every figure here.</strong>{' '}
+            Real applications hold many, and a shared runtime behaves differently once its call
+            sites have seen several. Whether that moves these numbers is not something this page
+            answers, so read them as the one-validator case rather than as a per-call cost in an
+            application.
+          </li>
         </ul>
       </div>
     </section>
@@ -791,68 +766,6 @@ const tableOfContents = [
       </p>
     </section>
 
-    <!-- ================= Many validators at once ================= -->
-    <section id="many-validators" class="mb-16 scroll-mt-24">
-      <h2 class="mb-2 text-headline-medium text-on-surface">Many validators at once</h2>
-      {
-        megamorphismIsMeasured ? (
-          <div class="md-card md-card-filled p-6">
-            <p class="mb-3 text-body-medium text-on-surface">
-              <code>config/megamorphism-baseline.json</code> now holds a recorded measurement, and
-              this page has not been rewritten around it yet. The figures are in that file and in
-              the pull request the measurement arrived on.
-            </p>
-            <p class="text-body-medium text-on-surface-variant">
-              Moving this section from a statement to a table is a judgement about what the two
-              lanes mean together, so it is made by a person reading the record — not by this page
-              reformatting whatever the last run produced.
-            </p>
-          </div>
-        ) : (
-          <div class="md-card md-card-filled p-6">
-            <p class="mb-3 text-body-medium text-on-surface">
-              <strong>Not measured yet — so there is no number here.</strong> Every other figure on
-              this page was produced by a script in this repository. This one has not been, and
-              saying nothing at all would leave the omission looking like an answer.
-            </p>
-            <p class="mb-3 text-body-medium text-on-surface-variant">
-              The question is whether a <code>validate()</code> call gets slower when many
-              <em>different</em> validators are alive and being called in turn.{' '}
-              <code>src/runtime/run-field.ts</code> is one piece of code shared by every validator in
-              the process, and its call sites see a different closure for every declared field of
-              every live validator; past a handful of targets V8 stops inlining them.
-            </p>
-            <p class="mb-3 text-body-medium text-on-surface-variant">
-              The harness is <code>bench/megamorphism/</code>. It measures one validator against 2,
-              5, 10, 20 and 40, each a different one, and it measures every window{' '}
-              <strong class="text-on-surface">in its own child process</strong> — V8&rsquo;s inline
-              caches are process-wide, so a one-validator figure taken after a forty-validator run in
-              the same process would be measured against caches the forty already spoiled and could
-              only ever report no effect. Accepted and rejected inputs are timed separately, and a
-              second lane grows one validator&rsquo;s value pool instead of the validator count, so
-              the cost of a bigger working set can be subtracted rather than assumed away.
-            </p>
-            <p class="mb-3 text-body-medium text-on-surface-variant">
-              Every run also states what it could not resolve, from inside itself. The two lanes
-              start from the identical window — one validator over four values — so their first two
-              figures are one request measured twice, and nothing about the code can make them
-              differ. Their gap is recorded beside the figures, and a degradation smaller than it is
-              not evidence. On a developer machine that gap has come out as large as the effect
-              being looked for, which is the whole reason this page carries a paragraph instead of
-              a table.
-            </p>
-            <p class="text-body-medium text-on-surface-variant">
-              Nothing is published because the recording machine matters: how V8 behaves once a
-              shared call site has many targets depends on the CPU, the core count and the Node
-              version, so the recorder is CI&rsquo;s runner and the harness refuses to write the
-              baseline anywhere else without being told to. This paragraph is printed for exactly as
-              long as <code>config/megamorphism-baseline.json</code> holds no lanes:{' '}
-              <span class="text-on-surface">{megamorphismStatus}</span>.
-            </p>
-          </div>
-        )
-      }
-    </section>
 
     <!-- ================= The gate ================= -->
     <section id="the-gate" class="mb-16 scroll-mt-24">
