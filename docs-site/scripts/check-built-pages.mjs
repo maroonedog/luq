@@ -184,6 +184,80 @@ function readAnchors(html) {
   return ids;
 }
 
+/**
+ * The language markup on a page, against the route it is served at.
+ *
+ * A translated page makes two claims to machines that cannot read it: `lang` on
+ * <html> tells a screen reader which voice to use and a browser whether to
+ * offer a translation, and `hreflang` tells a search engine that two URLs are
+ * the same page in two languages. Both are derived in src/i18n/locale-of-path
+ * and neither shows on the rendered page, so nothing about a Japanese page that
+ * says lang="en" looks wrong until somebody hears it read aloud.
+ *
+ * The hreflang half fails in both directions. Claiming a Japanese version of a
+ * page nobody translated points a search engine at a 404; omitting one where a
+ * translation does exist leaves the two pages competing rather than being
+ * understood as a pair. And the claim has to be made from BOTH sides — a
+ * one-way hreflang is discarded, so the English page carrying the pair while
+ * the Japanese one does not is the same as neither carrying it.
+ */
+function findLanguageMarkupProblems(name, html, routes) {
+  const route = routeOf(name);
+  const problems = [];
+
+  const expectedLang = route === "/ja" || route.startsWith("/ja/") ? "ja" : "en";
+  const declared = html.match(/<html[^>]*\slang="([^"]*)"/);
+  if (declared === null) {
+    problems.push(`${name}: no lang on <html>`);
+  } else if (declared[1] !== expectedLang) {
+    problems.push(
+      `${name}: served at ${route} and declares lang="${declared[1]}", not "${expectedLang}"`
+    );
+  }
+
+  // The pair this route belongs to, by the same rule src/i18n applies.
+  const english =
+    expectedLang === "ja" ? route.slice("/ja".length) || "/" : route;
+  const japanese = english === "/" ? "/ja" : `/ja${english}`;
+
+  const alternates = new Map();
+  for (const link of html.matchAll(
+    /<link\s+rel="alternate"\s+hreflang="([^"]*)"\s+href="([^"]*)"/g
+  )) {
+    alternates.set(link[1], link[2]);
+  }
+
+  if (!routes.has(japanese)) {
+    if (alternates.size > 0) {
+      problems.push(
+        `${name}: claims an hreflang alternate, and ${japanese} is not a built page`
+      );
+    }
+    return problems;
+  }
+
+  for (const [hreflang, expectedRoute] of [
+    ["en", english],
+    ["ja", japanese],
+  ]) {
+    const href = alternates.get(hreflang);
+    if (href === undefined) {
+      problems.push(
+        `${name}: ${japanese} exists, so this page needs an hreflang="${hreflang}" alternate`
+      );
+      continue;
+    }
+    const path =
+      href.replace(/^https?:\/\/[^/]+/, "").replace(/\/$/, "") || "/";
+    if (path !== expectedRoute) {
+      problems.push(
+        `${name}: hreflang="${hreflang}" points at ${path}, not ${expectedRoute}`
+      );
+    }
+  }
+  return problems;
+}
+
 function run() {
   if (!exists(DIST)) {
     throw new Error(`no built output at ${DIST}. Run \`astro build\` first.`);
@@ -207,7 +281,8 @@ function run() {
       ...findEmptyCodeTags(name, html),
       ...findLegacyApiInCodeBlocks(name, html),
       ...findDeadInternalLinks(name, html, anchorsByRoute),
-      ...findUnpairedMobileMenu(name, html)
+      ...findUnpairedMobileMenu(name, html),
+      ...findLanguageMarkupProblems(name, html, anchorsByRoute)
     );
   }
 
@@ -218,7 +293,7 @@ function run() {
     return;
   }
   console.log(
-    `${String(files.length)} built pages: no foster-parented code tags, no 1.x API inside a code block, no dead internal links, menu button and drawer paired.`
+    `${String(files.length)} built pages: no foster-parented code tags, no 1.x API inside a code block, no dead internal links, menu button and drawer paired, lang and hreflang agreeing with the route.`
   );
 }
 
