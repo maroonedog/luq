@@ -21,6 +21,7 @@ import type { ValidationPlan } from "../compile/validation-plan.types";
 import { runArrayNodes } from "./run-array-node";
 import { runField } from "./run-field";
 import type { FieldRunContext } from "./run-field";
+import type { FoldedFields } from "./fold-fields";
 import { NO_WRITE_TARGETS, writeFieldValue } from "./output-writer";
 import type { ArrayWriteTarget } from "./output-writer";
 
@@ -39,8 +40,20 @@ export function runPlan(
   plan: ValidationPlan,
   subject: unknown,
   context: FieldRunContext,
-  targets: readonly ArrayWriteTarget[] = NO_WRITE_TARGETS
+  targets: readonly ArrayWriteTarget[] = NO_WRITE_TARGETS,
+  folded: FoldedFields | null = null
 ): unknown {
+  // The fields, already folded into one call at build time. foldFields hands
+  // this back only when every field is plain, and a plain field writes nothing
+  // — so `current` below could never have moved, and the subject stands.
+  // Everything after the fields is unchanged: a folded plan still runs its
+  // array nodes through the same traversal.
+  if (folded !== null) {
+    folded(subject, context);
+    if (context.sink.shouldStopPlan()) return subject;
+    return runArrayNodes(plan.arrays, subject, context, targets);
+  }
+
   let current = subject;
   const fields = plan.fields;
   for (let i = 0; i < fields.length; i += 1) {

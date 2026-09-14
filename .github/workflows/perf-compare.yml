@@ -1,0 +1,89 @@
+# ===========================================================================
+# .github/workflows/perf-compare.yml — before and after, on ONE machine.
+#
+# Every other workflow here answers a question about one tree. This one answers
+# the only question a performance change actually raises: is it faster than
+# what it replaces, measured the same way.
+#
+# **It measures both sides inside one job on purpose.** Two runs of the bench
+# workflow, one on each branch, land on whatever runners GitHub had free, and
+# those differ: the recorded competitor baselines in this repository have come
+# back on a Xeon 6973P-C, a Xeon Platinum 8573C and an EPYC 7763 within two
+# days of each other, and the same shape moved by more than any change being
+# considered. Comparing across them measures the fleet, not the library.
+#
+# **Run it against itself first.** With `base` and `head` at the same commit
+# the output is this runner's floor, and any later result smaller than that
+# floor is noise. Locally, six rounds a side reported 6.9% on identical code
+# and fourteen reported 0.1%; that is why the default is fourteen and why the
+# floor is worth re-establishing rather than assumed.
+#
+# Nothing here is a gate. It prints a table into the job summary and never
+# fails on a number — a threshold would need a floor nobody has measured for
+# this runner, and inventing one is how a benchmark starts lying.
+# ===========================================================================
+name: perf-compare
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Ref to measure against (the 'before' side)"
+        required: true
+        default: "develop"
+        type: string
+      head:
+        description: "Ref to measure (the 'after' side). Defaults to this branch."
+        required: false
+        default: ""
+        type: string
+      rounds:
+        description: "Readings per side. Fewer than ten does not resolve 5%."
+        required: false
+        default: "14"
+        type: string
+
+concurrency:
+  group: perf-compare-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out the head side
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.head != '' && inputs.head || github.ref }}
+          path: head
+
+      - name: Check out the base side
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.base }}
+          path: base
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      # Each side builds with its OWN lockfile. Sharing one would measure the
+      # head's dependencies under the base's code, which is neither side.
+      - name: Install the base side
+        run: npm ci
+        working-directory: base
+
+      - name: Install the head side
+        run: npm ci
+        working-directory: head
+
+      - name: Say which machine this is
+        run: node -e "const os=require('os');console.log(os.cpus()[0].model, '|', os.cpus().length, 'logical cores')"
+
+      - name: Measure, alternating sides
+        run: node bench/compare/compare-checkouts.mjs ../base ../head ${{ inputs.rounds }}
+        working-directory: head

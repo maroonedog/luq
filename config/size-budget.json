@@ -25,7 +25,28 @@
     "was dropped because no record of WHICH 49 survived. An unreproducible number is worse than a missing one.",
     "",
     "Anything published elsewhere should be read from here rather than copied. Every figure that was written",
-    "by hand into the README or the site has, at some point, been wrong."
+    "by hand into the README or the site has, at some point, been wrong.",
+    "",
+    "HOW TO MEASURE A CHANGE TO THE HOT PATH, because getting this wrong cost most of a day.",
+    "",
+    "Interference on a shared machine is ONE-SIDED: it can only make a sample slower. So the fast",
+    "tail is signal and the slow tail is noise about the machine, and the estimator is best-of-N",
+    "per side, never the range and never the median.",
+    "",
+    "Measured floor: the SAME code, twelve processes, singleField —",
+    "  113.4 114.6 115.5 115.9 118.0 118.2 124.7 125.7 126.0 129.2 131.2 319.4",
+    "The bottom six sit inside 4.2%. The worst is 2.8x the best. Comparing individual rounds, or",
+    "quoting a range, makes every change look unresolvable; comparing best-of-8 resolves about 4%.",
+    "",
+    "Alternate the two sides round by round so machine drift straddles both, take best-of-8 each,",
+    "and state the percentage. Below ~4% the answer is 'not measurable here', and that is a real",
+    "answer — it was the right answer for the create-rule forwarding closure, which measured",
+    "114.4 -> 115.7 ns, i.e. nothing, after a profile had shown its frame at 8.7% of self time.",
+    "A frame disappearing from a profile is not a speedup; V8 was already inlining it.",
+    "",
+    "And check the deterministic metric as well: heap delta per call, nine windows with the",
+    "scavenged ones dropped, reproduces to 0.8%. It is what catches the case where a change that",
+    "cannot possibly be slower is 34x worse because the enclosing function stopped being inlined."
   ],
   "method": {
     "measuredFrom": "The TypeScript sources under src/, not dist/.",
@@ -243,6 +264,63 @@
           "Headroom per entry is unchanged, so adding a plugin (200-950 B) still cannot fit inside the",
           "budget unnoticed."
         ]
+      },
+      {
+        "date": "2026-09-14",
+        "entries": [
+          "core-only",
+          "one-plugin",
+          "three-plugin",
+          "six-plugin",
+          "preset-presence",
+          "preset-everyday",
+          "jsonschema-plugin",
+          "jsonschema-full-feature",
+          "full-feature"
+        ],
+        "ceilingsRaised": [
+          "core-only",
+          "one-plugin",
+          "three-plugin",
+          "six-plugin",
+          "preset-presence",
+          "preset-everyday",
+          "jsonschema-plugin",
+          "jsonschema-full-feature",
+          "full-feature"
+        ],
+        "grewByGzipBytes": 101,
+        "measuredBeforeGzipBytes": 8698,
+        "why": [
+          "The field list is folded into a chain of closures at build() time, and validate() no longer walks",
+          "an array of fields. Measured A/B over fourteen processes a side, alternating, best-of per side:",
+          "499.0 -> 395.6 ns on a three-field six-rule shape, which is -20.7%, and 26.7 -> 24.4 bytes per",
+          "call. The same rig run on two builds of IDENTICAL code reports -0.1%, so the figure is a result",
+          "and not the machine.",
+          "",
+          "The cost is 101 B gzip on core-only, 8698 -> 8799, which is +1.16% of the floor. Bytes are paid",
+          "once when the module loads and the walk was paid on every call, so the trade is the same one",
+          "recorded on 2026-09-13 and it is the right way round. Every entry moved by about the same amount",
+          "because the fold is in the core; a plugin's own bytes did not change.",
+          "",
+          "WHY IT IS WORTH WRITING DOWN, beyond the number. A hand-written validator for the same shape,",
+          "held to the same judgements on twelve values, runs at 84 ns — about a sixth of what the plan",
+          "costs. Almost all of that gap is the walking, not the rules: a form that keeps every rule behind",
+          "an opaque function reference and builds a context object per field, and only writes the field",
+          "sequence out straight, measured 92 ns, within 9% of full inlining. V8 inlines the rule calls and",
+          "cannot inline away the loop. So plugins do not need to emit source for a compiler to be worth",
+          "building later, and this fold is the part of that win available without emitting anything.",
+          "",
+          "It stops at 396 rather than 92 because the fold still calls run-field per field, still builds an",
+          "IssueSink, an IndexStack and a run context per call, and still walks the CHECK array inside each",
+          "field. Those are the next places to look, in that order.",
+          "",
+          "WHAT THE FOLD REFUSES. foldFields returns null unless every field is plain, and run-plan keeps",
+          "its loop when it does. A plain field cannot write back, so the subject cannot move underneath the",
+          "chain; anything with a default, a normalizer, a gate, a transform or a recursion takes the",
+          "general route unchanged. Nothing here generates code — check:no-dynamic-code still reads this",
+          "directory and still reports zero."
+        ]
       }
     ]
   },
@@ -270,8 +348,8 @@
       "id": "core-only",
       "description": "Builder alone: the floor paid by someone who uses no plugin at all.",
       "plugins": [],
-      "gzipCeilingBytes": 8769,
-      "recordedGzipBytes": 8698,
+      "gzipCeilingBytes": 8870,
+      "recordedGzipBytes": 8799,
       "legacyGzipBytes": 17423
     },
     {
@@ -280,8 +358,8 @@
       "plugins": [
         "required"
       ],
-      "gzipCeilingBytes": 8918,
-      "recordedGzipBytes": 8836
+      "gzipCeilingBytes": 9017,
+      "recordedGzipBytes": 8935
     },
     {
       "id": "three-plugin",
@@ -291,8 +369,8 @@
         "stringMin",
         "numberMin"
       ],
-      "gzipCeilingBytes": 9241,
-      "recordedGzipBytes": 9162
+      "gzipCeilingBytes": 9340,
+      "recordedGzipBytes": 9261
     },
     {
       "id": "six-plugin",
@@ -305,8 +383,8 @@
         "numberMin",
         "numberMax"
       ],
-      "gzipCeilingBytes": 9672,
-      "recordedGzipBytes": 9574,
+      "gzipCeilingBytes": 9769,
+      "recordedGzipBytes": 9671,
       "legacyGzipBytes": 19562
     },
     {
@@ -317,8 +395,8 @@
         "optional",
         "nullable"
       ],
-      "gzipCeilingBytes": 9039,
-      "recordedGzipBytes": 8946
+      "gzipCeilingBytes": 9134,
+      "recordedGzipBytes": 9041
     },
     {
       "id": "preset-everyday",
@@ -338,8 +416,8 @@
         "arrayMaxLength",
         "arrayEach"
       ],
-      "gzipCeilingBytes": 10212,
-      "recordedGzipBytes": 10131
+      "gzipCeilingBytes": 10298,
+      "recordedGzipBytes": 10217
     },
     {
       "id": "jsonschema-plugin",
@@ -347,8 +425,8 @@
       "plugins": [
         "jsonSchema"
       ],
-      "gzipCeilingBytes": 23328,
-      "recordedGzipBytes": 23193
+      "gzipCeilingBytes": 23439,
+      "recordedGzipBytes": 23304
     },
     {
       "id": "jsonschema-full-feature",
@@ -356,15 +434,15 @@
       "plugins": [
         "jsonSchemaFullFeature"
       ],
-      "gzipCeilingBytes": 25766,
-      "recordedGzipBytes": 25642
+      "gzipCeilingBytes": 25881,
+      "recordedGzipBytes": 25757
     },
     {
       "id": "full-feature",
       "description": "Builder + every plugin in the catalog, JSON Schema extensions included: the everything ceiling.",
       "plugins": "all",
-      "gzipCeilingBytes": 28504,
-      "recordedGzipBytes": 28397
+      "gzipCeilingBytes": 28619,
+      "recordedGzipBytes": 28512
     }
   ],
   "treeShaking": {

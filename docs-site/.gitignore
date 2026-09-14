@@ -22,3 +22,14 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# generated into src/data by `npm run generate-all`, from config/ and from the
+# package itself. Committing them meant every build rewrote them and the copies
+# in git drifted from the source they are derived from. `build` regenerates
+# unconditionally; scripts/ensure-generated.mjs covers dev and type-check.
+# legacy-speedups.ts is hand-written and stays tracked.
+src/data/bundle-size.ts
+src/data/competitors.ts
+src/data/conformance.ts
+src/data/package-info.ts
+src/data/plugins.ts

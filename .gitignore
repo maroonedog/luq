@@ -188,3 +188,7 @@ luq-codegen/.build/
 # a checkout at a different commit no longer matches, and the sub-package is
 # not published from a lockfile anyway.
 luq-codegen/package-lock.json
+
+# Scratch measurements. Never committed: they are a working surface, and the
+# figures that matter are recorded in config/ by the bench entry points.
+.perf-scratch/

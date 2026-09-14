@@ -57,14 +57,18 @@ export const SINGLE_FIELD_VALUE: SingleFieldSubject = SINGLE_FIELD_VALUES[0];
  * Three lengths below the minimum and one absent field, so the check rejects
  * three of them and the presence rule the fourth.
  *
- * `{ name: 42 }` is NOT here, and the reason is worth recording: Luq ACCEPTS
- * it. `.string.required().min(3)` compiles to a presence rule plus a length
- * rule, and the length rule passes any value that is not a string — the
- * declared `SingleFieldSubject` is what excludes a number, at compile time.
- * The hand-written reference rejects it, because a function taking `unknown`
- * has to. So the two disagree on a value the declared type cannot produce, and
- * putting it in the pool would fail the agreement check over a difference that
- * is not a difference in what the shape validates.
+ * `{ name: 42 }` is not here, and the reason this comment used to give was
+ * wrong. It said Luq ACCEPTS it, on the grounds that the chain compiles to a
+ * presence rule plus a length rule and the length rule passes a non-string.
+ * It does not: `b.string` puts a slot type guard in front, and the value is
+ * rejected with `stringType`. Run it.
+ *
+ * So Luq and the hand-written reference AGREE about it, and the value could go
+ * in the pool. It is left out for a different and smaller reason: every other
+ * member fails a rule the shape declares, and this one would fail the slot
+ * guard instead, which is a different thing to be timing. Adding it means
+ * re-recording every figure that quotes this pool, which is a decision with a
+ * pull request attached rather than a comment.
  */
 export const SINGLE_FIELD_REJECTED: ValuePool = [
   { name: "ab" },
