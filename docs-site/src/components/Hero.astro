@@ -118,6 +118,52 @@ const refused = [
       The wrong rule<br class="hidden sm:block" />{' '}
       <span class="text-primary">does not compile</span>
     </h1>
+    <div class="mx-auto max-w-3xl text-left">
+      <p class="mb-8 text-body-large text-on-surface">
+        Luq is a TypeScript validation library that takes a type you already
+        have and lets you declare rules against its field paths.{' '}
+        <strong class="text-on-surface"
+          >The compiler checks each rule against the field it is written on</strong
+        >, so a rule that cannot apply to the field it sits on is a compile
+        error rather than a rule that quietly never fires.
+      </p>
+    </div>
+
+    <div class="mx-auto mb-12 max-w-3xl text-left">
+      <p class="mb-4 text-body-medium text-on-surface-variant">
+        The type below is the schema, and <code class="font-mono">b.string</code> is
+        not a slot a number field can be.
+      </p>
+      <div class="rounded-shape-md border border-error p-1">
+        <p class="px-3 py-2 text-label-large text-error">
+          <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
+          This does not compile
+        </p>
+        <CodeBlock code={refusedExample} language="typescript" invalid />
+      </div>
+    </div>
+
+    <div class="mb-8 flex flex-col justify-center gap-3 sm:flex-row">
+      <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
+        Get started
+      </a>
+      <a href="/plugins" class="md-button md-button-tonal md-state-layer md-focus-ring">
+        Browse the plugins
+      </a>
+      <a
+        href="https://github.com/maroonedog/luq"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="md-button md-button-outlined md-state-layer md-focus-ring"
+      >
+        <span class="md-icon md-icon-sm" aria-hidden="true">open_in_new</span>{' '}
+        GitHub
+      </a>
+    </div>
+
+    <div class="mx-auto mb-12 max-w-xl">
+      <CodeBlock code={install} language="bash" fileName="Install" showCopy={true} />
+    </div>
 
     <div class="mx-auto max-w-3xl text-left">
       <p class="mb-8 text-body-large text-on-surface">
@@ -156,42 +202,6 @@ const refused = [
           ))
         }
       </ul>
-    </div>
-
-    <div class="mb-8 flex flex-col justify-center gap-3 sm:flex-row">
-      <a href="/docs/getting-started" class="md-button md-button-filled md-state-layer md-focus-ring">
-        Get started
-      </a>
-      <a href="/plugins" class="md-button md-button-tonal md-state-layer md-focus-ring">
-        Browse the plugins
-      </a>
-      <a
-        href="https://github.com/maroonedog/luq"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="md-button md-button-outlined md-state-layer md-focus-ring"
-      >
-        <span class="md-icon md-icon-sm" aria-hidden="true">open_in_new</span>{' '}
-        GitHub
-      </a>
-    </div>
-
-    <div class="mx-auto mb-12 max-w-xl">
-      <CodeBlock code={install} language="bash" fileName="Install" showCopy={true} />
-    </div>
-
-    <div class="mx-auto mb-12 max-w-3xl text-left">
-      <p class="mb-4 text-body-medium text-on-surface-variant">
-        The type below is the schema, and <code class="font-mono">b.string</code> is
-        not a slot a number field can be.
-      </p>
-      <div class="rounded-shape-md border border-error p-1">
-        <p class="px-3 py-2 text-label-large text-error">
-          <span class="md-icon md-icon-sm align-middle" aria-hidden="true">cancel</span>{' '}
-          This does not compile
-        </p>
-        <CodeBlock code={refusedExample} language="typescript" invalid />
-      </div>
     </div>
 
     <div class="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
