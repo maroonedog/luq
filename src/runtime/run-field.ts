@@ -68,7 +68,7 @@ export const FIELD_VALUE_UNCHANGED: FieldRunOutcome = Object.freeze({
  * been eliding came back the moment the enclosing function stopped being
  * inlined. Nothing here is worth that.
  */
-function runPlainField(
+export function runPlainField(
   field: CompiledField,
   subject: unknown,
   context: FieldRunContext
