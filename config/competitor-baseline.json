@@ -11,7 +11,7 @@
     "Luq turns a run-time document into rules without generating code, so it still works there."
   ],
   "machine": {
-    "cpuModel": "AMD EPYC 7763 64-Core Processor",
+    "cpuModel": "AMD EPYC 9V74 80-Core Processor",
     "logicalCores": 4,
     "platform": "linux",
     "arch": "x64",
@@ -144,98 +144,98 @@
       "shape": "singleField",
       "competitor": "zod",
       "competitorVersion": "4.6.2",
-      "luqOpsPerSecond": 4132495.842810292,
-      "competitorOpsPerSecond": 2212374.292523673,
-      "ratio": 1.8679008596218687,
+      "luqOpsPerSecond": 4774073.456172325,
+      "competitorOpsPerSecond": 2356776.7081379457,
+      "ratio": 2.0256791573369926,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 1.634442739187197,
-      "competitorSpreadPercent": 23.79587685114075,
+      "luqSpreadPercent": 3.631600625949411,
+      "competitorSpreadPercent": 36.607951034669824,
       "accepted": {
-        "luqOpsPerSecond": 8096307.991306546,
-        "competitorOpsPerSecond": 20222788.816567,
-        "ratio": 0.40035566136525413,
+        "luqOpsPerSecond": 9099683.507740589,
+        "competitorOpsPerSecond": 19803796.284169048,
+        "ratio": 0.4594918760608936,
         "values": 4,
-        "luqSpreadPercent": 8.434657473414148,
-        "competitorSpreadPercent": 5.067596060309109,
-        "floorNanoseconds": 12.752032004816824
+        "luqSpreadPercent": 2.8325511137311636,
+        "competitorSpreadPercent": 1.9493151917533738,
+        "floorNanoseconds": 12.74834785249521
       },
       "rejected": {
-        "luqOpsPerSecond": 2771131.355827972,
-        "competitorOpsPerSecond": 1234908.0303840532,
-        "ratio": 2.243998166378558,
+        "luqOpsPerSecond": 3185984.7928214637,
+        "competitorOpsPerSecond": 1340542.4325729979,
+        "ratio": 2.376638527365656,
         "values": 4,
-        "luqSpreadPercent": 1.4667184625467509,
-        "competitorSpreadPercent": 24.18525079933318,
-        "floorNanoseconds": 12.756761674876456
+        "luqSpreadPercent": 4.2398884210822585,
+        "competitorSpreadPercent": 36.1533471332368,
+        "floorNanoseconds": 12.751848353180664
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 14009327.908939201,
-        "ratio": 0.5221386091379968
+        "competitorOpsPerSecond": 14173941.502721421,
+        "ratio": 0.621075631568567
       }
     },
     {
       "shape": "singleField",
       "competitor": "valibot",
       "competitorVersion": "1.5.0",
-      "luqOpsPerSecond": 3944515.4683452947,
-      "competitorOpsPerSecond": 7452092.764446925,
-      "ratio": 0.5293164743149901,
+      "luqOpsPerSecond": 4376188.205474839,
+      "competitorOpsPerSecond": 8197234.506830963,
+      "ratio": 0.5338615360861093,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 2.2227964946542023,
-      "competitorSpreadPercent": 5.299264314816343,
+      "luqSpreadPercent": 1.7456306394708732,
+      "competitorSpreadPercent": 9.523386097092905,
       "accepted": {
-        "luqOpsPerSecond": 8458196.020960908,
-        "competitorOpsPerSecond": 12579004.045875553,
-        "ratio": 0.6724058590102935,
+        "luqOpsPerSecond": 9048506.366907453,
+        "competitorOpsPerSecond": 12199874.617853459,
+        "ratio": 0.7416884722459154,
         "values": 4,
-        "luqSpreadPercent": 4.857529849065063,
-        "competitorSpreadPercent": 4.49413549240517,
-        "floorNanoseconds": 12.759590045767581
+        "luqSpreadPercent": 3.0081885559765627,
+        "competitorSpreadPercent": 6.11231490067041,
+        "floorNanoseconds": 12.747020075865311
       },
       "rejected": {
-        "luqOpsPerSecond": 2740917.2842653044,
-        "competitorOpsPerSecond": 6700132.442919303,
-        "ratio": 0.4090840453701635,
+        "luqOpsPerSecond": 3193166.9029522194,
+        "competitorOpsPerSecond": 6826368.083891411,
+        "ratio": 0.46776951721770266,
         "values": 4,
-        "luqSpreadPercent": 2.270285999372253,
-        "competitorSpreadPercent": 5.1769922210999475,
-        "floorNanoseconds": 12.755074269761957
+        "luqSpreadPercent": 3.970769394125659,
+        "competitorSpreadPercent": 6.991105891014805,
+        "floorNanoseconds": 12.817553681063373
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 12619351.784912508,
-        "ratio": 0.5981356888634005
+        "competitorOpsPerSecond": 12094132.471174156,
+        "ratio": 0.6907983398800928
       }
     },
     {
       "shape": "singleField",
       "competitor": "ajv",
       "competitorVersion": "8.20.0",
-      "luqOpsPerSecond": 4054247.57621105,
-      "competitorOpsPerSecond": 38817970.75874691,
-      "ratio": 0.10444254289870371,
+      "luqOpsPerSecond": 4749370.706731313,
+      "competitorOpsPerSecond": 38740101.25670532,
+      "ratio": 0.12259572258885795,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 3.125115972005073,
-      "competitorSpreadPercent": 8.59609027120952,
+      "luqSpreadPercent": 1.9642509994351485,
+      "competitorSpreadPercent": 6.021465530081945,
       "accepted": {
-        "luqOpsPerSecond": 7723083.9214501325,
-        "competitorOpsPerSecond": 37596327.506219,
-        "ratio": 0.20542123217148317,
+        "luqOpsPerSecond": 9132862.762692988,
+        "competitorOpsPerSecond": 36631098.090832904,
+        "ratio": 0.24931992865860955,
         "values": 4,
-        "luqSpreadPercent": 14.37962675221955,
-        "competitorSpreadPercent": 8.56351564289812,
-        "floorNanoseconds": 12.758705294852945
+        "luqSpreadPercent": 2.7005356131350884,
+        "competitorSpreadPercent": 6.143363708971307,
+        "floorNanoseconds": 12.753251342321292
       },
       "rejected": {
-        "luqOpsPerSecond": 2892031.591833622,
-        "competitorOpsPerSecond": 43477475.4120352,
-        "ratio": 0.06651792829334947,
+        "luqOpsPerSecond": 3242417.378769335,
+        "competitorOpsPerSecond": 44145108.11881236,
+        "ratio": 0.07344907549082623,
         "values": 4,
-        "luqSpreadPercent": 2.5188195023921147,
-        "competitorSpreadPercent": 4.646517786341866,
-        "floorNanoseconds": 12.768082084676848
+        "luqSpreadPercent": 0.6705862817383613,
+        "competitorSpreadPercent": 4.711134874581513,
+        "floorNanoseconds": 12.89277117827662
       },
       "blockedCodeGeneration": {
         "unavailable": "EvalError: Code generation from strings disallowed for this context"
@@ -245,132 +245,132 @@
       "shape": "singleField",
       "competitor": "yup",
       "competitorVersion": "1.7.1",
-      "luqOpsPerSecond": 3982225.153685918,
-      "competitorOpsPerSecond": 75937.5280451098,
-      "ratio": 52.4408057017648,
+      "luqOpsPerSecond": 4642069.180169661,
+      "competitorOpsPerSecond": 82785.96081007725,
+      "ratio": 56.073144948081556,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 2.5388856703756604,
-      "competitorSpreadPercent": 1.583183680754891,
+      "luqSpreadPercent": 3.3867810338989197,
+      "competitorSpreadPercent": 1.5112214614459687,
       "accepted": {
-        "luqOpsPerSecond": 8239274.607169834,
-        "competitorOpsPerSecond": 602246.4415324848,
-        "ratio": 13.680902100814508,
+        "luqOpsPerSecond": 9121607.944269817,
+        "competitorOpsPerSecond": 591292.4648470833,
+        "ratio": 15.426558744713237,
         "values": 4,
-        "luqSpreadPercent": 5.623986216335963,
-        "competitorSpreadPercent": 2.2960617279402293,
-        "floorNanoseconds": 12.869819338241166
+        "luqSpreadPercent": 3.097110540242541,
+        "competitorSpreadPercent": 5.0053818394542215,
+        "floorNanoseconds": 12.732587974844744
       },
       "rejected": {
-        "luqOpsPerSecond": 2991793.5255615534,
-        "competitorOpsPerSecond": 27449.25982973027,
-        "ratio": 108.99359560585107,
+        "luqOpsPerSecond": 3242952.9097684976,
+        "competitorOpsPerSecond": 30571.114415094125,
+        "ratio": 106.07898900039208,
         "values": 4,
-        "luqSpreadPercent": 2.0497897667990546,
-        "competitorSpreadPercent": 3.336821392206784,
-        "floorNanoseconds": 12.794478458972597
+        "luqSpreadPercent": 3.761218384993739,
+        "competitorSpreadPercent": 3.826931840269337,
+        "floorNanoseconds": 12.81894560241019
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 604927.1764898223,
-        "ratio": 13.501996606424825
+        "competitorOpsPerSecond": 596758.9098723788,
+        "ratio": 15.210911230859658
       }
     },
     {
       "shape": "multiField",
       "competitor": "zod",
       "competitorVersion": "4.6.2",
-      "luqOpsPerSecond": 1662219.3634030533,
-      "competitorOpsPerSecond": 836708.2274255133,
-      "ratio": 1.986617686929617,
+      "luqOpsPerSecond": 1761122.7243352437,
+      "competitorOpsPerSecond": 1009109.1504234691,
+      "ratio": 1.745225205416277,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 3.1464732013480927,
-      "competitorSpreadPercent": 36.33732582073108,
+      "luqSpreadPercent": 2.8539340381834495,
+      "competitorSpreadPercent": 26.59740931992493,
       "accepted": {
-        "luqOpsPerSecond": 2020196.707940765,
-        "competitorOpsPerSecond": 2291522.409399012,
-        "ratio": 0.8815958768959163,
+        "luqOpsPerSecond": 2289314.5152794854,
+        "competitorOpsPerSecond": 2713776.78242022,
+        "ratio": 0.8435898376423622,
         "values": 4,
-        "luqSpreadPercent": 11.368577915331326,
-        "competitorSpreadPercent": 7.4745973715043945,
-        "floorNanoseconds": 12.763666593854772
+        "luqSpreadPercent": 1.8736938556780554,
+        "competitorSpreadPercent": 5.357773185129075,
+        "floorNanoseconds": 13.163322199754024
       },
       "rejected": {
-        "luqOpsPerSecond": 1541119.0787551636,
-        "competitorOpsPerSecond": 512523.7101103892,
-        "ratio": 3.0069225059329097,
+        "luqOpsPerSecond": 1555189.3446828774,
+        "competitorOpsPerSecond": 601834.519155476,
+        "ratio": 2.58408132997289,
         "values": 4,
-        "luqSpreadPercent": 5.086480160678387,
-        "competitorSpreadPercent": 17.393025786267653,
-        "floorNanoseconds": 12.757311426184081
+        "luqSpreadPercent": 1.1106324694980678,
+        "competitorSpreadPercent": 28.976848227240392,
+        "floorNanoseconds": 12.795725543887547
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 1421461.955139737,
-        "ratio": 1.3539217128095484
+        "competitorOpsPerSecond": 1645780.4325610597,
+        "ratio": 1.3496091346182406
       }
     },
     {
       "shape": "multiField",
       "competitor": "valibot",
       "competitorVersion": "1.5.0",
-      "luqOpsPerSecond": 1608105.3996701855,
-      "competitorOpsPerSecond": 2035617.5975596139,
-      "ratio": 0.7899840331494734,
+      "luqOpsPerSecond": 1809749.669704751,
+      "competitorOpsPerSecond": 2167601.93279374,
+      "ratio": 0.8349086805676692,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 3.142098040508413,
-      "competitorSpreadPercent": 1.3775560459890126,
+      "luqSpreadPercent": 3.712899868189391,
+      "competitorSpreadPercent": 3.394899117978347,
       "accepted": {
-        "luqOpsPerSecond": 1884636.988139236,
-        "competitorOpsPerSecond": 2285138.6719244565,
-        "ratio": 0.8247363765246102,
+        "luqOpsPerSecond": 2342943.262008625,
+        "competitorOpsPerSecond": 2587897.6638127062,
+        "ratio": 0.9053461791672265,
         "values": 4,
-        "luqSpreadPercent": 2.4848004887925015,
-        "competitorSpreadPercent": 4.176258619546085,
-        "floorNanoseconds": 12.762308119763954
+        "luqSpreadPercent": 4.303699866335157,
+        "competitorSpreadPercent": 3.206860632527908,
+        "floorNanoseconds": 12.730546966534101
       },
       "rejected": {
-        "luqOpsPerSecond": 1528997.3115075424,
-        "competitorOpsPerSecond": 1880518.9529213193,
-        "ratio": 0.8130720028810662,
+        "luqOpsPerSecond": 1488324.7256636808,
+        "competitorOpsPerSecond": 2079432.4375843212,
+        "ratio": 0.715736033911575,
         "values": 4,
-        "luqSpreadPercent": 3.0455867388361426,
-        "competitorSpreadPercent": 3.2090109258140194,
-        "floorNanoseconds": 12.765058557513221
+        "luqSpreadPercent": 1.0384585629846939,
+        "competitorSpreadPercent": 4.069230295394092,
+        "floorNanoseconds": 12.801927157181682
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 2307574.4249839587,
-        "ratio": 0.8256219997632386
+        "competitorOpsPerSecond": 2604270.696084673,
+        "ratio": 0.8942847554555609
       }
     },
     {
       "shape": "multiField",
       "competitor": "ajv",
       "competitorVersion": "8.20.0",
-      "luqOpsPerSecond": 1678311.9520555597,
-      "competitorOpsPerSecond": 9937528.846705427,
-      "ratio": 0.16888624706855243,
+      "luqOpsPerSecond": 1770145.4872200144,
+      "competitorOpsPerSecond": 10573248.007220801,
+      "ratio": 0.1674173807340116,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 1.8854666627025614,
-      "competitorSpreadPercent": 3.4374460504261863,
+      "luqSpreadPercent": 1.8771079610013712,
+      "competitorSpreadPercent": 6.424757324471574,
       "accepted": {
-        "luqOpsPerSecond": 1944550.0878342853,
-        "competitorOpsPerSecond": 9012928.013751866,
-        "ratio": 0.215751205919686,
+        "luqOpsPerSecond": 2331960.7012849497,
+        "competitorOpsPerSecond": 9749006.091284586,
+        "ratio": 0.23919984041959674,
         "values": 4,
-        "luqSpreadPercent": 15.380166411590546,
-        "competitorSpreadPercent": 12.453690084982764,
-        "floorNanoseconds": 12.76896961082133
+        "luqSpreadPercent": 2.345889567367588,
+        "competitorSpreadPercent": 2.09544771883421,
+        "floorNanoseconds": 12.739263838340397
       },
       "rejected": {
-        "luqOpsPerSecond": 1563941.0217023802,
-        "competitorOpsPerSecond": 11247883.377148768,
-        "ratio": 0.1390431398746263,
+        "luqOpsPerSecond": 1538179.4899565154,
+        "competitorOpsPerSecond": 11734660.08403749,
+        "ratio": 0.1310800209755442,
         "values": 4,
-        "luqSpreadPercent": 4.244497554183637,
-        "competitorSpreadPercent": 3.8675895494946,
-        "floorNanoseconds": 12.77787189260399
+        "luqSpreadPercent": 2.3653088229080335,
+        "competitorSpreadPercent": 2.3154474473685327,
+        "floorNanoseconds": 12.760091250539327
       },
       "blockedCodeGeneration": {
         "unavailable": "EvalError: Code generation from strings disallowed for this context"
@@ -380,132 +380,132 @@
       "shape": "multiField",
       "competitor": "yup",
       "competitorVersion": "1.7.1",
-      "luqOpsPerSecond": 1596175.0892863194,
-      "competitorOpsPerSecond": 71103.46835774217,
-      "ratio": 22.448624886419037,
+      "luqOpsPerSecond": 1711493.3408649415,
+      "competitorOpsPerSecond": 75664.63463723229,
+      "ratio": 22.619462171073078,
       "comparedValues": 7,
       "disagreedValues": 1,
-      "luqSpreadPercent": 3.388036742066257,
-      "competitorSpreadPercent": 9.448161458736228,
+      "luqSpreadPercent": 3.5636844621974815,
+      "competitorSpreadPercent": 1.5931733212363222,
       "accepted": {
-        "luqOpsPerSecond": 1964881.0380807195,
-        "competitorOpsPerSecond": 232952.9650483767,
-        "ratio": 8.434668507750816,
+        "luqOpsPerSecond": 2274746.672835768,
+        "competitorOpsPerSecond": 224391.09721827297,
+        "ratio": 10.137419447720083,
         "values": 4,
-        "luqSpreadPercent": 1.9829362752121362,
-        "competitorSpreadPercent": 6.230766354462823,
-        "floorNanoseconds": 12.755843208696405
+        "luqSpreadPercent": 2.389972147061071,
+        "competitorSpreadPercent": 4.955353268935582,
+        "floorNanoseconds": 12.754842387861022
       },
       "rejected": {
-        "luqOpsPerSecond": 1507597.225041156,
-        "competitorOpsPerSecond": 31827.46818263425,
-        "ratio": 47.367802440023596,
+        "luqOpsPerSecond": 1470169.249671762,
+        "competitorOpsPerSecond": 36326.19015010036,
+        "ratio": 40.471330563348396,
         "values": 3,
-        "luqSpreadPercent": 2.911279483979806,
-        "competitorSpreadPercent": 6.436057974368108,
-        "floorNanoseconds": 12.762055804076414
+        "luqSpreadPercent": 0.8206209120873307,
+        "competitorSpreadPercent": 2.9573909061715287,
+        "floorNanoseconds": 12.753618924836907
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 227668.97783525885,
-        "ratio": 8.007420086720032
+        "competitorOpsPerSecond": 226011.23837008863,
+        "ratio": 9.886347208597073
       }
     },
     {
       "shape": "nested",
       "competitor": "zod",
       "competitorVersion": "4.6.2",
-      "luqOpsPerSecond": 1407567.6645286859,
-      "competitorOpsPerSecond": 1030911.365852067,
-      "ratio": 1.3653624464265224,
+      "luqOpsPerSecond": 1480559.6506112067,
+      "competitorOpsPerSecond": 1050871.597816708,
+      "ratio": 1.408887302394716,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 25.143616004253396,
-      "competitorSpreadPercent": 33.598094582648706,
+      "luqSpreadPercent": 2.83726322316165,
+      "competitorSpreadPercent": 33.40467061537273,
       "accepted": {
-        "luqOpsPerSecond": 1521479.944745255,
-        "competitorOpsPerSecond": 2912237.545176243,
-        "ratio": 0.5224436266421316,
+        "luqOpsPerSecond": 1667757.4244759276,
+        "competitorOpsPerSecond": 3062183.8795107524,
+        "ratio": 0.5446300712491461,
         "values": 4,
-        "luqSpreadPercent": 4.103153095398139,
-        "competitorSpreadPercent": 1.9030773054173298,
-        "floorNanoseconds": 12.766348656701336
+        "luqSpreadPercent": 4.012244554026732,
+        "competitorSpreadPercent": 9.029434976571544,
+        "floorNanoseconds": 12.74616192896089
       },
       "rejected": {
-        "luqOpsPerSecond": 1358522.8609370773,
-        "competitorOpsPerSecond": 645136.0602387068,
-        "ratio": 2.1057927849117757,
+        "luqOpsPerSecond": 1384256.4299452982,
+        "competitorOpsPerSecond": 659506.7706068172,
+        "ratio": 2.098926791413579,
         "values": 4,
-        "luqSpreadPercent": 1.4355924658004329,
-        "competitorSpreadPercent": 34.43681937285621,
-        "floorNanoseconds": 12.768255497810767
+        "luqSpreadPercent": 2.3335594439908727,
+        "competitorSpreadPercent": 38.304672457738256,
+        "floorNanoseconds": 12.750446429712333
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 1336614.3476657034,
-        "ratio": 1.0759768973953554
+        "competitorOpsPerSecond": 1359744.0260050555,
+        "ratio": 1.2165109739472588
       }
     },
     {
       "shape": "nested",
       "competitor": "valibot",
       "competitorVersion": "1.5.0",
-      "luqOpsPerSecond": 1194154.0475997112,
-      "competitorOpsPerSecond": 1255687.40416483,
-      "ratio": 0.9509962779263162,
+      "luqOpsPerSecond": 1486124.0811082628,
+      "competitorOpsPerSecond": 1370932.0883063013,
+      "ratio": 1.0840245799077282,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 3.460299750376461,
-      "competitorSpreadPercent": 2.753393000581788,
+      "luqSpreadPercent": 3.0013714384248136,
+      "competitorSpreadPercent": 3.829122808898321,
       "accepted": {
-        "luqOpsPerSecond": 1518964.2088324246,
-        "competitorOpsPerSecond": 1506882.0166537208,
-        "ratio": 1.0080180080757313,
+        "luqOpsPerSecond": 1701514.2008625143,
+        "competitorOpsPerSecond": 1572092.5343125088,
+        "ratio": 1.0823244584687268,
         "values": 4,
-        "luqSpreadPercent": 1.7852607847003634,
-        "competitorSpreadPercent": 3.89000737158181,
-        "floorNanoseconds": 12.763356549944762
+        "luqSpreadPercent": 0.8777790666682692,
+        "competitorSpreadPercent": 3.3697580132233527,
+        "floorNanoseconds": 13.856430710226757
       },
       "rejected": {
-        "luqOpsPerSecond": 1313016.6001511964,
-        "competitorOpsPerSecond": 1149266.8332700073,
-        "ratio": 1.142481939042191,
+        "luqOpsPerSecond": 1359217.4026978516,
+        "competitorOpsPerSecond": 1245148.5546905063,
+        "ratio": 1.0916106335887754,
         "values": 4,
-        "luqSpreadPercent": 3.589262517390325,
-        "competitorSpreadPercent": 3.5517427115192133,
-        "floorNanoseconds": 12.753924522259215
+        "luqSpreadPercent": 1.6118381903223096,
+        "competitorSpreadPercent": 4.987202523302739,
+        "floorNanoseconds": 12.751382621236147
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 1523424.3794994964,
-        "ratio": 0.9787042202962305
+        "competitorOpsPerSecond": 1619378.6897446322,
+        "ratio": 1.0601769442019975
       }
     },
     {
       "shape": "nested",
       "competitor": "ajv",
       "competitorVersion": "8.20.0",
-      "luqOpsPerSecond": 1436789.6289906157,
-      "competitorOpsPerSecond": 9488262.158234553,
-      "ratio": 0.15142811244350715,
+      "luqOpsPerSecond": 1463132.8513313779,
+      "competitorOpsPerSecond": 10011024.659044519,
+      "ratio": 0.14615215736278322,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 2.700839153569732,
-      "competitorSpreadPercent": 4.692796330212566,
+      "luqSpreadPercent": 5.140303033571753,
+      "competitorSpreadPercent": 5.107290651942039,
       "accepted": {
-        "luqOpsPerSecond": 1284388.1029375496,
-        "competitorOpsPerSecond": 7696148.779189645,
-        "ratio": 0.1668871197514437,
+        "luqOpsPerSecond": 1702383.399937999,
+        "competitorOpsPerSecond": 8526414.58190297,
+        "ratio": 0.19965993719696096,
         "values": 4,
-        "luqSpreadPercent": 5.064159078656584,
-        "competitorSpreadPercent": 6.352740876898098,
-        "floorNanoseconds": 12.758015860470563
+        "luqSpreadPercent": 8.258177843047177,
+        "competitorSpreadPercent": 2.643837085632823,
+        "floorNanoseconds": 13.055364147643667
       },
       "rejected": {
-        "luqOpsPerSecond": 1265714.829853283,
-        "competitorOpsPerSecond": 12123213.894589253,
-        "ratio": 0.10440423148998368,
+        "luqOpsPerSecond": 1353884.7585587755,
+        "competitorOpsPerSecond": 13592544.958300402,
+        "ratio": 0.09960494982450026,
         "values": 4,
-        "luqSpreadPercent": 2.112987834948594,
-        "competitorSpreadPercent": 6.362534300301231,
-        "floorNanoseconds": 12.751938068428124
+        "luqSpreadPercent": 1.4706176091876644,
+        "competitorSpreadPercent": 2.8893878953972627,
+        "floorNanoseconds": 12.757281760573843
       },
       "blockedCodeGeneration": {
         "unavailable": "EvalError: Code generation from strings disallowed for this context"
@@ -515,132 +515,132 @@
       "shape": "nested",
       "competitor": "yup",
       "competitorVersion": "1.7.1",
-      "luqOpsPerSecond": 1382710.1419852036,
-      "competitorOpsPerSecond": 50554.14395845061,
-      "ratio": 27.35107418932114,
+      "luqOpsPerSecond": 1458728.630217446,
+      "competitorOpsPerSecond": 54868.95183313566,
+      "ratio": 26.58568428013075,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 3.3061460594833525,
-      "competitorSpreadPercent": 10.995655326172022,
+      "luqSpreadPercent": 2.4490289207486646,
+      "competitorSpreadPercent": 4.034192081985088,
       "accepted": {
-        "luqOpsPerSecond": 1503340.8533287595,
-        "competitorOpsPerSecond": 123506.91991363942,
-        "ratio": 12.172118407454018,
+        "luqOpsPerSecond": 1721022.2915294715,
+        "competitorOpsPerSecond": 119814.62018568197,
+        "ratio": 14.364042458777801,
         "values": 4,
-        "luqSpreadPercent": 2.4530378321110473,
-        "competitorSpreadPercent": 9.208166033887256,
-        "floorNanoseconds": 12.768926401208102
+        "luqSpreadPercent": 2.104225798239747,
+        "competitorSpreadPercent": 2.4919524509318594,
+        "floorNanoseconds": 13.296599537546399
       },
       "rejected": {
-        "luqOpsPerSecond": 1191939.6974960496,
-        "competitorOpsPerSecond": 26271.636321316935,
-        "ratio": 45.36983090500929,
+        "luqOpsPerSecond": 1383649.6447629174,
+        "competitorOpsPerSecond": 30037.25128553153,
+        "ratio": 46.0644561517984,
         "values": 4,
-        "luqSpreadPercent": 5.1702989999037925,
-        "competitorSpreadPercent": 3.53650816488007,
-        "floorNanoseconds": 12.771633304975511
+        "luqSpreadPercent": 2.9787586755838453,
+        "competitorSpreadPercent": 1.3581139285663826,
+        "floorNanoseconds": 12.779381618509554
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 125422.50516961521,
-        "ratio": 12.609995604035698
+        "competitorOpsPerSecond": 119662.02804875233,
+        "ratio": 14.05047561017882
       }
     },
     {
       "shape": "array",
       "competitor": "zod",
       "competitorVersion": "4.6.2",
-      "luqOpsPerSecond": 69590.44725396717,
-      "competitorOpsPerSecond": 63428.29098273178,
-      "ratio": 1.0971515419343874,
+      "luqOpsPerSecond": 72334.46676177284,
+      "competitorOpsPerSecond": 66436.7135344588,
+      "ratio": 1.0887725011300422,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 5.629801155489307,
-      "competitorSpreadPercent": 9.875451204355226,
+      "luqSpreadPercent": 1.333178246971696,
+      "competitorSpreadPercent": 7.556354715611141,
       "accepted": {
-        "luqOpsPerSecond": 59822.977082189806,
-        "competitorOpsPerSecond": 60522.51101173464,
-        "ratio": 0.988441756334115,
+        "luqOpsPerSecond": 63346.42665659116,
+        "competitorOpsPerSecond": 55968.53485900546,
+        "ratio": 1.1318221357084282,
         "values": 4,
-        "luqSpreadPercent": 3.2506605728398905,
-        "competitorSpreadPercent": 9.948443700509857,
-        "floorNanoseconds": 12.7565975293336
+        "luqSpreadPercent": 2.9965030815126337,
+        "competitorSpreadPercent": 5.1950375318133615,
+        "floorNanoseconds": 18.75148670874435
       },
       "rejected": {
-        "luqOpsPerSecond": 76030.33265602133,
-        "competitorOpsPerSecond": 62255.7670336101,
-        "ratio": 1.2212576646108102,
+        "luqOpsPerSecond": 84595.94328523093,
+        "competitorOpsPerSecond": 72243.93740358579,
+        "ratio": 1.1709763659840617,
         "values": 4,
-        "luqSpreadPercent": 4.844014739499396,
-        "competitorSpreadPercent": 3.462583193427546,
-        "floorNanoseconds": 12.763137638603714
+        "luqSpreadPercent": 3.9876764378505425,
+        "competitorSpreadPercent": 6.069226315812344,
+        "floorNanoseconds": 12.753960287534253
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 35279.50386633408,
-        "ratio": 1.7928310333762199
+        "competitorOpsPerSecond": 37736.05088882425,
+        "ratio": 1.7235999266197448
       }
     },
     {
       "shape": "array",
       "competitor": "valibot",
       "competitorVersion": "1.5.0",
-      "luqOpsPerSecond": 66437.38126790107,
-      "competitorOpsPerSecond": 65202.32386857139,
-      "ratio": 1.018941923018253,
+      "luqOpsPerSecond": 72549.68093351588,
+      "competitorOpsPerSecond": 72052.50874175309,
+      "ratio": 1.0069001371422712,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 3.4256666359419095,
-      "competitorSpreadPercent": 4.981980894627243,
+      "luqSpreadPercent": 2.987260510961471,
+      "competitorSpreadPercent": 4.982988870860607,
       "accepted": {
-        "luqOpsPerSecond": 60755.32729484394,
-        "competitorOpsPerSecond": 55656.382053475725,
-        "ratio": 1.09161474485476,
+        "luqOpsPerSecond": 65420.11378995272,
+        "competitorOpsPerSecond": 63628.14092745303,
+        "ratio": 1.0281632126348441,
         "values": 4,
-        "luqSpreadPercent": 1.702645118489109,
-        "competitorSpreadPercent": 7.326085101677392,
-        "floorNanoseconds": 12.756332688168287
+        "luqSpreadPercent": 2.942267331627141,
+        "competitorSpreadPercent": 1.0223445509572378,
+        "floorNanoseconds": 12.889491147413969
       },
       "rejected": {
-        "luqOpsPerSecond": 76528.63174605214,
-        "competitorOpsPerSecond": 75106.72928701437,
-        "ratio": 1.0189317584793778,
+        "luqOpsPerSecond": 84816.8827062617,
+        "competitorOpsPerSecond": 82027.50392938069,
+        "ratio": 1.0340054084698524,
         "values": 4,
-        "luqSpreadPercent": 5.306280371884372,
-        "competitorSpreadPercent": 4.992636445045894,
-        "floorNanoseconds": 12.760853628304371
+        "luqSpreadPercent": 1.7786280662744458,
+        "competitorSpreadPercent": 1.6592844010997392,
+        "floorNanoseconds": 12.779881064625979
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 56354.51228361573,
-        "ratio": 1.0168179493451694
+        "competitorOpsPerSecond": 57978.51768001736,
+        "ratio": 1.1314167178488916
       }
     },
     {
       "shape": "array",
       "competitor": "ajv",
       "competitorVersion": "8.20.0",
-      "luqOpsPerSecond": 66384.31364621255,
-      "competitorOpsPerSecond": 383207.59045610385,
-      "ratio": 0.17323329521526487,
+      "luqOpsPerSecond": 73892.99936471907,
+      "competitorOpsPerSecond": 382924.065099331,
+      "ratio": 0.19297037219520566,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 2.4871142130268504,
-      "competitorSpreadPercent": 5.238862527453195,
+      "luqSpreadPercent": 1.4354028295891264,
+      "competitorSpreadPercent": 4.549209244015913,
       "accepted": {
-        "luqOpsPerSecond": 61966.71240136594,
-        "competitorOpsPerSecond": 333533.4612683742,
-        "ratio": 0.18578859274183912,
+        "luqOpsPerSecond": 65481.87612665071,
+        "competitorOpsPerSecond": 328676.31222732,
+        "ratio": 0.19922907033641646,
         "values": 4,
-        "luqSpreadPercent": 3.6719836061997455,
-        "competitorSpreadPercent": 2.1627614431527324,
-        "floorNanoseconds": 12.759791801388845
+        "luqSpreadPercent": 5.8700947748047545,
+        "competitorSpreadPercent": 3.3600337084235994,
+        "floorNanoseconds": 12.849338781397648
       },
       "rejected": {
-        "luqOpsPerSecond": 79600.12394420143,
-        "competitorOpsPerSecond": 447547.042655547,
-        "ratio": 0.1778586748599418,
+        "luqOpsPerSecond": 81162.17520336916,
+        "competitorOpsPerSecond": 449513.72682636906,
+        "ratio": 0.1805554988862869,
         "values": 4,
-        "luqSpreadPercent": 2.8378857253433214,
-        "competitorSpreadPercent": 2.882469991677873,
-        "floorNanoseconds": 12.75815202402325
+        "luqSpreadPercent": 2.5961810575378474,
+        "competitorSpreadPercent": 2.2875235790003017,
+        "floorNanoseconds": 12.767335511166715
       },
       "blockedCodeGeneration": {
         "unavailable": "EvalError: Code generation from strings disallowed for this context"
@@ -650,34 +650,34 @@
       "shape": "array",
       "competitor": "yup",
       "competitorVersion": "1.7.1",
-      "luqOpsPerSecond": 70783.32515487103,
-      "competitorOpsPerSecond": 3308.93074894255,
-      "ratio": 21.391600648484882,
+      "luqOpsPerSecond": 73560.21802297217,
+      "competitorOpsPerSecond": 3666.741134030187,
+      "ratio": 20.061470208593835,
       "comparedValues": 8,
       "disagreedValues": 0,
-      "luqSpreadPercent": 1.6051599747377212,
-      "competitorSpreadPercent": 5.816490081481121,
+      "luqSpreadPercent": 2.93418483483734,
+      "competitorSpreadPercent": 8.286075797447362,
       "accepted": {
-        "luqOpsPerSecond": 57241.72463126221,
-        "competitorOpsPerSecond": 3501.1736506384173,
-        "ratio": 16.349296076995362,
+        "luqOpsPerSecond": 65396.6458150311,
+        "competitorOpsPerSecond": 3435.371825718518,
+        "ratio": 19.036264233596665,
         "values": 4,
-        "luqSpreadPercent": 3.066526555987051,
-        "competitorSpreadPercent": 7.025088680975047,
-        "floorNanoseconds": 12.767034215674636
+        "luqSpreadPercent": 2.7790414852884333,
+        "competitorSpreadPercent": 7.520089826000849,
+        "floorNanoseconds": 12.758121139878902
       },
       "rejected": {
-        "luqOpsPerSecond": 78258.15530206326,
-        "competitorOpsPerSecond": 4004.598785408611,
-        "ratio": 19.542071377339777,
+        "luqOpsPerSecond": 84722.30765793561,
+        "competitorOpsPerSecond": 3996.6521147759245,
+        "ratio": 21.19831929947339,
         "values": 4,
-        "luqSpreadPercent": 10.750968919247363,
-        "competitorSpreadPercent": 5.480742662223263,
-        "floorNanoseconds": 12.764098773636258
+        "luqSpreadPercent": 1.6762207323798315,
+        "competitorSpreadPercent": 7.939389905845551,
+        "floorNanoseconds": 12.73505393264631
       },
       "blockedCodeGeneration": {
-        "competitorOpsPerSecond": 3493.509010587584,
-        "ratio": 17.214793955151354
+        "competitorOpsPerSecond": 3386.6373932181136,
+        "ratio": 19.077206472499956
       }
     }
   ]
