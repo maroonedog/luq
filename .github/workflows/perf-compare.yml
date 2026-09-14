@@ -84,6 +84,16 @@ jobs:
           fetch-depth: 0
           path: base
 
+      # A third checkout, at the ref this workflow was dispatched from, holding
+      # the measuring apparatus. Neither side can supply it: for a comparison
+      # the base predates it, and for a floor run BOTH sides do, which is how
+      # this was found — the first floor run died on
+      # "Cannot find module './measure-side.ts'".
+      - name: Check out the apparatus
+        uses: actions/checkout@v5
+        with:
+          path: tooling
+
       - name: Move each side to the ref it is measuring
         run: |
           set -euo pipefail
@@ -102,6 +112,22 @@ jobs:
         with:
           node-version: 20
 
+      # BOTH SIDES GET THE SAME bench/. This is the point of the whole job.
+      # A comparison is only about src/ if everything around it is held still,
+      # and bench/ changes: the competitor figures in this repository jumped
+      # 1.74M -> 2.80M -> 4.13M ops/sec over two days with a harness rewrite
+      # inside each interval, so not one of those steps could be attributed to
+      # the library. Each side keeps its own src/, package.json and lockfile;
+      # only the apparatus is made identical.
+      - name: Give both sides the same harness
+        run: |
+          set -euo pipefail
+          for side in base head; do
+            rm -rf "$side/bench"
+            cp -r tooling/bench "$side/bench"
+          done
+          echo "bench/ on both sides is now $(git -C tooling rev-parse --short HEAD)"
+
       # Each side builds with its OWN lockfile. Sharing one would measure the
       # head's dependencies under the base's code, which is neither side.
       - name: Install the base side
@@ -116,5 +142,4 @@ jobs:
         run: node -e "const os=require('os');console.log(os.cpus()[0].model, '|', os.cpus().length, 'logical cores')"
 
       - name: Measure, alternating sides
-        run: node bench/compare/compare-checkouts.mjs ../base ../head ${{ inputs.rounds }}
-        working-directory: head
+        run: node tooling/bench/compare/compare-checkouts.mjs base head ${{ inputs.rounds }}
