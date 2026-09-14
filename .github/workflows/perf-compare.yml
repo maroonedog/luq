@@ -43,8 +43,17 @@ on:
         default: "14"
         type: string
 
+# Keyed by the PAIR being compared, not by the ref. Every dispatch of this
+# workflow runs from the default branch, so a group named after the ref put
+# every comparison in one bucket — and the first thing anyone does is dispatch
+# twice in a row, once with both sides at the same commit to establish the
+# floor and once for the real question. Grouping by ref cancelled the floor
+# run the moment the second was queued, which is how this was found.
+#
+# Two dispatches of the SAME pair still cancel, which is what cancelling is
+# for: the second is a re-run and the first is stale.
 concurrency:
-  group: perf-compare-${{ github.ref }}
+  group: perf-compare-${{ inputs.base }}-${{ inputs.head }}
   cancel-in-progress: true
 
 permissions:
@@ -55,17 +64,39 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # Both sides are fetched WHOLE and then checked out by git, rather than
+      # handed to the action as `ref`. The action resolves a ref by fetching
+      # that one name at depth 1, which accepts a branch, a tag or a full
+      # forty-character SHA and fails on anything else — an abbreviated SHA
+      # fetches nothing and the step dies after three retries saying only
+      # "git failed with exit code 1". The first real use of this workflow
+      # passed short SHAs, because that is what `git log --oneline` prints.
+      # `git checkout` takes all four forms, so the resolving is left to it.
       - name: Check out the head side
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.head != '' && inputs.head || github.ref }}
+          fetch-depth: 0
           path: head
 
       - name: Check out the base side
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.base }}
+          fetch-depth: 0
           path: base
+
+      - name: Move each side to the ref it is measuring
+        run: |
+          set -euo pipefail
+          git -C head checkout --detach "${HEAD_REF}"
+          git -C base checkout --detach "${BASE_REF}"
+          echo "head is $(git -C head rev-parse HEAD)  ($(git -C head log -1 --format=%s))"
+          echo "base is $(git -C base rev-parse HEAD)  ($(git -C base log -1 --format=%s))"
+          if [ "$(git -C head rev-parse HEAD)" = "$(git -C base rev-parse HEAD)" ]; then
+            echo "Both sides are the same commit: this run measures the FLOOR."
+          fi
+        env:
+          HEAD_REF: ${{ inputs.head != '' && inputs.head || github.sha }}
+          BASE_REF: ${{ inputs.base }}
 
       - uses: actions/setup-node@v5
         with:
