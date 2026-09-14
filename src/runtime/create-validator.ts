@@ -22,10 +22,7 @@ import type {
   ValidateOptions,
   ValidationResult,
 } from "../types/validation-result.types";
-import type {
-  ArrayNode,
-  ValidationPlan,
-} from "../compile/validation-plan.types";
+import type { ValidationPlan } from "../compile/validation-plan.types";
 import {
   DEFAULT_GLOBAL_CONFIG,
   type ResolvedGlobalConfig,
@@ -36,6 +33,9 @@ import { NO_WRITE_TARGETS, createPlanWriteTargets } from "./output-writer";
 import type { ArrayWriteTarget } from "./output-writer";
 import { createRecursionRunner } from "./run-recursion";
 import { runPlan } from "./run-plan";
+import { planCanRecurse } from "./plan-can-recurse";
+import { foldFields } from "./fold-fields";
+import type { FoldedFields } from "./fold-fields";
 import type { RecursionRunner } from "./run-field";
 
 /** The untyped pair. L6 puts the declared type back on top of it. */
@@ -106,27 +106,6 @@ export function hasRejectingIssue(issues: readonly ValidationIssue[]): boolean {
  */
 const NO_RECURSION: RecursionRunner = () => {};
 
-/**
- * Whether the root needs a real runner.
- *
- * Only the fields directly under the root and the elements of array nodes
- * matter. A composite branch makes its own runner for the nested plan, so it
- * never uses the one passed from here.
- */
-function planCanRecurse(plan: ValidationPlan): boolean {
-  return (
-    plan.fields.some((field) => field.recursion !== null) ||
-    plan.arrays.some(nodeCanRecurse)
-  );
-}
-
-function nodeCanRecurse(node: ArrayNode): boolean {
-  return (
-    node.elementFields.some((field) => field.recursion !== null) ||
-    node.nested.some(nodeCanRecurse)
-  );
-}
-
 function runRoot(
   plan: ValidationPlan,
   config: ResolvedGlobalConfig,
@@ -134,7 +113,8 @@ function runRoot(
   options: ValidateOptions | undefined,
   targets: readonly ArrayWriteTarget[],
   shouldApplyTransforms: boolean,
-  canRecurse: boolean
+  canRecurse: boolean,
+  folded: FoldedFields | null
 ): ValidationResult<unknown> {
   if (value === null || value === undefined) return rejectMissingRoot(config);
   const sink = new IssueSink(resolveAbortPolicy(options));
@@ -155,7 +135,8 @@ function runRoot(
         : NO_RECURSION,
       external: options?.external,
     },
-    targets
+    targets,
+    folded
   );
   const issues = Object.freeze(sink.issues);
   if (hasRejectingIssue(issues)) return { valid: false, issues };
@@ -169,6 +150,9 @@ export function createValidator(
   const parseTargets = createPlanWriteTargets(plan);
   const shouldWriteOutput = parseTargets !== null;
   const canRecurse = planCanRecurse(plan);
+  // Folded once, here, because this is build(): the field list cannot change
+  // afterwards, and walking it is what validate() was paying for.
+  const folded = foldFields(plan.fields);
   return {
     validate: (value, options) =>
       runRoot(
@@ -178,7 +162,8 @@ export function createValidator(
         options,
         NO_WRITE_TARGETS,
         false,
-        canRecurse
+        canRecurse,
+        folded
       ),
     parse: (value, options) =>
       runRoot(
@@ -188,7 +173,8 @@ export function createValidator(
         options,
         parseTargets ?? NO_WRITE_TARGETS,
         shouldWriteOutput,
-        canRecurse
+        canRecurse,
+        folded
       ),
   };
 }
