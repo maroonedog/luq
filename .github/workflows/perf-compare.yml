@@ -12,19 +12,50 @@
 # days of each other, and the same shape moved by more than any change being
 # considered. Comparing across them measures the fleet, not the library.
 #
-# **Run it against itself first.** With `base` and `head` at the same commit
-# the output is this runner's floor, and any later result smaller than that
-# floor is noise. Locally, six rounds a side reported 6.9% on identical code
-# and fourteen reported 0.1%; that is why the default is fourteen and why the
-# floor is worth re-establishing rather than assumed.
+# **ONE FLOOR RUN DOES NOT GIVE YOU THE FLOOR.** With `base` and `head` at the
+# same commit the output is a floor reading, and the first one taken here said
+# +-2%. It was wrong. Two runs of the same real comparison, same machine model,
+# same fourteen rounds, then disagreed by eleven points on one shape and
+# flipped its sign:
+#
+#   shape        run 1     run 2
+#   singleField  +13.6%    +5.4%
+#   multiField    -5.0%    +6.1%
+#
+# So fourteen rounds on a four-core runner does not resolve five percent, and a
+# single floor reading is itself one sample of a noisy thing. Take several, on
+# different days, before believing any figure this prints.
+#
+# **What DOES reproduce here is allocation**, not wall-clock: bytes per call
+# came back inside 1% across every process it was measured in, including the
+# ones whose timings disagreed. If something in this repository is ever gated
+# on a measurement, that is the measurement with a floor small enough to gate.
 #
 # Nothing here is a gate. It prints a table into the job summary and never
-# fails on a number — a threshold would need a floor nobody has measured for
-# this runner, and inventing one is how a benchmark starts lying.
+# fails on a number.
 # ===========================================================================
 name: perf-compare
 
 on:
+  # THE MEASURING BRANCH. Force-push a working branch here and this file, AS IT
+  # STANDS ON THAT BRANCH, runs against develop.
+  #
+  # workflow_dispatch alone was unworkable, and three defects in a row proved
+  # it: dispatch reads the copy on the DEFAULT branch, so the first use of any
+  # change to this workflow is also its first test, and every fix costs a merge
+  # to master. A concurrency group that cancelled the floor run, a ref the
+  # checkout action could not resolve, and a measuring script that neither side
+  # carried each took a full merge to find. A push trigger on a fixed branch
+  # costs a force-push.
+  #
+  # It is one branch on purpose rather than a pattern: a pattern would measure
+  # every working branch somebody pushed, and each run is half an hour of a
+  # four-core machine. Nothing is published from here and nothing is gated on
+  # it — the branch is a bench, and what lands on it is whatever is being
+  # measured today.
+  push:
+    branches: [bench/measure]
+
   workflow_dispatch:
     inputs:
       base:
@@ -53,7 +84,7 @@ on:
 # Two dispatches of the SAME pair still cancel, which is what cancelling is
 # for: the second is a re-run and the first is stale.
 concurrency:
-  group: perf-compare-${{ inputs.base }}-${{ inputs.head }}
+  group: perf-compare-${{ inputs.base || 'develop' }}-${{ inputs.head || github.sha }}
   cancel-in-progress: true
 
 permissions:
@@ -106,7 +137,7 @@ jobs:
           fi
         env:
           HEAD_REF: ${{ inputs.head != '' && inputs.head || github.sha }}
-          BASE_REF: ${{ inputs.base }}
+          BASE_REF: ${{ inputs.base != '' && inputs.base || 'develop' }}
 
       - uses: actions/setup-node@v5
         with:
@@ -142,4 +173,4 @@ jobs:
         run: node -e "const os=require('os');console.log(os.cpus()[0].model, '|', os.cpus().length, 'logical cores')"
 
       - name: Measure, alternating sides
-        run: node tooling/bench/compare/compare-checkouts.mjs base head ${{ inputs.rounds }}
+        run: node tooling/bench/compare/compare-checkouts.mjs base head ${{ inputs.rounds != '' && inputs.rounds || '14' }}
