@@ -12,19 +12,27 @@
 # days of each other, and the same shape moved by more than any change being
 # considered. Comparing across them measures the fleet, not the library.
 #
-# **ONE FLOOR RUN DOES NOT GIVE YOU THE FLOOR.** With `base` and `head` at the
-# same commit the output is a floor reading, and the first one taken here said
-# +-2%. It was wrong. Two runs of the same real comparison, same machine model,
-# same fourteen rounds, then disagreed by eleven points on one shape and
-# flipped its sign:
+# **TWO LAYERS, AND THEY AGGREGATE DIFFERENTLY.**
+#
+#   inside a job    best-of N rounds per side, alternating
+#   across jobs     the MEDIAN of ten jobs' changes
+#
+# Inside a job, best-of is right: interference on a shared machine only ever
+# slows a sample down, so the fast tail is the signal. Across jobs it is wrong,
+# because the jobs did not interfere with each other — they ran on different
+# machines, and the best of them would report whichever runner was quickest.
+#
+# The outer layer is not optional, and one job used to be the whole answer.
+# Two runs of the SAME comparison, same machine model, same rounds, disagreed
+# by eleven points on a shape and flipped its sign:
 #
 #   shape        run 1     run 2
 #   singleField  +13.6%    +5.4%
 #   multiField    -5.0%    +6.1%
 #
-# So fourteen rounds on a four-core runner does not resolve five percent, and a
-# single floor reading is itself one sample of a noisy thing. Take several, on
-# different days, before believing any figure this prints.
+# and the same commit measured as base came back at 9.18M, 9.50M and 11.84M
+# ops/sec on three runners within an hour. A single job is one sample of a
+# noisy population, and a single floor reading is too.
 #
 # **What DOES reproduce here is allocation**, not wall-clock: bytes per call
 # came back inside 1% across every process it was measured in, including the
@@ -69,9 +77,9 @@ on:
         default: ""
         type: string
       rounds:
-        description: "Readings per side. Fewer than ten does not resolve 5%."
+        description: "Readings per side WITHIN one job. The layer above does the rest."
         required: false
-        default: "14"
+        default: "5"
         type: string
 
 # Keyed by the PAIR being compared, not by the ref. Every dispatch of this
@@ -91,9 +99,22 @@ permissions:
   contents: read
 
 jobs:
+  # TEN JOBS, NOT ONE. A job compares two commits on one machine, which is the
+  # only way the comparison means anything — but it cannot tell you whether the
+  # machine it drew was representative. The same commit measured as base came
+  # back at 9.18M, 9.50M and 11.84M ops/sec on three runners within an hour,
+  # and two runs of one real comparison disagreed by eleven points on a shape
+  # and flipped its sign. One job is one sample of a noisy population.
+  #
+  # fail-fast is off because a lost job is a lost sample, not a lost run: the
+  # summary reports how many it actually had.
   compare:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     steps:
       # Both sides are fetched WHOLE and then checked out by git, rather than
       # handed to the action as `ref`. The action resolves a ref by fetching
@@ -185,4 +206,31 @@ jobs:
         run: node -e "const os=require('os');console.log(os.cpus()[0].model, '|', os.cpus().length, 'logical cores')"
 
       - name: Measure, alternating sides
-        run: node tooling/bench/compare/compare-checkouts.mjs base head ${{ inputs.rounds != '' && inputs.rounds || '14' }}
+        run: node tooling/bench/compare/compare-checkouts.mjs base head ${{ inputs.rounds != '' && inputs.rounds || '5' }}
+        env:
+          PERF_COMPARE_OUT: reading-${{ matrix.job }}.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: perf-compare-reading-${{ matrix.job }}
+          path: reading-${{ matrix.job }}.json
+          retention-days: 7
+
+  # The layer that makes ten readings one figure. Median across jobs, because
+  # the jobs did not interfere with one another — they ran on different
+  # machines, so the best of them is a fact about the fleet rather than about
+  # the change.
+  summarize:
+    needs: compare
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: perf-compare-reading-*
+          path: readings
+
+      - name: Take the median across jobs
+        run: node bench/compare/summarize-runs.mjs readings

@@ -116,8 +116,43 @@ lines.push(
 const report = lines.join("\n");
 process.stdout.write(`${report}\n`);
 
+const { appendFileSync, writeFileSync } = await import("node:fs");
+
 const summaryFile = process.env["GITHUB_STEP_SUMMARY"];
 if (summaryFile !== undefined && summaryFile !== "") {
-  const { appendFileSync } = await import("node:fs");
   appendFileSync(summaryFile, `${report}\n`, "utf8");
+}
+
+// One job's reading, for the layer above. This job's comparison already
+// cancels the machine it ran on — both sides were measured here — so what
+// summarize-runs.mjs collects across jobs is the CHANGE, never the absolute
+// rate. Absolute rates are not comparable between jobs: the same commit
+// measured as base came back at 9.18M, 9.50M and 11.84M ops/sec on three
+// runners within an hour.
+const resultFile = process.env["PERF_COMPARE_OUT"];
+if (resultFile !== undefined && resultFile !== "") {
+  const { cpus } = await import("node:os");
+  writeFileSync(
+    resultFile,
+    `${JSON.stringify(
+      {
+        rounds: ROUNDS,
+        cpuModel: cpus()[0]?.model ?? "unknown",
+        logicalCores: cpus().length,
+        shapes: [...best.base.keys()].map((shape) => {
+          const baseValue = best.base.get(shape) ?? 0;
+          const headValue = best.head.get(shape) ?? 0;
+          return {
+            shape,
+            baseOpsPerSecond: baseValue,
+            headOpsPerSecond: headValue,
+            changePercent: ((headValue - baseValue) / baseValue) * 100,
+          };
+        }),
+      },
+      null,
+      2
+    )}\n`,
+    "utf8"
+  );
 }
