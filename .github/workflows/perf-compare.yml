@@ -125,11 +125,23 @@ jobs:
         with:
           path: tooling
 
+      # Resolved to a commit BEFORE checking out. A bare branch name that has no
+      # local branch — which is every branch in a fresh checkout except the one
+      # it landed on — makes git try to create it from the remote, and that
+      # collides with --detach: "'--detach' cannot be used with '-b/-B/--orphan'".
+      # Trying the name, then the name under origin/, accepts a branch, a tag, a
+      # short SHA and a full one, which is the whole point of resolving here
+      # rather than handing the ref to actions/checkout.
       - name: Move each side to the ref it is measuring
         run: |
           set -euo pipefail
-          git -C head checkout --detach "${HEAD_REF}"
-          git -C base checkout --detach "${BASE_REF}"
+          resolve() {
+            git -C "$1" rev-parse --verify --quiet "$2^{commit}" \
+              || git -C "$1" rev-parse --verify --quiet "origin/$2^{commit}" \
+              || { echo "::error::cannot resolve '$2' in $1" >&2; return 1; }
+          }
+          git -C head checkout --detach "$(resolve head "${HEAD_REF}")"
+          git -C base checkout --detach "$(resolve base "${BASE_REF}")"
           echo "head is $(git -C head rev-parse HEAD)  ($(git -C head log -1 --format=%s))"
           echo "base is $(git -C base rev-parse HEAD)  ($(git -C base log -1 --format=%s))"
           if [ "$(git -C head rev-parse HEAD)" = "$(git -C base rev-parse HEAD)" ]; then
