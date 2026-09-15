@@ -15,6 +15,13 @@
 // runner that is slow for the first thirty seconds would otherwise be charged
 // entirely to whichever side ran first.
 //
+// IT DOES NOT SUPPLY THE APPARATUS. Each directory must already hold a bench/
+// that can measure it, and the caller is responsible for making those two
+// identical — perf-compare.yml copies one bench/ into both sides before
+// calling this. Letting each side bring its own would measure changes to the
+// harness as if they were changes to the library, which is exactly how three
+// recorded competitor figures in this repository became uncomparable.
+//
 // HOW TO READ IT. Run it with both paths pointing at the SAME commit first.
 // That reading is the floor, and a difference smaller than it is not a result.
 // Fourteen rounds a side resolved 0.1% on identical code locally; six rounds
