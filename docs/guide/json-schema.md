@@ -94,6 +94,13 @@ raise the number. A validator that returned `true` unconditionally scores
 The per-keyword breakdown, and what closed each cause that used to fail, are in
 [../json-schema-conformance.md](../json-schema-conformance.md).
 
+This measures the chain method with the suite harness's presence policy and
+external documents, not a separate run of `fromJsonSchema` or generated code.
+Optional suite tests are excluded. Recursive `$ref` expansion is bounded:
+after three visits on a branch, deeper constraints can be omitted. Do not rely
+on this conversion alone to validate arbitrarily deep recursive input. See
+[the known limits](../json-schema-conformance.md#7-known-limits).
+
 ## One import: `jsonSchemaFullFeature`
 
 ```ts

@@ -15,6 +15,7 @@ Start at the top; each page assumes the one before it.
 
 Elsewhere:
 
+- [Adopting existing types](adopting-existing-types.md) — one boundary, form integration, and a checked upstream type change
 - [Coming from yup](../migration/from-yup.md) — what is identical, what casting becomes, and the resolver swap
 - [Breaking changes from 1.x](../migration/breaking-changes.md) — "1.x" names the `0.1.x` line; no `1.x` was ever published, and that page opens by saying so
 - [Plugin catalogue migration notes](../migration/plugins.md)

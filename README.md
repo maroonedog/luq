@@ -196,6 +196,12 @@ from a transform is a programmer error, not a validation issue, and zod, valibot
 and yup all propagate it the same way. To reject a value instead, use a check
 such as [`custom`](https://luq.dev/docs/api/validator#transform-throws).
 
+`parse()` infers transformed output types for rules declared with `.v()`,
+including nested and wildcard paths. Reusable rules attached through
+`useField()` currently erase that transform type information: the transform
+still runs, but the returned type does not reflect it. Declare type-changing
+transforms with `.v()` when relying on the inferred output type.
+
 ### Slots
 
 `b` offers one slot per kind: `b.string`, `b.number`, `b.boolean`, `b.date`,
@@ -382,9 +388,26 @@ file, the compiled `dist/`, and `PLUGIN_MANIFEST` above.
 ## Status, and how this gets changed
 
 The 2.x API is stable and gated, but the production track record is still short.
-Breaking changes happen in a major and nowhere else, an API being removed is
-deprecated one major ahead, and each major ships with the codemod needed to
-cross it.
+Breaking changes require a major, except for the documented minor-release
+exception for type corrections that reject code already wrong at runtime.
+Such corrections receive an explicit breaking-change heading in the changelog.
+An API being removed is deprecated one major ahead, and each major ships with
+the codemod needed to cross it. See the release policy linked below.
+
+The next priority is a complete adoption path for projects that already own
+their TypeScript types: introduce rules at one boundary, connect the existing
+form example, and check how rules respond when an upstream type changes.
+Broader integration work follows that evidence. The code generator remains
+checkout-only; publishing it requires explicit handling of unsupported
+constraints and verification that generated rules preserve supported semantics.
+See [project direction](https://luq.dev/roadmap) and the
+[adoption walkthrough](https://github.com/maroonedog/luq/blob/master/docs/guide/adopting-existing-types.md).
+
+JSON Schema conformance figures describe a pinned required-test corpus through
+one harness, not a guarantee for every schema or every entry point. Recursive
+`$ref` expansion is bounded and can leave deeper input unchecked. Review the
+[JSON Schema limits](https://luq.dev/json-schema#not-supported) before relying
+on conversion for recursive input.
 
 - **[CHANGELOG.md](https://github.com/maroonedog/luq/blob/master/CHANGELOG.md)** — every released version, what a caller
   sees change in each, and which ones need reading before you take them

@@ -767,11 +767,12 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           <h3 class="mb-2 text-title-medium text-on-surface">Which door was measured</h3>
           <p class="text-body-medium text-on-surface-variant">
             The corpus was run through the <strong class="text-on-surface">chain method</strong>,
-            because its schemas put constraints on the document root and only that route can treat
-            the root as the field itself. On the 289 cases whose instance is a plain object, the two
-            doors score 238 (82.35%) for <code>.jsonSchemaFullFeature()</code> and 229 (79.24%) for{' '}
-            <code>fromJsonSchema</code>, which is a <code>Validator&lt;T extends object&gt;</code>{' '}
-            and so only validates objects.
+            with the harness's presence policy and supplied external documents. It accepts the
+            corpus's scalar instances as well as objects. <code>fromJsonSchema</code> also supports
+            root keywords, but returns a <code>Validator&lt;T extends object&gt;</code> for objects.
+            The headline is not a separate measurement of that entry point or of generated
+            validators. Optional suite tests and arbitrary recursion depths are outside this
+            measurement; see the limits below before using it as a compatibility claim.
           </p>
         </div>
       </div>
@@ -1253,8 +1254,8 @@ const handlingLabels: Record<KeywordRow['handling'], string> = {
           rules rather than throwing, so a value nested deeper than three turns of the
           cycle is accepted without being looked at. The cost of the unrolling is paid once,
           when the validator is built, not on every <code>validate()</code>. A whole
-          conversion also carries a total expansion budget, far above anything a real
-          document reaches, so a pathological schema cannot run away.
+          conversion also carries a total expansion budget. Passing the corpus does not
+          establish that every real schema fits these bounds.
         </p>
       </div>
     </section>

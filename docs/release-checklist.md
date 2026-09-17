@@ -34,6 +34,11 @@ npm pack --dry-run     # what actually goes into the package
 The starting point for review. Fill this in per release; it is the section that
 tells a reviewer where to look.
 
+For 2.8.1: documentation and release metadata only. Runtime behavior, public
+signatures, dependencies, and size budgets are unchanged. The README and site
+state conversion and transform-inference limits; stale conformance comparisons
+are removed. The adoption walkthrough has a checked type-change example.
+
 ---
 
 ## 1. What the machine answers (a person confirms only that it was green)
@@ -168,4 +173,4 @@ Read the file list.
 
 | Date | Decided by | Decision |
 |---|---|---|
-| | | |
+| 2026-09-18 | Maintainer-directed release | Publish 2.8.1 as a documentation patch. Retain measured performance and size budgets; do not present corpus success as arbitrary-depth validation or generator conformance. Keep codegen checkout-only pending the stated acceptance criteria. |
