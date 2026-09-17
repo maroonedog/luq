@@ -39,6 +39,30 @@ than `latest`.
 
 Nothing yet.
 
+## [2.8.1] — 2026-09-18
+
+### Fixed
+
+- JSON Schema documentation identifies the measured chain-method harness,
+  removes stale entry-point comparisons, and corrects the current failure
+  counts. The corpus digest is referenced from its normalized source of truth.
+- The README explains bounded recursive schema validation and the existing
+  `useField()` transform-output inference limitation, and aligns its versioning
+  promise with the documented policy for type corrections.
+- Code generation documentation distinguishes type-checked output from complete
+  constraint preservation and explains how to handle skipped constraints.
+
+### Changed
+
+- Project direction prioritizes one complete adoption path for existing
+  TypeScript types before broader integrations, with explicit acceptance
+  criteria for publishing the checkout-only generator.
+- An adoption walkthrough covers one existing-type boundary, form integration,
+  and an upstream type change whose incompatible rule is checked by the docs gate.
+
+This patch changes documentation and release metadata. Runtime behavior and
+public type signatures are unchanged.
+
 ## [2.8.0] — 2026-09-13
 
 ### Breaking changes, in a minor

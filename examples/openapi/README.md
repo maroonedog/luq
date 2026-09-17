@@ -21,7 +21,10 @@ turns it into two files, and neither is edited:
 | `src/api.generated.ts` | `openapi-typescript` — the **types** |
 | `src/order-validator.generated.ts` | `@maroonedog/luq-codegen` — the **rules** |
 
-The second refers to the first, so they cannot drift apart:
+The second refers to the first, so TypeScript checks its paths and rule slots
+against the generated type. That does not prove that every OpenAPI constraint
+survives conversion; inspect the generator's `skipped` result and its supported
+schema semantics before using another document:
 
 ```ts
 export const orderValidator = Builder()
