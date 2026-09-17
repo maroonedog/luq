@@ -211,15 +211,13 @@ and invalid cases, with external documents supplied by the harness.
 
 ### Two ways to count plugins
 
-Both are correct and they differ by one:
+Plugin subpaths and exported plugin objects are different counts:
+`objectAdditionalProperties` exports two objects. Read the current subpaths
+from `config/plugin-catalog.lock.json`, the objects from the generated plugin
+manifest, and the public export keys from `package.json#/exports`. The site
+derives its displayed counts from those sources.
 
-- **76 directories / subpaths**, which is what the bundle budget's "all 76
-  plugins" means.
-- **77 exported plugin objects**, `objectAdditionalProperties` exporting two.
-
-`package.json#/exports` therefore has 84 keys: 7 fixed plus 77 under
-`./plugins/` (the 76 subpaths and one deprecated alias). None of the 58
-subpaths the previous major published has been lost, asserted in the types by
+The previous line's public subpaths are checked in the types by
 `test/type/public-surface/json-schema.type-test.ts` and at run time by
 `test/integration/public-subpath-resolution.test.ts`.
 
