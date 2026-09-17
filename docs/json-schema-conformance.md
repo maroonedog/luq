@@ -48,7 +48,7 @@ something beside that floor.
 | Files | 37 |
 | Groups | 258 |
 | Cases | 929 |
-| Corpus sha256 | `9b13470f746d823ec1644d4ece291973d27f52a09bc4c06580a1037bb2d82d47` |
+| Corpus sha256 | See `contentDigest` in `config/json-schema-suite.json` (LF-normalized) |
 
 Move the submodule and the sha256 changes, and the build fails until
 `config/json-schema-suite.json` is measured again. That is what makes a change
@@ -60,24 +60,19 @@ There are **two** ways into JSON Schema, and the corpus is measured through the
 chain method.
 
 - `b.any.jsonSchemaFullFeature(document)` — the route measured. Nearly every
-  schema in the corpus puts its constraints at the document **root**, and this
-  is the only route that treats the root as the field itself, so it is the only
-  one that can judge every case. It also judges cases whose instance is a
-  scalar.
+  schema in the corpus puts its constraints at the document **root**. The chain
+  route treats that root as a field and accepts scalar instances as well as
+  objects.
 - `fromJsonSchema(document)` — the function entry point, which users write as
   `fromJsonSchema<T>(schema, config?)`. It returns
   `Validator<T extends object>`, so it is **for validating objects**.
 
-Measured on the same subset — the 289 cases whose instance is a plain object:
-
-| Entry point | Passing / 289 | Rate |
-|---|---|---|
-| `b.any.jsonSchemaFullFeature(document)` | 238 | 82.35% |
-| `fromJsonSchema(document)` | 229 | 79.24% |
-
-The 9-case difference is made up of cases the method route can judge and the
-function route rejects at build time. The function route is nowhere near zero:
-root keywords became declarable once `ROOT_PATH` was supported.
+The headline is a measurement of the chain route with the harness below.
+It is not a separately measured conformance rate for `fromJsonSchema` or for
+generated validators. Both entry points support root keywords; the reason for
+using the chain route here is the corpus's mix of instance types. Earlier
+object-subset figures have been removed because they were not kept in step
+with the pinned measurement.
 
 ### The glue used to measure, stated rather than hidden
 
@@ -185,22 +180,13 @@ Builder().use(jsonSchemaFullFeaturePlugin).fromJsonSchema(schema).build()
 | Passing / 929 | **536 (57.70%)** | **929 (100.00%)** | +393 (+42.30pt) |
 | Of the 551 that must be valid | 512 (92.92%) | **551 (100%)** | +39 |
 | **Of the 378 that must be invalid** | **24 (6.35%)** | **378 (100%)** | **+354 (+93.65pt)** |
-| Cases where building failed | 41 | 79 | |
-| Cases judged wrongly | 352 | 22 | |
+| Cases where building failed | 41 | 0 | |
+| Cases judged wrongly | 352 | 0 | |
 
 **The previous major's 57.70% is below the 59.31% of a validator that only ever
 returns true.** It rejected 24 of 378 invalid documents, which is what "JSON
-Schema support" amounted to. This implementation losing a little on the valid
-side is because an external `$ref` is refused at build time rather than passed
-through in silence.
-
-Restricted to validating objects — the 289 cases whose instance is a plain
-object — function entry point against function entry point:
-
-| | Previous `fromJsonSchema` | This `fromJsonSchema` |
-|---|---|---|
-| Passing / 289 | 155 (53.63%) | **229 (79.24%)** |
-| Build failures | 31 | 49 |
+Schema support" amounted to. The current measured route passes both the valid
+and invalid cases, with external documents supplied by the harness.
 
 ## 6. Vocabulary coverage (measured)
 
@@ -225,22 +211,22 @@ object — function entry point against function entry point:
 
 ### Two ways to count plugins
 
-Both are correct and they differ by one:
+Plugin subpaths and exported plugin objects are different counts:
+`objectAdditionalProperties` exports two objects. Read the current subpaths
+from `config/plugin-catalog.lock.json`, the objects from the generated plugin
+manifest, and the public export keys from `package.json#/exports`. The site
+derives its displayed counts from those sources.
 
-- **76 directories / subpaths**, which is what the bundle budget's "all 76
-  plugins" means.
-- **77 exported plugin objects**, `objectAdditionalProperties` exporting two.
-
-`package.json#/exports` therefore has 84 keys: 7 fixed plus 77 under
-`./plugins/` (the 76 subpaths and one deprecated alias). None of the 58
-subpaths the previous major published has been lost, asserted in the types by
+The previous line's public subpaths are checked in the types by
 `test/type/public-surface/json-schema.type-test.ts` and at run time by
 `test/integration/public-subpath-resolution.test.ts`.
 
 ## 7. Known limits
 
 Nothing in this section costs a case in the corpus; the failing count is zero.
-These are limits a real document can still meet.
+These are limits a real document can still meet. Passing the pinned required
+tests is not a claim that every Draft-07 document is fully enforced; optional
+suite tests are excluded, and the measurement does not cover arbitrary depths.
 
 - **A document's own presence policy has nowhere to be expressed.** A plugin's
   `build()` returns one root, so `.jsonSchemaFullFeature(doc)` cannot say

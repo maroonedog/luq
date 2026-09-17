@@ -11,6 +11,12 @@ all of that. See [the worked example](#a-worked-example).
 
 ## Status
 
+This is a checkout-only integration experiment. Before publication, adoption
+must be demonstrated in an existing project, unsupported constraints must be
+handled explicitly, and generated validators must be compared with the
+intended semantics of supported schemas. The library's JSON Schema corpus
+score is not a conformance measurement of this generator.
+
 - **Not published.** `npm install @maroonedog/luq-codegen` does not resolve.
   The only way to use it today is from this checkout, with a `file:` specifier —
   which is what [`examples/openapi`](../examples/openapi) does.
@@ -50,6 +56,12 @@ generateValidatorModule(schema: Draft07Schema, options: GenerateOptions): Genera
 | `source` | The whole module text: the header comment, the skipped-keyword notice, the imports, the builder chain, a trailing newline. |
 | `pluginExports` | The plugin export names used, deduplicated and sorted. Every one of them is both imported and `.use()`d in `source`, and nothing else is. |
 | `skipped` | `{ path, keyword, reason }` for every keyword that produced no rule. `path` is `""` for the root. |
+
+Inspect `skipped` before writing or using `source`. Successful generation and
+TypeScript compilation do not prove that every source constraint is enforced.
+For an integration that cannot tolerate omitted constraints, fail generation
+when `skipped` is non-empty. Recursive conversion also has a bounded expansion;
+an empty `skipped` list does not establish arbitrary-depth validation.
 
 `ChainCall`, `FieldChain` and `SkippedKeyword` are exported as types as well.
 

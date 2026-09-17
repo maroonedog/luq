@@ -14,9 +14,7 @@
 // `$ref: "#/definitions/x"` resolves against the schema under test rather than
 // against a wrapper.
 //
-// Measured on the 289 cases whose instance IS a plain object, so both doors
-// can be opened: the method answers 238 correctly, the function 229. See
-// docs/json-schema-conformance.md §3.
+// See docs/json-schema-conformance.md §3 for the measurement's scope.
 //
 // THE ONE PIECE OF GLUE, stated plainly because it is part of what the
 // published rate measures: `.optional()`. src/runtime/decide-presence.ts
