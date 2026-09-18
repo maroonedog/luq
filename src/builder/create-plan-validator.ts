@@ -17,16 +17,19 @@ import { createFieldValidator } from "../runtime/create-field-validator";
 import { createValidator } from "../runtime/create-validator";
 import type { PlanBackedValidator } from "./builder-surface.types";
 import { createSubsetValidator } from "./create-subset-validator";
+import { rememberValidatorPlan } from "./validator-plan-store";
 
 export function createPlanBackedValidator(
   plan: ValidationPlan,
   config: ResolvedGlobalConfig
 ): PlanBackedValidator {
   const validator = createValidator(plan, config);
-  return Object.freeze({
+  const built = Object.freeze({
     validate: validator.validate,
     parse: validator.parse,
     pick: (key: string) => createFieldValidator(plan, key),
     pickAll: (paths: readonly string[]) => createSubsetValidator(plan, paths),
   });
+  rememberValidatorPlan(built, plan, config);
+  return built;
 }

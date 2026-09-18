@@ -17,6 +17,7 @@ const tableOfContents = [
   { id: 'options', title: 'ValidateOptions', level: 2 },
   { id: 'pick', title: 'pick(path)', level: 2 },
   { id: 'pick-all', title: 'pickAll(paths)', level: 2 },
+  { id: 'partial-validation', title: 'Partial validation for forms', level: 2 },
   { id: 'result-subpath', title: 'The ./result subpath', level: 2 },
   { id: 'http-boundary', title: 'At an HTTP boundary', level: 2 },
   { id: 'porting', title: 'Porting from the 1.x Result', level: 2 },
@@ -676,6 +677,31 @@ type ValidationResult<T> =
           </p>
 
           <CodeBlock code={pickAllExample} language="typescript" />
+
+          <h2 id="partial-validation">Partial validation for forms</h2>
+          <p>
+            The <code>@maroonedog/luq/form</code> entry exports{' '}
+            <code>validateFields(validator, values, paths, options?)</code> and{' '}
+            <code>createPartialValidator(validator, paths)</code>. The latter builds a
+            reusable object with <code>validate(values, options?)</code>. Both execute
+            only the selected declarations and return <code>{'{ valid, issues }'}</code>.
+            They do not produce parsed output or certify the whole form.
+          </p>
+          <p>
+            Pass the full current form values. Select <code>email</code>, a container
+            such as <code>profile</code>, every row with <code>rows[*].name</code>, or
+            one row with <code>rows[2].name</code> / <code>rows.2.name</code>.
+            Dependencies and ancestor constraints are not selected automatically:
+            include confirmation fields explicitly when their source changes.
+            On submission, call full <code>validate()</code> or <code>parse()</code>.
+          </p>
+          <p>
+            <code>pick()</code> and <code>pickAll()</code> still execute the full plan
+            before filtering results. Standard Schema resolvers also retain full
+            validation. See the{' '}
+            <a href="https://github.com/maroonedog/luq/blob/master/docs/guide/partial-validation.md">form guide</a>
+            {' '}for event integration and array-selection details.
+          </p>
 
           <h2 id="result-subpath">The ./result subpath</h2>
 

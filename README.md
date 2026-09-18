@@ -202,6 +202,20 @@ including nested and wildcard paths. Reusable rules attached through
 still runs, but the returned type does not reflect it. Declare type-changing
 transforms with `.v()` when relying on the inferred output type.
 
+### Partial validation for forms
+
+`@maroonedog/luq/form` exports `validateFields(validator, values, paths)` for
+one-off checks and `createPartialValidator(validator, paths)` for repeated
+change/blur checks. Pass the full current form values; only selected declarations
+execute. Paths support `email`, `rows[*].name`, `rows[2].name`, and `rows.2.name`.
+Results contain `{ valid, issues }`, with no claim that the entire form is valid.
+Select dependent fields explicitly and use full `validate()` or `parse()` on
+submission. `pick()` and `pickAll()` continue to validate the full plan.
+
+See the [form guide](https://github.com/maroonedog/luq/blob/master/docs/guide/partial-validation.md)
+for examples and selection semantics. Standard Schema resolvers continue to
+perform full validation unless your form integration calls these functions.
+
 ### Slots
 
 `b` offers one slot per kind: `b.string`, `b.number`, `b.boolean`, `b.date`,

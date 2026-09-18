@@ -34,10 +34,12 @@ npm pack --dry-run     # what actually goes into the package
 The starting point for review. Fill this in per release; it is the section that
 tells a reviewer where to look.
 
-For 2.8.1: documentation and release metadata only. Runtime behavior, public
-signatures, dependencies, and size budgets are unchanged. The README and site
-state conversion and transform-inference limits; stale conformance comparisons
-are removed. The adoption walkthrough has a checked type-change example.
+For 2.9.0: add the optional `@maroonedog/luq/form` entry with `validateFields()`
+and `createPartialValidator()` for selected execution on form change/blur.
+Selections support object subtrees and wildcard or concrete array indices.
+Partial results contain `valid` and `issues` without certifying the entire form.
+Existing `pick()`, `pickAll()`, and Standard Schema resolvers retain full
+validation. Dependencies and size budgets are unchanged.
 
 ---
 
@@ -173,4 +175,5 @@ Read the file list.
 
 | Date | Decided by | Decision |
 |---|---|---|
+| 2026-09-18 | Maintainer-directed release | Publish 2.9.0 as a backward-compatible feature release. Keep full validation for submission and require explicit selection of dependent fields. Retain existing size and performance budgets. |
 | 2026-09-18 | Maintainer-directed release | Publish 2.8.1 as a documentation patch. Retain measured performance and size budgets; do not present corpus success as arbitrary-depth validation or generator conformance. Keep codegen checkout-only pending the stated acceptance criteria. |

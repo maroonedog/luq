@@ -62,6 +62,7 @@ const FIXED_KEY_SOURCE: Readonly<Record<string, string>> = {
   "./field-rule": "src/field-rule/index.ts",
   "./async": "src/async/index.ts",
   "./standard-schema": "src/standard-schema/index.ts",
+  "./form": "src/form/index.ts",
   "./presets": "src/presets/index.ts",
   "./plugins": "src/plugins/index.generated.ts",
   "./schema-tooling": "src/schema-tooling/index.ts",

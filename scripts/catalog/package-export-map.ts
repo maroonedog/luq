@@ -13,6 +13,7 @@ const DIST_BASE_BY_FIXED_KEY: Readonly<Record<string, string>> = {
   "./field-rule": "field-rule",
   "./async": "async",
   "./standard-schema": "standard-schema",
+  "./form": "form/index",
   "./presets": "presets/index",
   "./plugins": "plugins/index",
   "./schema-tooling": "schema-tooling/index",
