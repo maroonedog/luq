@@ -1,6 +1,6 @@
 {
   "name": "@maroonedog/luq",
-  "version": "2.8.1",
+  "version": "2.9.0",
   "description": "Validate the TypeScript types you already have. Rules are declared against your own type's field paths, so a rule that does not apply to its field is a compile error.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -36,6 +36,11 @@
       "types": "./dist/standard-schema.d.ts",
       "import": "./dist/standard-schema.mjs",
       "require": "./dist/standard-schema.js"
+    },
+    "./form": {
+      "types": "./dist/form/index.d.ts",
+      "import": "./dist/form/index.mjs",
+      "require": "./dist/form/index.js"
     },
     "./presets": {
       "types": "./dist/presets/index.d.ts",

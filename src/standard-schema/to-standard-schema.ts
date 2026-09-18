@@ -17,6 +17,7 @@
 //    wants the faster behaviour can use the Validator directly.
 // ===========================================================================
 import type { Validator } from "../builder/validator.types";
+import { inheritValidatorOrigin } from "../core/validator-origin";
 import type { ValidationIssue } from "../types";
 import type {
   StandardSchemaIssue,
@@ -92,13 +93,13 @@ export function toStandardSchema<T extends object, TParsed = T>(
         : { issues: outcome.issues.map(toStandardIssue) };
     },
   };
-  return {
+  return inheritValidatorOrigin(validator, {
     validate: (value, options) => validator.validate(value, options),
     parse: (value, options) => validator.parse(value, options),
     pick: (key) => validator.pick(key),
     pickAll: (paths) => validator.pickAll(paths),
     "~standard": props,
-  };
+  });
 }
 
 /**

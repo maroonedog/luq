@@ -20,6 +20,7 @@ import type {
 } from "../types/validation-result.types";
 import type { ValidationIssue } from "../types";
 import type { Validator } from "../builder/validator.types";
+import { inheritValidatorOrigin } from "../core/validator-origin";
 import type { AsyncContext } from "./async-context";
 
 export const ASYNC_CONTEXT_ISSUE_CODE = "asyncContextUnavailable";
@@ -88,7 +89,7 @@ export function withAsyncContext<T extends object, C extends object>(
 export function addAsyncSupport<T extends object>(
   validator: Validator<T>
 ): AsyncAwareValidator<T> {
-  return {
+  return inheritValidatorOrigin(validator, {
     validate(value, options) {
       return validator.validate(value, options);
     },
@@ -104,5 +105,5 @@ export function addAsyncSupport<T extends object>(
     withAsyncContext<C extends object>(context: AsyncContext<C>) {
       return withAsyncContext(validator, context);
     },
-  };
+  });
 }

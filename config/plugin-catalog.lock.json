@@ -395,6 +395,7 @@
     "./field-rule",
     "./async",
     "./standard-schema",
+    "./form",
     "./presets",
     "./plugins",
     "./schema-tooling",

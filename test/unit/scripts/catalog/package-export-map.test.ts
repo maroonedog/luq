@@ -12,7 +12,7 @@ import {
 import { withSeedTree } from "../../../type/fixtures/seed-plugins/write-seed-tree";
 
 describe("buildPackageExportMap", () => {
-  it("emits the ten fixed keys, in this order", () => {
+  it("emits the fixed keys, in this order", () => {
     expect(FIXED_EXPORT_KEYS).toEqual([
       ".",
       "./package.json",
@@ -21,6 +21,7 @@ describe("buildPackageExportMap", () => {
       "./field-rule",
       "./async",
       "./standard-schema",
+      "./form",
       "./presets",
       "./plugins",
       "./schema-tooling",

@@ -148,6 +148,8 @@ export interface CompiledField {
 
 /** Loop interchange: one array is read once however many element fields exist. */
 export interface ArrayNode {
+  /** Optional element-specific plan; null skips an element without reading it. */
+  readonly selectElement?: (index: number) => ArrayNode | null;
   readonly template: readonly PathSegment[];
   /**
    * The node's own path, rendered once at build time — `lines`, never

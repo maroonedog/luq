@@ -24,6 +24,7 @@
 // declared calls, which it does not do on its own.
 // ===========================================================================
 import type { Validator } from "../builder/validator.types";
+import { inheritValidatorOrigin } from "../core/validator-origin";
 import { readDeclaredCalls } from "../builder/declared-calls-store";
 import { assembleJsonSchema } from "./assemble-json-schema";
 import { resolveJsonSchemaTarget } from "./json-schema-target";
@@ -76,11 +77,11 @@ export function toStandardJsonSchema<T extends object, TParsed = T>(
     };
   };
   const standard = toStandardSchema(validator);
-  return {
+  return inheritValidatorOrigin(validator, {
     ...standard,
     "~standard": {
       ...standard["~standard"],
       jsonSchema: { input: emit, output: emit },
     },
-  };
+  });
 }

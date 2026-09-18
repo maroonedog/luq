@@ -93,11 +93,14 @@ function runElements(
   };
   let rebuilt = array;
   for (let index = 0; index < array.length; index += 1) {
+    const selected =
+      node.selectElement === undefined ? node : node.selectElement(index);
+    if (selected === null) continue;
     elementContext.item = describeItem(array, index);
     context.indices.push(nodePath, index);
     const element = runNested(
-      node,
-      runElementFields(node, array[index], elementContext),
+      selected,
+      runElementFields(selected, array[index], elementContext),
       elementContext,
       nested
     );
