@@ -13,14 +13,29 @@ type Slot<B extends PluginBag, S extends TypeName, TRoot, TField, TBase> =
     ? FieldChain<B, S, TRoot, SlotValue<TField, TBase>, OpenState>
     : SlotTypeMismatch<S, TField>;
 
-export interface FieldSlots<TRoot, B extends PluginBag, TField> {
-  readonly string: Slot<B, "string", TRoot, TField, string>;
-  readonly number: Slot<B, "number", TRoot, TField, number>;
-  readonly boolean: Slot<B, "boolean", TRoot, TField, boolean>;
-  readonly date: Slot<B, "date", TRoot, TField, Date>;
-  readonly array: Slot<B, "array", TRoot, TField, readonly unknown[]>;
-  readonly tuple: Slot<B, "tuple", TRoot, TField, readonly unknown[]>;
-  readonly object: Slot<B, "object", TRoot, TField, object>;
-  readonly union: Slot<B, "union", TRoot, TField, unknown>;
-  readonly any: Slot<B, "any", TRoot, TField, unknown>;
+interface SlotInputs {
+  string: string;
+  number: number;
+  boolean: boolean;
+  date: Date;
+  array: readonly unknown[];
+  tuple: readonly unknown[];
+  object: object;
+  union: unknown;
+  any: unknown;
 }
+
+export type FieldSlots<TRoot, B extends PluginBag, TField> = {
+  readonly [S in keyof SlotInputs]: Slot<B, S, TRoot, TField, SlotInputs[S]>;
+};
+
+/** A standalone declaration chooses its input by selecting a slot. */
+export type FieldRuleSlots<B extends PluginBag> = {
+  readonly [S in keyof SlotInputs]: FieldChain<
+    B,
+    S,
+    unknown,
+    SlotInputs[S],
+    OpenState
+  >;
+};

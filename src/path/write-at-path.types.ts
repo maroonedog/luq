@@ -88,7 +88,7 @@ type SameType<A, B> = [A] extends [B]
  *
  * An `unknown` output records nothing either, and that is the more important
  * of the two. `unknown` is what a chain whose type was erased answers — a
- * field rule stores its chain as `AnyChain` — and it means "nothing was
+ * field rule annotated with the default chain uses `AnyChain` — and it means "nothing was
  * learned here", not "this field now holds unknown". Recording it would make
  * `parse()`'s type WORSE than the one this file exists to correct.
  */

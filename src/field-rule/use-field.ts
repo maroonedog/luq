@@ -28,7 +28,10 @@
 // is deliberate: the builder owns the object being validated, and one field may
 // not run a different implementation of `required` from its neighbours.
 // ===========================================================================
-import type { FieldBuilder } from "../builder/field-builder.types";
+import type {
+  DeclaredFieldBuilder,
+  FieldBuilder,
+} from "../builder/field-builder.types";
 import { eraseRuleDefineToBuilderSlots } from "../core/type-erasure";
 import type { PluginBag } from "../chain/plugin-bag.types";
 import type { FieldRuleNeedsPlugins } from "../chain/plugin-not-imported.types";
@@ -36,6 +39,7 @@ import type { FieldPath } from "../path/field-path.types";
 import type { ParsedOverride } from "../path/write-at-path.types";
 import type { ValueAtPath } from "../path/value-at-path.types";
 import type { FieldRule } from "./field-rule.types";
+import type { AnyChain } from "../chain/field-chain.types";
 
 export function useField<
   T extends object,
@@ -44,6 +48,7 @@ export function useField<
   TDeclared extends string,
   K extends FieldPath<T> & string,
   TParsed extends readonly ParsedOverride[] = readonly [],
+  C extends AnyChain = AnyChain,
 >(
   // The gate rides on the BUILDER rather than on the rule, so a builder that
   // is missing plugins fails at the argument that is actually short of them.
@@ -55,16 +60,9 @@ export function useField<
       ? unknown
       : FieldRuleNeedsPlugins<Exclude<keyof BRule, keyof B>>),
   path: K,
-  rule: FieldRule<ValueAtPath<T, K>, BRule>
-  // `TParsed` passes through UNCHANGED, and that is a known limit rather than
-  // an oversight. A field rule stores its chain as `AnyChain`
-  // (FieldRuleDefine), so the type the chain leaves behind is already erased
-  // by the time it reaches here — there is nothing to record. A rule that
-  // transforms therefore does not show up in `parse()`'s type, the way it did
-  // not for any field before this change. Closing it means making FieldRule
-  // generic over its chain, which moves a published type.
-): FieldBuilder<T, B, TDeclared | K, TParsed> {
-  return builder.v(
+  rule: FieldRule<ValueAtPath<T, K>, BRule, C>
+): DeclaredFieldBuilder<T, B, TDeclared, TParsed, K, C> {
+  return builder.v<K, C>(
     path,
     eraseRuleDefineToBuilderSlots(rule.define),
     rule.fieldOptions

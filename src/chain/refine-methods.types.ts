@@ -39,9 +39,10 @@ type Refine<
   TValue,
   TState extends ChainState,
   TBase,
+  TInput,
 > =
   SlotAccepts<TValue, TBase> extends true
-    ? () => FieldChain<B, S, TRoot, TValue, TState>
+    ? () => FieldChain<B, S, TRoot, TValue, TState, TInput>
     : SlotTypeMismatch<S, TValue>;
 
 /**
@@ -53,18 +54,44 @@ export interface RefineMethods<
   TRoot,
   TValue,
   TState extends ChainState,
+  TInput = TValue,
 > {
-  readonly refineString: Refine<B, "string", TRoot, TValue, TState, string>;
-  readonly refineNumber: Refine<B, "number", TRoot, TValue, TState, number>;
-  readonly refineBoolean: Refine<B, "boolean", TRoot, TValue, TState, boolean>;
-  readonly refineDate: Refine<B, "date", TRoot, TValue, TState, Date>;
+  readonly refineString: Refine<
+    B,
+    "string",
+    TRoot,
+    TValue,
+    TState,
+    string,
+    TInput
+  >;
+  readonly refineNumber: Refine<
+    B,
+    "number",
+    TRoot,
+    TValue,
+    TState,
+    number,
+    TInput
+  >;
+  readonly refineBoolean: Refine<
+    B,
+    "boolean",
+    TRoot,
+    TValue,
+    TState,
+    boolean,
+    TInput
+  >;
+  readonly refineDate: Refine<B, "date", TRoot, TValue, TState, Date, TInput>;
   readonly refineArray: Refine<
     B,
     "array",
     TRoot,
     TValue,
     TState,
-    readonly unknown[]
+    readonly unknown[],
+    TInput
   >;
   readonly refineTuple: Refine<
     B,
@@ -72,10 +99,27 @@ export interface RefineMethods<
     TRoot,
     TValue,
     TState,
-    readonly unknown[]
+    readonly unknown[],
+    TInput
   >;
-  readonly refineObject: Refine<B, "object", TRoot, TValue, TState, object>;
-  readonly refineUnion: Refine<B, "union", TRoot, TValue, TState, unknown>;
+  readonly refineObject: Refine<
+    B,
+    "object",
+    TRoot,
+    TValue,
+    TState,
+    object,
+    TInput
+  >;
+  readonly refineUnion: Refine<
+    B,
+    "union",
+    TRoot,
+    TValue,
+    TState,
+    unknown,
+    TInput
+  >;
 }
 
 /** The eight names, as a value-level closed set the runtime shares. */

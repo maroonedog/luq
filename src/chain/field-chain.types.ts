@@ -73,6 +73,7 @@ export type FieldChain<
   TRoot,
   TValue,
   TState extends ChainState,
+  TInput = TValue,
 > = {
   readonly [
     M in keyof SlotPlugins<B, S> as TState["transformed"] extends true
@@ -80,13 +81,13 @@ export type FieldChain<
         ? M
         : never
       : M
-  ]: ChainMethod<SlotPlugins<B, S>[M], B, S, TRoot, TValue, TState>;
+  ]: ChainMethod<SlotPlugins<B, S>[M], B, S, TRoot, TValue, TState, TInput>;
 } & (TState["transformed"] extends true
   ? ClosedAfterTransform<B, S>
   : unknown) &
   NotImported<B, S> &
-  RefineMethods<B, TRoot, TValue, TState> & {
-    readonly __chain: ChainMarks<TValue, TState>;
+  RefineMethods<B, TRoot, TValue, TState, TInput> & {
+    readonly __chain: ChainMarks<TValue, TState> & { readonly input: TInput };
   };
 
 /** `ChainMarks<unknown, ChainState>`, never `ChainMarks<never, ...>`. */
@@ -104,3 +105,10 @@ export type ChainStateOf<C> = C extends {
 }
   ? St
   : never;
+
+/** The value accepted by the starting slot, before any transforms. */
+export type ChainInput<C> = C extends {
+  readonly __chain: { readonly input: infer I };
+}
+  ? I
+  : unknown;

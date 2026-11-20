@@ -11,6 +11,8 @@
 // receiver alone.
 // ===========================================================================
 import type { Builder } from "../builder/field-builder.types";
+import type { FieldRuleSlots } from "../chain/field-slots.types";
+import type { AnyChain, ChainInput } from "../chain/field-chain.types";
 import type { BagEntry, PluginBag } from "../chain/plugin-bag.types";
 import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import type {
@@ -22,15 +24,16 @@ import type {
 export interface PluginRegistry<B extends PluginBag> {
   /** IMMUTABLE, unlike Builder.use(): the receiver is never touched. */
   use<P extends AnyPlugin>(plugin: P): PluginRegistry<B & BagEntry<P>>;
-  /**
-   * TValue is written, not inferred — it names the type the rule is FOR, and
-   * `define`'s only mention of it is a callback parameter, which no inference
-   * can read. `registry.createFieldRule<string>((b) => b.string.required())`.
-   */
-  createFieldRule<TValue>(
-    define: FieldRuleDefine<TValue, B>,
+  /** Infer the input from the starting slot and the parsed value from the returned chain. */
+  createFieldRule<C extends AnyChain>(
+    define: (slots: FieldRuleSlots<B>) => C,
+    options?: FieldRuleOptions<NoInfer<ChainInput<C>>>
+  ): FieldRule<ChainInput<C>, B, C>;
+  /** With an explicit input type alone, this overload keeps the legacy output type. */
+  createFieldRule<TValue, C extends AnyChain = AnyChain>(
+    define: FieldRuleDefine<TValue, B, C>,
     options?: FieldRuleOptions<TValue>
-  ): FieldRule<TValue, B>;
+  ): FieldRule<TValue, B, C>;
   /** A FRESH builder each call, carrying the same plugins. */
   toBuilder(): Builder<B>;
   getPlugins(): Readonly<Record<string, AnyPlugin>>;

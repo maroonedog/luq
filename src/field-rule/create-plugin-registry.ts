@@ -16,6 +16,9 @@ import { Builder } from "../builder/field-builder.types";
 import type { BagEntry, PluginBag } from "../chain/plugin-bag.types";
 import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import { createFieldRule } from "./create-field-rule";
+import type { FieldRuleOptions } from "./field-rule.types";
+import { eraseRuleDefineToBuilderSlots } from "../core/type-erasure";
+import type { AnyChain } from "../chain/field-chain.types";
 import type { PluginRegistry } from "./plugin-registry.types";
 
 /** First-wins by name, the rule Builder.use() already follows. */
@@ -59,8 +62,15 @@ function createRegistry<B extends PluginBag>(
       grow();
       return createRegistry(grow, appendPlugin(plugins, plugin));
     },
-    createFieldRule: (define, options) =>
-      createFieldRule(makeBuilder(), define, options),
+    createFieldRule: <TValue, C extends AnyChain>(
+      define: (slots: never) => C,
+      options?: FieldRuleOptions<TValue>
+    ) =>
+      createFieldRule<TValue, B, C>(
+        makeBuilder(),
+        eraseRuleDefineToBuilderSlots(define),
+        options
+      ),
     toBuilder: () => makeBuilder(),
     getPlugins: () => indexPluginsByName(plugins),
   };

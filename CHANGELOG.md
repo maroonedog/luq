@@ -37,7 +37,9 @@ than `latest`.
 
 ## [Unreleased]
 
-Nothing yet.
+- Reusable field rules infer their input from the selected slot and their
+  output from the returned chain. The inferred types are available in standalone `parse()` and when
+  attached with `useField()`, including nested and wildcard field paths.
 
 ## [2.9.0] — 2026-09-18
 

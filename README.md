@@ -197,10 +197,10 @@ and yup all propagate it the same way. To reject a value instead, use a check
 such as [`custom`](https://luq.dev/docs/api/validator#transform-throws).
 
 `parse()` infers transformed output types for rules declared with `.v()`,
-including nested and wildcard paths. Reusable rules attached through
-`useField()` currently erase that transform type information: the transform
-still runs, but the returned type does not reflect it. Declare type-changing
-transforms with `.v()` when relying on the inferred output type.
+including nested and wildcard paths. For a reusable transform, write
+`registry.createFieldRule(b => b.string.transform(Number))`.
+The `string` slot sets the input type, and `Number` sets the parsed output.
+Attaching this rule with `useField()` gives the parsed field the type `number`.
 
 ### Partial validation for forms
 

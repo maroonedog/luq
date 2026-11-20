@@ -35,7 +35,7 @@ const registry = createPluginRegistry()
   .use(stringEmailPlugin);
 
 // 2. One field's rules, named and reusable.
-const emailRule = registry.createFieldRule<string>(
+const emailRule = registry.createFieldRule(
   b => b.string.required().email(),
   { name: 'email', description: 'A deliverable address' }
 );
@@ -82,7 +82,7 @@ import { transformPlugin } from '@maroonedog/luq/plugins/transform';
 
 const registry = createPluginRegistry().use(requiredPlugin).use(transformPlugin);
 
-const trimmedRule = registry.createFieldRule<string>(
+const trimmedRule = registry.createFieldRule(
   b => b.string.required().transform(value => value.trim()),
   { name: 'trimmed' }
 );
@@ -103,7 +103,7 @@ type Settings = { language: string };
 
 const registry = createPluginRegistry().use(optionalPlugin);
 
-const languageRule = registry.createFieldRule<string>(
+const languageRule = registry.createFieldRule(
   b => b.string.optional(),
   { name: 'language', fieldOptions: { default: 'en' } }
 );
@@ -128,7 +128,7 @@ type Article = {
 
 const registry = createPluginRegistry().use(requiredPlugin).use(stringMinPlugin);
 
-const slugRule = registry.createFieldRule<string>(
+const slugRule = registry.createFieldRule(
   b => b.string.required().min(3),
   { name: 'slug' }
 );
@@ -248,7 +248,7 @@ import type {
                 </tr>
                 <tr class="border-b border-outline-variant">
                   <td class="py-2 pr-4">
-                    <code>createFieldRule&lt;TValue&gt;(define, options?)</code>
+                    <code>createFieldRule(define, options?)</code>
                   </td>
                   <td class="py-2">
                     Mints a rule against this registry's plugins.
@@ -294,10 +294,8 @@ import type {
           <h2 id="create-field-rule">createFieldRule</h2>
 
           <p>
-            Two doors to the same thing. The registry method is the ergonomic one because it
-            takes a single type argument; the free function is there when you already have a
-            builder. Called without type arguments the free form infers a loose value type,
-            so reach for the registry form whenever the rule's value type matters.
+            Both the registry method and the free function infer the input type from the
+            selected slot. Use the free function when you already have a builder.
           </p>
 
           <CodeBlock code={freeFunctionExample} language="typescript" />
@@ -374,6 +372,13 @@ import type {
 
           <CodeBlock code={useFieldExample} language="typescript" />
 
+          <p>
+            With the transform plugin registered,{' '}
+            <code>registry.createFieldRule(b =&gt; b.string.transform(Number))</code>
+            accepts a string and produces a number. TypeScript infers the same parsed
+            type on the standalone rule and at the path passed to <code>useField()</code>.
+          </p>
+
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <h3 class="md-title-small mb-3 flex items-center gap-2">
               <span class="md-icon md-icon-sm" aria-hidden="true">shield</span>{' '}
@@ -441,30 +446,30 @@ function createPluginRegistry(): PluginRegistry<{}>;
 
 interface PluginRegistry<B> {
   use<P>(plugin: P): PluginRegistry<B & BagEntry<P>>;       // immutable
-  createFieldRule<TValue>(
-    define: FieldRuleDefine<TValue, B>,
-    options?: FieldRuleOptions<TValue>
-  ): FieldRule<TValue, B>;
+  createFieldRule<C>(
+    define: (slots: FieldRuleSlots<B>) => C,
+    options?: FieldRuleOptions<ChainInput<C>>
+  ): FieldRule<ChainInput<C>, B, C>;
   toBuilder(): Builder<B>;
   getPlugins(): Readonly<Record<string, AnyPlugin>>;
 }
 
-function createFieldRule<TValue, B>(
+function createFieldRule<B, C>(
   builder: Builder<B>,
-  define: FieldRuleDefine<TValue, B>,
-  options?: FieldRuleOptions<TValue>
-): FieldRule<TValue, B>;
+  define: (slots: FieldRuleSlots<B>) => C,
+  options?: FieldRuleOptions<ChainInput<C>>
+): FieldRule<ChainInput<C>, B, C>;
 
-function useField<T, B, TDeclared, K>(
-  builder: FieldBuilder<T, B, TDeclared>,
+function useField<T, B, TDeclared, TParsed, K, C>(
+  builder: FieldBuilder<T, B, TDeclared, TParsed>,
   path: K,
-  rule: FieldRule<ValueAtPath<T, K>, B>
-): FieldBuilder<T, B, TDeclared | K>;
+  rule: FieldRule<ValueAtPath<T, K>, B, C>
+): DeclaredFieldBuilder<T, B, TDeclared, TParsed, K, C>;
 
-interface FieldRule<TValue, B> {
+interface FieldRule<TValue, B, C> {
   readonly name: string;
   readonly description: string | undefined;
-  readonly define: FieldRuleDefine<TValue, B>;
+  readonly define: FieldRuleDefine<TValue, B, C>;
   readonly fieldOptions: FieldOptions<TValue> | undefined;
   validate<TInput extends TValue | null | undefined>(
     value: TInput,
@@ -473,7 +478,7 @@ interface FieldRule<TValue, B> {
   parse(
     value: TValue | null | undefined,
     options?: ValidateOptions
-  ): ValidationResult<TValue>;
+  ): ValidationResult<unknown extends ChainOutput<C> ? TValue : ChainOutput<C>>;
 }`}
             language="typescript"
             showCopy={false}

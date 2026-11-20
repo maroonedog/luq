@@ -15,9 +15,12 @@
 // other field, and there is no second answer to "what does this rule mean".
 // ===========================================================================
 import type { Builder } from "../builder/field-builder.types";
+import { eraseRuleDefineToBuilderSlots } from "../core/type-erasure";
 import type { FieldOptions } from "../builder/field-options.types";
 import type { Validator } from "../builder/validator.types";
 import type { PluginBag } from "../chain/plugin-bag.types";
+import type { FieldRuleSlots } from "../chain/field-slots.types";
+import type { AnyChain, ChainInput } from "../chain/field-chain.types";
 import type {
   FieldRule,
   FieldRuleDefine,
@@ -50,11 +53,26 @@ function buildSubjectValidator<TValue, B extends PluginBag>(
     .build();
 }
 
+export function createFieldRule<B extends PluginBag, C extends AnyChain>(
+  builder: Builder<B>,
+  define: (slots: FieldRuleSlots<B>) => C,
+  options?: FieldRuleOptions<NoInfer<ChainInput<C>>>
+): FieldRule<ChainInput<C>, B, C>;
+export function createFieldRule<
+  TValue,
+  B extends PluginBag,
+  C extends AnyChain = AnyChain,
+>(
+  builder: Builder<B>,
+  define: FieldRuleDefine<TValue, B, C>,
+  options?: FieldRuleOptions<TValue>
+): FieldRule<TValue, B, C>;
 export function createFieldRule<TValue, B extends PluginBag>(
   builder: Builder<B>,
-  define: FieldRuleDefine<TValue, B>,
+  declaration: (slots: never) => AnyChain,
   options?: FieldRuleOptions<TValue>
 ): FieldRule<TValue, B> {
+  const define = eraseRuleDefineToBuilderSlots(declaration);
   const fieldOptions = options?.fieldOptions;
   const validator = buildSubjectValidator(builder, define, fieldOptions);
   const rule: FieldRule<TValue, B> = {
