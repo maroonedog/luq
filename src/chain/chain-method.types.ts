@@ -35,6 +35,7 @@ export type ChainMethod<
   TRoot,
   TValue,
   TState extends ChainState,
+  TInput = TValue,
 > =
   P extends PluginDefinition<
     string,
@@ -46,13 +47,13 @@ export type ChainMethod<
       ? <R>(
           map: (value: Present<TValue, TState>) => R,
           options?: RuleOptions<Sig["context"]>
-        ) => FieldChain<B, S, TRoot, R, MarkTransformed<TState>>
+        ) => FieldChain<B, S, TRoot, R, MarkTransformed<TState>, TInput>
       : [Sig["out"]] extends [GuardOut]
         ? <X extends Present<TValue, TState>>(
             condition: (value: Present<TValue, TState>) => value is X,
             define: (b: FieldSlots<TRoot, B, X>) => AnyChain,
             options?: RuleOptions<Sig["context"]>
-          ) => FieldChain<B, S, TRoot, TValue, CoverWith<TState, X>>
+          ) => FieldChain<B, S, TRoot, TValue, CoverWith<TState, X>, TInput>
         : // "the second argument's type follows from the first" can only be
           // expressed here. Argument resolution treats each argument
           // independently against a fixed root and value, so it cannot carry a
@@ -76,13 +77,13 @@ export type ChainMethod<
                 root: TRoot
               ) => CrossFieldOutcome,
               options?: RuleOptions<Sig["context"]>
-            ) => FieldChain<B, S, TRoot, TValue, TState>
+            ) => FieldChain<B, S, TRoot, TValue, TState, TInput>
           : [Sig["out"]] extends [BundleOut]
             ? <const M extends BundlePaths<TRoot>>(
                 fields: M,
                 define: BundleChain<TRoot, M, B>,
                 options?: RuleOptions<Sig["context"]>
-              ) => FieldChain<B, S, TRoot, TValue, TState>
+              ) => FieldChain<B, S, TRoot, TValue, TState, TInput>
             : (
                 ...args: [
                   ...ResolveArgs<Sig["args"], B, TRoot, TValue, TState>,
@@ -92,6 +93,6 @@ export type ChainMethod<
                 infer V,
                 infer St extends ChainState,
               ]
-                ? FieldChain<B, S, TRoot, V, St>
+                ? FieldChain<B, S, TRoot, V, St, TInput>
                 : never
     : never;

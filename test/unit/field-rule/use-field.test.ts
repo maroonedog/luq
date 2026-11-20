@@ -39,10 +39,9 @@ const registry = () =>
 
 it("parses a reusable amount rule standalone and at each selected array element", () => {
   const rules = registry();
-  const amount = rules.createFieldRule<string>()(
-    (b) => b.string.transform(Number),
-    { name: "amount" }
-  );
+  const amount = rules.createFieldRule((b) => b.string.transform(Number), {
+    name: "amount",
+  });
   const validator = useField(
     rules.toBuilder().for<{ amounts: string[] }>(),
     "amounts[*]",

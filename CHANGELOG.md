@@ -37,8 +37,8 @@ than `latest`.
 
 ## [Unreleased]
 
-- Reusable rules created with `registry.createFieldRule<Input>()(define)`
-  preserve the transformed output type in standalone `parse()` and when
+- Reusable field rules infer their input from the selected slot and their
+  output from the returned chain. The inferred types are available in standalone `parse()` and when
   attached with `useField()`, including nested and wildcard field paths.
 
 ## [2.9.0] — 2026-09-18

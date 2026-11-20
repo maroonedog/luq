@@ -198,10 +198,9 @@ such as [`custom`](https://luq.dev/docs/api/validator#transform-throws).
 
 `parse()` infers transformed output types for rules declared with `.v()`,
 including nested and wildcard paths. For a reusable transform, write
-`registry.createFieldRule<string>()(b => b.string.transform(Number))`.
-The first call sets the input type; the second infers the output. Attaching
-this rule with `useField()` makes the parsed field a `number`.
-The original one-call form with an explicit input type keeps its original typing.
+`registry.createFieldRule(b => b.string.transform(Number))`.
+The `string` slot sets the input type, and `Number` sets the parsed output.
+Attaching this rule with `useField()` gives the parsed field the type `number`.
 
 ### Partial validation for forms
 

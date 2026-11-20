@@ -65,7 +65,7 @@ maintenance needed in one existing project. The repository examples show
 integration mechanics; they are not a production adoption study.
 
 For type-changing transforms, use `.v()` directly or define a reusable rule
-with `registry.createFieldRule<Input>()(define)` and attach it with `useField()`.
+with `registry.createFieldRule(define)` and attach it with `useField()`.
 Both carry the callback's output into `parse()`.
 
 ```ts
@@ -73,7 +73,7 @@ import { createPluginRegistry, useField } from "@maroonedog/luq/field-rule";
 import { transformPlugin } from "@maroonedog/luq/plugins/transform";
 
 const registry = createPluginRegistry().use(transformPlugin);
-const amount = registry.createFieldRule<string>()(b => b.string.transform(Number));
+const amount = registry.createFieldRule(b => b.string.transform(Number));
 const invoice = useField(registry.toBuilder().for<{ amount: string }>(), "amount", amount).build();
 const parsed = invoice.parse({ amount: "1200" });
 if (parsed.valid) parsed.data.amount.toFixed(2); // number

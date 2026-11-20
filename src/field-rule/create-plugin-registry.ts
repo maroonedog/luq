@@ -16,11 +16,8 @@ import { Builder } from "../builder/field-builder.types";
 import type { BagEntry, PluginBag } from "../chain/plugin-bag.types";
 import type { AnyPlugin } from "../plugin-kit/plugin-definition";
 import { createFieldRule } from "./create-field-rule";
-import type {
-  FieldRuleDefine,
-  FieldRuleOptions,
-  FieldRule,
-} from "./field-rule.types";
+import type { FieldRuleOptions } from "./field-rule.types";
+import { eraseRuleDefineToBuilderSlots } from "../core/type-erasure";
 import type { AnyChain } from "../chain/field-chain.types";
 import type { PluginRegistry } from "./plugin-registry.types";
 
@@ -57,24 +54,6 @@ function createRegistry<B extends PluginBag>(
   makeBuilder: () => Builder<B>,
   plugins: readonly AnyPlugin[]
 ): PluginRegistry<B> {
-  function defineRule<TValue>(): <C extends AnyChain>(
-    define: FieldRuleDefine<TValue, B, C>,
-    options?: FieldRuleOptions<TValue>
-  ) => FieldRule<TValue, B, C>;
-  function defineRule<TValue, C extends AnyChain>(
-    define: FieldRuleDefine<TValue, B, C>,
-    options?: FieldRuleOptions<TValue>
-  ): FieldRule<TValue, B, C>;
-  function defineRule<TValue, C extends AnyChain>(
-    define?: FieldRuleDefine<TValue, B, C>,
-    options?: FieldRuleOptions<TValue>
-  ) {
-    const build = <Chain extends AnyChain>(
-      declaration: FieldRuleDefine<TValue, B, Chain>,
-      settings?: FieldRuleOptions<TValue>
-    ) => createFieldRule(makeBuilder(), declaration, settings);
-    return define === undefined ? build : build(define, options);
-  }
   const registry: PluginRegistry<B> = {
     use<P extends AnyPlugin>(plugin: P): PluginRegistry<B & BagEntry<P>> {
       const grow = (): Builder<B & BagEntry<P>> => makeBuilder().use(plugin);
@@ -83,7 +62,15 @@ function createRegistry<B extends PluginBag>(
       grow();
       return createRegistry(grow, appendPlugin(plugins, plugin));
     },
-    createFieldRule: defineRule,
+    createFieldRule: <TValue, C extends AnyChain>(
+      define: (slots: never) => C,
+      options?: FieldRuleOptions<TValue>
+    ) =>
+      createFieldRule<TValue, B, C>(
+        makeBuilder(),
+        eraseRuleDefineToBuilderSlots(define),
+        options
+      ),
     toBuilder: () => makeBuilder(),
     getPlugins: () => indexPluginsByName(plugins),
   };
