@@ -25,6 +25,23 @@ import type { Validator } from "./validator.types";
 
 export type UncoveredOf<C> = UncoveredMembers<ChainOutput<C>, ChainStateOf<C>>;
 
+/** Result of declaring a field, including its parsed output and union coverage. */
+export type DeclaredFieldBuilder<
+  T extends object,
+  B extends PluginBag,
+  TDeclared extends string,
+  TParsed extends readonly ParsedOverride[],
+  K extends FieldPath<T> & string,
+  C extends AnyChain,
+> = [UncoveredOf<C>] extends [never]
+  ? FieldBuilder<
+      T,
+      B,
+      TDeclared | K,
+      RecordParsedOverride<TParsed, K, ValueAtPath<T, K>, ChainOutput<C>>
+    >
+  : UnionGuardCoverageError<K, UncoveredOf<C>>;
+
 export interface MissingFieldsError<TMissing> {
   readonly luqError: "missingFieldDeclarations";
   readonly message: "Declare every leaf path, or drop .strict().";
@@ -53,14 +70,7 @@ export interface FieldBuilder<
     path: K,
     define: (b: FieldSlots<T, B, ValueAtPath<T, K>>) => C,
     options?: FieldOptions<ValueAtPath<T, K>>
-  ): [UncoveredOf<C>] extends [never]
-    ? FieldBuilder<
-        T,
-        B,
-        TDeclared | K,
-        RecordParsedOverride<TParsed, K, ValueAtPath<T, K>, ChainOutput<C>>
-      >
-    : UnionGuardCoverageError<K, UncoveredOf<C>>;
+  ): DeclaredFieldBuilder<T, B, TDeclared, TParsed, K, C>;
 
   strict(): [MissingLeafPaths<T, TDeclared>] extends [never]
     ? FieldBuilder<T, B, TDeclared, TParsed>

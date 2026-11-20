@@ -37,6 +37,30 @@ const registry = () =>
     .use(numberMinPlugin)
     .use(transformPlugin);
 
+it("parses a reusable amount rule standalone and at each selected array element", () => {
+  const rules = registry();
+  const amount = rules.createFieldRule<string>()(
+    (b) => b.string.transform(Number),
+    { name: "amount" }
+  );
+  const validator = useField(
+    rules.toBuilder().for<{ amounts: string[] }>(),
+    "amounts[*]",
+    amount
+  ).build();
+  const input = { amounts: ["1200", "10"] };
+  expect(amount.name).toBe("amount");
+  expect(amount.parse("1200")).toMatchObject({ valid: true, data: 1200 });
+  expect(validator.parse(input)).toMatchObject({
+    valid: true,
+    data: { amounts: [1200, 10] },
+  });
+  expect(validator.validate(input)).toMatchObject({
+    valid: true,
+    data: { amounts: ["1200", "10"] },
+  });
+});
+
 const broken = {
   email: "ab",
   age: 3,

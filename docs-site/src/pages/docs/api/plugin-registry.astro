@@ -374,6 +374,16 @@ import type {
 
           <CodeBlock code={useFieldExample} language="typescript" />
 
+          <p>
+            For a transform, specify the input type first and pass the rule in a
+            second call, for example{' '}
+            <code>registry.createFieldRule&lt;string&gt;()(b =&gt; b.string.transform(Number))</code>.
+            With the transform plugin registered, <code>parse()</code> then infers
+            a number both on the standalone rule and at the path passed to
+            <code>useField()</code>. The one-call form with an explicit input type
+            retains its original input-based typing.
+          </p>
+
           <div class="not-prose md-card md-card-filled my-8 p-6">
             <h3 class="md-title-small mb-3 flex items-center gap-2">
               <span class="md-icon md-icon-sm" aria-hidden="true">shield</span>{' '}

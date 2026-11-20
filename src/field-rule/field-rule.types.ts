@@ -14,7 +14,7 @@
 // otherwise compile against one root and be spliced into another.
 // ===========================================================================
 import type { FieldOptions } from "../builder/field-options.types";
-import type { AnyChain } from "../chain/field-chain.types";
+import type { AnyChain, ChainOutput } from "../chain/field-chain.types";
 import type { FieldSlots } from "../chain/field-slots.types";
 import type { PluginBag } from "../chain/plugin-bag.types";
 import type {
@@ -28,9 +28,11 @@ export interface FieldRuleSubject<TValue> {
 }
 
 /** The user's chain callback, stored unrun. */
-export type FieldRuleDefine<TValue, B extends PluginBag> = (
-  b: FieldSlots<unknown, B, TValue>
-) => AnyChain;
+export type FieldRuleDefine<
+  TValue,
+  B extends PluginBag,
+  C extends AnyChain = AnyChain,
+> = (b: FieldSlots<unknown, B, TValue>) => C;
 
 /**
  * Legacy shape (docs/legacy-spec/documented-promises.md:238):
@@ -47,13 +49,17 @@ export interface FieldRuleOptions<TValue> {
  * `validate` is generic over the INPUT rather than returning
  * `ValidationResult<TValue>`, because validate() hands back the very value it
  * was given: typing the result as the argument is the honest description and it
- * needs no assertion. `parse` may hand back a different object, so it is typed
- * by the rule's value type, exactly as Validator<T>.parse is.
+ * needs no assertion. A concrete chain supplies the parsed output type;
+ * a declaration with an erased chain keeps the original value type.
  */
-export interface FieldRule<TValue, B extends PluginBag = PluginBag> {
+export interface FieldRule<
+  TValue,
+  B extends PluginBag = PluginBag,
+  C extends AnyChain = AnyChain,
+> {
   readonly name: string;
   readonly description: string | undefined;
-  readonly define: FieldRuleDefine<TValue, B>;
+  readonly define: FieldRuleDefine<TValue, B, C>;
   readonly fieldOptions: FieldOptions<TValue> | undefined;
   validate<TInput extends TValue | null | undefined>(
     value: TInput,
@@ -62,9 +68,9 @@ export interface FieldRule<TValue, B extends PluginBag = PluginBag> {
   parse(
     value: TValue | null | undefined,
     options?: ValidateOptions
-  ): ValidationResult<TValue>;
+  ): ValidationResult<unknown extends ChainOutput<C> ? TValue : ChainOutput<C>>;
 }
 
 /** The legacy `ExtractFieldRuleType`, under a name that says what it reads. */
 export type ExtractFieldRuleValue<R> =
-  R extends FieldRule<infer TValue, PluginBag> ? TValue : never;
+  R extends FieldRule<infer TValue, infer _Bag, infer _Chain> ? TValue : never;

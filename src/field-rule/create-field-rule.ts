@@ -18,6 +18,7 @@ import type { Builder } from "../builder/field-builder.types";
 import type { FieldOptions } from "../builder/field-options.types";
 import type { Validator } from "../builder/validator.types";
 import type { PluginBag } from "../chain/plugin-bag.types";
+import type { AnyChain } from "../chain/field-chain.types";
 import type {
   FieldRule,
   FieldRuleDefine,
@@ -50,6 +51,15 @@ function buildSubjectValidator<TValue, B extends PluginBag>(
     .build();
 }
 
+export function createFieldRule<
+  TValue,
+  B extends PluginBag,
+  C extends AnyChain = AnyChain,
+>(
+  builder: Builder<B>,
+  define: FieldRuleDefine<TValue, B, C>,
+  options?: FieldRuleOptions<TValue>
+): FieldRule<TValue, B, C>;
 export function createFieldRule<TValue, B extends PluginBag>(
   builder: Builder<B>,
   define: FieldRuleDefine<TValue, B>,
